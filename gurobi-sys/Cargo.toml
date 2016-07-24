@@ -1,0 +1,6 @@
+[package]
+name = "gurobi-sys"
+version = "0.1.0"
+authors = ["Yusuke Sasaki <y_sasaki@nuem.nagoya-u.ac.jp>"]
+build = "build.rs"
+

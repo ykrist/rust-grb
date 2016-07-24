@@ -27,4 +27,5 @@ extern "C" {
                      varnames: *mut *mut c_schar)
                      -> c_int;
   pub fn GRBfreemodel(model: *mut GRBmodel) -> c_int;
+  pub fn GRBoptimize(model: *mut GRBmodel) -> c_int;
 }

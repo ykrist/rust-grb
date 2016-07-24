@@ -80,6 +80,21 @@ impl<'a> Model<'a> {
     })
   }
 
+  fn update(&mut self) -> Result<()> {
+      Ok(())
+  }
+
+  pub fn optimize(&mut self) -> Result<()> {
+      try!(self.update());
+
+      let error = unsafe { ffi::GRBoptimize(self.model) };
+      if error != 0 {
+        return Err(Error::FromAPI(self.get_error_msg(), error));
+      }
+
+      Ok(())
+  }
+
   fn get_error_msg(&self) -> String {
     self.env.get_error_msg()
   }

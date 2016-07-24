@@ -1,5 +1,6 @@
 extern crate gurobi_sys as ffi;
 
+use std::ptr::null_mut;
 use std::ffi::{CStr, CString};
 
 /// represents error information which called the API.
@@ -13,6 +14,8 @@ pub enum Error {
   NulError(std::ffi::NulError),
 }
 
+pub type Result<T> = std::result::Result<T, Error>;
+
 /// Gurobi environment object
 pub struct Env {
   env: *mut ffi::GRBenv,
@@ -20,27 +23,63 @@ pub struct Env {
 
 impl Env {
   /// create an empty environment with log file
-  pub fn new(logfilename: &str) -> Result<Env, Error> {
+  pub fn new(logfilename: &str) -> Result<Env> {
     let logfilename = try!(CString::new(logfilename)
       .map_err(|e| Error::NulError(e)));
-    let mut env: *mut ffi::GRBenv = std::ptr::null_mut();
+    let mut env: *mut ffi::GRBenv = null_mut();
     let error = unsafe { ffi::GRBloadenv(&mut env, logfilename.as_ptr()) };
     if error != 0 {
       return Err(Error::FromAPI(get_error_msg_env(env), error));
     }
     Ok(Env { env: env })
   }
+
+  fn get_error_msg(&self) -> String {
+    get_error_msg_env(self.env)
+  }
 }
 
 impl Drop for Env {
   fn drop(&mut self) {
     unsafe { ffi::GRBfreeenv(self.env) };
-    self.env = std::ptr::null_mut();
+    self.env = null_mut();
   }
 }
 
 fn get_error_msg_env(env: *mut ffi::GRBenv) -> String {
   unsafe {
     CStr::from_ptr(ffi::GRBgeterrormsg(env)).to_string_lossy().into_owned()
+  }
+}
+
+pub struct Model {
+  model: *mut ffi::GRBmodel,
+}
+
+impl Model {
+  pub fn new(env: &Env) -> Result<Model> {
+    let mut model: *mut ffi::GRBmodel = null_mut();
+    let error = unsafe {
+      ffi::GRBnewmodel(env.env,
+                       &mut model,
+                       null_mut(),
+                       0,
+                       null_mut(),
+                       null_mut(),
+                       null_mut(),
+                       null_mut(),
+                       null_mut())
+    };
+    if error != 0 {
+      return Err(Error::FromAPI(env.get_error_msg(), error));
+    }
+    Ok(Model { model: model })
+  }
+}
+
+impl Drop for Model {
+  fn drop(&mut self) {
+    unsafe { ffi::GRBfreemodel(self.model) };
+    self.model = null_mut();
   }
 }

@@ -95,9 +95,16 @@ impl Drop for Env {
 }
 
 fn get_error_msg_env(env: *mut ffi::GRBenv) -> String {
-  unsafe {
-    CStr::from_ptr(ffi::GRBgeterrormsg(env)).to_string_lossy().into_owned()
-  }
+  unsafe { from_c_str(ffi::GRBgeterrormsg(env)) }
+}
+
+fn make_c_str(s: &str) -> Result<*const ffi::c_schar> {
+  let cstr = try!(CString::new(s).map_err(|e| Error::NulError(e)));
+  Ok(cstr.as_ptr())
+}
+
+fn from_c_str(s: *const ffi::c_schar) -> String {
+  unsafe { CStr::from_ptr(s).to_string_lossy().into_owned() }
 }
 
 pub struct Model<'a> {
@@ -148,11 +155,12 @@ impl<'a> Model<'a> {
   }
 
   pub fn get_int(&self, attr: IntAttr) -> Result<i64> {
-    let attr = try!(CString::new(format!("{:?}", attr))
-      .map_err(|e| Error::NulError(e)));
     let mut value: ffi::c_int = 0;
-    let error =
-      unsafe { ffi::GRBgetintattr(self.model, attr.as_ptr(), &mut value) };
+    let error = unsafe {
+      ffi::GRBgetintattr(self.model,
+                         try!(make_c_str(format!("{:?}", attr).as_str())),
+                         &mut value)
+    };
     if error != 0 {
       return Err(Error::FromAPI(self.get_error_msg(), error));
     }

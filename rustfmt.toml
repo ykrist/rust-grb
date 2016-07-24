@@ -1,0 +1,4 @@
+tab_spaces = 2
+max_width = 80
+newline_style = "Unix"
+fn_brace_style = "PreferSameLine"

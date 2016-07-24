@@ -3,6 +3,54 @@ extern crate gurobi_sys as ffi;
 use std::ptr::null_mut;
 use std::ffi::{CStr, CString};
 
+#[derive(Debug)]
+pub enum IntAttr {
+  // {{{
+  NumConstrs,
+  NumVars,
+  NumSOS,
+  NumQConstrs,
+  NumNZs,
+  NumQNZs,
+  NumQCNZs,
+  NumIntVars,
+  NumBinVars,
+  NumPWLObjVars,
+  ModelSense,
+  IsMIP,
+  IsQP,
+  IsQCP,
+  Status,
+  SolCount,
+  BarIterCount,
+  VBasis,
+  CBasis,
+  PWLObjCvx,
+  BranchPriority,
+  VarPreStat,
+  BoundVioIndex,
+  BoundSVioIndex,
+  ConstrVioIndex,
+  ConstrSVioIndex,
+  ConstrResidualIndex,
+  ConstrSResidualIndex,
+  DualVioIndex,
+  DualSVioIndex,
+  DualResidualIndex,
+  DualSResidualIndex,
+  ComplVioIndex,
+  IntVioIndex,
+  IISMinimal,
+  IISLB,
+  IISUB,
+  IISConstr,
+  IISSOS,
+  IISQConstr,
+  TuneResultCount,
+  Lazy,
+  VarHintPri,
+} // }}}
+
 /// represents error information which called the API.
 #[derive(Debug)]
 pub enum Error {
@@ -81,22 +129,34 @@ impl<'a> Model<'a> {
   }
 
   fn update(&mut self) -> Result<()> {
-      Ok(())
+    Ok(())
   }
 
   pub fn optimize(&mut self) -> Result<()> {
-      try!(self.update());
+    try!(self.update());
 
-      let error = unsafe { ffi::GRBoptimize(self.model) };
-      if error != 0 {
-        return Err(Error::FromAPI(self.get_error_msg(), error));
-      }
+    let error = unsafe { ffi::GRBoptimize(self.model) };
+    if error != 0 {
+      return Err(Error::FromAPI(self.get_error_msg(), error));
+    }
 
-      Ok(())
+    Ok(())
   }
 
   fn get_error_msg(&self) -> String {
     self.env.get_error_msg()
+  }
+
+  pub fn get_int(&self, attr: IntAttr) -> Result<i64> {
+    let attr = try!(CString::new(format!("{:?}", attr))
+      .map_err(|e| Error::NulError(e)));
+    let mut value: ffi::c_int = 0;
+    let error =
+      unsafe { ffi::GRBgetintattr(self.model, attr.as_ptr(), &mut value) };
+    if error != 0 {
+      return Err(Error::FromAPI(self.get_error_msg(), error));
+    }
+    Ok(value as i64)
   }
 }
 

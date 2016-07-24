@@ -28,4 +28,8 @@ extern "C" {
                      -> c_int;
   pub fn GRBfreemodel(model: *mut GRBmodel) -> c_int;
   pub fn GRBoptimize(model: *mut GRBmodel) -> c_int;
+  pub fn GRBgetintattr(model: *mut GRBmodel,
+                       attrname: *const c_schar,
+                       valueP: *mut c_int)
+                       -> c_int;
 }

@@ -1,1 +1,46 @@
 extern crate gurobi_sys as ffi;
+
+use std::ffi::{CStr, CString};
+
+/// represents error information which called the API.
+#[derive(Debug)]
+pub enum Error {
+  /// This function has yet implemented
+  NotImplemented,
+  /// An exception returned from Gurobi C API
+  FromAPI(String, ffi::c_int),
+  /// see https://doc.rust-lang.org/std/ffi/struct.NulError.html
+  NulError(std::ffi::NulError),
+}
+
+/// Gurobi environment object
+pub struct Env {
+  env: *mut ffi::GRBenv,
+}
+
+impl Env {
+  /// create an empty environment with log file
+  pub fn new(logfilename: &str) -> Result<Env, Error> {
+    let logfilename = try!(CString::new(logfilename)
+      .map_err(|e| Error::NulError(e)));
+    let mut env: *mut ffi::GRBenv = std::ptr::null_mut();
+    let error = unsafe { ffi::GRBloadenv(&mut env, logfilename.as_ptr()) };
+    if error != 0 {
+      return Err(Error::FromAPI(get_error_msg_env(env), error));
+    }
+    Ok(Env { env: env })
+  }
+}
+
+impl Drop for Env {
+  fn drop(&mut self) {
+    unsafe { ffi::GRBfreeenv(self.env) };
+    self.env = std::ptr::null_mut();
+  }
+}
+
+fn get_error_msg_env(env: *mut ffi::GRBenv) -> String {
+  unsafe {
+    CStr::from_ptr(ffi::GRBgeterrormsg(env)).to_string_lossy().into_owned()
+  }
+}

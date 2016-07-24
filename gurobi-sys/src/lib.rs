@@ -32,4 +32,5 @@ extern "C" {
                        attrname: *const c_schar,
                        valueP: *mut c_int)
                        -> c_int;
+  pub fn GRBwrite(model: *mut GRBmodel, filename: *const c_schar) -> c_int;
 }

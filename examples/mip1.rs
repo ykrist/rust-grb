@@ -8,4 +8,6 @@ fn main() {
 
   let status = model.get_int(gurobi::IntAttr::Status).unwrap();
   println!("Status: {:?}", status);
+
+  model.write("mip1.lp").unwrap();
 }

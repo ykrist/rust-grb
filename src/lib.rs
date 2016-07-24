@@ -150,6 +150,15 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
+  pub fn write(&self, filename: &str) -> Result<()> {
+    let error =
+      unsafe { ffi::GRBwrite(self.model, try!(make_c_str(filename))) };
+    if error != 0 {
+      return Err(Error::FromAPI(self.get_error_msg(), error));
+    }
+    Ok(())
+  }
+
   fn get_error_msg(&self) -> String {
     self.env.get_error_msg()
   }

@@ -52,12 +52,13 @@ fn get_error_msg_env(env: *mut ffi::GRBenv) -> String {
   }
 }
 
-pub struct Model {
+pub struct Model<'a> {
   model: *mut ffi::GRBmodel,
+  env: &'a Env,
 }
 
-impl Model {
-  pub fn new(env: &Env) -> Result<Model> {
+impl<'a> Model<'a> {
+  pub fn new(env: &'a Env) -> Result<Model<'a>> {
     let mut model: *mut ffi::GRBmodel = null_mut();
     let error = unsafe {
       ffi::GRBnewmodel(env.env,
@@ -73,11 +74,18 @@ impl Model {
     if error != 0 {
       return Err(Error::FromAPI(env.get_error_msg(), error));
     }
-    Ok(Model { model: model })
+    Ok(Model {
+      model: model,
+      env: env,
+    })
+  }
+
+  fn get_error_msg(&self) -> String {
+    self.env.get_error_msg()
   }
 }
 
-impl Drop for Model {
+impl<'a> Drop for Model<'a> {
   fn drop(&mut self) {
     unsafe { ffi::GRBfreemodel(self.model) };
     self.model = null_mut();

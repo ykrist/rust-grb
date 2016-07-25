@@ -7,9 +7,9 @@ fn main() {
   let mut model = env.new_model("qp1", gurobi::Maximize).unwrap();
 
   // add & integrate new variables.
-  model.add_cvar("x", 0.0, 0.0, 1.0).unwrap();
-  model.add_cvar("y", 0.0, 0.0, 1.0).unwrap();
-  model.add_cvar("z", 0.0, 0.0, 1.0).unwrap();
+  model.add_var("x", gurobi::Continuous(0.0, 1.0), 0.0).unwrap();
+  model.add_var("y", gurobi::Continuous(0.0, 1.0), 0.0).unwrap();
+  model.add_var("z", gurobi::Continuous(0.0, 1.0), 0.0).unwrap();
   model.update().unwrap();
 
   // set objective funtion:

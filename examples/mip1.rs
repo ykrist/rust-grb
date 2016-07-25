@@ -8,9 +8,9 @@ fn main() {
 
   let mut model = env.new_model("mip1", gurobi::Maximize).unwrap();
 
-  model.add_bvar("x", 1.0).unwrap();
-  model.add_bvar("y", 1.0).unwrap();
-  model.add_bvar("z", 2.0).unwrap();
+  model.add_var("x", gurobi::Binary, 1.0).unwrap();
+  model.add_var("y", gurobi::Binary, 1.0).unwrap();
+  model.add_var("z", gurobi::Binary, 2.0).unwrap();
   model.update().unwrap();
 
   model.add_constr("c0", &[0, 1, 2], &[1., 2., 3.], gurobi::Less, 4.0)

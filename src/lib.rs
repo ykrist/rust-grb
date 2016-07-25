@@ -5,6 +5,10 @@ extern crate gurobi_sys as ffi;
 use std::ptr::{null, null_mut};
 use std::ffi::{CStr, CString};
 
+pub use VarType::*;
+pub use ConstrSense::*;
+pub use ModelSense::*;
+
 ///
 #[derive(Debug)]
 pub enum IntAttr {
@@ -128,7 +132,28 @@ pub enum DoubleAttr {
   VarHintVal,
 }
 
-/// represents error information which called the API.
+///
+#[derive(Debug)]
+pub enum VarType {
+  Binary,
+  Continuous(f64, f64),
+  Integer(i64, i64),
+}
+
+///
+pub enum ConstrSense {
+  Equal,
+  Greater,
+  Less,
+}
+
+///
+pub enum ModelSense {
+  Minimize,
+  Maximize,
+}
+
+///
 #[derive(Debug)]
 pub enum Error {
   /// This function has yet implemented
@@ -141,28 +166,6 @@ pub enum Error {
   InconsitentDims,
 }
 
-///
-#[derive(Debug)]
-pub enum VarType {
-  Binary,
-  Continuous,
-  Integer,
-}
-
-pub enum ConstrSense {
-  Equal,
-  Greater,
-  Less,
-}
-pub use ConstrSense::*;
-
-pub enum ModelSense {
-  Minimize,
-  Maximize,
-}
-pub use ModelSense::*;
-
-///
 pub type Result<T> = std::result::Result<T, Error>;
 
 fn get_error_msg_env(env: *mut ffi::GRBenv) -> String {
@@ -183,29 +186,14 @@ pub struct Env {
   env: *mut ffi::GRBenv,
 }
 
-///
+/// Gurobi Model
 pub struct Model<'a> {
   model: *mut ffi::GRBmodel,
   env: &'a Env,
 }
 
-#[test]
-fn test1() {
-  let s1 = "mip1.log";
-  let s2 = unsafe { from_c_str(make_c_str(s1).unwrap()) };
-  assert!(s1 == s2);
-}
-
-#[test]
-fn test2() {
-  let s1 = "mip1.log";
-  let env = Env::new(s1).unwrap();
-  let logfilename = env.get_str_param("LogFile").unwrap();
-  assert_eq!(s1, logfilename);
-}
-
 impl Env {
-  /// create an empty environment with log file
+  /// create an environment with log file
   pub fn new(logfilename: &str) -> Result<Env> {
     let mut env = null_mut::<ffi::GRBenv>();
     let logfilename = try!(make_c_str(logfilename));
@@ -216,6 +204,7 @@ impl Env {
     Ok(Env { env: env })
   }
 
+  /// create an empty model object associted with the environment.
   pub fn new_model(&self, modelname: &str, sense: ModelSense) -> Result<Model> {
     let mut model = null_mut::<ffi::GRBmodel>();
     let error = unsafe {
@@ -250,6 +239,7 @@ impl Env {
     })
   }
 
+  ///
   pub fn get_str_param(&self, paramname: &str) -> Result<String> {
     let mut buf = Vec::with_capacity(1024);
     let error = unsafe {
@@ -276,7 +266,31 @@ impl Drop for Env {
 }
 
 impl<'a> Model<'a> {
-  ///
+
+  /// apply all modification of the model to process.
+  pub fn update(&mut self) -> Result<()> {
+    let error = unsafe { ffi::GRBupdatemodel(self.model) };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+
+  /// create a copy of the model
+  pub fn copy(&self) -> Result<Model> {
+    let copied = unsafe { ffi::GRBcopymodel(self.model) };
+    if copied.is_null() {
+      return Err(Error::FromAPI("Failed to create a copy of the model"
+                                  .to_owned(),
+                                20002));
+    }
+    Ok(Model {
+      env: self.env,
+      model: copied,
+    })
+  }
+    
+  /// optimize the model.
   pub fn optimize(&mut self) -> Result<()> {
     try!(self.update());
 
@@ -288,7 +302,7 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
-  ///
+  /// write information of the model to file.
   pub fn write(&self, filename: &str) -> Result<()> {
     let error =
       unsafe { ffi::GRBwrite(self.model, try!(make_c_str(filename))) };
@@ -298,7 +312,7 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
-  ///
+  /// get an integral attribute from API.
   pub fn get_int(&self, attr: IntAttr) -> Result<i64> {
     let mut value: ffi::c_int = 0;
     let error = unsafe {
@@ -312,6 +326,7 @@ impl<'a> Model<'a> {
     Ok(value as i64)
   }
 
+  /// get an real-valued attribute from API.
   pub fn get_double(&self, attr: DoubleAttr) -> Result<f64> {
     let mut value: ffi::c_double = 0.0;
     let error = unsafe {
@@ -325,6 +340,7 @@ impl<'a> Model<'a> {
     Ok(value as f64)
   }
 
+  /// get an array of real-valued attributes from API.
   pub fn get_double_array(&self,
                           attr: DoubleAttr,
                           first: usize,
@@ -345,6 +361,56 @@ impl<'a> Model<'a> {
     Ok(values)
   }
 
+  /// set the values of real-valued attributes
+  pub fn set_double_array(&mut self,
+                          attr: DoubleAttr,
+                          first: usize,
+                          values: &[f64])
+                          -> Result<()> {
+    let error = unsafe {
+      ffi::GRBsetdblattrarray(self.model,
+                              try!(make_c_str(format!("{:?}", attr).as_str())),
+                              first as ffi::c_int,
+                              values.len() as ffi::c_int,
+                              values.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+
+  /// add a decision variable to the model. 
+  pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64) -> Result<()> {
+    // extract parameters
+    use VarType::*;
+    let (vtype, lb, ub) = match vtype {
+      Binary => ('B' as ffi::c_schar, 0.0, 1.0),
+      Continuous(lb, ub) => ('C' as ffi::c_schar, lb, ub),
+      Integer(lb, ub) => {
+        ('I' as ffi::c_schar, lb as ffi::c_double, ub as ffi::c_double)
+      }
+    };
+
+    let error = unsafe {
+      ffi::GRBaddvar(self.model,
+                     0,
+                     null(),
+                     null(),
+                     obj,
+                     lb,
+                     ub,
+                     vtype,
+                     try!(make_c_str(name)))
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    Ok(())
+  }
+
+  /// add quadratic terms of objective function.
   pub fn add_qpterms(&mut self,
                      qrow: &[ffi::c_int],
                      qcol: &[ffi::c_int],
@@ -371,6 +437,7 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
+  /// add a quadratic constraint to the model.
   pub fn add_qconstr(&mut self,
                      constrname: &str,
                      lind: &[ffi::c_int],
@@ -417,36 +484,7 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
-  pub fn set_double_array(&mut self,
-                          attr: DoubleAttr,
-                          first: usize,
-                          values: &[f64])
-                          -> Result<()> {
-    let error = unsafe {
-      ffi::GRBsetdblattrarray(self.model,
-                              try!(make_c_str(format!("{:?}", attr).as_str())),
-                              first as ffi::c_int,
-                              values.len() as ffi::c_int,
-                              values.as_ptr())
-    };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-    Ok(())
-  }
-
-  pub fn add_bvar(&mut self, name: &str, obj: f64) -> Result<()> {
-    self.add_var(name, VarType::Binary, 0.0, 1.0, obj)
-  }
-
-  pub fn add_cvar(&mut self, name: &str, obj: f64, lb: f64, ub: f64) -> Result<()> {
-    self.add_var(name, VarType::Continuous, lb, ub, obj)
-  }
-
-  pub fn add_ivar(&mut self, name: &str, obj: f64, lb: i64, ub: i64) -> Result<()> {
-    self.add_var(name, VarType::Integer, lb as f64, ub as f64, obj)
-  }
-
+  /// add a linear constraint to the model.
   pub fn add_constr(&mut self,
                     name: &str,
                     ind: &[ffi::c_int],
@@ -479,65 +517,6 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
-  /// apply all modification of the model to process.
-  pub fn update(&mut self) -> Result<()> {
-    let error = unsafe { ffi::GRBupdatemodel(self.model) };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-    Ok(())
-  }
-
-  /// create a copy of the model
-  pub fn copy(&self) -> Result<Model> {
-    let copied = unsafe { ffi::GRBcopymodel(self.model) };
-    if copied.is_null() {
-      return Err(Error::FromAPI("Failed to create a copy of the model"
-                                  .to_owned(),
-                                20002));
-    }
-    Ok(Model {
-      env: self.env,
-      model: copied,
-    })
-  }
-}
-
-
-// internal methods.
-impl<'a> Model<'a> {
-  fn add_var(&mut self,
-             name: &str,
-             vtype: VarType,
-             lb: f64,
-             ub: f64,
-             obj: f64)
-             -> Result<()> {
-    use VarType::*;
-    let vtype = match vtype {
-      Binary => 'B' as ffi::c_schar,
-      Continuous => 'C' as ffi::c_schar,
-      Integer => 'I' as ffi::c_schar,
-    };
-
-    let error = unsafe {
-      ffi::GRBaddvar(self.model,
-                     0,
-                     null(),
-                     null(),
-                     obj,
-                     lb,
-                     ub,
-                     vtype,
-                     try!(make_c_str(name)))
-    };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-
-    Ok(())
-  }
-
   // make an instance of error object related to C API.
   fn error_from_api(&self, errcode: ffi::c_int) -> Error {
     Error::FromAPI(self.env.get_error_msg(), errcode)
@@ -550,3 +529,20 @@ impl<'a> Drop for Model<'a> {
     self.model = null_mut();
   }
 }
+
+
+#[test]
+fn test1() {
+  let s1 = "mip1.log";
+  let s2 = unsafe { from_c_str(make_c_str(s1).unwrap()) };
+  assert!(s1 == s2);
+}
+
+#[test]
+fn test2() {
+  let s1 = "mip1.log";
+  let env = Env::new(s1).unwrap();
+  let logfilename = env.get_str_param("LogFile").unwrap();
+  assert_eq!(s1, logfilename);
+}
+

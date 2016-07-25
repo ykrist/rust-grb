@@ -345,6 +345,49 @@ impl<'a> Model<'a> {
     Ok(values)
   }
 
+  pub fn add_qpterms(&mut self,
+                     qrow: &[ffi::c_int],
+                     qcol: &[ffi::c_int],
+                     qval: &[ffi::c_double])
+                     -> Result<()> {
+    if qrow.len() != qcol.len() {
+      return Err(Error::InconsitentDims);
+    }
+    if qcol.len() != qval.len() {
+      return Err(Error::InconsitentDims);
+    }
+
+    let error = unsafe {
+      ffi::GRBaddqpterms(self.model,
+                         qrow.len() as ffi::c_int,
+                         qrow.as_ptr(),
+                         qcol.as_ptr(),
+                         qval.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    Ok(())
+  }
+
+  pub fn set_double_array(&mut self,
+                          attr: DoubleAttr,
+                          first: usize,
+                          values: &[f64])
+                          -> Result<()> {
+    let error = unsafe {
+      ffi::GRBsetdblattrarray(self.model,
+                              try!(make_c_str(format!("{:?}", attr).as_str())),
+                              first as ffi::c_int,
+                              values.len() as ffi::c_int,
+                              values.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
 
   pub fn add_bvar(&mut self, name: &str, obj: f64) -> Result<()> {
     self.add_var(name, VarType::Binary, 0.0, 1.0, obj)

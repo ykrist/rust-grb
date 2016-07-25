@@ -28,7 +28,10 @@ fn main() {
   let objval = model.get_double(gurobi::DoubleAttr::ObjVal).unwrap();
   assert!((objval - 1.0).abs() < 1e-12);
 
-  let xval = model.get_double_array(gurobi::DoubleAttr::X, 0, 3).unwrap();
+  let numvars = model.get_int(gurobi::IntAttr::NumVars).unwrap() as usize;
+  assert_eq!(numvars, 3);
+
+  let xval = model.get_double_array(gurobi::DoubleAttr::X, 0, numvars).unwrap();
   assert_eq!(xval[0], 0.0);
   assert_eq!(xval[1], 1.0);
   assert_eq!(xval[2], 0.0);

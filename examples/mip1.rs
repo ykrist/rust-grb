@@ -6,17 +6,32 @@ fn main() {
   let env = gurobi::Env::new(logfilename).unwrap();
   assert_eq!(env.get_str_param("LogFile").unwrap(), logfilename);
 
-  let mut model = env.new_model("mip1").unwrap();
+  let mut model = env.new_model("mip1", gurobi::Maximize).unwrap();
 
-  model.add_bvar("x", 0.0).unwrap();
-  model.add_bvar("y", 0.0).unwrap();
-  model.add_bvar("z", 0.0).unwrap();
+  model.add_bvar("x", 1.0).unwrap();
+  model.add_bvar("y", 1.0).unwrap();
+  model.add_bvar("z", 2.0).unwrap();
   model.update().unwrap();
+
+  model.add_constr("c0", &[0, 1, 2], &[1., 2., 3.], gurobi::Less, 4.0)
+    .unwrap();
+  model.add_constr("c1", &[0, 1], &[1., 1.], gurobi::Greater, 1.0).unwrap();
 
   model.optimize().unwrap();
 
+  // fixes the model
+  let model = model;
+
   let status = model.get_int(gurobi::IntAttr::Status).unwrap();
-  println!("Status: {:?}", status);
+  assert_eq!(status, 2);
+
+  let objval = model.get_double(gurobi::DoubleAttr::ObjVal).unwrap();
+  assert!((objval - 1.0).abs() < 1e-12);
+
+  let xval = model.get_double_array(gurobi::DoubleAttr::X, 0, 3).unwrap();
+  assert_eq!(xval[0], 0.0);
+  assert_eq!(xval[1], 1.0);
+  assert_eq!(xval[2], 0.0);
 
   model.write("mip1.lp").unwrap();
 }

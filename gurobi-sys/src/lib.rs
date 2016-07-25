@@ -32,6 +32,22 @@ extern "C" {
                        attrname: *const c_schar,
                        valueP: *mut c_int)
                        -> c_int;
+  pub fn GRBgetdblattr(model: *mut GRBmodel,
+                       attrname: *const c_schar,
+                       valueP: *mut c_double)
+                       -> c_int;
+
+  pub fn GRBgetdblattrarray(model: *mut GRBmodel,
+                            attrname: *const c_schar,
+                            first: c_int,
+                            len: c_int,
+                            values: *mut c_double)
+                            -> c_int;
+
+  pub fn GRBsetintattr(model: *mut GRBmodel,
+                       attrname: *const c_schar,
+                       value: c_int)
+                       -> c_int;
   pub fn GRBwrite(model: *mut GRBmodel, filename: *const c_schar) -> c_int;
 
   pub fn GRBaddvar(model: *mut GRBmodel,
@@ -52,4 +68,14 @@ extern "C" {
                         paramname: *const c_schar,
                         value: *mut c_schar)
                         -> c_int;
+
+  pub fn GRBaddconstr(model: *mut GRBmodel,
+                      numnz: c_int,
+                      cind: *const c_int,
+                      cval: *const c_double,
+                      sense: c_schar,
+                      rhs: c_double,
+                      constrname: *const c_schar)
+                      -> c_int;
+
 }

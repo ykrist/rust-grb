@@ -2,7 +2,7 @@
 
 extern crate gurobi_sys as ffi;
 
-use std::ptr::null_mut;
+use std::ptr::{null, null_mut};
 use std::ffi::{CStr, CString};
 
 ///
@@ -223,11 +223,11 @@ impl Env {
                        &mut model,
                        try!(make_c_str(modelname)),
                        0,
-                       null_mut(),
-                       null_mut(),
-                       null_mut(),
-                       null_mut(),
-                       null_mut())
+                       null(),
+                       null(),
+                       null(),
+                       null(),
+                       null())
     };
     if error != 0 {
       return Err(Error::FromAPI(self.get_error_msg(), error));
@@ -371,6 +371,52 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
+  pub fn add_qconstr(&mut self,
+                     constrname: &str,
+                     lind: &[ffi::c_int],
+                     lval: &[ffi::c_double],
+                     qrow: &[ffi::c_int],
+                     qcol: &[ffi::c_int],
+                     qval: &[ffi::c_double],
+                     sense: ConstrSense,
+                     rhs: ffi::c_double)
+                     -> Result<()> {
+    if lind.len() != lval.len() {
+      return Err(Error::InconsitentDims);
+    }
+    if qrow.len() != qcol.len() {
+      return Err(Error::InconsitentDims);
+    }
+    if qcol.len() != qval.len() {
+      return Err(Error::InconsitentDims);
+    }
+
+    let sense = match sense {
+      ConstrSense::Equal => '=' as ffi::c_schar,
+      ConstrSense::Less => '<' as ffi::c_schar,
+      ConstrSense::Greater => '>' as ffi::c_schar,
+    };
+
+    let error = unsafe {
+      ffi::GRBaddqconstr(self.model,
+                         lind.len() as ffi::c_int,
+                         lind.as_ptr(),
+                         lval.as_ptr(),
+                         qrow.len() as ffi::c_int,
+                         qrow.as_ptr(),
+                         qcol.as_ptr(),
+                         qval.as_ptr(),
+                         sense,
+                         rhs,
+                         try!(make_c_str(constrname)))
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    Ok(())
+  }
+
   pub fn set_double_array(&mut self,
                           attr: DoubleAttr,
                           first: usize,
@@ -393,12 +439,12 @@ impl<'a> Model<'a> {
     self.add_var(name, VarType::Binary, 0.0, 1.0, obj)
   }
 
-  pub fn add_cvar(&mut self, name: &str, obj: f64) -> Result<()> {
-    self.add_var(name, VarType::Continuous, 0.0, 1.0, obj)
+  pub fn add_cvar(&mut self, name: &str, obj: f64, lb: f64, ub: f64) -> Result<()> {
+    self.add_var(name, VarType::Continuous, lb, ub, obj)
   }
 
-  pub fn add_ivar(&mut self, name: &str, obj: f64) -> Result<()> {
-    self.add_var(name, VarType::Integer, 0.0, 1.0, obj)
+  pub fn add_ivar(&mut self, name: &str, obj: f64, lb: i64, ub: i64) -> Result<()> {
+    self.add_var(name, VarType::Integer, lb as f64, ub as f64, obj)
   }
 
   pub fn add_constr(&mut self,
@@ -477,8 +523,8 @@ impl<'a> Model<'a> {
     let error = unsafe {
       ffi::GRBaddvar(self.model,
                      0,
-                     null_mut(),
-                     null_mut(),
+                     null(),
+                     null(),
                      obj,
                      lb,
                      ub,

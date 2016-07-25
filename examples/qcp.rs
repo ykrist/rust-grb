@@ -1,0 +1,58 @@
+extern crate gurobi;
+
+fn main() {
+  let env = gurobi::Env::new("qcp1.log").unwrap();
+
+  // create an empty model.
+  let mut model = env.new_model("qcp1", gurobi::Maximize).unwrap();
+
+  // add & integrate new variables.
+  model.add_cvar("x", 1.0, 0.0, 1e+100).unwrap();
+  model.add_cvar("y", 0.0, 0.0, 1e+100).unwrap();
+  model.add_cvar("z", 0.0, 0.0, 1e+100).unwrap();
+  model.update().unwrap();
+
+  // set objective funtion:
+  //   f(x,y,z) = x
+  model.set_double_array(gurobi::DoubleAttr::Obj, 0, &[1.0, 0.0, 0.0]).unwrap();
+
+  // add linear constraints
+
+  //  c0: x + y + z == 1
+  model.add_constr("c0", &[0, 1, 2], &[1., 1., 1.], gurobi::Equal, 1.0)
+    .unwrap();
+
+  // add quadratic constraints
+
+  //  qc0: x^2 + y^2 - z^2 <= 0.0
+  model.add_qconstr("qc0",
+                 &[],
+                 &[],
+                 &[0, 1, 2],
+                 &[0, 1, 2],
+                 &[1., 1., -1.0],
+                 gurobi::Less,
+                 0.0)
+    .unwrap();
+
+  //  qc1: x^2 - y*z <= 0.0
+  model.add_qconstr("qc1",
+                 &[],
+                 &[],
+                 &[0, 1],
+                 &[0, 2],
+                 &[1., -1.0],
+                 gurobi::Less,
+                 0.0)
+    .unwrap();
+
+  // optimize the model.
+  model.optimize().unwrap();
+
+  // write the model to file.
+  model.write("qp.lp").unwrap();
+  model.write("qp.sol").unwrap();
+
+  let status = model.get_int(gurobi::IntAttr::Status).unwrap();
+  assert_eq!(status, 2);
+}

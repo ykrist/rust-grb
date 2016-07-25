@@ -92,6 +92,20 @@ extern "C" {
                        qval: *const c_double)
                        -> c_int;
 
+  pub fn GRBaddqconstr(model: *mut GRBmodel,
+                       numlnz: c_int,
+                       lind: *const c_int,
+                       lval: *const c_double,
+                       numqnz: c_int,
+                       qrow: *const c_int,
+                       qcol: *const c_int,
+                       qval: *const c_double,
+                       sense: c_schar,
+                       rhs: c_double,
+                       QCname: *const c_schar)
+                       -> c_int;
+
+
   pub fn GRBsetdblattrarray(model: *mut GRBmodel,
                             attrname: *const c_schar,
                             first: c_int,

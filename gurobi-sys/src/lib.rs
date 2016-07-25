@@ -33,4 +33,23 @@ extern "C" {
                        valueP: *mut c_int)
                        -> c_int;
   pub fn GRBwrite(model: *mut GRBmodel, filename: *const c_schar) -> c_int;
+
+  pub fn GRBaddvar(model: *mut GRBmodel,
+                   numnz: c_int,
+                   vind: *mut c_int,
+                   vval: *mut c_double,
+                   obj: f64,
+                   lb: f64,
+                   ub: f64,
+                   vtype: c_schar,
+                   name: *const c_schar)
+                   -> c_int;
+
+  pub fn GRBupdatemodel(model: *mut GRBmodel) -> c_int;
+  pub fn GRBcopymodel(model: *mut GRBmodel) -> *mut GRBmodel;
+
+  pub fn GRBgetstrparam(env: *mut GRBenv,
+                        paramname: *const c_schar,
+                        value: *mut c_schar)
+                        -> c_int;
 }

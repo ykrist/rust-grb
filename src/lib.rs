@@ -172,12 +172,11 @@ fn get_error_msg_env(env: *mut ffi::GRBenv) -> String {
   unsafe { from_c_str(ffi::GRBgeterrormsg(env)) }
 }
 
-fn make_c_str(s: &str) -> Result<*const ffi::c_schar> {
-  let cstr = try!(CString::new(s).map_err(|e| Error::NulError(e)));
-  Ok(cstr.as_ptr())
+fn make_c_str(s: &str) -> Result<CString> {
+  CString::new(s).map_err(|e| Error::NulError(e))
 }
 
-unsafe fn from_c_str(s: *const ffi::c_schar) -> String {
+unsafe fn from_c_str(s: *const ffi::c_char) -> String {
   CStr::from_ptr(s).to_string_lossy().into_owned()
 }
 
@@ -197,7 +196,7 @@ impl Env {
   pub fn new(logfilename: &str) -> Result<Env> {
     let mut env = null_mut::<ffi::GRBenv>();
     let logfilename = try!(make_c_str(logfilename));
-    let error = unsafe { ffi::GRBloadenv(&mut env, logfilename) };
+    let error = unsafe { ffi::GRBloadenv(&mut env, logfilename.as_ptr()) };
     if error != 0 {
       return Err(Error::FromAPI(get_error_msg_env(env), error));
     }
@@ -206,11 +205,12 @@ impl Env {
 
   /// create an empty model object associted with the environment.
   pub fn new_model(&self, modelname: &str, sense: ModelSense) -> Result<Model> {
+    let modelname = try!(make_c_str(modelname));
     let mut model = null_mut::<ffi::GRBmodel>();
     let error = unsafe {
       ffi::GRBnewmodel(self.env,
                        &mut model,
-                       try!(make_c_str(modelname)),
+                       modelname.as_ptr(),
                        0,
                        null(),
                        null(),
@@ -226,9 +226,8 @@ impl Env {
       ModelSense::Minimize => -1,
       ModelSense::Maximize => 1,
     };
-    let error = unsafe {
-      ffi::GRBsetintattr(model, try!(make_c_str("ModelSense")), sense)
-    };
+    let attrname = try!(make_c_str("ModelSense"));
+    let error = unsafe { ffi::GRBsetintattr(model, attrname.as_ptr(), sense) };
     if error != 0 {
       return Err(Error::FromAPI(self.get_error_msg(), error));
     }
@@ -242,10 +241,9 @@ impl Env {
   ///
   pub fn get_str_param(&self, paramname: &str) -> Result<String> {
     let mut buf = Vec::with_capacity(1024);
+    let paramname = try!(make_c_str(paramname));
     let error = unsafe {
-      ffi::GRBgetstrparam(self.env,
-                          try!(make_c_str(paramname)),
-                          buf.as_mut_ptr())
+      ffi::GRBgetstrparam(self.env, paramname.as_ptr(), buf.as_mut_ptr())
     };
     if error != 0 {
       return Err(Error::FromAPI(self.get_error_msg(), error));
@@ -266,7 +264,6 @@ impl Drop for Env {
 }
 
 impl<'a> Model<'a> {
-
   /// apply all modification of the model to process.
   pub fn update(&mut self) -> Result<()> {
     let error = unsafe { ffi::GRBupdatemodel(self.model) };
@@ -289,7 +286,7 @@ impl<'a> Model<'a> {
       model: copied,
     })
   }
-    
+
   /// optimize the model.
   pub fn optimize(&mut self) -> Result<()> {
     try!(self.update());
@@ -304,8 +301,8 @@ impl<'a> Model<'a> {
 
   /// write information of the model to file.
   pub fn write(&self, filename: &str) -> Result<()> {
-    let error =
-      unsafe { ffi::GRBwrite(self.model, try!(make_c_str(filename))) };
+    let filename = try!(make_c_str(filename));
+    let error = unsafe { ffi::GRBwrite(self.model, filename.as_ptr()) };
     if error != 0 {
       return Err(self.error_from_api(error));
     }
@@ -315,11 +312,9 @@ impl<'a> Model<'a> {
   /// get an integral attribute from API.
   pub fn get_int(&self, attr: IntAttr) -> Result<i64> {
     let mut value: ffi::c_int = 0;
-    let error = unsafe {
-      ffi::GRBgetintattr(self.model,
-                         try!(make_c_str(format!("{:?}", attr).as_str())),
-                         &mut value)
-    };
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error =
+      unsafe { ffi::GRBgetintattr(self.model, attrname.as_ptr(), &mut value) };
     if error != 0 {
       return Err(self.error_from_api(error));
     }
@@ -329,11 +324,9 @@ impl<'a> Model<'a> {
   /// get an real-valued attribute from API.
   pub fn get_double(&self, attr: DoubleAttr) -> Result<f64> {
     let mut value: ffi::c_double = 0.0;
-    let error = unsafe {
-      ffi::GRBgetdblattr(self.model,
-                         try!(make_c_str(format!("{:?}", attr).as_str())),
-                         &mut value)
-    };
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error =
+      unsafe { ffi::GRBgetdblattr(self.model, attrname.as_ptr(), &mut value) };
     if error != 0 {
       return Err(self.error_from_api(error));
     }
@@ -348,9 +341,10 @@ impl<'a> Model<'a> {
                           -> Result<Vec<f64>> {
     let mut values = Vec::with_capacity(len);
     values.resize(len, 0.0);
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
     let error = unsafe {
       ffi::GRBgetdblattrarray(self.model,
-                              try!(make_c_str(format!("{:?}", attr).as_str())),
+                              attrname.as_ptr(),
                               first as ffi::c_int,
                               len as ffi::c_int,
                               values.as_mut_ptr())
@@ -367,9 +361,10 @@ impl<'a> Model<'a> {
                           first: usize,
                           values: &[f64])
                           -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
     let error = unsafe {
       ffi::GRBsetdblattrarray(self.model,
-                              try!(make_c_str(format!("{:?}", attr).as_str())),
+                              attrname.as_ptr(),
                               first as ffi::c_int,
                               values.len() as ffi::c_int,
                               values.as_ptr())
@@ -380,18 +375,22 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
-  /// add a decision variable to the model. 
-  pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64) -> Result<()> {
+  /// add a decision variable to the model.
+  pub fn add_var(&mut self,
+                 name: &str,
+                 vtype: VarType,
+                 obj: f64)
+                 -> Result<()> {
     // extract parameters
     use VarType::*;
     let (vtype, lb, ub) = match vtype {
-      Binary => ('B' as ffi::c_schar, 0.0, 1.0),
-      Continuous(lb, ub) => ('C' as ffi::c_schar, lb, ub),
+      Binary => ('B' as ffi::c_char, 0.0, 1.0),
+      Continuous(lb, ub) => ('C' as ffi::c_char, lb, ub),
       Integer(lb, ub) => {
-        ('I' as ffi::c_schar, lb as ffi::c_double, ub as ffi::c_double)
+        ('I' as ffi::c_char, lb as ffi::c_double, ub as ffi::c_double)
       }
     };
-
+    let name = try!(make_c_str(name));
     let error = unsafe {
       ffi::GRBaddvar(self.model,
                      0,
@@ -401,7 +400,7 @@ impl<'a> Model<'a> {
                      lb,
                      ub,
                      vtype,
-                     try!(make_c_str(name)))
+                     name.as_ptr())
     };
     if error != 0 {
       return Err(self.error_from_api(error));
@@ -459,10 +458,11 @@ impl<'a> Model<'a> {
     }
 
     let sense = match sense {
-      ConstrSense::Equal => '=' as ffi::c_schar,
-      ConstrSense::Less => '<' as ffi::c_schar,
-      ConstrSense::Greater => '>' as ffi::c_schar,
+      ConstrSense::Equal => '=' as ffi::c_char,
+      ConstrSense::Less => '<' as ffi::c_char,
+      ConstrSense::Greater => '>' as ffi::c_char,
     };
+    let constrname = try!(make_c_str(constrname));
 
     let error = unsafe {
       ffi::GRBaddqconstr(self.model,
@@ -475,7 +475,7 @@ impl<'a> Model<'a> {
                          qval.as_ptr(),
                          sense,
                          rhs,
-                         try!(make_c_str(constrname)))
+                         constrname.as_ptr())
     };
     if error != 0 {
       return Err(self.error_from_api(error));
@@ -497,10 +497,11 @@ impl<'a> Model<'a> {
     }
 
     let sense = match sense {
-      ConstrSense::Equal => '=' as ffi::c_schar,
-      ConstrSense::Less => '<' as ffi::c_schar,
-      ConstrSense::Greater => '>' as ffi::c_schar,
+      ConstrSense::Equal => '=' as ffi::c_char,
+      ConstrSense::Less => '<' as ffi::c_char,
+      ConstrSense::Greater => '>' as ffi::c_char,
     };
+    let constrname = try!(make_c_str(name));
 
     let error = unsafe {
       ffi::GRBaddconstr(self.model,
@@ -509,7 +510,7 @@ impl<'a> Model<'a> {
                         val.as_ptr(),
                         sense,
                         rhs,
-                        try!(make_c_str(name)))
+                        constrname.as_ptr())
     };
     if error != 0 {
       return Err(self.error_from_api(error));
@@ -534,7 +535,7 @@ impl<'a> Drop for Model<'a> {
 #[test]
 fn test1() {
   let s1 = "mip1.log";
-  let s2 = unsafe { from_c_str(make_c_str(s1).unwrap()) };
+  let s2 = unsafe { from_c_str(make_c_str(s1).unwrap().as_ptr()) };
   assert!(s1 == s2);
 }
 
@@ -545,4 +546,3 @@ fn test2() {
   let logfilename = env.get_str_param("LogFile").unwrap();
   assert_eq!(s1, logfilename);
 }
-

@@ -1,7 +1,7 @@
 extern crate gurobi;
 
 fn main() {
-  let env = gurobi::Env::new("qcp1.log").unwrap();
+  let env = gurobi::Env::new("").unwrap();
 
   // create an empty model.
   let mut model = env.new_model("qcp1", gurobi::Maximize).unwrap();

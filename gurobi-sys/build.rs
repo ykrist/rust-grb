@@ -1,8 +1,8 @@
-use std::env;
-use std::path::{Path, PathBuf};
-
 #[cfg(all(target_os="windows", target_env="msvc"))]
 fn setup_from_env() {
+  use std::env;
+  use std::path::{Path, PathBuf};
+
   let gurobi_home = env::var("GUROBI_HOME").unwrap();
   assert!(Path::new(gurobi_home.as_str()).exists());
 

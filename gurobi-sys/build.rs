@@ -1,5 +1,5 @@
-#[cfg(all(target_os="windows", target_env="msvc"))]
-fn setup_from_env() {
+
+fn print_gurobi_confs() {
   use std::env;
   use std::path::{Path, PathBuf};
 
@@ -9,15 +9,11 @@ fn setup_from_env() {
   let mut libpath: PathBuf = PathBuf::from(gurobi_home);
   libpath.push("lib");
 
-  println!("cargo:rustc-link-search=native={}",
-           libpath.to_str().unwrap());
+  println!("cargo:rustc-link-search=native={}", libpath.to_str().unwrap());
 }
 
-#[cfg(not(all(target_os="windows", target_env="msvc")))]
-fn setup_from_env() {}
-
-
 fn main() {
-  setup_from_env();
+  print_gurobi_confs();
+
   println!("cargo:rustc-link-lib={}", "gurobi65")
 }

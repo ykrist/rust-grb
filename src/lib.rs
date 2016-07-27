@@ -9,7 +9,123 @@ pub use VarType::*;
 pub use ConstrSense::*;
 pub use ModelSense::*;
 
-///
+#[derive(Debug)]
+pub enum IntParam {
+  SolutionLimit,
+  Method,
+  ScaleFlag,
+  SimplexPricing,
+  Quad,
+  NormAdjust,
+  Sifting,
+  SiftMethod,
+  SubMIPNodes,
+  VarBranch,
+  Cuts,
+  CliqueCuts,
+  CoverCuts,
+  FlowCoverCuts,
+  FlowPathCuts,
+  GUBCoverCuts,
+  ImpliedCuts,
+  MIPSepCuts,
+  MIRCuts,
+  ModKCuts,
+  ZeroHalfCuts,
+  NetworkCuts,
+  SubMIPCuts,
+  CutAggPasses,
+  CutPasses,
+  GomoryPasses,
+  NodeMethod,
+  Presolve,
+  Aggregate,
+  IISMethod,
+  PreCrush,
+  PreDepRow,
+  PrePasses,
+  DisplayInterval,
+  OutputFlag,
+  Threads,
+  BarIterLimit,
+  Crossover,
+  CrossoverBasis,
+  BarCorrectors,
+  BarOrder,
+  PumpPasses,
+  RINS,
+  Symmetry,
+  MIPFocus,
+  NumericFocus,
+  AggFill,
+  PreDual,
+  SolutionNumber,
+  MinRelNodes,
+  ZeroObjNodes,
+  BranchDir,
+  InfUnbdInfo,
+  DualReductions,
+  BarHomogeneous,
+  PreQLinearize,
+  MIQCPMethod,
+  QCPDual,
+  LogToConsole,
+  PreSparsify,
+  PreMIQCPForm,
+  Seed,
+  ConcurrentMIP,
+  ConcurrentJobs,
+  DistributedMIPJobs,
+  LazyConstraints,
+  TuneResults,
+  TuneTrials,
+  TuneOutput,
+  TuneJobs,
+  Disconnected,
+  NoRelHeuristic,
+  UpdateMode,
+  WorkerPort,
+  Record,
+}
+
+#[derive(Debug)]
+pub enum DoubleParam {
+  Cutoff,
+  IterationLimit,
+  NodeLimit,
+  TimeLimit,
+  FeasibilityTol,
+  IntFeasTol,
+  MarkowitzTol,
+  MIPGap,
+  MIPGapAbs,
+  OptimalityTol,
+  PerturbValue,
+  Heuristics,
+  ObjScale,
+  NodefileStart,
+  BarConvTol,
+  BarQCPConvTol,
+  PSDTol,
+  ImproveStartGap,
+  ImproveStartNodes,
+  ImproveStartTime,
+  FeasRelaxBigM,
+  TuneTimeLimit,
+  PreSOS1BigM,
+  PreSOS2BigM,
+}
+
+#[derive(Debug)]
+pub enum StringParam {
+  LogFile,
+  NodefileDir,
+  ResultFile,
+  WorkerPool,
+  WorkerPassword,
+  Dummy,
+}
+
 #[derive(Debug)]
 pub enum IntAttr {
   NumConstrs,
@@ -55,6 +171,13 @@ pub enum IntAttr {
   TuneResultCount,
   Lazy,
   VarHintPri,
+}
+
+#[derive(Debug)]
+pub enum CharAttr {
+  VType,
+  Sense,
+  QCSense,
 }
 
 #[derive(Debug)]
@@ -131,6 +254,15 @@ pub enum DoubleAttr {
   BarX,
   VarHintVal,
 }
+
+#[derive(Debug)]
+pub enum StringAttr {
+ModelName,
+  VarName,
+  ConstrName,
+  QCName,
+}
+
 
 ///
 #[derive(Debug)]
@@ -226,7 +358,7 @@ impl Env {
       ModelSense::Minimize => -1,
       ModelSense::Maximize => 1,
     };
-    let attrname = try!(make_c_str("ModelSense"));
+    let attrname = try!(make_c_str(format!("{:?}", IntAttr::ModelSense).as_str()));
     let error = unsafe { ffi::GRBsetintattr(model, attrname.as_ptr(), sense) };
     if error != 0 {
       return Err(Error::FromAPI(self.get_error_msg(), error));
@@ -238,10 +370,33 @@ impl Env {
     })
   }
 
-  ///
-  pub fn get_str_param(&self, paramname: &str) -> Result<String> {
+  pub fn get_int_param(&self, param: IntParam) -> Result<i32> {
+    let mut value = 0; 
+    let paramname = try!(make_c_str(format!("{:?}",param).as_str()));
+    let error = unsafe {
+      ffi::GRBgetintparam(self.env, paramname.as_ptr(), &mut value)
+    };
+    if error != 0 {
+      return Err(Error::FromAPI(self.get_error_msg(), error));
+    }
+    Ok(value)
+  }
+
+  pub fn get_double_param(&self, param: DoubleParam) -> Result<f64> {
+    let mut value = 0.0; 
+    let paramname = try!(make_c_str(format!("{:?}",param).as_str()));
+    let error = unsafe {
+      ffi::GRBgetdblparam(self.env, paramname.as_ptr(), &mut value)
+    };
+    if error != 0 {
+      return Err(Error::FromAPI(self.get_error_msg(), error));
+    }
+    Ok(value)
+  }
+
+  pub fn get_str_param(&self, param: StringParam) -> Result<String> {
     let mut buf = Vec::with_capacity(1024);
-    let paramname = try!(make_c_str(paramname));
+    let paramname = try!(make_c_str(format!("{:?}",param).as_str()));
     let error = unsafe {
       ffi::GRBgetstrparam(self.env, paramname.as_ptr(), buf.as_mut_ptr())
     };

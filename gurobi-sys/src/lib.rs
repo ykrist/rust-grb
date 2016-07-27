@@ -19,9 +19,19 @@ extern "C" {
   
   pub fn GRBgeterrormsg(env: *mut GRBenv) -> *const c_char;
 
+  pub fn GRBgetintparam(env: *mut GRBenv,
+                        paramname: *const c_char,
+                        value: *mut c_int)
+                        -> c_int;
+
+  pub fn GRBgetdblparam(env: *mut GRBenv,
+                        paramname: *const c_char,
+                        value: *mut c_double)
+                        -> c_int;
+
   pub fn GRBgetstrparam(env: *mut GRBenv,
                         paramname: *const c_char,
-                        value: *const c_char)
+                        value: *mut c_char)
                         -> c_int;
 
   pub fn GRBnewmodel(env: *mut GRBenv,

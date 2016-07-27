@@ -323,19 +323,23 @@ pub struct Model<'a> {
   env: &'a Env,
 }
 
-pub trait Attr<Attr, Output, Input> {
-  fn get(&self, attr: Attr) -> Result<Output>;
-  fn set(&mut self, attr: Attr, value: Output) -> Result<()>;
+pub trait Attr<Attr> {
+  type Output;
+
+  fn get(&self, attr: Attr) -> Result<Self::Output>;
+
+  fn set(&mut self, attr: Attr, value: Self::Output) -> Result<()>;
 
   fn get_array(&self,
                attr: Attr,
                first: usize,
                len: usize)
-               -> Result<Vec<Output>>;
+               -> Result<Vec<Self::Output>>;
+
   fn set_array(&mut self,
                attr: Attr,
                first: usize,
-               values: &[Output])
+               values: &[Self::Output])
                -> Result<()>;
 }
 
@@ -635,7 +639,9 @@ impl<'a> Drop for Model<'a> {
   }
 }
 
-impl<'a> Attr<IntAttr, i32, ffi::c_int> for Model<'a> {
+impl<'a> Attr<IntAttr> for Model<'a> {
+  type Output = i32;
+
   fn get(&self, attr: IntAttr) -> Result<i32> {
     let mut value: ffi::c_int = 0;
     let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
@@ -698,7 +704,9 @@ impl<'a> Attr<IntAttr, i32, ffi::c_int> for Model<'a> {
   }
 }
 
-impl<'a> Attr<DoubleAttr, f64, ffi::c_double> for Model<'a> {
+impl<'a> Attr<DoubleAttr> for Model<'a> {
+  type Output = f64;
+
   fn get(&self, attr: DoubleAttr) -> Result<f64> {
     let mut value: ffi::c_double = 0.0;
     let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));

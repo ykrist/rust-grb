@@ -333,6 +333,28 @@ impl<'a> Model<'a> {
     Ok(value as f64)
   }
 
+  /// get an array of intagral attributes from API.
+  pub fn get_int_array(&self,
+                       attr: IntAttr,
+                       first: usize,
+                       len: usize)
+                       -> Result<Vec<i32>> {
+    let mut values = Vec::with_capacity(len);
+    values.resize(len, 0);
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBgetintattrarray(self.model,
+                              attrname.as_ptr(),
+                              first as ffi::c_int,
+                              len as ffi::c_int,
+                              values.as_mut_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(values)
+  }
+
   /// get an array of real-valued attributes from API.
   pub fn get_double_array(&self,
                           attr: DoubleAttr,
@@ -353,6 +375,48 @@ impl<'a> Model<'a> {
       return Err(self.error_from_api(error));
     }
     Ok(values)
+  }
+
+  /// set an integral attribute from API.
+  pub fn set_int(&self, attr: IntAttr, value: i32) -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error =
+      unsafe { ffi::GRBsetintattr(self.model, attrname.as_ptr(), value) };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+
+  /// set an integral attribute from API.
+  pub fn set_double(&self, attr: DoubleAttr, value: f64) -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error =
+      unsafe { ffi::GRBsetdblattr(self.model, attrname.as_ptr(), value) };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+
+  /// set the values of integral attributes
+  pub fn set_int_array(&mut self,
+                          attr: IntAttr,
+                          first: usize,
+                          values: &[i32])
+                          -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBsetintattrarray(self.model,
+                              attrname.as_ptr(),
+                              first as ffi::c_int,
+                              values.len() as ffi::c_int,
+                              values.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
   }
 
   /// set the values of real-valued attributes

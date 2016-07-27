@@ -1,4 +1,5 @@
 extern crate gurobi;
+use gurobi::Attr;
 
 fn main() {
   let env = gurobi::Env::new("qp1.log").unwrap();
@@ -20,7 +21,7 @@ fn main() {
   model.add_qpterms(&[0, 0, 1, 1, 2], &[0, 1, 1, 2, 2], &[1., 1., 1., 1., 1.])
     .unwrap();
   // 2. add linear term: f_l = 2*x
-  model.set_double_array(gurobi::DoubleAttr::Obj, 0, &[1.0, 0.0, 0.0]).unwrap();
+  model.set_array(gurobi::DoubleAttr::Obj, 0, &[1.0, 0.0, 0.0]).unwrap();
 
   // add linear constraints
 
@@ -38,6 +39,6 @@ fn main() {
   model.write("qp.lp").unwrap();
   model.write("qp.sol").unwrap();
  
-  let status = model.get_int(gurobi::IntAttr::Status).unwrap();
+  let status = model.get(gurobi::IntAttr::Status).unwrap();
   assert_eq!(status, 2);
 }

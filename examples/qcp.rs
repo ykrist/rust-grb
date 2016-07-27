@@ -1,4 +1,5 @@
 extern crate gurobi;
+use gurobi::Attr;
 
 fn main() {
   let env = gurobi::Env::new("").unwrap();
@@ -14,7 +15,7 @@ fn main() {
 
   // set objective funtion:
   //   f(x,y,z) = x
-  model.set_double_array(gurobi::DoubleAttr::Obj, 0, &[1.0, 0.0, 0.0]).unwrap();
+  model.set_array(gurobi::DoubleAttr::Obj, 0, &[1.0, 0.0, 0.0]).unwrap();
 
   // add linear constraints
 
@@ -46,6 +47,9 @@ fn main() {
                  0.0)
     .unwrap();
 
+  let _ = model.get(gurobi::IntAttr::ModelSense).unwrap();
+  let _ = model.get(gurobi::DoubleAttr::ObjVal).unwrap();
+
   // optimize the model.
   model.optimize().unwrap();
 
@@ -53,6 +57,6 @@ fn main() {
   model.write("qp.lp").unwrap();
   model.write("qp.sol").unwrap();
 
-  let status = model.get_int(gurobi::IntAttr::Status).unwrap();
+  let status = model.get(gurobi::IntAttr::Status).unwrap();
   assert_eq!(status, 2);
 }

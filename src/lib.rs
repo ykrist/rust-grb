@@ -257,7 +257,7 @@ pub enum DoubleAttr {
 
 #[derive(Debug)]
 pub enum StringAttr {
-ModelName,
+  ModelName,
   VarName,
   ConstrName,
   QCName,
@@ -323,6 +323,22 @@ pub struct Model<'a> {
   env: &'a Env,
 }
 
+pub trait Attr<Attr, Output, Input> {
+  fn get(&self, attr: Attr) -> Result<Output>;
+  fn set(&mut self, attr: Attr, value: Output) -> Result<()>;
+
+  fn get_array(&self,
+               attr: Attr,
+               first: usize,
+               len: usize)
+               -> Result<Vec<Output>>;
+  fn set_array(&mut self,
+               attr: Attr,
+               first: usize,
+               values: &[Output])
+               -> Result<()>;
+}
+
 impl Env {
   /// create an environment with log file
   pub fn new(logfilename: &str) -> Result<Env> {
@@ -358,7 +374,8 @@ impl Env {
       ModelSense::Minimize => -1,
       ModelSense::Maximize => 1,
     };
-    let attrname = try!(make_c_str(format!("{:?}", IntAttr::ModelSense).as_str()));
+    let attrname = try!(make_c_str(format!("{:?}", IntAttr::ModelSense)
+      .as_str()));
     let error = unsafe { ffi::GRBsetintattr(model, attrname.as_ptr(), sense) };
     if error != 0 {
       return Err(Error::FromAPI(self.get_error_msg(), error));
@@ -371,11 +388,10 @@ impl Env {
   }
 
   pub fn get_int_param(&self, param: IntParam) -> Result<i32> {
-    let mut value = 0; 
-    let paramname = try!(make_c_str(format!("{:?}",param).as_str()));
-    let error = unsafe {
-      ffi::GRBgetintparam(self.env, paramname.as_ptr(), &mut value)
-    };
+    let mut value = 0;
+    let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
+    let error =
+      unsafe { ffi::GRBgetintparam(self.env, paramname.as_ptr(), &mut value) };
     if error != 0 {
       return Err(Error::FromAPI(self.get_error_msg(), error));
     }
@@ -383,11 +399,10 @@ impl Env {
   }
 
   pub fn get_double_param(&self, param: DoubleParam) -> Result<f64> {
-    let mut value = 0.0; 
-    let paramname = try!(make_c_str(format!("{:?}",param).as_str()));
-    let error = unsafe {
-      ffi::GRBgetdblparam(self.env, paramname.as_ptr(), &mut value)
-    };
+    let mut value = 0.0;
+    let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
+    let error =
+      unsafe { ffi::GRBgetdblparam(self.env, paramname.as_ptr(), &mut value) };
     if error != 0 {
       return Err(Error::FromAPI(self.get_error_msg(), error));
     }
@@ -396,7 +411,7 @@ impl Env {
 
   pub fn get_str_param(&self, param: StringParam) -> Result<String> {
     let mut buf = Vec::with_capacity(1024);
-    let paramname = try!(make_c_str(format!("{:?}",param).as_str()));
+    let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
     let error = unsafe {
       ffi::GRBgetstrparam(self.env, paramname.as_ptr(), buf.as_mut_ptr())
     };
@@ -458,136 +473,6 @@ impl<'a> Model<'a> {
   pub fn write(&self, filename: &str) -> Result<()> {
     let filename = try!(make_c_str(filename));
     let error = unsafe { ffi::GRBwrite(self.model, filename.as_ptr()) };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-    Ok(())
-  }
-
-  /// get an integral attribute from API.
-  pub fn get_int(&self, attr: IntAttr) -> Result<i64> {
-    let mut value: ffi::c_int = 0;
-    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    let error =
-      unsafe { ffi::GRBgetintattr(self.model, attrname.as_ptr(), &mut value) };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-    Ok(value as i64)
-  }
-
-  /// get an real-valued attribute from API.
-  pub fn get_double(&self, attr: DoubleAttr) -> Result<f64> {
-    let mut value: ffi::c_double = 0.0;
-    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    let error =
-      unsafe { ffi::GRBgetdblattr(self.model, attrname.as_ptr(), &mut value) };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-    Ok(value as f64)
-  }
-
-  /// get an array of intagral attributes from API.
-  pub fn get_int_array(&self,
-                       attr: IntAttr,
-                       first: usize,
-                       len: usize)
-                       -> Result<Vec<i32>> {
-    let mut values = Vec::with_capacity(len);
-    values.resize(len, 0);
-    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    let error = unsafe {
-      ffi::GRBgetintattrarray(self.model,
-                              attrname.as_ptr(),
-                              first as ffi::c_int,
-                              len as ffi::c_int,
-                              values.as_mut_ptr())
-    };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-    Ok(values)
-  }
-
-  /// get an array of real-valued attributes from API.
-  pub fn get_double_array(&self,
-                          attr: DoubleAttr,
-                          first: usize,
-                          len: usize)
-                          -> Result<Vec<f64>> {
-    let mut values = Vec::with_capacity(len);
-    values.resize(len, 0.0);
-    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    let error = unsafe {
-      ffi::GRBgetdblattrarray(self.model,
-                              attrname.as_ptr(),
-                              first as ffi::c_int,
-                              len as ffi::c_int,
-                              values.as_mut_ptr())
-    };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-    Ok(values)
-  }
-
-  /// set an integral attribute from API.
-  pub fn set_int(&self, attr: IntAttr, value: i32) -> Result<()> {
-    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    let error =
-      unsafe { ffi::GRBsetintattr(self.model, attrname.as_ptr(), value) };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-    Ok(())
-  }
-
-  /// set an integral attribute from API.
-  pub fn set_double(&self, attr: DoubleAttr, value: f64) -> Result<()> {
-    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    let error =
-      unsafe { ffi::GRBsetdblattr(self.model, attrname.as_ptr(), value) };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-    Ok(())
-  }
-
-  /// set the values of integral attributes
-  pub fn set_int_array(&mut self,
-                          attr: IntAttr,
-                          first: usize,
-                          values: &[i32])
-                          -> Result<()> {
-    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    let error = unsafe {
-      ffi::GRBsetintattrarray(self.model,
-                              attrname.as_ptr(),
-                              first as ffi::c_int,
-                              values.len() as ffi::c_int,
-                              values.as_ptr())
-    };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-    Ok(())
-  }
-
-  /// set the values of real-valued attributes
-  pub fn set_double_array(&mut self,
-                          attr: DoubleAttr,
-                          first: usize,
-                          values: &[f64])
-                          -> Result<()> {
-    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    let error = unsafe {
-      ffi::GRBsetdblattrarray(self.model,
-                              attrname.as_ptr(),
-                              first as ffi::c_int,
-                              values.len() as ffi::c_int,
-                              values.as_ptr())
-    };
     if error != 0 {
       return Err(self.error_from_api(error));
     }
@@ -747,6 +632,132 @@ impl<'a> Drop for Model<'a> {
   fn drop(&mut self) {
     unsafe { ffi::GRBfreemodel(self.model) };
     self.model = null_mut();
+  }
+}
+
+impl<'a> Attr<IntAttr, i32, ffi::c_int> for Model<'a> {
+  fn get(&self, attr: IntAttr) -> Result<i32> {
+    let mut value: ffi::c_int = 0;
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error =
+      unsafe { ffi::GRBgetintattr(self.model, attrname.as_ptr(), &mut value) };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(value as i32)
+  }
+
+  fn set(&mut self, attr: IntAttr, value: i32) -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error =
+      unsafe { ffi::GRBsetintattr(self.model, attrname.as_ptr(), value) };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+
+  fn get_array(&self,
+               attr: IntAttr,
+               first: usize,
+               len: usize)
+               -> Result<Vec<i32>> {
+    let mut values = Vec::with_capacity(len);
+    values.resize(len, 0);
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBgetintattrarray(self.model,
+                              attrname.as_ptr(),
+                              first as ffi::c_int,
+                              len as ffi::c_int,
+                              values.as_mut_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(values)
+  }
+
+  fn set_array(&mut self,
+               attr: IntAttr,
+               first: usize,
+               values: &[i32])
+               -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBsetintattrarray(self.model,
+                              attrname.as_ptr(),
+                              first as ffi::c_int,
+                              values.len() as ffi::c_int,
+                              values.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+}
+
+impl<'a> Attr<DoubleAttr, f64, ffi::c_double> for Model<'a> {
+  fn get(&self, attr: DoubleAttr) -> Result<f64> {
+    let mut value: ffi::c_double = 0.0;
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error =
+      unsafe { ffi::GRBgetdblattr(self.model, attrname.as_ptr(), &mut value) };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(value as f64)
+  }
+
+  fn set(&mut self, attr: DoubleAttr, value: f64) -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error =
+      unsafe { ffi::GRBsetdblattr(self.model, attrname.as_ptr(), value) };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+
+  fn get_array(&self,
+               attr: DoubleAttr,
+               first: usize,
+               len: usize)
+               -> Result<Vec<f64>> {
+    let mut values = Vec::with_capacity(len);
+    values.resize(len, 0.0);
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBgetdblattrarray(self.model,
+                              attrname.as_ptr(),
+                              first as ffi::c_int,
+                              len as ffi::c_int,
+                              values.as_mut_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(values)
+  }
+
+  fn set_array(&mut self,
+               attr: DoubleAttr,
+               first: usize,
+               values: &[f64])
+               -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBsetdblattrarray(self.model,
+                              attrname.as_ptr(),
+                              first as ffi::c_int,
+                              values.len() as ffi::c_int,
+                              values.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
   }
 }
 

@@ -778,8 +778,8 @@ extern "C" {
 
   pub fn GRBsetstrattrlist(model: *mut GRBmodel,
                            attrname: *const c_char,
-                           first: c_int,
                            len: c_int,
+                           ind: *const c_int,
                            values: *const c_str)
                            -> c_int;
 }

@@ -42,6 +42,8 @@ pub enum Error {
   NulError(std::ffi::NulError),
   /// Inconsistent argument dimensions.
   InconsitentDims,
+  /// String conversion error.
+  StringConversion,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -698,6 +700,161 @@ impl<'a> Attr<DoubleAttr> for Model<'a> {
     Ok(())
   }
 }
+
+impl<'a> Attr<StringAttr> for Model<'a> {
+  type Output = String;
+
+  fn get(&self, attr: StringAttr) -> Result<String> {
+    let mut value = null();
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error =
+      unsafe { ffi::GRBgetstrattr(self.model, attrname.as_ptr(), &mut value) };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(unsafe { from_c_str(value).to_owned() })
+  }
+
+  fn set(&mut self, attr: StringAttr, value: String) -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let value = try!(make_c_str(value.as_str()));
+    let error = unsafe {
+      ffi::GRBsetstrattr(self.model, attrname.as_ptr(), value.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+
+  fn get_element(&self, attr: StringAttr, element: i32) -> Result<String> {
+    let mut value = null();
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBgetstrattrelement(self.model,
+                                attrname.as_ptr(),
+                                element,
+                                &mut value)
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(unsafe { from_c_str(value).to_owned() })
+  }
+
+  fn set_element(&mut self,
+                 attr: StringAttr,
+                 element: i32,
+                 value: String)
+                 -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let value = try!(make_c_str(value.as_str()));
+    let error = unsafe {
+      ffi::GRBsetstrattrelement(self.model,
+                                attrname.as_ptr(),
+                                element,
+                                value.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+
+  fn get_array(&self,
+               attr: StringAttr,
+               first: usize,
+               len: usize)
+               -> Result<Vec<String>> {
+    let mut values = Vec::with_capacity(len);
+    values.resize(len, null());
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBgetstrattrarray(self.model,
+                              attrname.as_ptr(),
+                              first as ffi::c_int,
+                              len as ffi::c_int,
+                              values.as_mut_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(values.into_iter()
+      .map(|s| unsafe { from_c_str(s).to_owned() })
+      .collect())
+  }
+
+  fn set_array(&mut self,
+               attr: StringAttr,
+               first: usize,
+               values: &[String])
+               -> Result<()> {
+    let values = values.into_iter().map(|s| make_c_str(s)).collect::<Vec<_>>();
+    if values.iter().any(|ref s| s.is_err()) {
+      return Err(Error::StringConversion);
+    }
+    let values =
+      values.into_iter().map(|s| s.unwrap().as_ptr()).collect::<Vec<_>>();
+
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBsetstrattrarray(self.model,
+                              attrname.as_ptr(),
+                              first as ffi::c_int,
+                              values.len() as ffi::c_int,
+                              values.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+
+  fn get_list(&self, attr: StringAttr, ind: &[i32]) -> Result<Vec<String>> {
+    let mut values = Vec::with_capacity(ind.len());
+    values.resize(ind.len(), null());
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBgetstrattrlist(self.model,
+                             attrname.as_ptr(),
+                             ind.len() as ffi::c_int,
+                             ind.as_ptr(),
+                             values.as_mut_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(values.into_iter().map(|s| unsafe { from_c_str(s) }).collect())
+  }
+
+  fn set_list(&mut self,
+              attr: StringAttr,
+              ind: &[i32],
+              values: &[String])
+              -> Result<()> {
+
+    let values = values.into_iter().map(|s| make_c_str(s)).collect::<Vec<_>>();
+    if values.iter().any(|ref s| s.is_err()) {
+      return Err(Error::StringConversion);
+    }
+    let values =
+      values.into_iter().map(|s| s.unwrap().as_ptr()).collect::<Vec<_>>();
+
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBsetstrattrlist(self.model,
+                             attrname.as_ptr(),
+                             ind.len() as ffi::c_int,
+                             ind.as_ptr(),
+                             values.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+}
+
 
 #[test]
 fn test1() {

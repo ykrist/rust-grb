@@ -10,6 +10,15 @@ pub struct GRBenv;
 #[repr(C)]
 pub struct GRBmodel;
 
+#[repr(C)]
+pub struct GRBsvec {
+  /// sparse vector length
+  pub len: c_int,
+  /// indices array of the sparse vector
+  pub ind: *mut c_int,
+  /// value array of the sparse vector
+  pub val: *mut c_double,
+}
 
 #[derive(Debug)]
 pub enum IntParam {
@@ -436,7 +445,6 @@ extern "C" {
 // Xloadmodel
 }
 
-
 // Model Solution
 extern "C" {
 
@@ -446,14 +454,14 @@ extern "C" {
 
   pub fn GRBcomputeIIS(model: *mut GRBmodel) -> c_int;
 
-  pub fn feasrelax(model: *mut GRBmodel,
-                   relaxobjtype: c_int,
-                   minrelax: c_int,
-                   lbpen: *const c_double,
-                   ubpen: *const c_double,
-                   rhspen: *const c_double,
-                   feasobjP: *const c_double)
-                   -> c_int;
+  pub fn GRBfeasrelax(model: *mut GRBmodel,
+                      relaxobjtype: c_int,
+                      minrelax: c_int,
+                      lbpen: *const c_double,
+                      ubpen: *const c_double,
+                      rhspen: *const c_double,
+                      feasobjP: *const c_double)
+                      -> c_int;
 
   pub fn GRBfixedmodel(model: *mut GRBmodel) -> *mut GRBmodel;
 
@@ -658,7 +666,6 @@ extern "C" {
                               -> c_int;
 }
 
-
 extern "C" {
   pub fn GRBgetintattrarray(model: *mut GRBmodel,
                             attrname: c_str,
@@ -717,7 +724,6 @@ extern "C" {
                             values: *const c_str)
                             -> c_int;
 }
-
 
 extern "C" {
   pub fn GRBgetintattrlist(model: *mut GRBmodel,
@@ -778,10 +784,9 @@ extern "C" {
                            -> c_int;
 }
 
-
 // Parameter Management and Tuning
 extern "C" {
-  pub fn tunemodel(model: *mut GRBmodel) -> c_int;
+  pub fn GRBtunemodel(model: *mut GRBmodel) -> c_int;
 
   pub fn GRBgettuneresult(model: *mut GRBmodel, n: c_int) -> c_int;
 
@@ -800,11 +805,30 @@ extern "C" {
                         value: *mut c_char)
                         -> c_int;
 
-  // getdblparaminfo
-  // getintparaminfo
-  // getstrparaminfo
+  pub fn GRBgetdblparaminfo(env: *mut GRBenv,
+                            paramname: c_str,
+                            valueP: *mut c_double,
+                            minP: *mut c_double,
+                            maxP: *mut c_double,
+                            defaultP: *mut c_double)
+                            -> c_int;
+
+  pub fn GRBgetintparaminfo(env: *mut GRBenv,
+                            paramname: c_str,
+                            valueP: *mut c_int,
+                            minP: *mut c_int,
+                            maxP: *mut c_int,
+                            defaultP: *mut c_int)
+                            -> c_int;
+
+  pub fn GRBgetstrparaminfo(env: *mut GRBenv,
+                            paramname: c_str,
+                            valueP: *mut c_char,
+                            defaultP: *mut c_char)
+                            -> c_int;
 
   pub fn GRBreadparams(env: *mut GRBenv, filename: c_str) -> c_int;
+
   pub fn GRBwriteparams(env: *mut GRBenv, filename: c_str) -> c_int;
 }
 
@@ -871,6 +895,22 @@ extern "C" {
 }
 
 // Advanced simplex routines
-extern "C" {}
+extern "C" {
+  pub fn GRBFSolve(model: *mut GRBmodel,
+                   b: *mut GRBsvec,
+                   x: *mut GRBsvec)
+                   -> c_int;
+
+  pub fn GRBBSolve(model: *mut GRBmodel,
+                   b: *mut GRBsvec,
+                   x: *mut GRBsvec)
+                   -> c_int;
+
+  pub fn GRBBinvColj(model: *mut GRBmodel, j: c_int, x: *mut GRBsvec) -> c_int;
+
+  pub fn GRBBinvRowi(model: *mut GRBmodel, i: c_int, x: *mut GRBsvec) -> c_int;
+
+  pub fn GRBgetBasisHead(model: *mut GRBmodel, bhead: *mut c_int) -> c_int;
+}
 
 // vim: set foldmethod=syntax :

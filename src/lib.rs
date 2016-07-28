@@ -69,19 +69,22 @@ pub struct Env {
 pub struct Model<'a> {
   model: *mut ffi::GRBmodel,
   env: &'a Env,
-  col_cnt: i32,
-  row_cnt: i32,
-  qrow_cnt: i32,
+  vars: Vec<Var>,
+  constrs: Vec<Constr>,
+  qconstrs: Vec<QConstr>,
 }
 
+#[derive(Clone)]
 pub struct Var {
   col_no: i32,
 }
 
+#[derive(Clone)]
 pub struct Constr {
   row_no: i32,
 }
 
+#[derive(Clone)]
 pub struct QConstr {
   qrow_no: i32,
 }
@@ -155,9 +158,9 @@ impl Env {
     Ok(Model {
       model: model,
       env: self,
-      col_cnt: 0,
-      row_cnt: 0,
-      qrow_cnt: 0,
+      vars: Vec::new(),
+      constrs: Vec::new(),
+      qconstrs: Vec::new(),
     })
   }
 
@@ -228,9 +231,9 @@ impl<'a> Model<'a> {
     Ok(Model {
       env: self.env,
       model: copied,
-      col_cnt: self.col_cnt,
-      row_cnt: self.row_cnt,
-      qrow_cnt: self.qrow_cnt,
+      vars: self.vars.clone(),
+      constrs: self.constrs.clone(),
+      qconstrs: self.qconstrs.clone(),
     })
   }
 
@@ -287,8 +290,9 @@ impl<'a> Model<'a> {
       return Err(self.error_from_api(error));
     }
 
-    self.col_cnt += 1;
-    Ok(Var { col_no: self.col_cnt - 1 })
+    let len = self.vars.len() as i32;
+    self.vars.push(Var { col_no: len });
+    self.vars.last().ok_or(Error::InconsitentDims).map(|v| v.clone())
   }
 
   /// add a linear constraint to the model.
@@ -323,8 +327,9 @@ impl<'a> Model<'a> {
       return Err(self.error_from_api(error));
     }
 
-    self.row_cnt += 1;
-    Ok(Constr { row_no: self.row_cnt - 1 })
+    let len = self.constrs.len() as i32;
+    self.constrs.push(Constr { row_no: len });
+    self.constrs.last().ok_or(Error::InconsitentDims).map(|c| c.clone())
   }
 
   /// add a quadratic constraint to the model.
@@ -372,8 +377,9 @@ impl<'a> Model<'a> {
       return Err(self.error_from_api(error));
     }
 
-    self.qrow_cnt += 1;
-    Ok(QConstr { qrow_no: self.qrow_cnt - 1 })
+    let len = self.qconstrs.len() as i32;
+    self.qconstrs.push(QConstr { qrow_no: len });
+    self.qconstrs.last().ok_or(Error::InconsitentDims).map(|qc| qc.clone())
   }
 
   pub fn set_objective(&mut self,

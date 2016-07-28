@@ -7,8 +7,8 @@ pub use VarType::*;
 pub use ConstrSense::*;
 pub use ModelSense::*;
 
-pub use ffi::{IntParam,DoubleParam,StringParam};
-pub use ffi::{IntAttr,DoubleAttr,CharAttr,StringAttr};
+pub use ffi::{IntParam, DoubleParam, StringParam};
+pub use ffi::{IntAttr, DoubleAttr, CharAttr, StringAttr};
 
 ///
 #[derive(Debug)]
@@ -76,6 +76,14 @@ pub trait Attr<Attr> {
 
   fn set(&mut self, attr: Attr, value: Self::Output) -> Result<()>;
 
+  fn get_element(&self, attr: Attr, element: i32) -> Result<Self::Output>;
+
+  fn set_element(&mut self,
+                 attr: Attr,
+                 element: i32,
+                 value: Self::Output)
+                 -> Result<()>;
+
   fn get_array(&self,
                attr: Attr,
                first: usize,
@@ -87,6 +95,13 @@ pub trait Attr<Attr> {
                first: usize,
                values: &[Self::Output])
                -> Result<()>;
+
+  fn get_list(&self, attr: Attr, ind: &[i32]) -> Result<Vec<Self::Output>>;
+  fn set_list(&mut self,
+              attr: Attr,
+              ind: &[i32],
+              value: &[Self::Output])
+              -> Result<()>;
 }
 
 impl Env {
@@ -409,6 +424,37 @@ impl<'a> Attr<IntAttr> for Model<'a> {
     Ok(())
   }
 
+  fn get_element(&self, attr: IntAttr, element: i32) -> Result<i32> {
+    let mut value: ffi::c_int = 0;
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBgetintattrelement(self.model,
+                                attrname.as_ptr(),
+                                element,
+                                &mut value)
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(value as i32)
+  }
+
+  fn set_element(&mut self,
+                 attr: IntAttr,
+                 element: i32,
+                 value: i32)
+                 -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBsetintattrelement(self.model, attrname.as_ptr(), element, value)
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+
+
   fn get_array(&self,
                attr: IntAttr,
                first: usize,
@@ -448,6 +494,46 @@ impl<'a> Attr<IntAttr> for Model<'a> {
     }
     Ok(())
   }
+
+  fn get_list(&self, attr: IntAttr, ind: &[i32]) -> Result<Vec<i32>> {
+    let mut values = Vec::with_capacity(ind.len());
+    values.resize(ind.len(), 0);
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBgetintattrlist(self.model,
+                             attrname.as_ptr(),
+                             ind.len() as ffi::c_int,
+                             ind.as_ptr(),
+                             values.as_mut_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(values)
+  }
+
+  fn set_list(&mut self,
+              attr: IntAttr,
+              ind: &[i32],
+              values: &[i32])
+              -> Result<()> {
+    if ind.len() != values.len() {
+      return Err(Error::InconsitentDims);
+    }
+
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBsetintattrlist(self.model,
+                             attrname.as_ptr(),
+                             ind.len() as ffi::c_int,
+                             ind.as_ptr(),
+                             values.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
 }
 
 impl<'a> Attr<DoubleAttr> for Model<'a> {
@@ -468,6 +554,36 @@ impl<'a> Attr<DoubleAttr> for Model<'a> {
     let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
     let error =
       unsafe { ffi::GRBsetdblattr(self.model, attrname.as_ptr(), value) };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+
+  fn get_element(&self, attr: DoubleAttr, element: i32) -> Result<f64> {
+    let mut value: ffi::c_double = 0.0;
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBgetdblattrelement(self.model,
+                                attrname.as_ptr(),
+                                element,
+                                &mut value)
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(value as f64)
+  }
+
+  fn set_element(&mut self,
+                 attr: DoubleAttr,
+                 element: i32,
+                 value: f64)
+                 -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBsetdblattrelement(self.model, attrname.as_ptr(), element, value)
+    };
     if error != 0 {
       return Err(self.error_from_api(error));
     }
@@ -513,8 +629,43 @@ impl<'a> Attr<DoubleAttr> for Model<'a> {
     }
     Ok(())
   }
-}
 
+  fn get_list(&self, attr: DoubleAttr, ind: &[i32]) -> Result<Vec<f64>> {
+    let mut values = Vec::with_capacity(ind.len());
+    values.resize(ind.len(), 0.0);
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBgetdblattrlist(self.model,
+                             attrname.as_ptr(),
+                             ind.len() as ffi::c_int,
+                             ind.as_ptr(),
+                             values.as_mut_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(values)
+  }
+
+  fn set_list(&mut self,
+              attr: DoubleAttr,
+              ind: &[i32],
+              values: &[f64])
+              -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBsetdblattrlist(self.model,
+                             attrname.as_ptr(),
+                             ind.len() as ffi::c_int,
+                             ind.as_ptr(),
+                             values.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+}
 
 #[test]
 fn test1() {

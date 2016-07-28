@@ -67,6 +67,21 @@ pub struct Env {
 pub struct Model<'a> {
   model: *mut ffi::GRBmodel,
   env: &'a Env,
+  col_cnt: i32,
+  row_cnt: i32,
+  qrow_cnt: i32,
+}
+
+pub struct Var {
+  col_no: i32,
+}
+
+pub struct Constr {
+  row_no: i32,
+}
+
+pub struct QConstr {
+  qrow_no: i32,
 }
 
 pub trait Attr<Attr> {
@@ -149,6 +164,9 @@ impl Env {
     Ok(Model {
       model: model,
       env: self,
+      col_cnt: 0,
+      row_cnt: 0,
+      qrow_cnt: 0,
     })
   }
 
@@ -219,6 +237,9 @@ impl<'a> Model<'a> {
     Ok(Model {
       env: self.env,
       model: copied,
+      col_cnt: self.col_cnt,
+      row_cnt: self.row_cnt,
+      qrow_cnt: self.qrow_cnt,
     })
   }
 
@@ -249,7 +270,7 @@ impl<'a> Model<'a> {
                  name: &str,
                  vtype: VarType,
                  obj: f64)
-                 -> Result<()> {
+                 -> Result<Var> {
     // extract parameters
     use VarType::*;
     let (vtype, lb, ub) = match vtype {
@@ -275,7 +296,44 @@ impl<'a> Model<'a> {
       return Err(self.error_from_api(error));
     }
 
-    Ok(())
+    self.col_cnt += 1;
+    Ok(Var { col_no: self.col_cnt - 1 })
+  }
+
+  /// add a linear constraint to the model.
+  pub fn add_constr(&mut self,
+                    name: &str,
+                    ind: &[ffi::c_int],
+                    val: &[ffi::c_double],
+                    sense: ConstrSense,
+                    rhs: ffi::c_double)
+                    -> Result<Constr> {
+    if ind.len() != val.len() {
+      return Err(Error::InconsitentDims);
+    }
+
+    let sense = match sense {
+      ConstrSense::Equal => '=' as ffi::c_char,
+      ConstrSense::Less => '<' as ffi::c_char,
+      ConstrSense::Greater => '>' as ffi::c_char,
+    };
+    let constrname = try!(make_c_str(name));
+
+    let error = unsafe {
+      ffi::GRBaddconstr(self.model,
+                        ind.len() as ffi::c_int,
+                        ind.as_ptr(),
+                        val.as_ptr(),
+                        sense,
+                        rhs,
+                        constrname.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    self.row_cnt += 1;
+    Ok(Constr { row_no: self.row_cnt - 1 })
   }
 
   /// add quadratic terms of objective function.
@@ -315,7 +373,7 @@ impl<'a> Model<'a> {
                      qval: &[ffi::c_double],
                      sense: ConstrSense,
                      rhs: ffi::c_double)
-                     -> Result<()> {
+                     -> Result<QConstr> {
     if lind.len() != lval.len() {
       return Err(Error::InconsitentDims);
     }
@@ -350,41 +408,8 @@ impl<'a> Model<'a> {
       return Err(self.error_from_api(error));
     }
 
-    Ok(())
-  }
-
-  /// add a linear constraint to the model.
-  pub fn add_constr(&mut self,
-                    name: &str,
-                    ind: &[ffi::c_int],
-                    val: &[ffi::c_double],
-                    sense: ConstrSense,
-                    rhs: ffi::c_double)
-                    -> Result<()> {
-    if ind.len() != val.len() {
-      return Err(Error::InconsitentDims);
-    }
-
-    let sense = match sense {
-      ConstrSense::Equal => '=' as ffi::c_char,
-      ConstrSense::Less => '<' as ffi::c_char,
-      ConstrSense::Greater => '>' as ffi::c_char,
-    };
-    let constrname = try!(make_c_str(name));
-
-    let error = unsafe {
-      ffi::GRBaddconstr(self.model,
-                        ind.len() as ffi::c_int,
-                        ind.as_ptr(),
-                        val.as_ptr(),
-                        sense,
-                        rhs,
-                        constrname.as_ptr())
-    };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-    Ok(())
+    self.qrow_cnt += 1;
+    Ok(QConstr { qrow_no: self.qrow_cnt - 1 })
   }
 
   // make an instance of error object related to C API.

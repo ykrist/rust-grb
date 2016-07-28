@@ -8,9 +8,9 @@ fn main() {
   let mut model = env.new_model("qcp1", gurobi::Maximize).unwrap();
 
   // add & integrate new variables.
-  model.add_var("x", gurobi::Continuous(0.0, 1e+100), 0.0).unwrap();
-  model.add_var("y", gurobi::Continuous(0.0, 1e+100), 0.0).unwrap();
-  model.add_var("z", gurobi::Continuous(0.0, 1e+100), 0.0).unwrap();
+  let x = model.add_var("x", gurobi::Continuous(0.0, 1e+100), 0.0).unwrap();
+  let y = model.add_var("y", gurobi::Continuous(0.0, 1e+100), 0.0).unwrap();
+  let z = model.add_var("z", gurobi::Continuous(0.0, 1e+100), 0.0).unwrap();
   model.update().unwrap();
 
   // set objective funtion:
@@ -20,13 +20,13 @@ fn main() {
   // add linear constraints
 
   //  c0: x + y + z == 1
-  model.add_constr("c0", &[0, 1, 2], &[1., 1., 1.], gurobi::Equal, 1.0)
+  let c0 = model.add_constr("c0", &[0, 1, 2], &[1., 1., 1.], gurobi::Equal, 1.0)
     .unwrap();
 
   // add quadratic constraints
 
   //  qc0: x^2 + y^2 - z^2 <= 0.0
-  model.add_qconstr("qc0",
+  let qc0 = model.add_qconstr("qc0",
                  &[],
                  &[],
                  &[0, 1, 2],
@@ -37,7 +37,7 @@ fn main() {
     .unwrap();
 
   //  qc1: x^2 - y*z <= 0.0
-  model.add_qconstr("qc1",
+  let qc1 = model.add_qconstr("qc1",
                  &[],
                  &[],
                  &[0, 1],

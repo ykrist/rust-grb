@@ -8,9 +8,9 @@ fn main() {
   let mut model = env.new_model("qp1", gurobi::Maximize).unwrap();
 
   // add & integrate new variables.
-  model.add_var("x", gurobi::Continuous(0.0, 1.0), 0.0).unwrap();
-  model.add_var("y", gurobi::Continuous(0.0, 1.0), 0.0).unwrap();
-  model.add_var("z", gurobi::Continuous(0.0, 1.0), 0.0).unwrap();
+  let x = model.add_var("x", gurobi::Continuous(0.0, 1.0), 0.0).unwrap();
+  let y = model.add_var("y", gurobi::Continuous(0.0, 1.0), 0.0).unwrap();
+  let z = model.add_var("z", gurobi::Continuous(0.0, 1.0), 0.0).unwrap();
   model.update().unwrap();
 
   // set objective funtion:
@@ -26,11 +26,11 @@ fn main() {
   // add linear constraints
 
   //  g1(x,y,z) = x + 2*y + 3*z >= 4
-  model.add_constr("c0", &[0, 1, 2], &[1., 2., 3.], gurobi::Greater, 4.0)
+  let c0 = model.add_constr("c0", &[0, 1, 2], &[1., 2., 3.], gurobi::Greater, 4.0)
     .unwrap();
 
   //  g2(x,y,z) = x + y >= 2
-  model.add_constr("c1", &[0, 1], &[1., 1.], gurobi::Greater, 1.0).unwrap();
+  let c1 = model.add_constr("c1", &[0, 1], &[1., 1.], gurobi::Greater, 1.0).unwrap();
 
   // optimize the model.
   model.optimize().unwrap();

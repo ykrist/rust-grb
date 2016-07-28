@@ -2,10 +2,10 @@ extern crate gurobi;
 use gurobi::Attr;
 
 fn main() {
-  let env = gurobi::Env::new("").unwrap();
+  let env = gurobi::Env::new("qcp1.log").unwrap();
 
   // create an empty model.
-  let mut model = env.new_model("qcp1", gurobi::Maximize).unwrap();
+  let mut model = env.new_model("qcp1").unwrap();
 
   // add & integrate new variables.
   let x = model.add_var("x", gurobi::Continuous(0.0, 1e+100), 0.0).unwrap();
@@ -15,7 +15,7 @@ fn main() {
 
   // set objective funtion:
   //   f(x,y,z) = x
-  model.set_array(gurobi::DoubleAttr::Obj, 0, &[1.0, 0.0, 0.0]).unwrap();
+  model.set_objective(&[0, 1, 2], &[1.0, 0.0, 0.0], &[], &[], &[], gurobi::Maximize).unwrap();
 
   // add linear constraints
 
@@ -54,8 +54,8 @@ fn main() {
   model.optimize().unwrap();
 
   // write the model to file.
-  model.write("qp.lp").unwrap();
-  model.write("qp.sol").unwrap();
+  model.write("qcp.lp").unwrap();
+  model.write("qcp.sol").unwrap();
 
   let status = model.get(gurobi::IntAttr::Status).unwrap();
   assert_eq!(status, 2);

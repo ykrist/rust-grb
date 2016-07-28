@@ -2,10 +2,10 @@ extern crate gurobi;
 use gurobi::Attr;
 
 fn main() {
-  let env = gurobi::Env::new("qp1.log").unwrap();
+  let env = gurobi::Env::new("qp.log").unwrap();
   
   // create an empty model. 
-  let mut model = env.new_model("qp1", gurobi::Maximize).unwrap();
+  let mut model = env.new_model("qp").unwrap();
 
   // add & integrate new variables.
   let x = model.add_var("x", gurobi::Continuous(0.0, 1.0), 0.0).unwrap();
@@ -16,12 +16,11 @@ fn main() {
   // set objective funtion:
   //   f(x,y,z) = x*x + x*y + y*y + y*z + z*z + 2*x
   //            = f_q(x,y,z) + f_l(x,y,z)
-  //            
-  // 1. add quad term: f_q = x*x + x*y + y*y + y*z + z*z
-  model.add_qpterms(&[0, 0, 1, 1, 2], &[0, 1, 1, 2, 2], &[1., 1., 1., 1., 1.])
+  // quad term: f_q = x*x + x*y + y*y + y*z + z*z
+  // linear term: f_l = 2*x
+  model.set_objective(&[0,1,2], &[1.0, 0.0, 0.0],
+      &[0, 0, 1, 1, 2], &[0, 1, 1, 2, 2], &[1., 1., 1., 1., 1.], gurobi::ModelSense::Maximize)
     .unwrap();
-  // 2. add linear term: f_l = 2*x
-  model.set_array(gurobi::DoubleAttr::Obj, 0, &[1.0, 0.0, 0.0]).unwrap();
 
   // add linear constraints
 

@@ -132,7 +132,7 @@ impl Env {
   }
 
   /// create an empty model object associted with the environment.
-  pub fn new_model(&self, modelname: &str, sense: ModelSense) -> Result<Model> {
+  pub fn new_model(&self, modelname: &str) -> Result<Model> {
     let modelname = try!(make_c_str(modelname));
     let mut model = null_mut::<ffi::GRBmodel>();
     let error = unsafe {
@@ -146,17 +146,6 @@ impl Env {
                        null(),
                        null())
     };
-    if error != 0 {
-      return Err(Error::FromAPI(self.get_error_msg(), error));
-    }
-
-    let sense = match sense {
-      ModelSense::Minimize => -1,
-      ModelSense::Maximize => 1,
-    };
-    let attrname = try!(make_c_str(format!("{:?}", IntAttr::ModelSense)
-      .as_str()));
-    let error = unsafe { ffi::GRBsetintattr(model, attrname.as_ptr(), sense) };
     if error != 0 {
       return Err(Error::FromAPI(self.get_error_msg(), error));
     }
@@ -336,33 +325,6 @@ impl<'a> Model<'a> {
     Ok(Constr { row_no: self.row_cnt - 1 })
   }
 
-  /// add quadratic terms of objective function.
-  pub fn add_qpterms(&mut self,
-                     qrow: &[ffi::c_int],
-                     qcol: &[ffi::c_int],
-                     qval: &[ffi::c_double])
-                     -> Result<()> {
-    if qrow.len() != qcol.len() {
-      return Err(Error::InconsitentDims);
-    }
-    if qcol.len() != qval.len() {
-      return Err(Error::InconsitentDims);
-    }
-
-    let error = unsafe {
-      ffi::GRBaddqpterms(self.model,
-                         qrow.len() as ffi::c_int,
-                         qrow.as_ptr(),
-                         qcol.as_ptr(),
-                         qval.as_ptr())
-    };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-
-    Ok(())
-  }
-
   /// add a quadratic constraint to the model.
   pub fn add_qconstr(&mut self,
                      constrname: &str,
@@ -411,6 +373,51 @@ impl<'a> Model<'a> {
     self.qrow_cnt += 1;
     Ok(QConstr { qrow_no: self.qrow_cnt - 1 })
   }
+
+  pub fn set_objective(&mut self,
+                       lind: &[i32],
+                       lval: &[f64],
+                       qrow: &[i32],
+                       qcol: &[i32],
+                       qval: &[f64],
+                       sense: ModelSense)
+                       -> Result<()> {
+    let sense = match sense {
+      ModelSense::Minimize => -1,
+      ModelSense::Maximize => 1,
+    };
+    try!(self.set_list(DoubleAttr::Obj, lind, lval));
+    try!(self.add_qpterms(qrow, qcol, qval));
+    self.set(IntAttr::ModelSense, sense)
+  }
+
+  /// add quadratic terms of objective function.
+  fn add_qpterms(&mut self,
+                 qrow: &[ffi::c_int],
+                 qcol: &[ffi::c_int],
+                 qval: &[ffi::c_double])
+                 -> Result<()> {
+    if qrow.len() != qcol.len() {
+      return Err(Error::InconsitentDims);
+    }
+    if qcol.len() != qval.len() {
+      return Err(Error::InconsitentDims);
+    }
+
+    let error = unsafe {
+      ffi::GRBaddqpterms(self.model,
+                         qrow.len() as ffi::c_int,
+                         qrow.as_ptr(),
+                         qcol.as_ptr(),
+                         qval.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    Ok(())
+  }
+
 
   // make an instance of error object related to C API.
   fn error_from_api(&self, errcode: ffi::c_int) -> Error {

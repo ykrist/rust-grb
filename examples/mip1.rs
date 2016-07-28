@@ -2,21 +2,26 @@ extern crate gurobi;
 use gurobi::Attr;
 
 fn main() {
-  // the name of log file must not be 'mip1.log' (why?)
-  let logfilename = "mip_1.log";
-  let env = gurobi::Env::new(logfilename).unwrap();
-  assert_eq!(env.get_str_param(gurobi::StringParam::LogFile).unwrap(), logfilename);
-
-  let mut model = env.new_model("mip1", gurobi::Maximize).unwrap();
+  let env = gurobi::Env::new("mip1.log").unwrap();
+  let mut model = env.new_model("mip1").unwrap();
 
   let x = model.add_var("x", gurobi::Binary, 1.0).unwrap();
   let y = model.add_var("y", gurobi::Binary, 1.0).unwrap();
   let z = model.add_var("z", gurobi::Binary, 2.0).unwrap();
   model.update().unwrap();
 
-  let c0 = model.add_constr("c0", &[0, 1, 2], &[1., 2., 3.], gurobi::Less, 4.0)
+  model.set_objective(&[0, 1, 2],
+                   &[1.0, 1.0, 2.0],
+                   &[],
+                   &[],
+                   &[],
+                   gurobi::Maximize)
     .unwrap();
-  let c1 = model.add_constr("c1", &[0, 1], &[1., 1.], gurobi::Greater, 1.0).unwrap();
+
+  let c0 = model.add_constr("c0", &[0, 1, 2], &[1.0, 2.0, 3.0], gurobi::Less, 4.0)
+    .unwrap();
+  let c1 = model.add_constr("c1", &[0, 1], &[1.0, 1.0], gurobi::Greater, 1.0)
+    .unwrap();
 
   model.optimize().unwrap();
 
@@ -38,4 +43,5 @@ fn main() {
   assert_eq!(xval[2], 0.0);
 
   model.write("mip1.lp").unwrap();
+  model.write("mip1.sol").unwrap();
 }

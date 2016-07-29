@@ -1,16 +1,21 @@
 extern crate gurobi_sys as ffi;
 
-use std::ptr::{null, null_mut};
-use std::ffi::{CStr, CString};
+mod error;
+mod util;
 
+// re-exports
+pub use error::{Error, Result};
 pub use VarType::*;
 pub use ConstrSense::*;
 pub use ModelSense::*;
-
 pub use ffi::{IntParam, DoubleParam, StringParam};
 pub use ffi::{IntAttr, DoubleAttr, CharAttr, StringAttr};
 
-///
+// internal imports
+use std::ptr::{null, null_mut};
+use util::*;
+
+
 #[derive(Debug)]
 pub enum VarType {
   Binary,
@@ -18,46 +23,15 @@ pub enum VarType {
   Integer(i64, i64),
 }
 
-///
 pub enum ConstrSense {
   Equal,
   Greater,
   Less,
 }
 
-///
 pub enum ModelSense {
   Minimize,
   Maximize,
-}
-
-///
-#[derive(Debug)]
-pub enum Error {
-  /// This function has yet implemented
-  NotImplemented,
-  /// An exception returned from Gurobi C API
-  FromAPI(String, ffi::c_int),
-  /// see https://doc.rust-lang.org/std/ffi/struct.NulError.html
-  NulError(std::ffi::NulError),
-  /// Inconsistent argument dimensions.
-  InconsitentDims,
-  /// String conversion error.
-  StringConversion,
-}
-
-pub type Result<T> = std::result::Result<T, Error>;
-
-fn get_error_msg_env(env: *mut ffi::GRBenv) -> String {
-  unsafe { from_c_str(ffi::GRBgeterrormsg(env)) }
-}
-
-fn make_c_str(s: &str) -> Result<CString> {
-  CString::new(s).map_err(|e| Error::NulError(e))
-}
-
-unsafe fn from_c_str(s: *const ffi::c_char) -> String {
-  CStr::from_ptr(s).to_string_lossy().into_owned()
 }
 
 /// Gurobi environment object
@@ -87,41 +61,6 @@ pub struct Constr {
 #[derive(Clone)]
 pub struct QConstr {
   qrow_no: i32,
-}
-
-pub trait Attr<Attr> {
-  type Output;
-
-  fn get(&self, attr: Attr) -> Result<Self::Output>;
-
-  fn set(&mut self, attr: Attr, value: Self::Output) -> Result<()>;
-
-  fn get_element(&self, attr: Attr, element: i32) -> Result<Self::Output>;
-
-  fn set_element(&mut self,
-                 attr: Attr,
-                 element: i32,
-                 value: Self::Output)
-                 -> Result<()>;
-
-  fn get_array(&self,
-               attr: Attr,
-               first: usize,
-               len: usize)
-               -> Result<Vec<Self::Output>>;
-
-  fn set_array(&mut self,
-               attr: Attr,
-               first: usize,
-               values: &[Self::Output])
-               -> Result<()>;
-
-  fn get_list(&self, attr: Attr, ind: &[i32]) -> Result<Vec<Self::Output>>;
-  fn set_list(&mut self,
-              attr: Attr,
-              ind: &[i32],
-              value: &[Self::Output])
-              -> Result<()>;
 }
 
 impl Env {
@@ -209,6 +148,7 @@ impl Drop for Env {
     self.env = null_mut();
   }
 }
+
 
 impl<'a> Model<'a> {
   /// apply all modification of the model to process.
@@ -438,6 +378,42 @@ impl<'a> Drop for Model<'a> {
     unsafe { ffi::GRBfreemodel(self.model) };
     self.model = null_mut();
   }
+}
+
+
+pub trait Attr<Attr> {
+  type Output;
+
+  fn get(&self, attr: Attr) -> Result<Self::Output>;
+
+  fn set(&mut self, attr: Attr, value: Self::Output) -> Result<()>;
+
+  fn get_element(&self, attr: Attr, element: i32) -> Result<Self::Output>;
+
+  fn set_element(&mut self,
+                 attr: Attr,
+                 element: i32,
+                 value: Self::Output)
+                 -> Result<()>;
+
+  fn get_array(&self,
+               attr: Attr,
+               first: usize,
+               len: usize)
+               -> Result<Vec<Self::Output>>;
+
+  fn set_array(&mut self,
+               attr: Attr,
+               first: usize,
+               values: &[Self::Output])
+               -> Result<()>;
+
+  fn get_list(&self, attr: Attr, ind: &[i32]) -> Result<Vec<Self::Output>>;
+  fn set_list(&mut self,
+              attr: Attr,
+              ind: &[i32],
+              value: &[Self::Output])
+              -> Result<()>;
 }
 
 impl<'a> Attr<IntAttr> for Model<'a> {
@@ -861,20 +837,5 @@ impl<'a> Attr<StringAttr> for Model<'a> {
   }
 }
 
-
-#[test]
-fn test1() {
-  let s1 = "mip1.log";
-  let s2 = unsafe { from_c_str(make_c_str(s1).unwrap().as_ptr()) };
-  assert!(s1 == s2);
-}
-
-#[test]
-fn test2() {
-  let s1 = "mip1.log";
-  let env = Env::new(s1).unwrap();
-  let logfilename = env.get_str_param("LogFile").unwrap();
-  assert_eq!(s1, logfilename);
-}
 
 // vim: set foldmethod=syntax :

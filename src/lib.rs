@@ -34,33 +34,21 @@ pub enum ModelSense {
   Maximize,
 }
 
+
 /// Gurobi environment object
 pub struct Env {
   env: *mut ffi::GRBenv,
 }
 
-/// Gurobi Model
-pub struct Model<'a> {
-  model: *mut ffi::GRBmodel,
-  env: &'a Env,
-  vars: Vec<Var>,
-  constrs: Vec<Constr>,
-  qconstrs: Vec<QConstr>,
-}
+/// It provides function to query/set the value of parameters.
+pub trait Param<P> {
+  type Output;
 
-#[derive(Clone)]
-pub struct Var {
-  col_no: i32,
-}
+  /// Query the value of a parameter.
+  fn get(&self, param: P) -> Result<Self::Output>;
 
-#[derive(Clone)]
-pub struct Constr {
-  row_no: i32,
-}
-
-#[derive(Clone)]
-pub struct QConstr {
-  qrow_no: i32,
+  /// Set the value of a parameter.
+  fn set(&mut self, param: P, value: Self::Output) -> Result<()>;
 }
 
 impl Env {
@@ -103,7 +91,22 @@ impl Env {
     })
   }
 
-  pub fn get_int_param(&self, param: IntParam) -> Result<i32> {
+  fn get_error_msg(&self) -> String {
+    get_error_msg_env(self.env)
+  }
+}
+
+impl Drop for Env {
+  fn drop(&mut self) {
+    unsafe { ffi::GRBfreeenv(self.env) };
+    self.env = null_mut();
+  }
+}
+
+impl Param<IntParam> for Env {
+  type Output = i32;
+
+  fn get(&self, param: IntParam) -> Result<i32> {
     let mut value = 0;
     let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
     let error =
@@ -114,7 +117,21 @@ impl Env {
     Ok(value)
   }
 
-  pub fn get_double_param(&self, param: DoubleParam) -> Result<f64> {
+  fn set(&mut self, param: IntParam, value: i32) -> Result<()> {
+    let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
+    let error =
+      unsafe { ffi::GRBsetintparam(self.env, paramname.as_ptr(), value) };
+    if error != 0 {
+      return Err(Error::FromAPI(self.get_error_msg(), error));
+    }
+    Ok(())
+  }
+}
+
+impl Param<DoubleParam> for Env {
+  type Output = f64;
+
+  fn get(&self, param: DoubleParam) -> Result<f64> {
     let mut value = 0.0;
     let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
     let error =
@@ -125,7 +142,21 @@ impl Env {
     Ok(value)
   }
 
-  pub fn get_str_param(&self, param: StringParam) -> Result<String> {
+  fn set(&mut self, param: DoubleParam, value: f64) -> Result<()> {
+    let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
+    let error =
+      unsafe { ffi::GRBsetdblparam(self.env, paramname.as_ptr(), value) };
+    if error != 0 {
+      return Err(Error::FromAPI(self.get_error_msg(), error));
+    }
+    Ok(())
+  }
+}
+
+impl Param<StringParam> for Env {
+  type Output = String;
+
+  fn get(&self, param: StringParam) -> Result<String> {
     let mut buf = Vec::with_capacity(1024);
     let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
     let error = unsafe {
@@ -137,16 +168,79 @@ impl Env {
     Ok(unsafe { from_c_str(buf.as_ptr()) })
   }
 
-  fn get_error_msg(&self) -> String {
-    get_error_msg_env(self.env)
+  fn set(&mut self, param: StringParam, value: String) -> Result<()> {
+    let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
+    let value = try!(make_c_str(value.as_str()));
+    let error = unsafe {
+      ffi::GRBsetstrparam(self.env,
+                          paramname.as_ptr(),
+                          value.as_ptr())
+    };
+    if error != 0 {
+      return Err(Error::FromAPI(self.get_error_msg(), error));
+    }
+    Ok(())
   }
 }
 
-impl Drop for Env {
-  fn drop(&mut self) {
-    unsafe { ffi::GRBfreeenv(self.env) };
-    self.env = null_mut();
-  }
+
+/// Gurobi Model
+pub struct Model<'a> {
+  model: *mut ffi::GRBmodel,
+  env: &'a Env,
+  vars: Vec<Var>,
+  constrs: Vec<Constr>,
+  qconstrs: Vec<QConstr>,
+}
+
+#[derive(Clone)]
+pub struct Var {
+  col_no: i32,
+}
+
+#[derive(Clone)]
+pub struct Constr {
+  row_no: i32,
+}
+
+#[derive(Clone)]
+pub struct QConstr {
+  qrow_no: i32,
+}
+
+pub trait Attr<Attr> {
+  type Output;
+
+  fn get(&self, attr: Attr) -> Result<Self::Output>;
+
+  fn set(&mut self, attr: Attr, value: Self::Output) -> Result<()>;
+
+  fn get_element(&self, attr: Attr, element: i32) -> Result<Self::Output>;
+
+  fn set_element(&mut self,
+                 attr: Attr,
+                 element: i32,
+                 value: Self::Output)
+                 -> Result<()>;
+
+  fn get_array(&self,
+               attr: Attr,
+               first: usize,
+               len: usize)
+               -> Result<Vec<Self::Output>>;
+
+  fn set_array(&mut self,
+               attr: Attr,
+               first: usize,
+               values: &[Self::Output])
+               -> Result<()>;
+
+  fn get_list(&self, attr: Attr, ind: &[i32]) -> Result<Vec<Self::Output>>;
+  fn set_list(&mut self,
+              attr: Attr,
+              ind: &[i32],
+              value: &[Self::Output])
+              -> Result<()>;
 }
 
 
@@ -378,42 +472,6 @@ impl<'a> Drop for Model<'a> {
     unsafe { ffi::GRBfreemodel(self.model) };
     self.model = null_mut();
   }
-}
-
-
-pub trait Attr<Attr> {
-  type Output;
-
-  fn get(&self, attr: Attr) -> Result<Self::Output>;
-
-  fn set(&mut self, attr: Attr, value: Self::Output) -> Result<()>;
-
-  fn get_element(&self, attr: Attr, element: i32) -> Result<Self::Output>;
-
-  fn set_element(&mut self,
-                 attr: Attr,
-                 element: i32,
-                 value: Self::Output)
-                 -> Result<()>;
-
-  fn get_array(&self,
-               attr: Attr,
-               first: usize,
-               len: usize)
-               -> Result<Vec<Self::Output>>;
-
-  fn set_array(&mut self,
-               attr: Attr,
-               first: usize,
-               values: &[Self::Output])
-               -> Result<()>;
-
-  fn get_list(&self, attr: Attr, ind: &[i32]) -> Result<Vec<Self::Output>>;
-  fn set_list(&mut self,
-              attr: Attr,
-              ind: &[i32],
-              value: &[Self::Output])
-              -> Result<()>;
 }
 
 impl<'a> Attr<IntAttr> for Model<'a> {

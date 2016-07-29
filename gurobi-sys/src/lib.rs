@@ -805,6 +805,21 @@ extern "C" {
                         value: *mut c_char)
                         -> c_int;
 
+  pub fn GRBsetdblparam(env: *mut GRBenv,
+                        paramname: c_str,
+                        value: c_double)
+                        -> c_int;
+
+  pub fn GRBsetintparam(env: *mut GRBenv,
+                        paramname: c_str,
+                        value: c_int)
+                        -> c_int;
+
+  pub fn GRBsetstrparam(env: *mut GRBenv,
+                        paramname: c_str,
+                        value: c_str)
+                        -> c_int;
+
   pub fn GRBgetdblparaminfo(env: *mut GRBenv,
                             paramname: c_str,
                             valueP: *mut c_double,

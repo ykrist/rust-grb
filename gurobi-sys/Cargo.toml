@@ -2,4 +2,6 @@
 name = "gurobi-sys"
 version = "0.1.0"
 authors = ["Yusuke Sasaki <y_sasaki@nuem.nagoya-u.ac.jp>"]
+description = "Unofficial low-level FFI bindings for Gurobi C API"
+license = "MIT"
 build = "build.rs"

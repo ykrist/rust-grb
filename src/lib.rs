@@ -1,3 +1,17 @@
+//! A crate which provides low-level Rust API of Gurobi Optimizer.
+//!
+//! This crate provides wrappers of the Gurobi solver which supports some
+//! types of mathematical programming problems (e.g. Linear programming; LP,
+//! Mixed Integer Linear Programming; MILP, and so on).
+//!
+//! ## Installation
+//! Before using this crate, you should install Gurobi and obtain a license.
+//! The instruction can be found
+//! [here](http://www.gurobi.com/downloads/licenses/license-center).
+//!
+//! ## Examples
+//! Work in progress...
+
 extern crate gurobi_sys as ffi;
 
 mod error;
@@ -172,9 +186,7 @@ impl Param<StringParam> for Env {
     let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
     let value = try!(make_c_str(value.as_str()));
     let error = unsafe {
-      ffi::GRBsetstrparam(self.env,
-                          paramname.as_ptr(),
-                          value.as_ptr())
+      ffi::GRBsetstrparam(self.env, paramname.as_ptr(), value.as_ptr())
     };
     if error != 0 {
       return Err(Error::FromAPI(self.get_error_msg(), error));
@@ -188,24 +200,9 @@ impl Param<StringParam> for Env {
 pub struct Model<'a> {
   model: *mut ffi::GRBmodel,
   env: &'a Env,
-  vars: Vec<Var>,
-  constrs: Vec<Constr>,
-  qconstrs: Vec<QConstr>,
-}
-
-#[derive(Clone)]
-pub struct Var {
-  col_no: i32,
-}
-
-#[derive(Clone)]
-pub struct Constr {
-  row_no: i32,
-}
-
-#[derive(Clone)]
-pub struct QConstr {
-  qrow_no: i32,
+  vars: Vec<i32>,
+  constrs: Vec<i32>,
+  qconstrs: Vec<i32>,
 }
 
 pub trait Attr<Attr> {
@@ -298,7 +295,7 @@ impl<'a> Model<'a> {
                  name: &str,
                  vtype: VarType,
                  obj: f64)
-                 -> Result<Var> {
+                 -> Result<i32> {
     // extract parameters
     use VarType::*;
     let (vtype, lb, ub) = match vtype {
@@ -324,9 +321,10 @@ impl<'a> Model<'a> {
       return Err(self.error_from_api(error));
     }
 
-    let len = self.vars.len() as i32;
-    self.vars.push(Var { col_no: len });
-    self.vars.last().ok_or(Error::InconsitentDims).map(|v| v.clone())
+    let col_no = self.vars.len() as i32;
+    self.vars.push(col_no);
+
+    Ok(col_no)
   }
 
   /// add a linear constraint to the model.
@@ -336,7 +334,7 @@ impl<'a> Model<'a> {
                     val: &[ffi::c_double],
                     sense: ConstrSense,
                     rhs: ffi::c_double)
-                    -> Result<Constr> {
+                    -> Result<i32> {
     if ind.len() != val.len() {
       return Err(Error::InconsitentDims);
     }
@@ -361,9 +359,10 @@ impl<'a> Model<'a> {
       return Err(self.error_from_api(error));
     }
 
-    let len = self.constrs.len() as i32;
-    self.constrs.push(Constr { row_no: len });
-    self.constrs.last().ok_or(Error::InconsitentDims).map(|c| c.clone())
+    let row_no = self.constrs.len() as i32;
+    self.constrs.push(row_no);
+
+    Ok(row_no)
   }
 
   /// add a quadratic constraint to the model.
@@ -376,7 +375,7 @@ impl<'a> Model<'a> {
                      qval: &[ffi::c_double],
                      sense: ConstrSense,
                      rhs: ffi::c_double)
-                     -> Result<QConstr> {
+                     -> Result<i32> {
     if lind.len() != lval.len() {
       return Err(Error::InconsitentDims);
     }
@@ -411,9 +410,10 @@ impl<'a> Model<'a> {
       return Err(self.error_from_api(error));
     }
 
-    let len = self.qconstrs.len() as i32;
-    self.qconstrs.push(QConstr { qrow_no: len });
-    self.qconstrs.last().ok_or(Error::InconsitentDims).map(|qc| qc.clone())
+    let qrow_no = self.qconstrs.len() as i32;
+    self.qconstrs.push(qrow_no);
+
+    Ok(qrow_no)
   }
 
   pub fn set_objective(&mut self,

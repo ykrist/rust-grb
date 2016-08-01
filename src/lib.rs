@@ -22,7 +22,7 @@ mod util;
 // re-exports
 pub use error::{Error, Result};
 pub use param::HasParam;
-pub use attr::{HasAttr};
+pub use attr::HasAttr;
 pub use VarType::*;
 pub use ConstrSense::*;
 pub use ModelSense::*;
@@ -32,7 +32,6 @@ use std::ptr::{null, null_mut};
 use std::ffi::CString;
 use util::*;
 use param::{HasEnvAPI, HasParamAPI};
-#[allow(unused_imports)]
 use attr::{IntAttr, CharAttr, DoubleAttr, StringAttr};
 
 
@@ -496,6 +495,132 @@ impl<'a> HasAttr<IntAttr> for Model<'a> {
                              ind.len() as ffi::c_int,
                              ind.as_ptr(),
                              values.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+}
+
+impl<'a> HasAttr<CharAttr> for Model<'a> {
+  type Output = i8;
+
+  // GRBmodel does not have any scalar attribute typed `char`.
+
+  fn get(&self, _: CharAttr) -> Result<i8> {
+    Err(Error::NotImplemented)
+  }
+
+  fn set(&mut self, _: CharAttr, _: i8) -> Result<()> {
+    Err(Error::NotImplemented)
+  }
+
+
+  fn get_element(&self, attr: CharAttr, element: i32) -> Result<i8> {
+    let mut value: ffi::c_char = 0;
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBgetcharattrelement(self.model,
+                                 attrname.as_ptr(),
+                                 element,
+                                 &mut value)
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(value)
+  }
+
+  fn set_element(&mut self,
+                 attr: CharAttr,
+                 element: i32,
+                 value: i8)
+                 -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBsetcharattrelement(self.model, attrname.as_ptr(), element, value)
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+
+
+  fn get_array(&self,
+               attr: CharAttr,
+               first: usize,
+               len: usize)
+               -> Result<Vec<i8>> {
+    let mut values = Vec::with_capacity(len);
+    values.resize(len, 0);
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBgetcharattrarray(self.model,
+                               attrname.as_ptr(),
+                               first as ffi::c_int,
+                               len as ffi::c_int,
+                               values.as_mut_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(values)
+  }
+
+  fn set_array(&mut self,
+               attr: CharAttr,
+               first: usize,
+               values: &[i8])
+               -> Result<()> {
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBsetcharattrarray(self.model,
+                               attrname.as_ptr(),
+                               first as ffi::c_int,
+                               values.len() as ffi::c_int,
+                               values.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+
+  fn get_list(&self, attr: CharAttr, ind: &[i32]) -> Result<Vec<i8>> {
+    let mut values = Vec::with_capacity(ind.len());
+    values.resize(ind.len(), 0);
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBgetcharattrlist(self.model,
+                              attrname.as_ptr(),
+                              ind.len() as ffi::c_int,
+                              ind.as_ptr(),
+                              values.as_mut_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(values)
+  }
+
+  fn set_list(&mut self,
+              attr: CharAttr,
+              ind: &[i32],
+              values: &[i8])
+              -> Result<()> {
+    if ind.len() != values.len() {
+      return Err(Error::InconsitentDims);
+    }
+
+    let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
+    let error = unsafe {
+      ffi::GRBsetcharattrlist(self.model,
+                              attrname.as_ptr(),
+                              ind.len() as ffi::c_int,
+                              ind.as_ptr(),
+                              values.as_ptr())
     };
     if error != 0 {
       return Err(self.error_from_api(error));

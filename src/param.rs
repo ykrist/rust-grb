@@ -1,6 +1,3 @@
-//! This module provides a trait `HasParam` which allows
-//! to access the value of parameters in Gurobi environment object.
-
 extern crate gurobi_sys as ffi;
 
 // re-exports

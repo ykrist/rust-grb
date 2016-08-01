@@ -28,16 +28,16 @@ fn main() {
   // fixes the model
   let model = model;
 
-  let status = model.get(gurobi::IntAttr::Status).unwrap();
+  let status = model.get(gurobi::attr::Status).unwrap();
   assert_eq!(status, 2);
 
-  let objval = model.get(gurobi::DoubleAttr::ObjVal).unwrap();
+  let objval = model.get(gurobi::attr::ObjVal).unwrap();
   assert!((objval - 1.0).abs() < 1e-12);
 
-  let numvars = model.get(gurobi::IntAttr::NumVars).unwrap() as usize;
+  let numvars = model.get(gurobi::attr::NumVars).unwrap() as usize;
   assert_eq!(numvars, 3);
 
-  let xval = model.get_array(gurobi::DoubleAttr::X, 0, numvars).unwrap();
+  let xval = model.get_array(gurobi::attr::X, 0, numvars).unwrap();
   assert_eq!(xval[0], 0.0);
   assert_eq!(xval[1], 1.0);
   assert_eq!(xval[2], 0.0);

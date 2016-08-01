@@ -47,8 +47,8 @@ fn main() {
                  0.0)
     .unwrap();
 
-  let _ = model.get(gurobi::IntAttr::ModelSense).unwrap();
-  let _ = model.get(gurobi::DoubleAttr::ObjVal).unwrap();
+  let _ = model.get(gurobi::attr::ModelSense).unwrap();
+  let _ = model.get(gurobi::attr::ObjVal).unwrap();
 
   // optimize the model.
   model.optimize().unwrap();
@@ -57,6 +57,6 @@ fn main() {
   model.write("qcp.lp").unwrap();
   model.write("qcp.sol").unwrap();
 
-  let status = model.get(gurobi::IntAttr::Status).unwrap();
+  let status = model.get(gurobi::attr::Status).unwrap();
   assert_eq!(status, 2);
 }

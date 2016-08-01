@@ -38,6 +38,6 @@ fn main() {
   model.write("qp.lp").unwrap();
   model.write("qp.sol").unwrap();
  
-  let status = model.get(gurobi::IntAttr::Status).unwrap();
+  let status = model.get(gurobi::attr::Status).unwrap();
   assert_eq!(status, 2);
 }

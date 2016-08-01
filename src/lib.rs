@@ -28,7 +28,7 @@ pub use ffi::{IntAttr, DoubleAttr, CharAttr, StringAttr};
 // internal imports
 use std::ptr::{null, null_mut};
 use util::*;
-
+use std::ffi::CString;
 
 #[derive(Debug)]
 pub enum VarType {
@@ -54,16 +54,73 @@ pub struct Env {
   env: *mut ffi::GRBenv,
 }
 
+
+pub trait HasGetEnv {
+  fn get_env(&self) -> *mut ffi::GRBenv;
+  fn get_error_msg(&self) -> String;
+}
+
+impl HasGetEnv for Env {
+  fn get_env(&self) -> *mut ffi::GRBenv {
+    self.env
+  }
+
+  fn get_error_msg(&self) -> String {
+    get_error_msg_env(self.env)
+  }
+}
+
 /// provides function to query/set the value of parameters.
-pub trait HasParam<P> {
+pub trait HasParam<P>: HasGetEnv
+  where CString: From<P>
+{
   type Output;
 
   /// Query the value of a parameter.
-  fn get(&self, param: P) -> Result<Self::Output>;
+  fn get(&self, param: P) -> Result<Self::Output> {
+    let mut value = Self::init();
+    let error = unsafe {
+      Self::get_param(self.get_env(),
+                      CString::from(param).as_ptr(),
+                      Self::as_rawfrom(&mut value))
+    };
+    if error != 0 {
+      return Err(Error::FromAPI(self.get_error_msg(), error));
+    }
+    Ok(value)
+  }
 
   /// Set the value of a parameter.
-  fn set(&mut self, param: P, value: Self::Output) -> Result<()>;
+  fn set(&mut self, param: P, value: Self::Output) -> Result<()> {
+    let error = unsafe {
+      Self::set_param(self.get_env(),
+                      CString::from(param).as_ptr(),
+                      Self::as_rawto(value))
+    };
+    if error != 0 {
+      return Err(Error::FromAPI(self.get_error_msg(), error));
+    }
+    Ok(())
+  }
+
+  // associated types/functions which should be hidden.
+  type RawFrom;
+  type RawTo;
+
+  fn init() -> Self::Output;
+  fn as_rawfrom(val: &mut Self::Output) -> Self::RawFrom;
+  fn as_rawto(output: Self::Output) -> Self::RawTo;
+
+  unsafe fn get_param(env: *mut ffi::GRBenv,
+                      paramname: ffi::c_str,
+                      value: Self::RawFrom)
+                      -> ffi::c_int;
+  unsafe fn set_param(env: *mut ffi::GRBenv,
+                      paramname: ffi::c_str,
+                      value: Self::RawTo)
+                      -> ffi::c_int;
 }
+
 
 /// provides function to query/set the value of attributes.
 pub trait HasAttr<Attr> {
@@ -140,10 +197,6 @@ impl Env {
       qconstrs: Vec::new(),
     })
   }
-
-  fn get_error_msg(&self) -> String {
-    get_error_msg_env(self.env)
-  }
 }
 
 impl Drop for Env {
@@ -155,81 +208,107 @@ impl Drop for Env {
 
 impl HasParam<IntParam> for Env {
   type Output = i32;
+  type RawFrom = *mut ffi::c_int;
+  type RawTo = ffi::c_int;
 
-  fn get(&self, param: IntParam) -> Result<i32> {
-    let mut value = 0;
-    let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
-    let error =
-      unsafe { ffi::GRBgetintparam(self.env, paramname.as_ptr(), &mut value) };
-    if error != 0 {
-      return Err(Error::FromAPI(self.get_error_msg(), error));
-    }
-    Ok(value)
+  #[inline(always)]
+  unsafe fn get_param(env: *mut ffi::GRBenv,
+                      paramname: ffi::c_str,
+                      value: *mut ffi::c_int)
+                      -> ffi::c_int {
+    ffi::GRBgetintparam(env, paramname, value)
   }
 
-  fn set(&mut self, param: IntParam, value: i32) -> Result<()> {
-    let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
-    let error =
-      unsafe { ffi::GRBsetintparam(self.env, paramname.as_ptr(), value) };
-    if error != 0 {
-      return Err(Error::FromAPI(self.get_error_msg(), error));
-    }
-    Ok(())
+  #[inline(always)]
+  unsafe fn set_param(env: *mut ffi::GRBenv,
+                      paramname: ffi::c_str,
+                      value: ffi::c_int)
+                      -> ffi::c_int {
+    ffi::GRBsetintparam(env, paramname, value)
+  }
+
+  #[inline(always)]
+  fn init() -> i32 {
+    0
+  }
+
+  #[inline(always)]
+  fn as_rawfrom(val: &mut i32) -> *mut ffi::c_int {
+    val
+  }
+
+  #[inline(always)]
+  fn as_rawto(output: i32) -> ffi::c_int {
+    output
   }
 }
 
 impl HasParam<DoubleParam> for Env {
   type Output = f64;
+  type RawFrom = *mut ffi::c_double;
+  type RawTo = ffi::c_double;
 
-  fn get(&self, param: DoubleParam) -> Result<f64> {
-    let mut value = 0.0;
-    let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
-    let error =
-      unsafe { ffi::GRBgetdblparam(self.env, paramname.as_ptr(), &mut value) };
-    if error != 0 {
-      return Err(Error::FromAPI(self.get_error_msg(), error));
-    }
-    Ok(value)
+  #[inline(always)]
+  unsafe fn get_param(env: *mut ffi::GRBenv,
+                      paramname: ffi::c_str,
+                      value: *mut ffi::c_double)
+                      -> ffi::c_int {
+    ffi::GRBgetdblparam(env, paramname, value)
   }
 
-  fn set(&mut self, param: DoubleParam, value: f64) -> Result<()> {
-    let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
-    let error =
-      unsafe { ffi::GRBsetdblparam(self.env, paramname.as_ptr(), value) };
-    if error != 0 {
-      return Err(Error::FromAPI(self.get_error_msg(), error));
-    }
-    Ok(())
-  }
-}
-
-impl HasParam<StringParam> for Env {
-  type Output = String;
-
-  fn get(&self, param: StringParam) -> Result<String> {
-    let mut buf = Vec::with_capacity(1024);
-    let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
-    let error = unsafe {
-      ffi::GRBgetstrparam(self.env, paramname.as_ptr(), buf.as_mut_ptr())
-    };
-    if error != 0 {
-      return Err(Error::FromAPI(self.get_error_msg(), error));
-    }
-    Ok(unsafe { from_c_str(buf.as_ptr()) })
+  #[inline(always)]
+  unsafe fn set_param(env: *mut ffi::GRBenv,
+                      paramname: ffi::c_str,
+                      value: ffi::c_double)
+                      -> ffi::c_int {
+    ffi::GRBsetdblparam(env, paramname, value)
   }
 
-  fn set(&mut self, param: StringParam, value: String) -> Result<()> {
-    let paramname = try!(make_c_str(format!("{:?}", param).as_str()));
-    let value = try!(make_c_str(value.as_str()));
-    let error = unsafe {
-      ffi::GRBsetstrparam(self.env, paramname.as_ptr(), value.as_ptr())
-    };
-    if error != 0 {
-      return Err(Error::FromAPI(self.get_error_msg(), error));
-    }
-    Ok(())
+  #[inline(always)]
+  fn init() -> f64 {
+    0.0
+  }
+
+  #[inline(always)]
+  fn as_rawfrom(val: &mut f64) -> *mut ffi::c_double {
+    val
+  }
+
+  #[inline(always)]
+  fn as_rawto(output: f64) -> ffi::c_double {
+    output
   }
 }
+
+// impl HasParam<StringParam> for Env {
+//   type Output = String;
+//
+//   fn get(&self, param: StringParam) -> Result<String> {
+//     let mut buf = Vec::with_capacity(1024);
+//     let error = unsafe {
+//       ffi::GRBgetstrparam(self.env,
+//                           CString::from(param).as_ptr(),
+//                           buf.as_mut_ptr())
+//     };
+//     if error != 0 {
+//       return Err(Error::FromAPI(self.get_error_msg(), error));
+//     }
+//     Ok(unsafe { from_c_str(buf.as_ptr()) })
+//   }
+//
+//   fn set(&mut self, param: StringParam, value: String) -> Result<()> {
+//     let value = try!(make_c_str(value.as_str()));
+//     let error = unsafe {
+//       ffi::GRBsetstrparam(self.env,
+//                           CString::from(param).as_ptr(),
+//                           value.as_ptr())
+//     };
+//     if error != 0 {
+//       return Err(Error::FromAPI(self.get_error_msg(), error));
+//     }
+//     Ok(())
+//   }
+// }
 
 
 /// Gurobi Model
@@ -917,10 +996,10 @@ fn env_with_logfile() {
 
 #[test]
 fn param_accesors_should_be_valid() {
-    let mut env = Env::new("").unwrap();
-    env.set(IntParam::IISMethod, 1).unwrap();
-    let iis_method = env.get(IntParam::IISMethod).unwrap();
-    assert_eq!(iis_method, 1);
+  let mut env = Env::new("").unwrap();
+  env.set(IntParam::IISMethod, 1).unwrap();
+  let iis_method = env.get(IntParam::IISMethod).unwrap();
+  assert_eq!(iis_method, 1);
 }
 
 // vim: set foldmethod=syntax :

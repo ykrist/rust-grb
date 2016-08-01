@@ -4,6 +4,9 @@
 pub use std::os::raw::{c_int, c_double, c_char, c_void};
 pub type c_str = *const c_char;
 
+use std::ffi::CString;
+use std::convert::From;
+
 #[repr(C)]
 pub struct GRBenv;
 
@@ -19,6 +22,7 @@ pub struct GRBsvec {
   /// value array of the sparse vector
   pub val: *mut c_double,
 }
+
 
 #[derive(Debug)]
 pub enum IntParam {
@@ -273,6 +277,19 @@ pub enum StringAttr {
   ConstrName,
   QCName,
 }
+
+macro_rules! impl_from {
+  ($($t:ty)*) => ($(
+    impl From<$t> for CString {
+      fn from(attr: $t) -> CString {
+        CString::new(format!("{:?}", attr).as_str()).unwrap()
+      }
+    }
+  )*)
+}
+
+impl_from! { IntParam DoubleParam StringParam }
+impl_from! { IntAttr CharAttr DoubleAttr StringAttr }
 
 
 // Environment Creation and Destruction

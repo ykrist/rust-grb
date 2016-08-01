@@ -55,13 +55,14 @@ pub struct Env {
 }
 
 
+/// A trait which implemements helper functions for C API.
 pub trait HasGetEnv {
-  fn get_env(&self) -> *mut ffi::GRBenv;
+  unsafe fn get_env(&self) -> *mut ffi::GRBenv;
   fn get_error_msg(&self) -> String;
 }
 
 impl HasGetEnv for Env {
-  fn get_env(&self) -> *mut ffi::GRBenv {
+  unsafe fn get_env(&self) -> *mut ffi::GRBenv {
     self.env
   }
 
@@ -87,7 +88,7 @@ pub trait HasParam<P>: HasGetEnv
     if error != 0 {
       return Err(Error::FromAPI(self.get_error_msg(), error));
     }
-    Ok(value)
+    Ok(Self::to_out(value))
   }
 
   /// Set the value of a parameter.
@@ -106,9 +107,10 @@ pub trait HasParam<P>: HasGetEnv
   // associated types/functions which should be hidden.
   type RawFrom;
   type RawTo;
+  type Init;
 
-  fn init() -> Self::Output;
-  fn as_rawfrom(val: &mut Self::Output) -> Self::RawFrom;
+  fn init() -> Self::Init;
+  fn as_rawfrom(val: &mut Self::Init) -> Self::RawFrom;
   fn as_rawto(output: Self::Output) -> Self::RawTo;
 
   unsafe fn get_param(env: *mut ffi::GRBenv,
@@ -119,6 +121,8 @@ pub trait HasParam<P>: HasGetEnv
                       paramname: ffi::c_str,
                       value: Self::RawTo)
                       -> ffi::c_int;
+
+  fn to_out(init: Self::Init) -> Self::Output;
 }
 
 
@@ -208,6 +212,8 @@ impl Drop for Env {
 
 impl HasParam<IntParam> for Env {
   type Output = i32;
+
+  type Init = i32;
   type RawFrom = *mut ffi::c_int;
   type RawTo = ffi::c_int;
 
@@ -241,10 +247,17 @@ impl HasParam<IntParam> for Env {
   fn as_rawto(output: i32) -> ffi::c_int {
     output
   }
+
+  #[inline(always)]
+  fn to_out(input: i32) -> i32 {
+    input
+  }
 }
 
 impl HasParam<DoubleParam> for Env {
   type Output = f64;
+
+  type Init = f64;
   type RawFrom = *mut ffi::c_double;
   type RawTo = ffi::c_double;
 
@@ -278,37 +291,56 @@ impl HasParam<DoubleParam> for Env {
   fn as_rawto(output: f64) -> ffi::c_double {
     output
   }
+
+  #[inline(always)]
+  fn to_out(input: f64) -> f64 {
+    input
+  }
 }
 
-// impl HasParam<StringParam> for Env {
-//   type Output = String;
-//
-//   fn get(&self, param: StringParam) -> Result<String> {
-//     let mut buf = Vec::with_capacity(1024);
-//     let error = unsafe {
-//       ffi::GRBgetstrparam(self.env,
-//                           CString::from(param).as_ptr(),
-//                           buf.as_mut_ptr())
-//     };
-//     if error != 0 {
-//       return Err(Error::FromAPI(self.get_error_msg(), error));
-//     }
-//     Ok(unsafe { from_c_str(buf.as_ptr()) })
-//   }
-//
-//   fn set(&mut self, param: StringParam, value: String) -> Result<()> {
-//     let value = try!(make_c_str(value.as_str()));
-//     let error = unsafe {
-//       ffi::GRBsetstrparam(self.env,
-//                           CString::from(param).as_ptr(),
-//                           value.as_ptr())
-//     };
-//     if error != 0 {
-//       return Err(Error::FromAPI(self.get_error_msg(), error));
-//     }
-//     Ok(())
-//   }
-// }
+impl HasParam<StringParam> for Env {
+  type Output = String;
+
+  type Init = Vec<ffi::c_char>;
+  type RawFrom = *mut ffi::c_char;
+  type RawTo = *const ffi::c_char;
+
+  #[inline(always)]
+  unsafe fn get_param(env: *mut ffi::GRBenv,
+                      paramname: ffi::c_str,
+                      value: *mut ffi::c_char)
+                      -> ffi::c_int {
+    ffi::GRBgetstrparam(env, paramname, value)
+  }
+
+  #[inline(always)]
+  unsafe fn set_param(env: *mut ffi::GRBenv,
+                      paramname: ffi::c_str,
+                      value: *const ffi::c_char)
+                      -> ffi::c_int {
+    ffi::GRBsetstrparam(env, paramname, value)
+  }
+
+  #[inline(always)]
+  fn init() -> Vec<ffi::c_char> {
+    Vec::with_capacity(4096)
+  }
+
+  #[inline(always)]
+  fn as_rawfrom(val: &mut Vec<ffi::c_char>) -> *mut ffi::c_char {
+    val.as_mut_ptr()
+  }
+
+  #[inline(always)]
+  fn as_rawto(output: String) -> *const ffi::c_char {
+    CString::new(output.as_str()).unwrap().as_ptr()
+  }
+
+  #[inline(always)]
+  fn to_out(input: Vec<ffi::c_char>) -> String {
+    unsafe { util::from_c_str(input.as_ptr()) }
+  }
+}
 
 
 /// Gurobi Model

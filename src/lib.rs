@@ -895,4 +895,32 @@ impl<'a> HasAttr<StringAttr> for Model<'a> {
   }
 }
 
+
+#[test]
+fn env_with_logfile() {
+  use std::path::Path;
+  use std::fs::remove_file;
+
+  let path = Path::new("test_env.log");
+
+  if path.exists() {
+    remove_file(path).unwrap();
+  }
+
+  {
+    let env = Env::new(path.to_str().unwrap()).unwrap();
+  }
+
+  assert!(path.exists());
+  remove_file(path).unwrap();
+}
+
+#[test]
+fn param_accesors_should_be_valid() {
+    let mut env = Env::new("").unwrap();
+    env.set(IntParam::IISMethod, 1).unwrap();
+    let iis_method = env.get(IntParam::IISMethod).unwrap();
+    assert_eq!(iis_method, 1);
+}
+
 // vim: set foldmethod=syntax :

@@ -54,8 +54,8 @@ pub struct Env {
   env: *mut ffi::GRBenv,
 }
 
-/// It provides function to query/set the value of parameters.
-pub trait Param<P> {
+/// provides function to query/set the value of parameters.
+pub trait HasParam<P> {
   type Output;
 
   /// Query the value of a parameter.
@@ -63,6 +63,42 @@ pub trait Param<P> {
 
   /// Set the value of a parameter.
   fn set(&mut self, param: P, value: Self::Output) -> Result<()>;
+}
+
+/// provides function to query/set the value of attributes.
+pub trait HasAttr<Attr> {
+  type Output;
+
+  fn get(&self, attr: Attr) -> Result<Self::Output>;
+
+  fn set(&mut self, attr: Attr, value: Self::Output) -> Result<()>;
+
+  fn get_element(&self, attr: Attr, element: i32) -> Result<Self::Output>;
+
+  fn set_element(&mut self,
+                 attr: Attr,
+                 element: i32,
+                 value: Self::Output)
+                 -> Result<()>;
+
+  fn get_array(&self,
+               attr: Attr,
+               first: usize,
+               len: usize)
+               -> Result<Vec<Self::Output>>;
+
+  fn set_array(&mut self,
+               attr: Attr,
+               first: usize,
+               values: &[Self::Output])
+               -> Result<()>;
+
+  fn get_list(&self, attr: Attr, ind: &[i32]) -> Result<Vec<Self::Output>>;
+  fn set_list(&mut self,
+              attr: Attr,
+              ind: &[i32],
+              value: &[Self::Output])
+              -> Result<()>;
 }
 
 impl Env {
@@ -117,7 +153,7 @@ impl Drop for Env {
   }
 }
 
-impl Param<IntParam> for Env {
+impl HasParam<IntParam> for Env {
   type Output = i32;
 
   fn get(&self, param: IntParam) -> Result<i32> {
@@ -142,7 +178,7 @@ impl Param<IntParam> for Env {
   }
 }
 
-impl Param<DoubleParam> for Env {
+impl HasParam<DoubleParam> for Env {
   type Output = f64;
 
   fn get(&self, param: DoubleParam) -> Result<f64> {
@@ -167,7 +203,7 @@ impl Param<DoubleParam> for Env {
   }
 }
 
-impl Param<StringParam> for Env {
+impl HasParam<StringParam> for Env {
   type Output = String;
 
   fn get(&self, param: StringParam) -> Result<String> {
@@ -204,42 +240,6 @@ pub struct Model<'a> {
   constrs: Vec<i32>,
   qconstrs: Vec<i32>,
 }
-
-pub trait Attr<Attr> {
-  type Output;
-
-  fn get(&self, attr: Attr) -> Result<Self::Output>;
-
-  fn set(&mut self, attr: Attr, value: Self::Output) -> Result<()>;
-
-  fn get_element(&self, attr: Attr, element: i32) -> Result<Self::Output>;
-
-  fn set_element(&mut self,
-                 attr: Attr,
-                 element: i32,
-                 value: Self::Output)
-                 -> Result<()>;
-
-  fn get_array(&self,
-               attr: Attr,
-               first: usize,
-               len: usize)
-               -> Result<Vec<Self::Output>>;
-
-  fn set_array(&mut self,
-               attr: Attr,
-               first: usize,
-               values: &[Self::Output])
-               -> Result<()>;
-
-  fn get_list(&self, attr: Attr, ind: &[i32]) -> Result<Vec<Self::Output>>;
-  fn set_list(&mut self,
-              attr: Attr,
-              ind: &[i32],
-              value: &[Self::Output])
-              -> Result<()>;
-}
-
 
 impl<'a> Model<'a> {
   /// apply all modification of the model to process.
@@ -474,7 +474,7 @@ impl<'a> Drop for Model<'a> {
   }
 }
 
-impl<'a> Attr<IntAttr> for Model<'a> {
+impl<'a> HasAttr<IntAttr> for Model<'a> {
   type Output = i32;
 
   fn get(&self, attr: IntAttr) -> Result<i32> {
@@ -610,7 +610,7 @@ impl<'a> Attr<IntAttr> for Model<'a> {
   }
 }
 
-impl<'a> Attr<DoubleAttr> for Model<'a> {
+impl<'a> HasAttr<DoubleAttr> for Model<'a> {
   type Output = f64;
 
   fn get(&self, attr: DoubleAttr) -> Result<f64> {
@@ -741,7 +741,7 @@ impl<'a> Attr<DoubleAttr> for Model<'a> {
   }
 }
 
-impl<'a> Attr<StringAttr> for Model<'a> {
+impl<'a> HasAttr<StringAttr> for Model<'a> {
   type Output = String;
 
   fn get(&self, attr: StringAttr) -> Result<String> {
@@ -894,6 +894,5 @@ impl<'a> Attr<StringAttr> for Model<'a> {
     Ok(())
   }
 }
-
 
 // vim: set foldmethod=syntax :

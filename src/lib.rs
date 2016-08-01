@@ -14,21 +14,24 @@
 
 extern crate gurobi_sys as ffi;
 
-mod error;
+pub mod error;
+pub mod param;
 mod util;
 
 // re-exports
 pub use error::{Error, Result};
+pub use param::HasParam;
 pub use VarType::*;
 pub use ConstrSense::*;
 pub use ModelSense::*;
-pub use ffi::{IntParam, DoubleParam, StringParam};
 pub use ffi::{IntAttr, DoubleAttr, CharAttr, StringAttr};
 
 // internal imports
 use std::ptr::{null, null_mut};
-use util::*;
 use std::ffi::CString;
+use util::*;
+use param::{HasEnvAPI, HasParamAPI};
+
 
 #[derive(Debug)]
 pub enum VarType {
@@ -52,114 +55,6 @@ pub enum ModelSense {
 /// Gurobi environment object
 pub struct Env {
   env: *mut ffi::GRBenv,
-}
-
-
-/// A trait which implemements helper functions for C API.
-pub trait HasGetEnv {
-  unsafe fn get_env(&self) -> *mut ffi::GRBenv;
-  fn get_error_msg(&self) -> String;
-}
-
-impl HasGetEnv for Env {
-  unsafe fn get_env(&self) -> *mut ffi::GRBenv {
-    self.env
-  }
-
-  fn get_error_msg(&self) -> String {
-    get_error_msg_env(self.env)
-  }
-}
-
-/// provides function to query/set the value of parameters.
-pub trait HasParam<P>: HasGetEnv
-  where CString: From<P>
-{
-  type Output;
-
-  /// Query the value of a parameter.
-  fn get(&self, param: P) -> Result<Self::Output> {
-    let mut value = Self::init();
-    let error = unsafe {
-      Self::get_param(self.get_env(),
-                      CString::from(param).as_ptr(),
-                      Self::as_rawfrom(&mut value))
-    };
-    if error != 0 {
-      return Err(Error::FromAPI(self.get_error_msg(), error));
-    }
-    Ok(Self::to_out(value))
-  }
-
-  /// Set the value of a parameter.
-  fn set(&mut self, param: P, value: Self::Output) -> Result<()> {
-    let error = unsafe {
-      Self::set_param(self.get_env(),
-                      CString::from(param).as_ptr(),
-                      Self::as_rawto(value))
-    };
-    if error != 0 {
-      return Err(Error::FromAPI(self.get_error_msg(), error));
-    }
-    Ok(())
-  }
-
-  // associated types/functions which should be hidden.
-  type RawFrom;
-  type RawTo;
-  type Init;
-
-  fn init() -> Self::Init;
-  fn as_rawfrom(val: &mut Self::Init) -> Self::RawFrom;
-  fn as_rawto(output: Self::Output) -> Self::RawTo;
-
-  unsafe fn get_param(env: *mut ffi::GRBenv,
-                      paramname: ffi::c_str,
-                      value: Self::RawFrom)
-                      -> ffi::c_int;
-  unsafe fn set_param(env: *mut ffi::GRBenv,
-                      paramname: ffi::c_str,
-                      value: Self::RawTo)
-                      -> ffi::c_int;
-
-  fn to_out(init: Self::Init) -> Self::Output;
-}
-
-
-/// provides function to query/set the value of attributes.
-pub trait HasAttr<Attr> {
-  type Output;
-
-  fn get(&self, attr: Attr) -> Result<Self::Output>;
-
-  fn set(&mut self, attr: Attr, value: Self::Output) -> Result<()>;
-
-  fn get_element(&self, attr: Attr, element: i32) -> Result<Self::Output>;
-
-  fn set_element(&mut self,
-                 attr: Attr,
-                 element: i32,
-                 value: Self::Output)
-                 -> Result<()>;
-
-  fn get_array(&self,
-               attr: Attr,
-               first: usize,
-               len: usize)
-               -> Result<Vec<Self::Output>>;
-
-  fn set_array(&mut self,
-               attr: Attr,
-               first: usize,
-               values: &[Self::Output])
-               -> Result<()>;
-
-  fn get_list(&self, attr: Attr, ind: &[i32]) -> Result<Vec<Self::Output>>;
-  fn set_list(&mut self,
-              attr: Attr,
-              ind: &[i32],
-              value: &[Self::Output])
-              -> Result<()>;
 }
 
 impl Env {
@@ -210,138 +105,59 @@ impl Drop for Env {
   }
 }
 
-impl HasParam<IntParam> for Env {
-  type Output = i32;
-
-  type Init = i32;
-  type RawFrom = *mut ffi::c_int;
-  type RawTo = ffi::c_int;
-
-  #[inline(always)]
-  unsafe fn get_param(env: *mut ffi::GRBenv,
-                      paramname: ffi::c_str,
-                      value: *mut ffi::c_int)
-                      -> ffi::c_int {
-    ffi::GRBgetintparam(env, paramname, value)
+impl HasEnvAPI for Env {
+  unsafe fn get_env(&self) -> *mut ffi::GRBenv {
+    self.env
   }
 
-  #[inline(always)]
-  unsafe fn set_param(env: *mut ffi::GRBenv,
-                      paramname: ffi::c_str,
-                      value: ffi::c_int)
-                      -> ffi::c_int {
-    ffi::GRBsetintparam(env, paramname, value)
-  }
-
-  #[inline(always)]
-  fn init() -> i32 {
-    0
-  }
-
-  #[inline(always)]
-  fn as_rawfrom(val: &mut i32) -> *mut ffi::c_int {
-    val
-  }
-
-  #[inline(always)]
-  fn as_rawto(output: i32) -> ffi::c_int {
-    output
-  }
-
-  #[inline(always)]
-  fn to_out(input: i32) -> i32 {
-    input
+  fn get_error_msg(&self) -> String {
+    get_error_msg_env(self.env)
   }
 }
 
-impl HasParam<DoubleParam> for Env {
-  type Output = f64;
-
-  type Init = f64;
-  type RawFrom = *mut ffi::c_double;
-  type RawTo = ffi::c_double;
-
-  #[inline(always)]
-  unsafe fn get_param(env: *mut ffi::GRBenv,
-                      paramname: ffi::c_str,
-                      value: *mut ffi::c_double)
-                      -> ffi::c_int {
-    ffi::GRBgetdblparam(env, paramname, value)
-  }
-
-  #[inline(always)]
-  unsafe fn set_param(env: *mut ffi::GRBenv,
-                      paramname: ffi::c_str,
-                      value: ffi::c_double)
-                      -> ffi::c_int {
-    ffi::GRBsetdblparam(env, paramname, value)
-  }
-
-  #[inline(always)]
-  fn init() -> f64 {
-    0.0
-  }
-
-  #[inline(always)]
-  fn as_rawfrom(val: &mut f64) -> *mut ffi::c_double {
-    val
-  }
-
-  #[inline(always)]
-  fn as_rawto(output: f64) -> ffi::c_double {
-    output
-  }
-
-  #[inline(always)]
-  fn to_out(input: f64) -> f64 {
-    input
-  }
+impl<P, Output> HasParam<P, Output> for Env
+  where CString: From<P>,
+        P: HasParamAPI<Output>
+{
 }
 
-impl HasParam<StringParam> for Env {
-  type Output = String;
 
-  type Init = Vec<ffi::c_char>;
-  type RawFrom = *mut ffi::c_char;
-  type RawTo = *const ffi::c_char;
 
-  #[inline(always)]
-  unsafe fn get_param(env: *mut ffi::GRBenv,
-                      paramname: ffi::c_str,
-                      value: *mut ffi::c_char)
-                      -> ffi::c_int {
-    ffi::GRBgetstrparam(env, paramname, value)
-  }
+/// provides function to query/set the value of attributes.
+pub trait HasAttr<Attr> {
+  type Output;
 
-  #[inline(always)]
-  unsafe fn set_param(env: *mut ffi::GRBenv,
-                      paramname: ffi::c_str,
-                      value: *const ffi::c_char)
-                      -> ffi::c_int {
-    ffi::GRBsetstrparam(env, paramname, value)
-  }
+  fn get(&self, attr: Attr) -> Result<Self::Output>;
 
-  #[inline(always)]
-  fn init() -> Vec<ffi::c_char> {
-    Vec::with_capacity(4096)
-  }
+  fn set(&mut self, attr: Attr, value: Self::Output) -> Result<()>;
 
-  #[inline(always)]
-  fn as_rawfrom(val: &mut Vec<ffi::c_char>) -> *mut ffi::c_char {
-    val.as_mut_ptr()
-  }
+  fn get_element(&self, attr: Attr, element: i32) -> Result<Self::Output>;
 
-  #[inline(always)]
-  fn as_rawto(output: String) -> *const ffi::c_char {
-    CString::new(output.as_str()).unwrap().as_ptr()
-  }
+  fn set_element(&mut self,
+                 attr: Attr,
+                 element: i32,
+                 value: Self::Output)
+                 -> Result<()>;
 
-  #[inline(always)]
-  fn to_out(input: Vec<ffi::c_char>) -> String {
-    unsafe { util::from_c_str(input.as_ptr()) }
-  }
+  fn get_array(&self,
+               attr: Attr,
+               first: usize,
+               len: usize)
+               -> Result<Vec<Self::Output>>;
+
+  fn set_array(&mut self,
+               attr: Attr,
+               first: usize,
+               values: &[Self::Output])
+               -> Result<()>;
+
+  fn get_list(&self, attr: Attr, ind: &[i32]) -> Result<Vec<Self::Output>>;
+  fn set_list(&mut self,
+              attr: Attr,
+              ind: &[i32],
+              value: &[Self::Output])
+              -> Result<()>;
 }
-
 
 /// Gurobi Model
 pub struct Model<'a> {
@@ -1007,30 +823,30 @@ impl<'a> HasAttr<StringAttr> for Model<'a> {
 }
 
 
-#[test]
-fn env_with_logfile() {
-  use std::path::Path;
-  use std::fs::remove_file;
-
-  let path = Path::new("test_env.log");
-
-  if path.exists() {
-    remove_file(path).unwrap();
-  }
-
-  {
-    let env = Env::new(path.to_str().unwrap()).unwrap();
-  }
-
-  assert!(path.exists());
-  remove_file(path).unwrap();
-}
+// #[test]
+// fn env_with_logfile() {
+//   use std::path::Path;
+//   use std::fs::remove_file;
+//
+//   let path = Path::new("test_env.log");
+//
+//   if path.exists() {
+//     remove_file(path).unwrap();
+//   }
+//
+//   {
+//     let env = Env::new(path.to_str().unwrap()).unwrap();
+//   }
+//
+//   assert!(path.exists());
+//   remove_file(path).unwrap();
+// }
 
 #[test]
 fn param_accesors_should_be_valid() {
   let mut env = Env::new("").unwrap();
-  env.set(IntParam::IISMethod, 1).unwrap();
-  let iis_method = env.get(IntParam::IISMethod).unwrap();
+  env.set(param::IntParam::IISMethod, 1).unwrap();
+  let iis_method = env.get(param::IntParam::IISMethod).unwrap();
   assert_eq!(iis_method, 1);
 }
 

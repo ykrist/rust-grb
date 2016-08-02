@@ -16,19 +16,36 @@ pub trait HasEnvAPI {
   fn get_error_msg(&self) -> String;
 }
 
-trait Into<T> {
+pub trait Into<T> {
+  fn init() -> Self;
   fn into(self) -> T;
 }
 
 impl Into<i32> for ffi::c_int {
-  fn into(self) -> i32 { self }
+  fn init() -> i32 {
+    0
+  }
+
+  fn into(self) -> i32 {
+    self
+  }
 }
 
 impl Into<f64> for ffi::c_double {
-  fn into(self) -> f64 { self }
+  fn init() -> ffi::c_double {
+    0.0
+  }
+
+  fn into(self) -> f64 {
+    self
+  }
 }
 
 impl Into<String> for Vec<ffi::c_char> {
+  fn init() -> Vec<ffi::c_char> {
+    Vec::with_capacity(4096)
+  }
+
   fn into(self) -> String {
     unsafe { util::from_c_str(self.as_ptr()) }
   }
@@ -51,7 +68,6 @@ pub trait HasParamAPI<Output> {
                       value: Self::RawTo)
                       -> ffi::c_int;
 
-  fn init() -> Self::Init;
   fn as_rawfrom(val: &mut Self::Init) -> Self::RawFrom;
   fn as_rawto(output: Output) -> Self::RawTo;
 }
@@ -63,7 +79,7 @@ pub trait HasParam<P, Output>: HasEnvAPI
 {
   /// Query the value of a parameter.
   fn get(&self, param: P) -> Result<Output> {
-    let mut value = P::init();
+    let mut value = Into::<Output>::init();
     let error = unsafe {
       P::get_param(self.get_env(),
                    CString::from(param).as_ptr(),
@@ -111,10 +127,6 @@ impl HasParamAPI<i32> for IntParam {
     ffi::GRBsetintparam(env, paramname, value)
   }
 
-  #[inline(always)]
-  fn init() -> i32 {
-    0
-  }
 
   #[inline(always)]
   fn as_rawfrom(val: &mut i32) -> *mut ffi::c_int {
@@ -149,11 +161,6 @@ impl HasParamAPI<f64> for DoubleParam {
   }
 
   #[inline(always)]
-  fn init() -> f64 {
-    0.0
-  }
-
-  #[inline(always)]
   fn as_rawfrom(val: &mut f64) -> *mut ffi::c_double {
     val
   }
@@ -184,11 +191,6 @@ impl HasParamAPI<String> for StringParam {
                       value: *const ffi::c_char)
                       -> ffi::c_int {
     ffi::GRBsetstrparam(env, paramname, value)
-  }
-
-  #[inline(always)]
-  fn init() -> Vec<ffi::c_char> {
-    Vec::with_capacity(4096)
   }
 
   #[inline(always)]

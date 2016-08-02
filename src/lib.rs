@@ -32,7 +32,7 @@ use std::ptr::{null, null_mut};
 use std::ffi::CString;
 use util::*;
 use param::{HasEnvAPI, HasParamAPI};
-use attr::{IntAttr, CharAttr, DoubleAttr, StringAttr};
+use attr::{HasModelAPI, IntAttr, CharAttr, DoubleAttr, StringAttr};
 
 
 #[derive(Debug)]
@@ -352,7 +352,12 @@ impl<'a> Model<'a> {
 
     Ok(())
   }
+}
 
+impl<'a> HasModelAPI for Model<'a> {
+  unsafe fn get_model(&self) -> *mut ffi::GRBmodel {
+    self.model
+  }
 
   // make an instance of error object related to C API.
   fn error_from_api(&self, errcode: ffi::c_int) -> Error {
@@ -367,9 +372,7 @@ impl<'a> Drop for Model<'a> {
   }
 }
 
-impl<'a> HasAttr<IntAttr> for Model<'a> {
-  type Output = i32;
-
+impl<'a> HasAttr<IntAttr, i32> for Model<'a> {
   fn get(&self, attr: IntAttr) -> Result<i32> {
     let mut value: ffi::c_int = 0;
     let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
@@ -503,19 +506,14 @@ impl<'a> HasAttr<IntAttr> for Model<'a> {
   }
 }
 
-impl<'a> HasAttr<CharAttr> for Model<'a> {
-  type Output = i8;
-
+impl<'a> HasAttr<CharAttr, i8> for Model<'a> {
   // GRBmodel does not have any scalar attribute typed `char`.
-
   fn get(&self, _: CharAttr) -> Result<i8> {
     Err(Error::NotImplemented)
   }
-
   fn set(&mut self, _: CharAttr, _: i8) -> Result<()> {
     Err(Error::NotImplemented)
   }
-
 
   fn get_element(&self, attr: CharAttr, element: i32) -> Result<i8> {
     let mut value: ffi::c_char = 0;
@@ -629,9 +627,7 @@ impl<'a> HasAttr<CharAttr> for Model<'a> {
   }
 }
 
-impl<'a> HasAttr<DoubleAttr> for Model<'a> {
-  type Output = f64;
-
+impl<'a> HasAttr<DoubleAttr, f64> for Model<'a> {
   fn get(&self, attr: DoubleAttr) -> Result<f64> {
     let mut value: ffi::c_double = 0.0;
     let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
@@ -760,9 +756,7 @@ impl<'a> HasAttr<DoubleAttr> for Model<'a> {
   }
 }
 
-impl<'a> HasAttr<StringAttr> for Model<'a> {
-  type Output = String;
-
+impl<'a> HasAttr<StringAttr, String> for Model<'a> {
   fn get(&self, attr: StringAttr) -> Result<String> {
     let mut value = null();
     let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));

@@ -16,11 +16,30 @@ pub trait HasEnvAPI {
   fn get_error_msg(&self) -> String;
 }
 
+trait Into<T> {
+  fn into(self) -> T;
+}
+
+impl Into<i32> for ffi::c_int {
+  fn into(self) -> i32 { self }
+}
+
+impl Into<f64> for ffi::c_double {
+  fn into(self) -> f64 { self }
+}
+
+impl Into<String> for Vec<ffi::c_char> {
+  fn into(self) -> String {
+    unsafe { util::from_c_str(self.as_ptr()) }
+  }
+}
+
+
 /// Provides C APIs and some utility functions related to parameter access.
 pub trait HasParamAPI<Output> {
   type RawFrom;
   type RawTo;
-  type Init;
+  type Init: Into<Output>;
 
   unsafe fn get_param(env: *mut ffi::GRBenv,
                       paramname: ffi::c_str,
@@ -35,7 +54,6 @@ pub trait HasParamAPI<Output> {
   fn init() -> Self::Init;
   fn as_rawfrom(val: &mut Self::Init) -> Self::RawFrom;
   fn as_rawto(output: Output) -> Self::RawTo;
-  fn to_out(init: Self::Init) -> Output;
 }
 
 /// provides function to query/set the value of parameters.
@@ -54,7 +72,7 @@ pub trait HasParam<P, Output>: HasEnvAPI
     if error != 0 {
       return Err(Error::FromAPI(self.get_error_msg(), error));
     }
-    Ok(P::to_out(value))
+    Ok(Into::<_>::into(value))
   }
 
   /// Set the value of a parameter.
@@ -107,11 +125,6 @@ impl HasParamAPI<i32> for IntParam {
   fn as_rawto(output: i32) -> ffi::c_int {
     output
   }
-
-  #[inline(always)]
-  fn to_out(input: i32) -> i32 {
-    input
-  }
 }
 
 impl HasParamAPI<f64> for DoubleParam {
@@ -149,12 +162,8 @@ impl HasParamAPI<f64> for DoubleParam {
   fn as_rawto(output: f64) -> ffi::c_double {
     output
   }
-
-  #[inline(always)]
-  fn to_out(input: f64) -> f64 {
-    input
-  }
 }
+
 
 impl HasParamAPI<String> for StringParam {
   type Init = Vec<ffi::c_char>;
@@ -190,10 +199,5 @@ impl HasParamAPI<String> for StringParam {
   #[inline(always)]
   fn as_rawto(output: String) -> *const ffi::c_char {
     CString::new(output.as_str()).unwrap().as_ptr()
-  }
-
-  #[inline(always)]
-  fn to_out(input: Vec<ffi::c_char>) -> String {
-    unsafe { util::from_c_str(input.as_ptr()) }
   }
 }

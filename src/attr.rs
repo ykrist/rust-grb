@@ -15,46 +15,47 @@ pub trait HasAttr<A, Output>
   where A: HasAttrAPI<Output>
 {
   fn get(&self, attr: A) -> Result<Output> {
-    Err(Error::NotImplemented)
-    // let mut value: ffi::c_int = 0;
-    // let mut value = null();
+    let mut value: A::init();
 
-    // let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    // let error =
-    //   unsafe { ffi::GRBgetintattr(self.model, attrname.as_ptr(), &mut value) };
-    // if error != 0 {
-    //   return Err(self.error_from_api(error));
-    // }
+    let error = unsafe {
+      A::get_attr(self.model,
+                  CString::from(attr).as_ptr(),
+                  A::as_rawget(&mut value))
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
 
-    // Ok(value as i32)
-    // Ok(unsafe { from_c_str(value).to_owned() })
+    Ok(A::to_out(value))
   }
 
   fn set(&mut self, attr: A, value: Output) -> Result<()> {
-    Err(Error::NotImplemented)
-    // let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    // let error =
-    //   unsafe { ffi::GRBsetintattr(self.model, attrname.as_ptr(), value) };
-    // if error != 0 {
-    //   return Err(self.error_from_api(error));
-    // }
-    // Ok(())
+    let error = unsafe {
+      A::set_attr(self.model,
+                  CString::from(attr).as_ptr(),
+                  A::to_rawset(value))
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    Ok(())
   }
 
   fn get_element(&self, attr: A, element: i32) -> Result<Output> {
-    Err(Error::NotImplemented)
-    // let mut value: ffi::c_int = 0;
-    // let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    // let error = unsafe {
-    //   ffi::GRBgetintattrelement(self.model,
-    //                             attrname.as_ptr(),
-    //                             element,
-    //                             &mut value)
-    // };
-    // if error != 0 {
-    //   return Err(self.error_from_api(error));
-    // }
-    // Ok(value as i32)
+    let mut value = A::init();
+
+    let error = unsafe {
+      A::get_attrelement(self.model,
+                         CString::from(attr).as_ptr(),
+                         element,
+                         A::as_rawget(&mut value))
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    Ok(A::to_out(value))
   }
 
   fn set_element(&mut self,
@@ -62,15 +63,17 @@ pub trait HasAttr<A, Output>
                  element: i32,
                  value: Output)
                  -> Result<()> {
-    Err(Error::NotImplemented)
-    // let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    // let error = unsafe {
-    //   ffi::GRBsetintattrelement(self.model, attrname.as_ptr(), element, value)
-    // };
-    // if error != 0 {
-    //   return Err(self.error_from_api(error));
-    // }
-    // Ok(())
+    let error = unsafe {
+      A::set_attrelement(self.model,
+                         CString::from(attr).as_ptr(),
+                         element,
+                         A::to_rawset(value))
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    Ok(())
   }
 
   fn get_array(&self,
@@ -78,25 +81,22 @@ pub trait HasAttr<A, Output>
                first: usize,
                len: usize)
                -> Result<Vec<Output>> {
-    Err(Error::NotImplemented)
-    // let mut values = Vec::with_capacity(len);
-    // values.resize(len, 0);
-    // / values.resize(len, null());
-    // let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    // let error = unsafe {
-    //   ffi::GRBgetintattrarray(self.model,
-    //                           attrname.as_ptr(),
-    //                           first as ffi::c_int,
-    //                           len as ffi::c_int,
-    //                           values.as_mut_ptr())
-    // };
-    // if error != 0 {
-    //   return Err(self.error_from_api(error));
-    // }
-    // Ok(values)
-    // / Ok(values.into_iter()
-    // /   .map(|s| unsafe { from_c_str(s).to_owned() })
-    // /   .collect())
+    let mut values = A::init_array(len);
+
+    let error = unsafe {
+      A::get_attrarray(self.model,
+                       CString::from(attr).as_ptr(),
+                       first as ffi::c_int,
+                       len as ffi::c_int,
+                       values.as_mut_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    Ok(values.into_iter()
+      .map(|s| A::to_out(s))
+      .collect())
   }
 
   fn set_array(&mut self,
@@ -104,62 +104,64 @@ pub trait HasAttr<A, Output>
                first: usize,
                values: &[Output])
                -> Result<()> {
-    Err(Error::NotImplemented)
-    // let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    // let error = unsafe {
-    //   ffi::GRBsetintattrarray(self.model,
-    //                           attrname.as_ptr(),
-    //                           first as ffi::c_int,
-    //                           values.len() as ffi::c_int,
-    //                           values.as_ptr())
-    // };
-    // if error != 0 {
-    //   return Err(self.error_from_api(error));
-    // }
-    // Ok(())
+    let values = A::to_rawsets(values);
+
+    let error = unsafe {
+      A::set_attrarray(self.model,
+                       CString::from(attr).as_ptr(),
+                       first as ffi::c_int,
+                       values.len() as ffi::c_int,
+                       values.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    Ok(())
   }
-  //     let values = values.into_iter().map(|s| make_c_str(s)).collect::<Vec<_>>();
-  //     if values.iter().any(|ref s| s.is_err()) {
-  //       return Err(Error::StringConversion);
-  //     }
-  //     let values =
-  //       values.into_iter().map(|s| s.unwrap().as_ptr()).collect::<Vec<_>>();
 
   fn get_list(&self, attr: A, ind: &[i32]) -> Result<Vec<Output>> {
-    Err(Error::NotImplemented)
-    // let mut values = Vec::with_capacity(ind.len());
-    // values.resize(ind.len(), 0);
-    // let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    // let error = unsafe {
-    //   ffi::GRBgetintattrlist(self.model,
-    //                          attrname.as_ptr(),
-    //                          ind.len() as ffi::c_int,
-    //                          ind.as_ptr(),
-    //                          values.as_mut_ptr())
-    // };
-    // if error != 0 {
-    //   return Err(self.error_from_api(error));
-    // }
-    // Ok(values)
+    let mut values = A::init_array();
+
+    let error = unsafe {
+      A::get_attrlist(self.model,
+                      CString::from(attr).as_ptr(),
+                      ind.len() as ffi::c_int,
+                      ind.as_ptr(),
+                      values.as_mut_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    Ok(values.into_iter()
+      .map(|s| A::to_out(s))
+      .collect())
   }
 
-  fn set_list(&mut self, attr: A, ind: &[i32], value: &[Output]) -> Result<()> {
-    Err(Error::NotImplemented)
-    // if ind.len() != values.len() {
-    //   return Err(Error::InconsitentDims);
-    // }
-    // let attrname = try!(make_c_str(format!("{:?}", attr).as_str()));
-    // let error = unsafe {
-    //   ffi::GRBsetintattrlist(self.model,
-    //                          attrname.as_ptr(),
-    //                          ind.len() as ffi::c_int,
-    //                          ind.as_ptr(),
-    //                          values.as_ptr())
-    // };
-    // if error != 0 {
-    //   return Err(self.error_from_api(error));
-    // }
-    // Ok(())
+  fn set_list(&mut self,
+              attr: A,
+              ind: &[i32],
+              values: &[Output])
+              -> Result<()> {
+    if ind.len() != values.len() {
+      return Err(Error::InconsitentDims);
+    }
+
+    let values = A::to_rawsets(values);
+
+    let error = unsafe {
+      A::set_attrlist(self.model,
+                      attrname.as_ptr(),
+                      ind.len() as ffi::c_int,
+                      ind.as_ptr(),
+                      values.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    Ok(())
   }
 }
 
@@ -171,7 +173,59 @@ pub trait HasModelAPI {
   fn error_from_api(&self, errcode: ffi::c_int) -> Error;
 }
 
-pub trait HasAttrAPI<Output> {}
+pub trait HasAttrAPI<Output> {
+  type Init;
+  type RawGet;
+  type RawSet;
+
+  fn get_attr(model: *mut ffi::GRBmodel,
+              attrname: ffi::c_str,
+              value: *mut Self::RawGet)
+              -> ffi::c_int;
+
+  fn set_attr(model: *mut ffi::GRBmodel,
+              attrname: ffi::c_str,
+              value: Self::RawSet)
+              -> ffi::c_int;
+
+  fn get_attrelement(model: *mut ffi::GRBmodel,
+              attrname: ffi::c_str,
+              element: ffi::c_int,
+              value: *mut Self::RawGet)
+              -> ffi::c_int;
+
+  fn set_attrelement(model: *mut ffi::GRBmodel,
+              attrname: ffi::c_str,
+              element: ffi::c_int,
+              value: Self::RawSet)
+              -> ffi::c_int;
+
+  fn init() -> Self::Init;
+  // fn init() -> ffi::c_int { 0 }
+  // fn init() -> ffi::c_str { null() }
+
+  fn to_out(val: Self::Init) -> Output;
+  // fn to_out(val: ffi::c_int) -> i32 { val as ffi::c_int }
+  // fn to_out(val: ffi::c_str) -> String { unsafe { util::from_c_str(val).to_owned() } }
+
+  fn as_rawget(val: &mut Self::Init) -> Self::RawGet;
+  fn to_rawset(val: Output) -> Self::RawSet;
+
+  fn init_array(len: i32) -> Vec<Self::Init> {
+    std::iter::repeat(Self::init()).take(len).collect()
+  }
+
+  fn to_rawsets(values: Vec<Output>) -> Vec<Self::RawSet> {
+    values
+  }
+  // fn to_rawsets(values: Vec<String>) -> Vec<ffi::c_str> {
+  //     let values = values.into_iter().map(|s| make_c_str(s)).collect::<Vec<_>>();
+  //     if values.iter().any(|ref s| s.is_err()) {
+  //       return Err(Error::StringConversion);
+  //     }
+  //     values.into_iter().map(|s| s.unwrap().as_ptr()).collect()
+  // }
+}
 
 impl HasAttrAPI<i32> for IntAttr {}
 impl HasAttrAPI<i8> for CharAttr {}

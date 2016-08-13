@@ -11,10 +11,10 @@ fn main() {
   model.update().unwrap();
 
   // [x0 = 0] or [x1 = 0]
-  model.add_sos(&[0, 1], &[1.0, 2.0], gurobi::SOSType::Type1).unwrap();
+  model.add_sos(&[0, 1], &[1.0, 2.0], gurobi::SOSType1).unwrap();
 
   // [x0 = 0] or [x2 = 0]
-  model.add_sos(&[0, 2], &[1.0, 2.0], gurobi::SOSType::Type1).unwrap();
+  model.add_sos(&[0, 2], &[1.0, 2.0], gurobi::SOSType1).unwrap();
 
   model.optimize().unwrap();
 

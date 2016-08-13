@@ -19,7 +19,7 @@ fn main() {
   // quad term: f_q = x*x + x*y + y*y + y*z + z*z
   // linear term: f_l = 2*x
   model.set_objective(&[0,1,2], &[1.0, 0.0, 0.0],
-      &[0, 0, 1, 1, 2], &[0, 1, 1, 2, 2], &[1., 1., 1., 1., 1.], gurobi::ModelSense::Maximize)
+      &[0, 0, 1, 1, 2], &[0, 1, 1, 2, 2], &[1., 1., 1., 1., 1.], gurobi::Maximize)
     .unwrap();
 
   // add linear constraints

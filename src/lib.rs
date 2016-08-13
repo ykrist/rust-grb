@@ -53,6 +53,12 @@ pub enum ModelSense {
   Maximize,
 }
 
+#[derive(Debug)]
+pub enum SOSType {
+  Type1,
+  Type2,
+}
+
 
 /// Gurobi environment object
 pub struct Env {
@@ -339,6 +345,38 @@ impl<'a> Model<'a> {
                          qrow.as_ptr(),
                          qcol.as_ptr(),
                          qval.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    Ok(())
+  }
+
+  /// add Special Order Set (SOS) constraint to the model.
+  pub fn add_sos(&mut self,
+             vars: &[i32],
+             weights: &[f64],
+             sostype: SOSType)
+             -> Result<()> {
+    if vars.len() != weights.len() {
+      return Err(Error::InconsitentDims);
+    }
+
+    let sostype = match sostype {
+      SOSType::Type1 => 1,
+      SOSType::Type2 => 2,
+    };
+
+    let beg = 0;
+    let error = unsafe {
+      ffi::GRBaddsos(self.model,
+                     1,
+                     vars.len() as ffi::c_int,
+                     &sostype,
+                     &beg,
+                     vars.as_ptr(),
+                     weights.as_ptr())
     };
     if error != 0 {
       return Err(self.error_from_api(error));

@@ -430,14 +430,14 @@ impl HasAttrAPI<i8> for CharAttr {
                      attrname: ffi::c_str,
                      value: *mut Self::RawGet)
                      -> ffi::c_int {
-    ffi::GRBgetcharattr(model, attrname, value)
+    -1
   }
 
   unsafe fn set_attr(model: *mut ffi::GRBmodel,
                      attrname: ffi::c_str,
                      value: Self::RawSet)
                      -> ffi::c_int {
-    ffi::GRBsetcharattr(model, attrname, value)
+    -1
   }
 
   unsafe fn get_attrelement(model: *mut ffi::GRBmodel,

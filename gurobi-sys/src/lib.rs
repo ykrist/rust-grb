@@ -600,11 +600,6 @@ extern "C" {
                        valueP: *mut c_double)
                        -> c_int;
 
-  pub fn GRBgetcharattr(model: *mut GRBmodel,
-                        attrname: c_str,
-                        valueP: *mut c_char)
-                        -> c_int;
-
   pub fn GRBgetstrattr(model: *mut GRBmodel,
                        attrname: c_str,
                        valueP: *mut c_str)
@@ -620,11 +615,6 @@ extern "C" {
                        attrname: c_str,
                        value: c_double)
                        -> c_int;
-
-  pub fn GRBsetcharattr(model: *mut GRBmodel,
-                        attrname: c_str,
-                        value: c_char)
-                        -> c_int;
 
   pub fn GRBsetstrattr(model: *mut GRBmodel,
                        attrname: c_str,

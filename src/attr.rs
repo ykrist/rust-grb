@@ -188,6 +188,7 @@ pub trait HasAttrAPI<Output: Clone> {
                      attrname: ffi::c_str,
                      value: Self::RawSet)
                      -> ffi::c_int;
+
   unsafe fn get_attrelement(model: *mut ffi::GRBmodel,
                             attrname: ffi::c_str,
                             element: ffi::c_int,
@@ -228,15 +229,9 @@ pub trait HasAttrAPI<Output: Clone> {
                          values: *const Self::RawSet)
                          -> ffi::c_int;
 
-
-
   fn init() -> Self::Init;
-  // fn init() -> ffi::c_int { 0 }
-  // fn init() -> ffi::c_str { null() }
 
   fn to_out(val: Self::Init) -> Output;
-  // fn to_out(val: ffi::c_int) -> i32 { val as ffi::c_int }
-  // fn to_out(val: ffi::c_str) -> String { unsafe { util::from_c_str(val).to_owned() } }
 
   fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet;
   fn to_rawset(val: Output) -> Self::RawSet;
@@ -245,16 +240,9 @@ pub trait HasAttrAPI<Output: Clone> {
     iter::repeat(Self::init()).take(len).collect()
   }
 
-  fn to_rawsets(values: &[Output]) -> Result<Vec<Self::RawSet> >{
-    Ok(values.iter().map(|v| Self::to_rawset(v.clone())).collect()
-  )}
-  // fn to_rawsets(values: Vec<String>) -> Vec<ffi::c_str> {
-  //     let values = values.into_iter().map(|s| make_c_str(s)).collect::<Vec<_>>();
-  //     if values.iter().any(|ref s| s.is_err()) {
-  //       return Err(Error::StringConversion);
-  //     }
-  //     values.into_iter().map(|s| s.unwrap().as_ptr()).collect()
-  // }
+  fn to_rawsets(values: &[Output]) -> Result<Vec<Self::RawSet>> {
+    Ok(values.iter().map(|v| Self::to_rawset(v.clone())).collect())
+  }
 }
 
 impl HasAttrAPI<i32> for IntAttr {
@@ -597,21 +585,24 @@ impl HasAttrAPI<String> for StringAttr {
     null()
   }
 
-  fn to_out(val: ffi::c_str) -> String { unsafe { util::from_c_str(val).to_owned() } }
+  fn to_out(val: ffi::c_str) -> String {
+    unsafe { util::from_c_str(val).to_owned() }
+  }
 
   fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet {
     val
   }
 
   fn to_rawset(val: String) -> Self::RawSet {
-    val.as_ptr()
+    CString::new(val.as_str()).unwrap().as_ptr()
   }
 
   fn to_rawsets(values: &[String]) -> Result<Vec<ffi::c_str>> {
-      let values = values.into_iter().map(|s| util::make_c_str(s)).collect::<Vec<_>>();
-      if values.iter().any(|ref s| s.is_err()) {
-        return Err(Error::StringConversion);
-      }
-      values.into_iter().map(|s| s.unwrap().as_ptr()).collect()
+    let values =
+      values.into_iter().map(|s| util::make_c_str(s)).collect::<Vec<_>>();
+    if values.iter().any(|ref s| s.is_err()) {
+      return Err(Error::StringConversion);
+    }
+    Ok(values.into_iter().map(|s| s.unwrap().as_ptr()).collect())
   }
 }

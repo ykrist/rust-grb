@@ -365,7 +365,11 @@ impl<'a> Drop for Model<'a> {
   }
 }
 
-impl<'a, A, Output> HasAttr<A, Output> for Model<'a> where A: HasAttrAPI<Output> {}
+impl<'a, A, Output: Clone> HasAttr<A, Output> for Model<'a>
+  where A: HasAttrAPI<Output>,
+        CString: From<A>
+{
+}
 
 // #[test]
 // fn env_with_logfile() {

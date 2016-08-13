@@ -15,12 +15,18 @@ fn main() {
 
   // set objective funtion:
   //   f(x,y,z) = x
-  model.set_objective(&[0, 1, 2], &[1.0, 0.0, 0.0], &[], &[], &[], gurobi::Maximize).unwrap();
+  model.set_objective(&[x, y, z],
+                   &[1.0, 0.0, 0.0],
+                   &[],
+                   &[],
+                   &[],
+                   gurobi::Maximize)
+    .unwrap();
 
   // add linear constraints
 
   //  c0: x + y + z == 1
-  let c0 = model.add_constr("c0", &[0, 1, 2], &[1., 1., 1.], gurobi::Equal, 1.0)
+  let c0 = model.add_constr("c0", &[x, y, z], &[1., 1., 1.], gurobi::Equal, 1.0)
     .unwrap();
 
   // add quadratic constraints
@@ -29,8 +35,8 @@ fn main() {
   let qc0 = model.add_qconstr("qc0",
                  &[],
                  &[],
-                 &[0, 1, 2],
-                 &[0, 1, 2],
+                 &[x, y, z],
+                 &[x, y, z],
                  &[1., 1., -1.0],
                  gurobi::Less,
                  0.0)
@@ -40,8 +46,8 @@ fn main() {
   let qc1 = model.add_qconstr("qc1",
                  &[],
                  &[],
-                 &[0, 1],
-                 &[0, 2],
+                 &[x, y],
+                 &[x, z],
                  &[1., -1.0],
                  gurobi::Less,
                  0.0)

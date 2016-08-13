@@ -10,7 +10,7 @@ fn main() {
   let z = model.add_var("z", gurobi::Binary, 2.0).unwrap();
   model.update().unwrap();
 
-  model.set_objective(&[0, 1, 2],
+  model.set_objective(&[x, y, z],
                    &[1.0, 1.0, 2.0],
                    &[],
                    &[],
@@ -19,9 +19,9 @@ fn main() {
     .unwrap();
 
   let c0 =
-    model.add_constr("c0", &[0, 1, 2], &[1.0, 2.0, 3.0], gurobi::Less, 4.0)
+    model.add_constr("c0", &[x, y, z], &[1.0, 2.0, 3.0], gurobi::Less, 4.0)
       .unwrap();
-  let c1 = model.add_constr("c1", &[0, 1], &[1.0, 1.0], gurobi::Greater, 1.0)
+  let c1 = model.add_constr("c1", &[x, y], &[1.0, 1.0], gurobi::Greater, 1.0)
     .unwrap();
 
   model.optimize().unwrap();

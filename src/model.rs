@@ -2,7 +2,7 @@ extern crate gurobi_sys as ffi;
 
 use std::ptr::{null, null_mut};
 use std::ffi::CString;
-use env::{Env, EnvAPI};
+use env::{Env};
 use error::{Error, Result};
 use util;
 use std::iter;

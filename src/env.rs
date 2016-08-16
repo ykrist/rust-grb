@@ -65,29 +65,16 @@ impl Env {
   pub fn set<P: Param>(&mut self, param: P, value: P::Out) -> Result<()> {
     param.set(self, value)
   }
+
+  pub fn error_from_api(&self, error: ffi::c_int) -> Error {
+    Error::FromAPI(util::get_error_msg_env(self.env), error)
+  }
 }
 
 impl Drop for Env {
   fn drop(&mut self) {
     unsafe { ffi::GRBfreeenv(self.env) };
     self.env = null_mut();
-  }
-}
-
-
-/// Provides general C API related to GRBenv.
-pub trait EnvAPI {
-  unsafe fn get_env(&self) -> *mut ffi::GRBenv;
-  fn error_from_api(&self, ffi::c_int) -> Error;
-}
-
-impl EnvAPI for Env {
-  unsafe fn get_env(&self) -> *mut ffi::GRBenv {
-    self.env
-  }
-
-  fn error_from_api(&self, error: ffi::c_int) -> Error {
-    Error::FromAPI(util::get_error_msg_env(self.env), error)
   }
 }
 
@@ -103,7 +90,7 @@ pub trait Param: Sized + Into<CString> {
   fn get(self, env: &Env) -> Result<Self::Out> {
     let mut value = types::Init::init();
     let error = unsafe {
-      Self::get_param(env.get_env(),
+      Self::get_param(env.env,
                       self.into().as_ptr(),
                       Self::as_rawfrom(&mut value))
     };
@@ -115,7 +102,7 @@ pub trait Param: Sized + Into<CString> {
 
   fn set(self, env: &mut Env, value: Self::Out) -> Result<()> {
     let error = unsafe {
-      Self::set_param(env.get_env(),
+      Self::set_param(env.env,
                       self.into().as_ptr(),
                       Self::to_rawto(value))
     };

@@ -82,8 +82,12 @@ pub trait Param: Sized + Into<CString> {
 
 
   fn get(env: &Env, param: Self) -> Result<Self::Out> {
-    let mut value = types::Init::init();
-    let error = unsafe { Self::get_param(env.env, param.into().as_ptr(), Self::as_rawfrom(&mut value)) };
+    let mut value: Self::Buf = types::Init::init();
+    let error = unsafe {
+      Self::get_param(env.env,
+                      param.into().as_ptr(),
+                      types::AsRawPtr::<Self::RawFrom>::as_rawptr(&mut value))
+    };
     if error != 0 {
       return Err(env.error_from_api(error));
     }
@@ -91,20 +95,22 @@ pub trait Param: Sized + Into<CString> {
   }
 
   fn set(env: &mut Env, param: Self, value: Self::Out) -> Result<()> {
-    let error = unsafe { Self::set_param(env.env, param.into().as_ptr(), Self::to_rawto(value)) };
+    let error = unsafe {
+      Self::set_param(env.env,
+                      param.into().as_ptr(),
+                      types::FromRaw::<Self::Out>::from(value))
+    };
     if error != 0 {
       return Err(env.error_from_api(error));
     }
     Ok(())
   }
 
+  #[inline(always)]
   unsafe fn get_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: Self::RawFrom) -> ffi::c_int;
 
+  #[inline(always)]
   unsafe fn set_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: Self::RawTo) -> ffi::c_int;
-
-  fn as_rawfrom(val: &mut Self::Buf) -> Self::RawFrom { types::AsRawPtr::<_>::as_rawptr(val) }
-
-  fn to_rawto(val: Self::Out) -> Self::RawTo { types::FromRaw::<Self::Out>::from(val) }
 }
 
 
@@ -115,12 +121,10 @@ impl Param for param::IntParam {
   type RawFrom = *mut ffi::c_int;
   type RawTo = ffi::c_int;
 
-  #[inline(always)]
   unsafe fn get_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: *mut ffi::c_int) -> ffi::c_int {
     ffi::GRBgetintparam(env, paramname, value)
   }
 
-  #[inline(always)]
   unsafe fn set_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: ffi::c_int) -> ffi::c_int {
     ffi::GRBsetintparam(env, paramname, value)
   }
@@ -133,12 +137,10 @@ impl Param for param::DoubleParam {
   type RawFrom = *mut ffi::c_double;
   type RawTo = ffi::c_double;
 
-  #[inline(always)]
   unsafe fn get_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: *mut ffi::c_double) -> ffi::c_int {
     ffi::GRBgetdblparam(env, paramname, value)
   }
 
-  #[inline(always)]
   unsafe fn set_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: ffi::c_double) -> ffi::c_int {
     ffi::GRBsetdblparam(env, paramname, value)
   }
@@ -152,12 +154,10 @@ impl Param for param::StringParam {
   type RawFrom = *mut ffi::c_char;
   type RawTo = *const ffi::c_char;
 
-  #[inline(always)]
   unsafe fn get_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: *mut ffi::c_char) -> ffi::c_int {
     ffi::GRBgetstrparam(env, paramname, value)
   }
 
-  #[inline(always)]
   unsafe fn set_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: *const ffi::c_char) -> ffi::c_int {
     ffi::GRBsetstrparam(env, paramname, value)
   }

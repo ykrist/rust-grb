@@ -319,20 +319,20 @@ impl<'a> Drop for Model<'a> {
   }
 }
 
+use types;
+
 pub trait AttrBase {
   type Output: Clone;
-  type Init: Clone;
+  type Init: Clone + types::Init;
   type RawGet;
   type RawSet;
-
-  fn init() -> Self::Init;
 
   fn to_out(val: Self::Init) -> Self::Output;
 
   fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet;
   fn to_rawset(val: Self::Output) -> Self::RawSet;
 
-  fn init_array(len: usize) -> Vec<Self::Init> { iter::repeat(Self::init()).take(len).collect() }
+  fn init_array(len: usize) -> Vec<Self::Init> { iter::repeat(types::Init::init()).take(len).collect() }
 
   fn to_rawsets(values: &[Self::Output]) -> Result<Vec<Self::RawSet>> {
     Ok(values.iter().map(|v| Self::to_rawset(v.clone())).collect())
@@ -343,7 +343,7 @@ pub trait AttrBase {
 /// provides function to query/set the value of attributes.
 pub trait Attr: AttrBase + Into<CString> {
   fn get(model: &Model, attr: Self) -> Result<Self::Output> {
-    let mut value = Self::init();
+    let mut value = types::Init::init();
 
     let error = unsafe {
       Self::get_attr(model.model,
@@ -378,7 +378,7 @@ pub trait Attr: AttrBase + Into<CString> {
 
 pub trait AttrArray: AttrBase + Into<CString> {
   fn get_element(model: &Model, attr: Self, element: i32) -> Result<Self::Output> {
-    let mut value = Self::init();
+    let mut value = types::Init::init();
 
     let error = unsafe {
       Self::get_attrelement(model.model,
@@ -511,7 +511,6 @@ impl AttrBase for attr::IntAttr {
   type RawGet = ffi::c_int;
   type RawSet = ffi::c_int;
 
-  fn init() -> ffi::c_int { 0 }
   fn to_out(val: ffi::c_int) -> i32 { val as ffi::c_int }
   fn as_rawget(val: &mut i32) -> *mut ffi::c_int { val }
   fn to_rawset(val: i32) -> ffi::c_int { val }
@@ -571,7 +570,6 @@ impl AttrBase for attr::DoubleAttr {
   type RawGet = ffi::c_double;
   type RawSet = ffi::c_double;
 
-  fn init() -> ffi::c_double { 0.0 }
   fn to_out(val: ffi::c_double) -> f64 { val as ffi::c_double }
   fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet { val }
   fn to_rawset(val: f64) -> Self::RawSet { val }
@@ -630,7 +628,6 @@ impl AttrBase for attr::CharAttr {
   type RawGet = ffi::c_char;
   type RawSet = ffi::c_char;
 
-  fn init() -> ffi::c_char { 0 }
   fn to_out(val: ffi::c_char) -> i8 { val }
   fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet { val }
   fn to_rawset(val: i8) -> Self::RawSet { val }
@@ -679,8 +676,6 @@ impl AttrBase for attr::StringAttr {
   type Init = ffi::c_str;
   type RawGet = ffi::c_str;
   type RawSet = ffi::c_str;
-
-  fn init() -> ffi::c_str { null() }
 
   fn to_out(val: ffi::c_str) -> String { unsafe { util::from_c_str(val).to_owned() } }
 

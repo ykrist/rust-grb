@@ -2,11 +2,16 @@ extern crate gurobi_sys as ffi;
 
 use util;
 use std::ffi::CString;
+use std::ptr::null;
 
 
 /// make an empty instance.
 pub trait Init {
   fn init() -> Self;
+}
+
+impl Init for ffi::c_char {
+  fn init() -> ffi::c_char { 0 }
 }
 
 impl Init for ffi::c_int {
@@ -19,6 +24,10 @@ impl Init for ffi::c_double {
 
 impl Init for Vec<ffi::c_char> {
   fn init() -> Vec<ffi::c_char> { Vec::with_capacity(4096) }
+}
+
+impl Init for ffi::c_str {
+    fn init() -> ffi::c_str { null() }
 }
 
 

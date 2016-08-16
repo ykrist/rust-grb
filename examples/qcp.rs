@@ -1,5 +1,4 @@
 extern crate gurobi;
-use gurobi::Attr;
 
 fn main() {
   let env = gurobi::Env::new("qcp1.log").unwrap();

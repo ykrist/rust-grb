@@ -80,29 +80,25 @@ pub trait Param: Sized + Into<CString> {
   type RawFrom;
   type RawTo: types::FromRaw<Self::Out>;
 
-
+  #[allow(unused_imports)]
   fn get(env: &Env, param: Self) -> Result<Self::Out> {
+    use types::{AsRawPtr, Into};
+
     let mut value: Self::Buf = types::Init::init();
-    let error = unsafe {
-      Self::get_param(env.env,
-                      param.into().as_ptr(),
-                      types::AsRawPtr::<Self::RawFrom>::as_rawptr(&mut value))
-    };
+    let error = unsafe { Self::get_param(env.env, param.into().as_ptr(), value.as_rawptr()) };
     if error != 0 {
       return Err(env.error_from_api(error));
     }
-    Ok(types::Into::<_>::into(value))
+
+    Ok(types::Into::into(value))
   }
 
   fn set(env: &mut Env, param: Self, value: Self::Out) -> Result<()> {
-    let error = unsafe {
-      Self::set_param(env.env,
-                      param.into().as_ptr(),
-                      types::FromRaw::<Self::Out>::from(value))
-    };
+    let error = unsafe { Self::set_param(env.env, param.into().as_ptr(), types::FromRaw::from(value)) };
     if error != 0 {
       return Err(env.error_from_api(error));
     }
+
     Ok(())
   }
 
@@ -116,8 +112,7 @@ pub trait Param: Sized + Into<CString> {
 
 impl Param for param::IntParam {
   type Out = i32;
-
-  type Buf = i32;
+  type Buf = ffi::c_int;
   type RawFrom = *mut ffi::c_int;
   type RawTo = ffi::c_int;
 
@@ -132,8 +127,7 @@ impl Param for param::IntParam {
 
 impl Param for param::DoubleParam {
   type Out = f64;
-
-  type Buf = f64;
+  type Buf = ffi::c_double;
   type RawFrom = *mut ffi::c_double;
   type RawTo = ffi::c_double;
 
@@ -149,7 +143,6 @@ impl Param for param::DoubleParam {
 
 impl Param for param::StringParam {
   type Out = String;
-
   type Buf = Vec<ffi::c_char>;
   type RawFrom = *mut ffi::c_char;
   type RawTo = *const ffi::c_char;

@@ -20,21 +20,16 @@ pub mod model;
 mod util;
 
 // re-exports
-pub use env::Env;
 pub use error::{Error, Result};
-pub use param::HasParam;
-pub use model::HasAttr;
+pub use env::{Env, Param};
+pub use model::{Model, Attr};
+
 pub use model::VarType::*;
 pub use model::ConstrSense::*;
 pub use model::ModelSense::*;
 pub use model::SOSType::*;
 
-pub mod attr {
-  pub use model::attr::*;
-}
-
-pub mod param {
-  pub use env::param::*;
-}
+pub use env::param;
+pub use model::attr;
 
 // vim: set foldmethod=syntax :

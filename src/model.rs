@@ -2,8 +2,7 @@ extern crate gurobi_sys as ffi;
 
 use std::ptr::{null, null_mut};
 use std::ffi::CString;
-use env::Env;
-use param::HasEnvAPI;
+use env::{Env, EnvAPI};
 use error::{Error, Result};
 use util;
 use std::iter;
@@ -305,16 +304,6 @@ impl<'a> Model<'a> {
   }
 }
 
-impl<'a> HasModelAPI for Model<'a> {
-  unsafe fn get_model(&self) -> *mut ffi::GRBmodel {
-    self.model
-  }
-
-  fn error_from_api(&self, errcode: ffi::c_int) -> Error {
-    Error::FromAPI(self.env.get_error_msg(), errcode)
-  }
-}
-
 impl<'a> Drop for Model<'a> {
   fn drop(&mut self) {
     unsafe { ffi::GRBfreemodel(self.model) };
@@ -322,87 +311,27 @@ impl<'a> Drop for Model<'a> {
   }
 }
 
-pub trait HasModelAPI {
+pub trait ModelAPI {
   unsafe fn get_model(&self) -> *mut ffi::GRBmodel;
 
   // make an instance of error object related to C API.
   fn error_from_api(&self, errcode: ffi::c_int) -> Error;
 }
 
-pub trait HasAttrAPI<Output: Clone> {
-  type Init: Clone;
-  type RawGet;
-  type RawSet;
-
-  unsafe fn get_attr(model: *mut ffi::GRBmodel,
-                     attrname: ffi::c_str,
-                     value: *mut Self::RawGet)
-                     -> ffi::c_int;
-
-  unsafe fn set_attr(model: *mut ffi::GRBmodel,
-                     attrname: ffi::c_str,
-                     value: Self::RawSet)
-                     -> ffi::c_int;
-
-  unsafe fn get_attrelement(model: *mut ffi::GRBmodel,
-                            attrname: ffi::c_str,
-                            element: ffi::c_int,
-                            value: *mut Self::RawGet)
-                            -> ffi::c_int;
-
-  unsafe fn set_attrelement(model: *mut ffi::GRBmodel,
-                            attrname: ffi::c_str,
-                            element: ffi::c_int,
-                            value: Self::RawSet)
-                            -> ffi::c_int;
-
-  unsafe fn get_attrarray(model: *mut ffi::GRBmodel,
-                          attrname: ffi::c_str,
-                          first: ffi::c_int,
-                          len: ffi::c_int,
-                          values: *mut Self::Init)
-                          -> ffi::c_int;
-
-  unsafe fn set_attrarray(model: *mut ffi::GRBmodel,
-                          attrname: ffi::c_str,
-                          first: ffi::c_int,
-                          len: ffi::c_int,
-                          values: *const Self::RawSet)
-                          -> ffi::c_int;
-
-  unsafe fn get_attrlist(model: *mut ffi::GRBmodel,
-                         attrname: ffi::c_str,
-                         len: ffi::c_int,
-                         ind: *const ffi::c_int,
-                         values: *mut Self::Init)
-                         -> ffi::c_int;
-
-  unsafe fn set_attrlist(model: *mut ffi::GRBmodel,
-                         attrname: ffi::c_str,
-                         len: ffi::c_int,
-                         ind: *const ffi::c_int,
-                         values: *const Self::RawSet)
-                         -> ffi::c_int;
-
-  fn init() -> Self::Init;
-
-  fn to_out(val: Self::Init) -> Output;
-
-  fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet;
-  fn to_rawset(val: Output) -> Self::RawSet;
-
-  fn init_array(len: usize) -> Vec<Self::Init> {
-    iter::repeat(Self::init()).take(len).collect()
+impl<'a> ModelAPI for Model<'a> {
+  unsafe fn get_model(&self) -> *mut ffi::GRBmodel {
+    self.model
   }
 
-  fn to_rawsets(values: &[Output]) -> Result<Vec<Self::RawSet>> {
-    Ok(values.iter().map(|v| Self::to_rawset(v.clone())).collect())
+  fn error_from_api(&self, errcode: ffi::c_int) -> Error {
+    self.env.error_from_api(errcode)
   }
 }
 
+
 /// provides function to query/set the value of attributes.
-pub trait HasAttr<A, Output: Clone>: HasModelAPI
-  where A: HasAttrAPI<Output>,
+pub trait Attr<A, Output: Clone>: ModelAPI
+  where A: AttrAPI<Output>,
         CString: From<A>
 {
   fn get(&self, attr: A) -> Result<Output> {
@@ -552,30 +481,101 @@ pub trait HasAttr<A, Output: Clone>: HasModelAPI
   }
 }
 
-impl<'a, A, Output: Clone> HasAttr<A, Output> for Model<'a>
-  where A: HasAttrAPI<Output>,
+impl<'a, A, Output: Clone> Attr<A, Output> for Model<'a>
+  where A: AttrAPI<Output>,
         CString: From<A>
 {
 }
 
+
+pub trait AttrAPI<Output: Clone> {
+  type Init: Clone;
+  type RawGet;
+  type RawSet;
+
+  unsafe fn get_attr(model: *mut ffi::GRBmodel,
+                     attrname: ffi::c_str,
+                     value: *mut Self::RawGet)
+                     -> ffi::c_int;
+
+  unsafe fn set_attr(model: *mut ffi::GRBmodel,
+                     attrname: ffi::c_str,
+                     value: Self::RawSet)
+                     -> ffi::c_int;
+
+  unsafe fn get_attrelement(model: *mut ffi::GRBmodel,
+                            attrname: ffi::c_str,
+                            element: ffi::c_int,
+                            value: *mut Self::RawGet)
+                            -> ffi::c_int;
+
+  unsafe fn set_attrelement(model: *mut ffi::GRBmodel,
+                            attrname: ffi::c_str,
+                            element: ffi::c_int,
+                            value: Self::RawSet)
+                            -> ffi::c_int;
+
+  unsafe fn get_attrarray(model: *mut ffi::GRBmodel,
+                          attrname: ffi::c_str,
+                          first: ffi::c_int,
+                          len: ffi::c_int,
+                          values: *mut Self::Init)
+                          -> ffi::c_int;
+
+  unsafe fn set_attrarray(model: *mut ffi::GRBmodel,
+                          attrname: ffi::c_str,
+                          first: ffi::c_int,
+                          len: ffi::c_int,
+                          values: *const Self::RawSet)
+                          -> ffi::c_int;
+
+  unsafe fn get_attrlist(model: *mut ffi::GRBmodel,
+                         attrname: ffi::c_str,
+                         len: ffi::c_int,
+                         ind: *const ffi::c_int,
+                         values: *mut Self::Init)
+                         -> ffi::c_int;
+
+  unsafe fn set_attrlist(model: *mut ffi::GRBmodel,
+                         attrname: ffi::c_str,
+                         len: ffi::c_int,
+                         ind: *const ffi::c_int,
+                         values: *const Self::RawSet)
+                         -> ffi::c_int;
+
+  fn init() -> Self::Init;
+
+  fn to_out(val: Self::Init) -> Output;
+
+  fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet;
+  fn to_rawset(val: Output) -> Self::RawSet;
+
+  fn init_array(len: usize) -> Vec<Self::Init> {
+    iter::repeat(Self::init()).take(len).collect()
+  }
+
+  fn to_rawsets(values: &[Output]) -> Result<Vec<Self::RawSet>> {
+    Ok(values.iter().map(|v| Self::to_rawset(v.clone())).collect())
+  }
+}
+
+
 pub mod attr {
-
-  extern crate gurobi_sys as ffi;
-
   pub use ffi::{IntAttr, DoubleAttr, CharAttr, StringAttr};
   pub use ffi::IntAttr::*;
   pub use ffi::DoubleAttr::*;
   pub use ffi::CharAttr::*;
   pub use ffi::StringAttr::*;
 
+  use super::ffi;
   use std::ptr::null;
   use std::ffi::CString;
   use error::{Error, Result};
-  use model::HasAttrAPI;
+  use super::AttrAPI;
   use util;
 
 
-  impl HasAttrAPI<i32> for IntAttr {
+  impl AttrAPI<i32> for IntAttr {
     type Init = i32;
     type RawGet = ffi::c_int;
     type RawSet = ffi::c_int;
@@ -663,7 +663,7 @@ pub mod attr {
     }
   }
 
-  impl HasAttrAPI<f64> for DoubleAttr {
+  impl AttrAPI<f64> for DoubleAttr {
     type Init = f64;
     type RawGet = ffi::c_double;
     type RawSet = ffi::c_double;
@@ -751,7 +751,7 @@ pub mod attr {
     }
   }
 
-  impl HasAttrAPI<i8> for CharAttr {
+  impl AttrAPI<i8> for CharAttr {
     type Init = i8;
     type RawGet = ffi::c_char;
     type RawSet = ffi::c_char;
@@ -840,7 +840,7 @@ pub mod attr {
     }
   }
 
-  impl HasAttrAPI<String> for StringAttr {
+  impl AttrAPI<String> for StringAttr {
     type Init = ffi::c_str;
     type RawGet = ffi::c_str;
     type RawSet = ffi::c_str;

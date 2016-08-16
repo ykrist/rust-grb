@@ -58,21 +58,21 @@ pub trait AsRawPtr<T> {
 }
 
 impl AsRawPtr<*mut ffi::c_int> for i32 {
-    fn as_rawptr(&mut self) -> *mut ffi::c_int {
-      self
-    }
+  fn as_rawptr(&mut self) -> *mut ffi::c_int {
+    self
+  }
 }
 
 impl AsRawPtr<*mut ffi::c_double> for f64 {
-    fn as_rawptr(&mut self) -> *mut ffi::c_double {
-      self
-    }
+  fn as_rawptr(&mut self) -> *mut ffi::c_double {
+    self
+  }
 }
 
 impl AsRawPtr<*mut ffi::c_char> for Vec<ffi::c_char> {
-    fn as_rawptr(&mut self) -> *mut ffi::c_char {
-      self.as_mut_ptr()
-    }
+  fn as_rawptr(&mut self) -> *mut ffi::c_char {
+    self.as_mut_ptr()
+  }
 }
 
 

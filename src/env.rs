@@ -56,6 +56,16 @@ impl Env {
 
     Ok(Model::new(self, model))
   }
+
+  pub fn get<T, P: Param<T>>(&self, param: P) -> Result<T>
+    where CString: From<P> {
+    param.get(self)
+  }
+
+  pub fn set<T, P: Param<T>>(&mut self, param: P, value: T) -> Result<()>
+    where CString: From<P> {
+    param.set(self, value)
+  }
 }
 
 impl Drop for Env {
@@ -84,50 +94,40 @@ impl EnvAPI for Env {
 
 
 /// provides function to query/set the value of parameters.
-pub trait Param<P, Output>: EnvAPI
-  where CString: From<P>,
-        P: ParamAPI<Output>
+pub trait Param<Output>: Sized
+  where CString: From<Self>
 {
+  type RawFrom;
+  type RawTo: FromRaw<Output>;
+  type Buf: Init + Into<Output> + AsRawPtr<Self::RawFrom>;
+
+
   /// Query the value of a parameter.
-  fn get(&self, param: P) -> Result<Output> {
+  fn get(self, env: &Env) -> Result<Output> {
     let mut value = Init::init();
     let error = unsafe {
-      P::get_param(self.get_env(),
-                   CString::from(param).as_ptr(),
-                   P::as_rawfrom(&mut value))
+      Self::get_param(env.get_env(),
+                      CString::from(self).as_ptr(),
+                      Self::as_rawfrom(&mut value))
     };
     if error != 0 {
-      return Err(self.error_from_api(error));
+      return Err(env.error_from_api(error));
     }
     Ok(Into::<_>::into(value))
   }
 
   /// Set the value of a parameter.
-  fn set(&mut self, param: P, value: Output) -> Result<()> {
+  fn set(self, env: &mut Env, value: Output) -> Result<()> {
     let error = unsafe {
-      P::set_param(self.get_env(),
-                   CString::from(param).as_ptr(),
-                   P::to_rawto(value))
+      Self::set_param(env.get_env(),
+                      CString::from(self).as_ptr(),
+                      Self::to_rawto(value))
     };
     if error != 0 {
-      return Err(self.error_from_api(error));
+      return Err(env.error_from_api(error));
     }
     Ok(())
   }
-}
-
-impl<P, Output> Param<P, Output> for Env
-  where CString: From<P>,
-        P: ParamAPI<Output>
-{
-}
-
-
-/// Provides C APIs and some utility functions related to parameter access.
-pub trait ParamAPI<Output> {
-  type RawFrom;
-  type RawTo: FromRaw<Output>;
-  type Buf: Init + Into<Output> + AsRawPtr<Self::RawFrom>;
 
   unsafe fn get_param(env: *mut ffi::GRBenv,
                       paramname: ffi::c_str,
@@ -149,7 +149,7 @@ pub trait ParamAPI<Output> {
 }
 
 
-impl ParamAPI<i32> for param::IntParam {
+impl Param<i32> for param::IntParam {
   type Buf = i32;
   type RawFrom = *mut ffi::c_int;
   type RawTo = ffi::c_int;
@@ -171,7 +171,7 @@ impl ParamAPI<i32> for param::IntParam {
   }
 }
 
-impl ParamAPI<f64> for param::DoubleParam {
+impl Param<f64> for param::DoubleParam {
   type Buf = f64;
   type RawFrom = *mut ffi::c_double;
   type RawTo = ffi::c_double;
@@ -194,7 +194,7 @@ impl ParamAPI<f64> for param::DoubleParam {
 }
 
 
-impl ParamAPI<String> for param::StringParam {
+impl Param<String> for param::StringParam {
   type Buf = Vec<ffi::c_char>;
   type RawFrom = *mut ffi::c_char;
   type RawTo = *const ffi::c_char;
@@ -239,7 +239,7 @@ impl ParamAPI<String> for param::StringParam {
 #[cfg(test)]
 mod test {
   use env::param;
-  use env::{Env, Param};
+  use env::Env;
 
   #[test]
   fn param_accesors_should_be_valid() {

@@ -308,6 +308,8 @@ impl<'a> Model<'a> {
   pub fn set_list<A: AttrArray>(&mut self, attr: A, ind: &[i32], values: &[A::Output]) -> Result<()> {
     A::set_list(self, attr, ind, values)
   }
+
+  fn error_from_api(&self, errcode: ffi::c_int) -> Error { self.env.error_from_api(errcode) }
 }
 
 impl<'a> Drop for Model<'a> {
@@ -316,21 +318,6 @@ impl<'a> Drop for Model<'a> {
     self.model = null_mut();
   }
 }
-
-pub trait ModelAPI {
-  unsafe fn get_model(&self) -> *mut ffi::GRBmodel;
-
-  // make an instance of error object related to C API.
-  fn error_from_api(&self, errcode: ffi::c_int) -> Error;
-}
-
-impl<'a> ModelAPI for Model<'a> {
-  unsafe fn get_model(&self) -> *mut ffi::GRBmodel { self.model }
-
-  fn error_from_api(&self, errcode: ffi::c_int) -> Error { self.env.error_from_api(errcode) }
-}
-
-
 
 pub trait AttrBase {
   type Output: Clone;
@@ -359,7 +346,7 @@ pub trait Attr: AttrBase + Into<CString> {
     let mut value = Self::init();
 
     let error = unsafe {
-      Self::get_attr(model.get_model(),
+      Self::get_attr(model.model,
                      attr.into().as_ptr(),
                      Self::as_rawget(&mut value))
     };
@@ -372,7 +359,7 @@ pub trait Attr: AttrBase + Into<CString> {
 
   fn set(model: &mut Model, attr: Self, value: Self::Output) -> Result<()> {
     let error = unsafe {
-      Self::set_attr(model.get_model(),
+      Self::set_attr(model.model,
                      attr.into().as_ptr(),
                      Self::to_rawset(value))
     };
@@ -394,7 +381,7 @@ pub trait AttrArray: AttrBase + Into<CString> {
     let mut value = Self::init();
 
     let error = unsafe {
-      Self::get_attrelement(model.get_model(),
+      Self::get_attrelement(model.model,
                             attr.into().as_ptr(),
                             element,
                             Self::as_rawget(&mut value))
@@ -408,7 +395,7 @@ pub trait AttrArray: AttrBase + Into<CString> {
 
   fn set_element(model: &mut Model, attr: Self, element: i32, value: Self::Output) -> Result<()> {
     let error = unsafe {
-      Self::set_attrelement(model.get_model(),
+      Self::set_attrelement(model.model,
                             attr.into().as_ptr(),
                             element,
                             Self::to_rawset(value))
@@ -424,7 +411,7 @@ pub trait AttrArray: AttrBase + Into<CString> {
     let mut values = Self::init_array(len);
 
     let error = unsafe {
-      Self::get_attrarray(model.get_model(),
+      Self::get_attrarray(model.model,
                           attr.into().as_ptr(),
                           first as ffi::c_int,
                           len as ffi::c_int,
@@ -441,7 +428,7 @@ pub trait AttrArray: AttrBase + Into<CString> {
     let values = try!(Self::to_rawsets(values));
 
     let error = unsafe {
-      Self::set_attrarray(model.get_model(),
+      Self::set_attrarray(model.model,
                           attr.into().as_ptr(),
                           first as ffi::c_int,
                           values.len() as ffi::c_int,
@@ -458,7 +445,7 @@ pub trait AttrArray: AttrBase + Into<CString> {
     let mut values = Self::init_array(ind.len());
 
     let error = unsafe {
-      Self::get_attrlist(model.get_model(),
+      Self::get_attrlist(model.model,
                          attr.into().as_ptr(),
                          ind.len() as ffi::c_int,
                          ind.as_ptr(),
@@ -479,7 +466,7 @@ pub trait AttrArray: AttrBase + Into<CString> {
     let values = try!(Self::to_rawsets(values));
 
     let error = unsafe {
-      Self::set_attrlist(model.get_model(),
+      Self::set_attrlist(model.model,
                          attr.into().as_ptr(),
                          ind.len() as ffi::c_int,
                          ind.as_ptr(),

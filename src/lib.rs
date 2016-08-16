@@ -18,6 +18,7 @@ pub mod error;
 pub mod env;
 pub mod model;
 mod util;
+mod types;
 
 // re-exports
 pub use error::{Error, Result};

@@ -5,6 +5,7 @@ use std::ffi::CString;
 use error::{Error, Result};
 use model::Model;
 use util;
+use types::{Init, Into};
 
 
 /// Gurobi environment object
@@ -79,7 +80,7 @@ pub trait Param<P, Output>: EnvAPI
 {
   /// Query the value of a parameter.
   fn get(&self, param: P) -> Result<Output> {
-    let mut value = Into::<Output>::init();
+    let mut value = Init::init();
     let error = unsafe {
       P::get_param(self.get_env(),
                    CString::from(param).as_ptr(),
@@ -116,7 +117,7 @@ impl<P, Output> Param<P, Output> for Env
 pub trait ParamAPI<Output> {
   type RawFrom;
   type RawTo;
-  type Init: Into<Output>;
+  type Buf: Init + Into<Output>;
 
   unsafe fn get_param(env: *mut ffi::GRBenv,
                       paramname: ffi::c_str,
@@ -128,9 +129,10 @@ pub trait ParamAPI<Output> {
                       value: Self::RawTo)
                       -> ffi::c_int;
 
-  fn as_rawfrom(val: &mut Self::Init) -> Self::RawFrom;
+  fn as_rawfrom(val: &mut Self::Buf) -> Self::RawFrom;
   fn as_rawto(output: Output) -> Self::RawTo;
 }
+
 
 pub mod param {
   // re-exports
@@ -144,7 +146,7 @@ pub mod param {
   use std::ffi::CString;
 
   impl ParamAPI<i32> for IntParam {
-    type Init = i32;
+    type Buf = i32;
     type RawFrom = *mut ffi::c_int;
     type RawTo = ffi::c_int;
 
@@ -177,7 +179,7 @@ pub mod param {
   }
 
   impl ParamAPI<f64> for DoubleParam {
-    type Init = f64;
+    type Buf = f64;
     type RawFrom = *mut ffi::c_double;
     type RawTo = ffi::c_double;
 
@@ -210,7 +212,7 @@ pub mod param {
 
 
   impl ParamAPI<String> for StringParam {
-    type Init = Vec<ffi::c_char>;
+    type Buf = Vec<ffi::c_char>;
     type RawFrom = *mut ffi::c_char;
     type RawTo = *const ffi::c_char;
 
@@ -239,42 +241,6 @@ pub mod param {
     fn as_rawto(output: String) -> *const ffi::c_char {
       CString::new(output.as_str()).unwrap().as_ptr()
     }
-  }
-}
-
-
-trait Into<T> {
-  fn init() -> Self;
-  fn into(self) -> T;
-}
-
-impl Into<i32> for ffi::c_int {
-  fn init() -> i32 {
-    0
-  }
-
-  fn into(self) -> i32 {
-    self
-  }
-}
-
-impl Into<f64> for ffi::c_double {
-  fn init() -> ffi::c_double {
-    0.0
-  }
-
-  fn into(self) -> f64 {
-    self
-  }
-}
-
-impl Into<String> for Vec<ffi::c_char> {
-  fn init() -> Vec<ffi::c_char> {
-    Vec::with_capacity(4096)
-  }
-
-  fn into(self) -> String {
-    unsafe { util::from_c_str(self.as_ptr()) }
   }
 }
 

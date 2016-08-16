@@ -2,7 +2,7 @@ extern crate gurobi_sys as ffi;
 
 use std::ptr::{null, null_mut};
 use std::ffi::CString;
-use env::{Env};
+use env::Env;
 use error::{Error, Result};
 use util;
 use std::iter;
@@ -12,7 +12,7 @@ use std::iter;
 pub enum VarType {
   Binary,
   Continuous(f64, f64),
-  Integer(i64, i64),
+  Integer(i64, i64)
 }
 
 ///
@@ -20,21 +20,21 @@ pub enum VarType {
 pub enum ConstrSense {
   Equal,
   Greater,
-  Less,
+  Less
 }
 
 ///
 #[derive(Debug)]
 pub enum ModelSense {
   Minimize,
-  Maximize,
+  Maximize
 }
 
 ///
 #[derive(Debug)]
 pub enum SOSType {
   SOSType1,
-  SOSType2,
+  SOSType2
 }
 
 
@@ -44,7 +44,7 @@ pub struct Model<'a> {
   env: &'a Env,
   vars: Vec<i32>,
   constrs: Vec<i32>,
-  qconstrs: Vec<i32>,
+  qconstrs: Vec<i32>
 }
 
 impl<'a> Model<'a> {
@@ -55,7 +55,7 @@ impl<'a> Model<'a> {
       env: env,
       vars: Vec::new(),
       constrs: Vec::new(),
-      qconstrs: Vec::new(),
+      qconstrs: Vec::new()
     }
   }
 
@@ -72,16 +72,14 @@ impl<'a> Model<'a> {
   pub fn copy(&self) -> Result<Model> {
     let copied = unsafe { ffi::GRBcopymodel(self.model) };
     if copied.is_null() {
-      return Err(Error::FromAPI("Failed to create a copy of the model"
-                                  .to_owned(),
-                                20002));
+      return Err(Error::FromAPI("Failed to create a copy of the model".to_owned(), 20002));
     }
     Ok(Model {
       env: self.env,
       model: copied,
       vars: self.vars.clone(),
       constrs: self.constrs.clone(),
-      qconstrs: self.qconstrs.clone(),
+      qconstrs: self.qconstrs.clone()
     })
   }
 
@@ -108,19 +106,13 @@ impl<'a> Model<'a> {
   }
 
   /// add a decision variable to the model.
-  pub fn add_var(&mut self,
-                 name: &str,
-                 vtype: VarType,
-                 obj: f64)
-                 -> Result<i32> {
+  pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64) -> Result<i32> {
     // extract parameters
     use self::VarType::*;
     let (vtype, lb, ub) = match vtype {
       Binary => ('B' as ffi::c_char, 0.0, 1.0),
       Continuous(lb, ub) => ('C' as ffi::c_char, lb, ub),
-      Integer(lb, ub) => {
-        ('I' as ffi::c_char, lb as ffi::c_double, ub as ffi::c_double)
-      }
+      Integer(lb, ub) => ('I' as ffi::c_char, lb as ffi::c_double, ub as ffi::c_double),
     };
     let name = try!(util::make_c_str(name));
     let error = unsafe {
@@ -145,12 +137,8 @@ impl<'a> Model<'a> {
   }
 
   /// add a linear constraint to the model.
-  pub fn add_constr(&mut self,
-                    name: &str,
-                    ind: &[ffi::c_int],
-                    val: &[ffi::c_double],
-                    sense: ConstrSense,
-                    rhs: ffi::c_double)
+  pub fn add_constr(&mut self, name: &str, ind: &[ffi::c_int], val: &[ffi::c_double],
+                    sense: ConstrSense, rhs: ffi::c_double)
                     -> Result<i32> {
     if ind.len() != val.len() {
       return Err(Error::InconsitentDims);
@@ -183,15 +171,9 @@ impl<'a> Model<'a> {
   }
 
   /// add a quadratic constraint to the model.
-  pub fn add_qconstr(&mut self,
-                     constrname: &str,
-                     lind: &[ffi::c_int],
-                     lval: &[ffi::c_double],
-                     qrow: &[ffi::c_int],
-                     qcol: &[ffi::c_int],
-                     qval: &[ffi::c_double],
-                     sense: ConstrSense,
-                     rhs: ffi::c_double)
+  pub fn add_qconstr(&mut self, constrname: &str, lind: &[ffi::c_int], lval: &[ffi::c_double],
+                     qrow: &[ffi::c_int], qcol: &[ffi::c_int], qval: &[ffi::c_double],
+                     sense: ConstrSense, rhs: ffi::c_double)
                      -> Result<i32> {
     if lind.len() != lval.len() {
       return Err(Error::InconsitentDims);
@@ -230,13 +212,8 @@ impl<'a> Model<'a> {
     Ok(qrow_no)
   }
 
-  pub fn set_objective(&mut self,
-                       lind: &[i32],
-                       lval: &[f64],
-                       qrow: &[i32],
-                       qcol: &[i32],
-                       qval: &[f64],
-                       sense: ModelSense)
+  pub fn set_objective(&mut self, lind: &[i32], lval: &[f64], qrow: &[i32], qcol: &[i32],
+                       qval: &[f64], sense: ModelSense)
                        -> Result<()> {
     let sense = match sense {
       ModelSense::Minimize => -1,
@@ -248,10 +225,7 @@ impl<'a> Model<'a> {
   }
 
   /// add quadratic terms of objective function.
-  fn add_qpterms(&mut self,
-                 qrow: &[ffi::c_int],
-                 qcol: &[ffi::c_int],
-                 qval: &[ffi::c_double])
+  fn add_qpterms(&mut self, qrow: &[ffi::c_int], qcol: &[ffi::c_int], qval: &[ffi::c_double])
                  -> Result<()> {
     if qrow.len() != qcol.len() || qcol.len() != qval.len() {
       return Err(Error::InconsitentDims);
@@ -272,11 +246,7 @@ impl<'a> Model<'a> {
   }
 
   /// add Special Order Set (SOS) constraint to the model.
-  pub fn add_sos(&mut self,
-                 vars: &[i32],
-                 weights: &[f64],
-                 sostype: SOSType)
-                 -> Result<()> {
+  pub fn add_sos(&mut self, vars: &[i32], weights: &[f64], sostype: SOSType) -> Result<()> {
     if vars.len() != weights.len() {
       return Err(Error::InconsitentDims);
     }
@@ -319,20 +289,15 @@ pub trait ModelAPI {
 }
 
 impl<'a> ModelAPI for Model<'a> {
-  unsafe fn get_model(&self) -> *mut ffi::GRBmodel {
-    self.model
-  }
+  unsafe fn get_model(&self) -> *mut ffi::GRBmodel { self.model }
 
-  fn error_from_api(&self, errcode: ffi::c_int) -> Error {
-    self.env.error_from_api(errcode)
-  }
+  fn error_from_api(&self, errcode: ffi::c_int) -> Error { self.env.error_from_api(errcode) }
 }
 
 
 /// provides function to query/set the value of attributes.
 pub trait Attr<A, Output: Clone>: ModelAPI
-  where A: AttrAPI<Output>,
-        CString: From<A>
+  where A: AttrAPI<Output>, CString: From<A>
 {
   fn get(&self, attr: A) -> Result<Output> {
     let mut value = A::init();
@@ -378,11 +343,7 @@ pub trait Attr<A, Output: Clone>: ModelAPI
     Ok(A::to_out(value))
   }
 
-  fn set_element(&mut self,
-                 attr: A,
-                 element: i32,
-                 value: Output)
-                 -> Result<()> {
+  fn set_element(&mut self, attr: A, element: i32, value: Output) -> Result<()> {
     let error = unsafe {
       A::set_attrelement(self.get_model(),
                          CString::from(attr).as_ptr(),
@@ -396,11 +357,7 @@ pub trait Attr<A, Output: Clone>: ModelAPI
     Ok(())
   }
 
-  fn get_array(&self,
-               attr: A,
-               first: usize,
-               len: usize)
-               -> Result<Vec<Output>> {
+  fn get_array(&self, attr: A, first: usize, len: usize) -> Result<Vec<Output>> {
     let mut values = A::init_array(len);
 
     let error = unsafe {
@@ -417,11 +374,7 @@ pub trait Attr<A, Output: Clone>: ModelAPI
     Ok(values.into_iter().map(|s| A::to_out(s)).collect())
   }
 
-  fn set_array(&mut self,
-               attr: A,
-               first: usize,
-               values: &[Output])
-               -> Result<()> {
+  fn set_array(&mut self, attr: A, first: usize, values: &[Output]) -> Result<()> {
     let values = try!(A::to_rawsets(values));
 
     let error = unsafe {
@@ -455,11 +408,7 @@ pub trait Attr<A, Output: Clone>: ModelAPI
     Ok(values.into_iter().map(|s| A::to_out(s)).collect())
   }
 
-  fn set_list(&mut self,
-              attr: A,
-              ind: &[i32],
-              values: &[Output])
-              -> Result<()> {
+  fn set_list(&mut self, attr: A, ind: &[i32], values: &[Output]) -> Result<()> {
     if ind.len() != values.len() {
       return Err(Error::InconsitentDims);
     }
@@ -481,11 +430,7 @@ pub trait Attr<A, Output: Clone>: ModelAPI
   }
 }
 
-impl<'a, A, Output: Clone> Attr<A, Output> for Model<'a>
-  where A: AttrAPI<Output>,
-        CString: From<A>
-{
-}
+impl<'a, A, Output: Clone> Attr<A, Output> for Model<'a> where A: AttrAPI<Output>, CString: From<A> {}
 
 
 pub trait AttrAPI<Output: Clone> {
@@ -493,54 +438,34 @@ pub trait AttrAPI<Output: Clone> {
   type RawGet;
   type RawSet;
 
-  unsafe fn get_attr(model: *mut ffi::GRBmodel,
-                     attrname: ffi::c_str,
-                     value: *mut Self::RawGet)
+  unsafe fn get_attr(model: *mut ffi::GRBmodel, attrname: ffi::c_str, value: *mut Self::RawGet)
                      -> ffi::c_int;
 
-  unsafe fn set_attr(model: *mut ffi::GRBmodel,
-                     attrname: ffi::c_str,
-                     value: Self::RawSet)
+  unsafe fn set_attr(model: *mut ffi::GRBmodel, attrname: ffi::c_str, value: Self::RawSet)
                      -> ffi::c_int;
 
-  unsafe fn get_attrelement(model: *mut ffi::GRBmodel,
-                            attrname: ffi::c_str,
-                            element: ffi::c_int,
+  unsafe fn get_attrelement(model: *mut ffi::GRBmodel, attrname: ffi::c_str, element: ffi::c_int,
                             value: *mut Self::RawGet)
                             -> ffi::c_int;
 
-  unsafe fn set_attrelement(model: *mut ffi::GRBmodel,
-                            attrname: ffi::c_str,
-                            element: ffi::c_int,
+  unsafe fn set_attrelement(model: *mut ffi::GRBmodel, attrname: ffi::c_str, element: ffi::c_int,
                             value: Self::RawSet)
                             -> ffi::c_int;
 
-  unsafe fn get_attrarray(model: *mut ffi::GRBmodel,
-                          attrname: ffi::c_str,
-                          first: ffi::c_int,
-                          len: ffi::c_int,
-                          values: *mut Self::Init)
+  unsafe fn get_attrarray(model: *mut ffi::GRBmodel, attrname: ffi::c_str, first: ffi::c_int,
+                          len: ffi::c_int, values: *mut Self::Init)
                           -> ffi::c_int;
 
-  unsafe fn set_attrarray(model: *mut ffi::GRBmodel,
-                          attrname: ffi::c_str,
-                          first: ffi::c_int,
-                          len: ffi::c_int,
-                          values: *const Self::RawSet)
+  unsafe fn set_attrarray(model: *mut ffi::GRBmodel, attrname: ffi::c_str, first: ffi::c_int,
+                          len: ffi::c_int, values: *const Self::RawSet)
                           -> ffi::c_int;
 
-  unsafe fn get_attrlist(model: *mut ffi::GRBmodel,
-                         attrname: ffi::c_str,
-                         len: ffi::c_int,
-                         ind: *const ffi::c_int,
-                         values: *mut Self::Init)
+  unsafe fn get_attrlist(model: *mut ffi::GRBmodel, attrname: ffi::c_str, len: ffi::c_int,
+                         ind: *const ffi::c_int, values: *mut Self::Init)
                          -> ffi::c_int;
 
-  unsafe fn set_attrlist(model: *mut ffi::GRBmodel,
-                         attrname: ffi::c_str,
-                         len: ffi::c_int,
-                         ind: *const ffi::c_int,
-                         values: *const Self::RawSet)
+  unsafe fn set_attrlist(model: *mut ffi::GRBmodel, attrname: ffi::c_str, len: ffi::c_int,
+                         ind: *const ffi::c_int, values: *const Self::RawSet)
                          -> ffi::c_int;
 
   fn init() -> Self::Init;
@@ -550,9 +475,7 @@ pub trait AttrAPI<Output: Clone> {
   fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet;
   fn to_rawset(val: Output) -> Self::RawSet;
 
-  fn init_array(len: usize) -> Vec<Self::Init> {
-    iter::repeat(Self::init()).take(len).collect()
-  }
+  fn init_array(len: usize) -> Vec<Self::Init> { iter::repeat(Self::init()).take(len).collect() }
 
   fn to_rawsets(values: &[Output]) -> Result<Vec<Self::RawSet>> {
     Ok(values.iter().map(|v| Self::to_rawset(v.clone())).collect())
@@ -580,87 +503,59 @@ pub mod attr {
     type RawGet = ffi::c_int;
     type RawSet = ffi::c_int;
 
-    unsafe fn get_attr(model: *mut ffi::GRBmodel,
-                       attrname: ffi::c_str,
-                       value: *mut Self::RawGet)
+    unsafe fn get_attr(model: *mut ffi::GRBmodel, attrname: ffi::c_str, value: *mut Self::RawGet)
                        -> ffi::c_int {
       ffi::GRBgetintattr(model, attrname, value)
     }
 
-    unsafe fn set_attr(model: *mut ffi::GRBmodel,
-                       attrname: ffi::c_str,
-                       value: Self::RawSet)
+    unsafe fn set_attr(model: *mut ffi::GRBmodel, attrname: ffi::c_str, value: Self::RawSet)
                        -> ffi::c_int {
       ffi::GRBsetintattr(model, attrname, value)
     }
 
-    unsafe fn get_attrelement(model: *mut ffi::GRBmodel,
-                              attrname: ffi::c_str,
-                              element: ffi::c_int,
-                              value: *mut Self::RawGet)
+    unsafe fn get_attrelement(model: *mut ffi::GRBmodel, attrname: ffi::c_str,
+                              element: ffi::c_int, value: *mut Self::RawGet)
                               -> ffi::c_int {
       ffi::GRBgetintattrelement(model, attrname, element, value)
     }
 
-    unsafe fn set_attrelement(model: *mut ffi::GRBmodel,
-                              attrname: ffi::c_str,
-                              element: ffi::c_int,
-                              value: Self::RawSet)
+    unsafe fn set_attrelement(model: *mut ffi::GRBmodel, attrname: ffi::c_str,
+                              element: ffi::c_int, value: Self::RawSet)
                               -> ffi::c_int {
       ffi::GRBsetintattrelement(model, attrname, element, value)
     }
 
-    unsafe fn get_attrarray(model: *mut ffi::GRBmodel,
-                            attrname: ffi::c_str,
-                            first: ffi::c_int,
-                            len: ffi::c_int,
-                            values: *mut Self::RawGet)
+    unsafe fn get_attrarray(model: *mut ffi::GRBmodel, attrname: ffi::c_str, first: ffi::c_int,
+                            len: ffi::c_int, values: *mut Self::RawGet)
                             -> ffi::c_int {
       ffi::GRBgetintattrarray(model, attrname, first, len, values)
     }
 
-    unsafe fn set_attrarray(model: *mut ffi::GRBmodel,
-                            attrname: ffi::c_str,
-                            first: ffi::c_int,
-                            len: ffi::c_int,
-                            values: *const Self::RawSet)
+    unsafe fn set_attrarray(model: *mut ffi::GRBmodel, attrname: ffi::c_str, first: ffi::c_int,
+                            len: ffi::c_int, values: *const Self::RawSet)
                             -> ffi::c_int {
       ffi::GRBsetintattrarray(model, attrname, first, len, values)
     }
 
-    unsafe fn get_attrlist(model: *mut ffi::GRBmodel,
-                           attrname: ffi::c_str,
-                           len: ffi::c_int,
-                           ind: *const ffi::c_int,
-                           values: *mut Self::RawGet)
+    unsafe fn get_attrlist(model: *mut ffi::GRBmodel, attrname: ffi::c_str, len: ffi::c_int,
+                           ind: *const ffi::c_int, values: *mut Self::RawGet)
                            -> ffi::c_int {
       ffi::GRBgetintattrlist(model, attrname, len, ind, values)
     }
 
-    unsafe fn set_attrlist(model: *mut ffi::GRBmodel,
-                           attrname: ffi::c_str,
-                           len: ffi::c_int,
-                           ind: *const ffi::c_int,
-                           values: *const Self::RawSet)
+    unsafe fn set_attrlist(model: *mut ffi::GRBmodel, attrname: ffi::c_str, len: ffi::c_int,
+                           ind: *const ffi::c_int, values: *const Self::RawSet)
                            -> ffi::c_int {
       ffi::GRBsetintattrlist(model, attrname, len, ind, values)
     }
 
 
-    fn init() -> ffi::c_int {
-      0
-    }
+    fn init() -> ffi::c_int { 0 }
 
-    fn to_out(val: ffi::c_int) -> i32 {
-      val as ffi::c_int
-    }
+    fn to_out(val: ffi::c_int) -> i32 { val as ffi::c_int }
 
-    fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet {
-      val
-    }
-    fn to_rawset(val: i32) -> Self::RawSet {
-      val
-    }
+    fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet { val }
+    fn to_rawset(val: i32) -> Self::RawSet { val }
   }
 
   impl AttrAPI<f64> for DoubleAttr {
@@ -668,87 +563,59 @@ pub mod attr {
     type RawGet = ffi::c_double;
     type RawSet = ffi::c_double;
 
-    unsafe fn get_attr(model: *mut ffi::GRBmodel,
-                       attrname: ffi::c_str,
-                       value: *mut Self::RawGet)
+    unsafe fn get_attr(model: *mut ffi::GRBmodel, attrname: ffi::c_str, value: *mut Self::RawGet)
                        -> ffi::c_int {
       ffi::GRBgetdblattr(model, attrname, value)
     }
 
-    unsafe fn set_attr(model: *mut ffi::GRBmodel,
-                       attrname: ffi::c_str,
-                       value: Self::RawSet)
+    unsafe fn set_attr(model: *mut ffi::GRBmodel, attrname: ffi::c_str, value: Self::RawSet)
                        -> ffi::c_int {
       ffi::GRBsetdblattr(model, attrname, value)
     }
 
-    unsafe fn get_attrelement(model: *mut ffi::GRBmodel,
-                              attrname: ffi::c_str,
-                              element: ffi::c_int,
-                              value: *mut Self::RawGet)
+    unsafe fn get_attrelement(model: *mut ffi::GRBmodel, attrname: ffi::c_str,
+                              element: ffi::c_int, value: *mut Self::RawGet)
                               -> ffi::c_int {
       ffi::GRBgetdblattrelement(model, attrname, element, value)
     }
 
-    unsafe fn set_attrelement(model: *mut ffi::GRBmodel,
-                              attrname: ffi::c_str,
-                              element: ffi::c_int,
-                              value: Self::RawSet)
+    unsafe fn set_attrelement(model: *mut ffi::GRBmodel, attrname: ffi::c_str,
+                              element: ffi::c_int, value: Self::RawSet)
                               -> ffi::c_int {
       ffi::GRBsetdblattrelement(model, attrname, element, value)
     }
 
-    unsafe fn get_attrarray(model: *mut ffi::GRBmodel,
-                            attrname: ffi::c_str,
-                            first: ffi::c_int,
-                            len: ffi::c_int,
-                            values: *mut Self::RawGet)
+    unsafe fn get_attrarray(model: *mut ffi::GRBmodel, attrname: ffi::c_str, first: ffi::c_int,
+                            len: ffi::c_int, values: *mut Self::RawGet)
                             -> ffi::c_int {
       ffi::GRBgetdblattrarray(model, attrname, first, len, values)
     }
 
-    unsafe fn set_attrarray(model: *mut ffi::GRBmodel,
-                            attrname: ffi::c_str,
-                            first: ffi::c_int,
-                            len: ffi::c_int,
-                            values: *const Self::RawSet)
+    unsafe fn set_attrarray(model: *mut ffi::GRBmodel, attrname: ffi::c_str, first: ffi::c_int,
+                            len: ffi::c_int, values: *const Self::RawSet)
                             -> ffi::c_int {
       ffi::GRBsetdblattrarray(model, attrname, first, len, values)
     }
 
-    unsafe fn get_attrlist(model: *mut ffi::GRBmodel,
-                           attrname: ffi::c_str,
-                           len: ffi::c_int,
-                           ind: *const ffi::c_int,
-                           values: *mut Self::RawGet)
+    unsafe fn get_attrlist(model: *mut ffi::GRBmodel, attrname: ffi::c_str, len: ffi::c_int,
+                           ind: *const ffi::c_int, values: *mut Self::RawGet)
                            -> ffi::c_int {
       ffi::GRBgetdblattrlist(model, attrname, len, ind, values)
     }
 
-    unsafe fn set_attrlist(model: *mut ffi::GRBmodel,
-                           attrname: ffi::c_str,
-                           len: ffi::c_int,
-                           ind: *const ffi::c_int,
-                           values: *const Self::RawSet)
+    unsafe fn set_attrlist(model: *mut ffi::GRBmodel, attrname: ffi::c_str, len: ffi::c_int,
+                           ind: *const ffi::c_int, values: *const Self::RawSet)
                            -> ffi::c_int {
       ffi::GRBsetdblattrlist(model, attrname, len, ind, values)
     }
 
 
-    fn init() -> ffi::c_double {
-      0.0
-    }
+    fn init() -> ffi::c_double { 0.0 }
 
-    fn to_out(val: ffi::c_double) -> f64 {
-      val as ffi::c_double
-    }
+    fn to_out(val: ffi::c_double) -> f64 { val as ffi::c_double }
 
-    fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet {
-      val
-    }
-    fn to_rawset(val: f64) -> Self::RawSet {
-      val
-    }
+    fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet { val }
+    fn to_rawset(val: f64) -> Self::RawSet { val }
   }
 
   impl AttrAPI<i8> for CharAttr {
@@ -756,88 +623,60 @@ pub mod attr {
     type RawGet = ffi::c_char;
     type RawSet = ffi::c_char;
 
-    unsafe fn get_attr(model: *mut ffi::GRBmodel,
-                       attrname: ffi::c_str,
-                       value: *mut Self::RawGet)
+    unsafe fn get_attr(model: *mut ffi::GRBmodel, attrname: ffi::c_str, value: *mut Self::RawGet)
                        -> ffi::c_int {
       -1
     }
 
-    unsafe fn set_attr(model: *mut ffi::GRBmodel,
-                       attrname: ffi::c_str,
-                       value: Self::RawSet)
+    unsafe fn set_attr(model: *mut ffi::GRBmodel, attrname: ffi::c_str, value: Self::RawSet)
                        -> ffi::c_int {
       -1
     }
 
-    unsafe fn get_attrelement(model: *mut ffi::GRBmodel,
-                              attrname: ffi::c_str,
-                              element: ffi::c_int,
-                              value: *mut Self::RawGet)
+    unsafe fn get_attrelement(model: *mut ffi::GRBmodel, attrname: ffi::c_str,
+                              element: ffi::c_int, value: *mut Self::RawGet)
                               -> ffi::c_int {
       ffi::GRBgetcharattrelement(model, attrname, element, value)
     }
 
-    unsafe fn set_attrelement(model: *mut ffi::GRBmodel,
-                              attrname: ffi::c_str,
-                              element: ffi::c_int,
-                              value: Self::RawSet)
+    unsafe fn set_attrelement(model: *mut ffi::GRBmodel, attrname: ffi::c_str,
+                              element: ffi::c_int, value: Self::RawSet)
                               -> ffi::c_int {
       ffi::GRBsetcharattrelement(model, attrname, element, value)
     }
 
-    unsafe fn get_attrarray(model: *mut ffi::GRBmodel,
-                            attrname: ffi::c_str,
-                            first: ffi::c_int,
-                            len: ffi::c_int,
-                            values: *mut Self::RawGet)
+    unsafe fn get_attrarray(model: *mut ffi::GRBmodel, attrname: ffi::c_str, first: ffi::c_int,
+                            len: ffi::c_int, values: *mut Self::RawGet)
                             -> ffi::c_int {
       ffi::GRBgetcharattrarray(model, attrname, first, len, values)
     }
 
-    unsafe fn set_attrarray(model: *mut ffi::GRBmodel,
-                            attrname: ffi::c_str,
-                            first: ffi::c_int,
-                            len: ffi::c_int,
-                            values: *const Self::RawSet)
+    unsafe fn set_attrarray(model: *mut ffi::GRBmodel, attrname: ffi::c_str, first: ffi::c_int,
+                            len: ffi::c_int, values: *const Self::RawSet)
                             -> ffi::c_int {
       ffi::GRBsetcharattrarray(model, attrname, first, len, values)
     }
 
-    unsafe fn get_attrlist(model: *mut ffi::GRBmodel,
-                           attrname: ffi::c_str,
-                           len: ffi::c_int,
-                           ind: *const ffi::c_int,
-                           values: *mut Self::RawGet)
+    unsafe fn get_attrlist(model: *mut ffi::GRBmodel, attrname: ffi::c_str, len: ffi::c_int,
+                           ind: *const ffi::c_int, values: *mut Self::RawGet)
                            -> ffi::c_int {
       ffi::GRBgetcharattrlist(model, attrname, len, ind, values)
     }
 
-    unsafe fn set_attrlist(model: *mut ffi::GRBmodel,
-                           attrname: ffi::c_str,
-                           len: ffi::c_int,
-                           ind: *const ffi::c_int,
-                           values: *const Self::RawSet)
+    unsafe fn set_attrlist(model: *mut ffi::GRBmodel, attrname: ffi::c_str, len: ffi::c_int,
+                           ind: *const ffi::c_int, values: *const Self::RawSet)
                            -> ffi::c_int {
       ffi::GRBsetcharattrlist(model, attrname, len, ind, values)
     }
 
 
-    fn init() -> ffi::c_char {
-      0
-    }
+    fn init() -> ffi::c_char { 0 }
 
-    fn to_out(val: ffi::c_char) -> i8 {
-      val
-    }
+    fn to_out(val: ffi::c_char) -> i8 { val }
 
-    fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet {
-      val
-    }
+    fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet { val }
 
-    fn to_rawset(val: i8) -> Self::RawSet {
-      val
-    }
+    fn to_rawset(val: i8) -> Self::RawSet { val }
   }
 
   impl AttrAPI<String> for StringAttr {
@@ -845,91 +684,62 @@ pub mod attr {
     type RawGet = ffi::c_str;
     type RawSet = ffi::c_str;
 
-    unsafe fn get_attr(model: *mut ffi::GRBmodel,
-                       attrname: ffi::c_str,
-                       value: *mut Self::RawGet)
+    unsafe fn get_attr(model: *mut ffi::GRBmodel, attrname: ffi::c_str, value: *mut Self::RawGet)
                        -> ffi::c_int {
       ffi::GRBgetstrattr(model, attrname, value)
     }
 
-    unsafe fn set_attr(model: *mut ffi::GRBmodel,
-                       attrname: ffi::c_str,
-                       value: Self::RawSet)
+    unsafe fn set_attr(model: *mut ffi::GRBmodel, attrname: ffi::c_str, value: Self::RawSet)
                        -> ffi::c_int {
       ffi::GRBsetstrattr(model, attrname, value)
     }
 
-    unsafe fn get_attrelement(model: *mut ffi::GRBmodel,
-                              attrname: ffi::c_str,
-                              element: ffi::c_int,
-                              value: *mut Self::RawGet)
+    unsafe fn get_attrelement(model: *mut ffi::GRBmodel, attrname: ffi::c_str,
+                              element: ffi::c_int, value: *mut Self::RawGet)
                               -> ffi::c_int {
       ffi::GRBgetstrattrelement(model, attrname, element, value)
     }
 
-    unsafe fn set_attrelement(model: *mut ffi::GRBmodel,
-                              attrname: ffi::c_str,
-                              element: ffi::c_int,
-                              value: Self::RawSet)
+    unsafe fn set_attrelement(model: *mut ffi::GRBmodel, attrname: ffi::c_str,
+                              element: ffi::c_int, value: Self::RawSet)
                               -> ffi::c_int {
       ffi::GRBsetstrattrelement(model, attrname, element, value)
     }
 
-    unsafe fn get_attrarray(model: *mut ffi::GRBmodel,
-                            attrname: ffi::c_str,
-                            first: ffi::c_int,
-                            len: ffi::c_int,
-                            values: *mut Self::RawGet)
+    unsafe fn get_attrarray(model: *mut ffi::GRBmodel, attrname: ffi::c_str, first: ffi::c_int,
+                            len: ffi::c_int, values: *mut Self::RawGet)
                             -> ffi::c_int {
       ffi::GRBgetstrattrarray(model, attrname, first, len, values)
     }
 
-    unsafe fn set_attrarray(model: *mut ffi::GRBmodel,
-                            attrname: ffi::c_str,
-                            first: ffi::c_int,
-                            len: ffi::c_int,
-                            values: *const Self::RawSet)
+    unsafe fn set_attrarray(model: *mut ffi::GRBmodel, attrname: ffi::c_str, first: ffi::c_int,
+                            len: ffi::c_int, values: *const Self::RawSet)
                             -> ffi::c_int {
       ffi::GRBsetstrattrarray(model, attrname, first, len, values)
     }
 
-    unsafe fn get_attrlist(model: *mut ffi::GRBmodel,
-                           attrname: ffi::c_str,
-                           len: ffi::c_int,
-                           ind: *const ffi::c_int,
-                           values: *mut Self::RawGet)
+    unsafe fn get_attrlist(model: *mut ffi::GRBmodel, attrname: ffi::c_str, len: ffi::c_int,
+                           ind: *const ffi::c_int, values: *mut Self::RawGet)
                            -> ffi::c_int {
       ffi::GRBgetstrattrlist(model, attrname, len, ind, values)
     }
 
-    unsafe fn set_attrlist(model: *mut ffi::GRBmodel,
-                           attrname: ffi::c_str,
-                           len: ffi::c_int,
-                           ind: *const ffi::c_int,
-                           values: *const Self::RawSet)
+    unsafe fn set_attrlist(model: *mut ffi::GRBmodel, attrname: ffi::c_str, len: ffi::c_int,
+                           ind: *const ffi::c_int, values: *const Self::RawSet)
                            -> ffi::c_int {
       ffi::GRBsetstrattrlist(model, attrname, len, ind, values)
     }
 
-    fn init() -> ffi::c_str {
-      null()
-    }
+    fn init() -> ffi::c_str { null() }
 
-    fn to_out(val: ffi::c_str) -> String {
-      unsafe { util::from_c_str(val).to_owned() }
-    }
+    fn to_out(val: ffi::c_str) -> String { unsafe { util::from_c_str(val).to_owned() } }
 
-    fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet {
-      val
-    }
+    fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet { val }
 
-    fn to_rawset(val: String) -> Self::RawSet {
-      CString::new(val.as_str()).unwrap().as_ptr()
-    }
+    fn to_rawset(val: String) -> Self::RawSet { CString::new(val.as_str()).unwrap().as_ptr() }
 
     fn to_rawsets(values: &[String]) -> Result<Vec<ffi::c_str>> {
-      let values =
-        values.into_iter().map(|s| util::make_c_str(s)).collect::<Vec<_>>();
+      let values = values.into_iter().map(|s| util::make_c_str(s)).collect::<Vec<_>>();
       if values.iter().any(|ref s| s.is_err()) {
         return Err(Error::StringConversion);
       }

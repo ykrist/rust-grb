@@ -17,7 +17,7 @@ pub enum Error {
   InconsitentDims,
 
   /// String conversion error
-  StringConversion,
+  StringConversion
 }
 
 /// A specialized

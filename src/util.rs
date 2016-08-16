@@ -7,9 +7,7 @@ pub fn get_error_msg_env(env: *mut ffi::GRBenv) -> String {
   unsafe { from_c_str(ffi::GRBgeterrormsg(env)) }
 }
 
-pub fn make_c_str(s: &str) -> Result<CString> {
-  CString::new(s).map_err(|e| Error::NulError(e))
-}
+pub fn make_c_str(s: &str) -> Result<CString> { CString::new(s).map_err(|e| Error::NulError(e)) }
 
 pub unsafe fn from_c_str(s: *const ffi::c_char) -> String {
   CStr::from_ptr(s).to_string_lossy().into_owned()

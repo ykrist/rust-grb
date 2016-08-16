@@ -14,21 +14,27 @@
 
 extern crate gurobi_sys as ffi;
 
-pub mod attr;
-pub mod env;
 pub mod error;
+pub mod env;
 pub mod model;
-pub mod param;
 mod util;
 
 // re-exports
 pub use env::Env;
 pub use error::{Error, Result};
 pub use param::HasParam;
-pub use attr::HasAttr;
+pub use model::HasAttr;
 pub use model::VarType::*;
 pub use model::ConstrSense::*;
 pub use model::ModelSense::*;
 pub use model::SOSType::*;
+
+pub mod attr {
+  pub use model::attr::*;
+}
+
+pub mod param {
+  pub use env::param::*;
+}
 
 // vim: set foldmethod=syntax :

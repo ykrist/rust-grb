@@ -5,6 +5,11 @@ use std::ffi::CString;
 use std::ptr::null;
 
 
+pub trait From<T> {
+  fn from(T) -> Self;
+}
+
+
 /// make an empty instance.
 pub trait Init {
   fn init() -> Self;
@@ -27,7 +32,7 @@ impl Init for Vec<ffi::c_char> {
 }
 
 impl Init for ffi::c_str {
-    fn init() -> ffi::c_str { null() }
+  fn init() -> ffi::c_str { null() }
 }
 
 

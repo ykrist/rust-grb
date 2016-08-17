@@ -1,19 +1,22 @@
 extern crate gurobi_sys as ffi;
 
+use std::iter;
 use std::ptr::{null, null_mut};
 use std::ffi::CString;
+
 use env::Env;
 use error::{Error, Result};
 use util;
-use std::iter;
+use types;
 
 
 pub mod attr {
   pub use ffi::{IntAttr, DoubleAttr, CharAttr, StringAttr};
-  pub use ffi::IntAttr::*;
-  pub use ffi::DoubleAttr::*;
-  pub use ffi::CharAttr::*;
-  pub use ffi::StringAttr::*;
+
+  pub use self::IntAttr::*;
+  pub use self::DoubleAttr::*;
+  pub use self::CharAttr::*;
+  pub use self::StringAttr::*;
 }
 
 
@@ -301,9 +304,7 @@ impl<'a> Model<'a> {
     A::set_array(self, attr, first, values)
   }
 
-  pub fn get_list<A: AttrArray>(&self, attr: A, ind: &[i32]) -> Result<Vec<A::Output>> {
-    A::get_list(self, attr, ind)
-  }
+  pub fn get_list<A: AttrArray>(&self, attr: A, ind: &[i32]) -> Result<Vec<A::Output>> { A::get_list(self, attr, ind) }
 
   pub fn set_list<A: AttrArray>(&mut self, attr: A, ind: &[i32], values: &[A::Output]) -> Result<()> {
     A::set_list(self, attr, ind, values)
@@ -319,24 +320,15 @@ impl<'a> Drop for Model<'a> {
   }
 }
 
-use types;
 
 pub trait AttrBase {
   type Output: Clone;
   type Init: Clone + types::Init;
   type RawGet;
-  type RawSet;
+  type RawSet: types::From<Self::Output>;
 
   fn to_out(val: Self::Init) -> Self::Output;
-
   fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet;
-  fn to_rawset(val: Self::Output) -> Self::RawSet;
-
-  fn init_array(len: usize) -> Vec<Self::Init> { iter::repeat(types::Init::init()).take(len).collect() }
-
-  fn to_rawsets(values: &[Self::Output]) -> Result<Vec<Self::RawSet>> {
-    Ok(values.iter().map(|v| Self::to_rawset(v.clone())).collect())
-  }
 }
 
 
@@ -358,11 +350,7 @@ pub trait Attr: AttrBase + Into<CString> {
   }
 
   fn set(model: &mut Model, attr: Self, value: Self::Output) -> Result<()> {
-    let error = unsafe {
-      Self::set_attr(model.model,
-                     attr.into().as_ptr(),
-                     Self::to_rawset(value))
-    };
+    let error = unsafe { Self::set_attr(model.model, attr.into().as_ptr(), types::From::from(value)) };
     if error != 0 {
       return Err(model.error_from_api(error));
     }
@@ -398,7 +386,7 @@ pub trait AttrArray: AttrBase + Into<CString> {
       Self::set_attrelement(model.model,
                             attr.into().as_ptr(),
                             element,
-                            Self::to_rawset(value))
+                            types::From::from(value))
     };
     if error != 0 {
       return Err(model.error_from_api(error));
@@ -479,6 +467,12 @@ pub trait AttrArray: AttrBase + Into<CString> {
     Ok(())
   }
 
+  fn init_array(len: usize) -> Vec<Self::Init> { iter::repeat(types::Init::init()).take(len).collect() }
+
+  fn to_rawsets(values: &[Self::Output]) -> Result<Vec<Self::RawSet>> {
+    Ok(values.iter().map(|v| types::From::from(v.clone())).collect())
+  }
+
   unsafe fn get_attrelement(model: *mut ffi::GRBmodel, attrname: ffi::c_str, element: ffi::c_int,
                             value: *mut Self::RawGet)
                             -> ffi::c_int;
@@ -504,6 +498,21 @@ pub trait AttrArray: AttrBase + Into<CString> {
 }
 
 
+impl types::From<i32> for ffi::c_int {
+  fn from(val: i32) -> ffi::c_int { val }
+}
+
+impl types::From<i8> for ffi::c_char {
+  fn from(val: i8) -> ffi::c_char { val }
+}
+
+impl types::From<f64> for ffi::c_double {
+  fn from(val: f64) -> ffi::c_double { val }
+}
+
+impl types::From<String> for ffi::c_str {
+  fn from(val: String) -> ffi::c_str { CString::new(val.as_str()).unwrap().as_ptr() }
+}
 
 impl AttrBase for attr::IntAttr {
   type Output = i32;
@@ -513,7 +522,6 @@ impl AttrBase for attr::IntAttr {
 
   fn to_out(val: ffi::c_int) -> i32 { val as ffi::c_int }
   fn as_rawget(val: &mut i32) -> *mut ffi::c_int { val }
-  fn to_rawset(val: i32) -> ffi::c_int { val }
 }
 
 impl Attr for attr::IntAttr {
@@ -572,7 +580,6 @@ impl AttrBase for attr::DoubleAttr {
 
   fn to_out(val: ffi::c_double) -> f64 { val as ffi::c_double }
   fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet { val }
-  fn to_rawset(val: f64) -> Self::RawSet { val }
 }
 
 impl Attr for attr::DoubleAttr {
@@ -630,7 +637,6 @@ impl AttrBase for attr::CharAttr {
 
   fn to_out(val: ffi::c_char) -> i8 { val }
   fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet { val }
-  fn to_rawset(val: i8) -> Self::RawSet { val }
 }
 
 impl AttrArray for attr::CharAttr {
@@ -680,16 +686,6 @@ impl AttrBase for attr::StringAttr {
   fn to_out(val: ffi::c_str) -> String { unsafe { util::from_c_str(val).to_owned() } }
 
   fn as_rawget(val: &mut Self::Init) -> *mut Self::RawGet { val }
-
-  fn to_rawset(val: String) -> Self::RawSet { CString::new(val.as_str()).unwrap().as_ptr() }
-
-  fn to_rawsets(values: &[String]) -> Result<Vec<ffi::c_str>> {
-    let values = values.into_iter().map(|s| util::make_c_str(s)).collect::<Vec<_>>();
-    if values.iter().any(|ref s| s.is_err()) {
-      return Err(Error::StringConversion);
-    }
-    Ok(values.into_iter().map(|s| s.unwrap().as_ptr()).collect())
-  }
 }
 
 impl Attr for attr::StringAttr {
@@ -703,6 +699,14 @@ impl Attr for attr::StringAttr {
 }
 
 impl AttrArray for attr::StringAttr {
+  fn to_rawsets(values: &[String]) -> Result<Vec<ffi::c_str>> {
+    let values = values.into_iter().map(|s| util::make_c_str(s)).collect::<Vec<_>>();
+    if values.iter().any(|ref s| s.is_err()) {
+      return Err(Error::StringConversion);
+    }
+    Ok(values.into_iter().map(|s| s.unwrap().as_ptr()).collect())
+  }
+
   unsafe fn get_attrelement(model: *mut ffi::GRBmodel, attrname: ffi::c_str, element: ffi::c_int,
                             value: *mut Self::RawGet)
                             -> ffi::c_int {

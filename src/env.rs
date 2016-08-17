@@ -9,11 +9,12 @@ use types;
 
 
 pub mod param {
-  // re-exports
   pub use ffi::{IntParam, DoubleParam, StringParam};
-  pub use ffi::IntParam::*;
-  pub use ffi::DoubleParam::*;
-  pub use ffi::StringParam::*;
+
+  // re-exports
+  pub use self::IntParam::*;
+  pub use self::DoubleParam::*;
+  pub use self::StringParam::*;
 }
 
 

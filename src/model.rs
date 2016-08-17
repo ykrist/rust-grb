@@ -150,9 +150,7 @@ impl<'a> Model<'a> {
   }
 
   /// add a linear constraint to the model.
-  pub fn add_constr(&mut self, name: &str, ind: &[ffi::c_int], val: &[ffi::c_double], sense: ConstrSense,
-                    rhs: ffi::c_double)
-                    -> Result<i32> {
+  pub fn add_constr(&mut self, name: &str, ind: &[i32], val: &[f64], sense: ConstrSense, rhs: f64) -> Result<i32> {
     if ind.len() != val.len() {
       return Err(Error::InconsitentDims);
     }
@@ -184,8 +182,8 @@ impl<'a> Model<'a> {
   }
 
   /// add a quadratic constraint to the model.
-  pub fn add_qconstr(&mut self, constrname: &str, lind: &[ffi::c_int], lval: &[ffi::c_double], qrow: &[ffi::c_int],
-                     qcol: &[ffi::c_int], qval: &[ffi::c_double], sense: ConstrSense, rhs: ffi::c_double)
+  pub fn add_qconstr(&mut self, constrname: &str, lind: &[i32], lval: &[f64], qrow: &[i32], qcol: &[i32],
+                     qval: &[f64], sense: ConstrSense, rhs: f64)
                      -> Result<i32> {
     if lind.len() != lval.len() {
       return Err(Error::InconsitentDims);
@@ -224,6 +222,7 @@ impl<'a> Model<'a> {
     Ok(qrow_no)
   }
 
+  /// Set the objective function of the model.
   pub fn set_objective(&mut self, lind: &[i32], lval: &[f64], qrow: &[i32], qcol: &[i32], qval: &[f64],
                        sense: ModelSense)
                        -> Result<()> {
@@ -284,14 +283,18 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
+  /// Query the value of a scalar attribute of the model.
   pub fn get<A: Attr>(&self, attr: A) -> Result<A::Output> { Attr::get(self, attr) }
 
+  /// Set the value of a scalar attribute of the model.
   pub fn set<A: Attr>(&mut self, attr: A, value: A::Output) -> Result<()> { Attr::set(self, attr, value) }
 
+  /// Query one of the value of a vector attribute from the model.
   pub fn get_element<A: AttrArray>(&self, attr: A, element: i32) -> Result<A::Output> {
     A::get_element(self, attr, element)
   }
 
+  /// Set one of the value of a vector attribute to the model.
   pub fn set_element<A: AttrArray>(&mut self, attr: A, element: i32, value: A::Output) -> Result<()> {
     A::set_element(self, attr, element, value)
   }
@@ -321,7 +324,7 @@ impl<'a> Drop for Model<'a> {
 }
 
 
-/// provides function to query/set the value of attributes.
+/// provides function to query/set the value of scalar attribute.
 pub trait Attr: Into<CString> {
   type Output: Clone;
   type Init: Clone + types::Init + types::Into<Self::Output> + types::AsRawPtr<Self::RawGet>;
@@ -357,6 +360,7 @@ pub trait Attr: Into<CString> {
 }
 
 
+/// provides function to query/set the value of vectorized attribute.
 pub trait AttrArray: Into<CString> {
   type Output: Clone;
   type Init: Clone + types::Init + types::Into<Self::Output> + types::AsRawPtr<Self::RawGet>;

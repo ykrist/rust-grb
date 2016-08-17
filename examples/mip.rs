@@ -10,21 +10,11 @@ fn main() {
   let z = model.add_var("z", gurobi::Binary, 2.0).unwrap();
   model.update().unwrap();
 
-  model.set_objective(LinExpr::new() + (x, 1.0) + (y, 1.0) + (z, 2.0),
-                   gurobi::Maximize)
-    .unwrap();
+  model.set_objective(1.0 * x + 1.0 * y + 2.0 * z, gurobi::Maximize).unwrap();
 
-  let c0 = model.add_constr("c0",
-                LinExpr::new() + (x, 1.0) + (y, 2.0) + (z, 3.0),
-                gurobi::Less,
-                4.0)
-    .unwrap();
+  let c0 = model.add_constr("c0", 1.0 * x + 2.0 * y + 3.0 * z, gurobi::Less, 4.0).unwrap();
 
-  let c1 = model.add_constr("c1",
-                LinExpr::new() + (x, 1.0) + (y, 1.0),
-                gurobi::Greater,
-                1.0)
-    .unwrap();
+  let c1 = model.add_constr("c1", 1.0 * x + 1.0 * y, gurobi::Greater, 1.0).unwrap();
 
   model.optimize().unwrap();
 

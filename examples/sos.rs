@@ -23,9 +23,9 @@ fn main() {
   let obj = model.get(gurobi::attr::ObjVal).unwrap();
   assert!((obj + 3.0).abs() < 1e-12);
 
-  let x0 = model.get_element(gurobi::attr::X, x0).unwrap();
-  let x1 = model.get_element(gurobi::attr::X, x1).unwrap();
-  let x2 = model.get_element(gurobi::attr::X, x2).unwrap();
+  let x0 = model.get_element(gurobi::attr::X, x0.0).unwrap();
+  let x1 = model.get_element(gurobi::attr::X, x1.0).unwrap();
+  let x2 = model.get_element(gurobi::attr::X, x2.0).unwrap();
 
   assert!((x0 - 0.0).abs() < 1e-12);
   assert!((x1 - 1.0).abs() < 1e-12);

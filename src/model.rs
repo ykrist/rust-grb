@@ -2,7 +2,7 @@ extern crate gurobi_sys as ffi;
 
 use std::iter;
 use std::ffi::CString;
-use std::ops::{Add, Sub};
+use std::ops::{Add, Sub, Neg, Mul};
 use std::ptr::{null, null_mut};
 
 use env::Env;
@@ -52,8 +52,88 @@ pub enum SOSType {
 }
 
 
+#[derive(Copy,Clone)]
+pub struct Var(pub i32);
+
+
+#[derive(Copy,Clone)]
+pub struct LinTerm(Var, f64);
+
+impl Neg for LinTerm {
+  type Output = LinTerm;
+  fn neg(self) -> LinTerm { LinTerm(self.0, -self.1) }
+}
+
+impl Mul<f64> for Var {
+  type Output = LinTerm;
+  fn mul(self, rhs: f64) -> LinTerm { LinTerm(self, rhs) }
+}
+
+impl Mul<Var> for f64 {
+  type Output = LinTerm;
+  fn mul(self, rhs: Var) -> LinTerm { LinTerm(rhs, self) }
+}
+
+impl Add<LinTerm> for LinTerm {
+  type Output = LinExpr;
+  fn add(self, rhs: LinTerm) -> LinExpr { LinExpr::new() + self + rhs }
+}
+
+impl Sub<LinTerm> for LinTerm {
+  type Output = LinExpr;
+  fn sub(self, rhs: LinTerm) -> LinExpr { LinExpr::new() + self - rhs }
+}
+
+impl Add<QuadTerm> for LinTerm {
+  type Output = QuadExpr;
+  fn add(self, rhs: QuadTerm) -> QuadExpr { QuadExpr::new() + self + rhs }
+}
+
+impl Sub<QuadTerm> for LinTerm {
+  type Output = QuadExpr;
+  fn sub(self, rhs: QuadTerm) -> QuadExpr { QuadExpr::new() + self - rhs }
+}
+
+impl Into<QuadExpr> for LinTerm {
+  fn into(self) -> QuadExpr { QuadExpr::new().term(self) }
+}
+
+
+#[derive(Copy,Clone)]
+pub struct QuadTerm(Var, Var, f64);
+
+impl Neg for QuadTerm {
+  type Output = QuadTerm;
+  fn neg(self) -> QuadTerm { QuadTerm(self.0, self.1, -self.2) }
+}
+
+impl Mul for Var {
+  type Output = QuadTerm;
+  fn mul(self, rhs: Var) -> QuadTerm { QuadTerm(self, rhs, 1.0) }
+}
+
+impl Mul<f64> for QuadTerm {
+  type Output = QuadTerm;
+  fn mul(self, rhs: f64) -> QuadTerm { QuadTerm(self.0, self.1, self.2 * rhs) }
+}
+
+impl Mul<QuadTerm> for f64 {
+  type Output = QuadTerm;
+  fn mul(self, rhs: QuadTerm) -> QuadTerm { QuadTerm(rhs.0, rhs.1, self * rhs.2) }
+}
+
+impl Add for QuadTerm {
+  type Output = QuadExpr;
+  fn add(self, rhs: QuadTerm) -> QuadExpr { QuadExpr::new() + self + rhs }
+}
+
+impl Sub for QuadTerm {
+  type Output = QuadExpr;
+  fn sub(self, rhs: QuadTerm) -> QuadExpr { QuadExpr::new() + self - rhs }
+}
+
 pub struct LinExpr {
-  vars: Vec<i32>,
+  vars: Vec<Var>,
   coeff: Vec<f64>,
   offset: f64
 }
@@ -67,9 +147,9 @@ impl LinExpr {
     }
   }
 
-  pub fn term(mut self, var: i32, c: f64) -> LinExpr {
-    self.vars.push(var);
-    self.coeff.push(c);
+  pub fn term(mut self, term: LinTerm) -> LinExpr {
+    self.vars.push(term.0);
+    self.coeff.push(term.1);
     self
   }
 
@@ -79,14 +159,14 @@ impl LinExpr {
   }
 }
 
-impl Add<(i32, f64)> for LinExpr {
+impl Add<LinTerm> for LinExpr {
   type Output = LinExpr;
-  fn add(self, rhs: (i32, f64)) -> LinExpr { self.term(rhs.0, rhs.1) }
+  fn add(self, rhs: LinTerm) -> LinExpr { self.term(rhs) }
 }
 
-impl Sub<(i32, f64)> for LinExpr {
+impl Sub<LinTerm> for LinExpr {
   type Output = LinExpr;
-  fn sub(self, rhs: (i32, f64)) -> LinExpr { self.term(rhs.0, -rhs.1) }
+  fn sub(self, rhs: LinTerm) -> LinExpr { self.term(-rhs) }
 }
 
 impl Add<f64> for LinExpr {
@@ -97,6 +177,16 @@ impl Add<f64> for LinExpr {
 impl Sub<f64> for LinExpr {
   type Output = LinExpr;
   fn sub(self, rhs: f64) -> LinExpr { self.offset(-rhs) }
+}
+
+impl Add<QuadTerm> for LinExpr {
+  type Output = QuadExpr;
+  fn add(self, rhs: QuadTerm) -> QuadExpr { Into::<QuadExpr>::into(self).qterm(rhs) }
+}
+
+impl Sub<QuadTerm> for LinExpr {
+  type Output = QuadExpr;
+  fn sub(self, rhs: QuadTerm) -> QuadExpr { Into::<QuadExpr>::into(self).qterm(-rhs) }
 }
 
 
@@ -115,10 +205,10 @@ impl Into<QuadExpr> for LinExpr {
 
 
 pub struct QuadExpr {
-  lind: Vec<i32>,
+  lind: Vec<Var>,
   lval: Vec<f64>,
-  qrow: Vec<i32>,
-  qcol: Vec<i32>,
+  qrow: Vec<Var>,
+  qcol: Vec<Var>,
   qval: Vec<f64>,
   offset: f64
 }
@@ -135,16 +225,16 @@ impl QuadExpr {
     }
   }
 
-  pub fn term(mut self, ind: i32, val: f64) -> QuadExpr {
-    self.lind.push(ind);
-    self.lval.push(val);
+  pub fn term(mut self, term: LinTerm) -> QuadExpr {
+    self.lind.push(term.0);
+    self.lval.push(term.1);
     self
   }
 
-  pub fn qterm(mut self, row: i32, col: i32, val: f64) -> QuadExpr {
-    self.qrow.push(row);
-    self.qcol.push(col);
-    self.qval.push(val);
+  pub fn qterm(mut self, term: QuadTerm) -> QuadExpr {
+    self.qrow.push(term.0);
+    self.qcol.push(term.1);
+    self.qval.push(term.2);
     self
   }
 
@@ -154,24 +244,24 @@ impl QuadExpr {
   }
 }
 
-impl Add<(i32, f64)> for QuadExpr {
+impl Add<LinTerm> for QuadExpr {
   type Output = QuadExpr;
-  fn add(self, rhs: (i32, f64)) -> QuadExpr { self.term(rhs.0, rhs.1) }
+  fn add(self, rhs: LinTerm) -> QuadExpr { self.term(rhs) }
 }
 
-impl Sub<(i32, f64)> for QuadExpr {
+impl Sub<LinTerm> for QuadExpr {
   type Output = QuadExpr;
-  fn sub(self, rhs: (i32, f64)) -> QuadExpr { self.term(rhs.0, -rhs.1) }
+  fn sub(self, rhs: LinTerm) -> QuadExpr { self.term(-rhs) }
 }
 
-impl Add<(i32, i32, f64)> for QuadExpr {
+impl Add<QuadTerm> for QuadExpr {
   type Output = QuadExpr;
-  fn add(self, rhs: (i32, i32, f64)) -> QuadExpr { self.qterm(rhs.0, rhs.1, rhs.2) }
+  fn add(self, rhs: QuadTerm) -> QuadExpr { self.qterm(rhs) }
 }
 
-impl Sub<(i32, i32, f64)> for QuadExpr {
+impl Sub<QuadTerm> for QuadExpr {
   type Output = QuadExpr;
-  fn sub(self, rhs: (i32, i32, f64)) -> QuadExpr { self.qterm(rhs.0, rhs.1, -rhs.2) }
+  fn sub(self, rhs: QuadTerm) -> QuadExpr { self.qterm(-rhs) }
 }
 
 impl Add<f64> for QuadExpr {
@@ -254,7 +344,7 @@ impl<'a> Model<'a> {
   }
 
   /// add a decision variable to the model.
-  pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64) -> Result<i32> {
+  pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64) -> Result<Var> {
     // extract parameters
     use self::VarType::*;
     let (vtype, lb, ub) = match vtype {
@@ -281,7 +371,7 @@ impl<'a> Model<'a> {
     let col_no = self.vars.len() as i32;
     self.vars.push(col_no);
 
-    Ok(col_no)
+    Ok(Var(col_no))
   }
 
   /// add a linear constraint to the model.
@@ -296,7 +386,7 @@ impl<'a> Model<'a> {
     let error = unsafe {
       ffi::GRBaddconstr(self.model,
                         expr.vars.len() as ffi::c_int,
-                        expr.vars.as_ptr(),
+                        expr.vars.into_iter().map(|v| v.0).collect::<Vec<_>>().as_ptr(),
                         expr.coeff.as_ptr(),
                         sense,
                         rhs - expr.offset,
@@ -324,11 +414,11 @@ impl<'a> Model<'a> {
     let error = unsafe {
       ffi::GRBaddqconstr(self.model,
                          expr.lind.len() as ffi::c_int,
-                         expr.lind.as_ptr(),
+                         expr.lind.into_iter().map(|v| v.0).collect::<Vec<_>>().as_ptr(),
                          expr.lval.as_ptr(),
                          expr.qrow.len() as ffi::c_int,
-                         expr.qrow.as_ptr(),
-                         expr.qcol.as_ptr(),
+                         expr.qrow.into_iter().map(|v| v.0).collect::<Vec<_>>().as_ptr(),
+                         expr.qcol.into_iter().map(|v| v.0).collect::<Vec<_>>().as_ptr(),
                          expr.qval.as_ptr(),
                          sense,
                          rhs - expr.offset,
@@ -352,9 +442,11 @@ impl<'a> Model<'a> {
       ModelSense::Minimize => -1,
       ModelSense::Maximize => 1,
     };
-    try!(self.set_list(attr::Obj, expr.lind.as_slice(), expr.lval.as_slice()));
-    try!(self.add_qpterms(expr.qrow.as_slice(),
-                          expr.qcol.as_slice(),
+    try!(self.set_list(attr::Obj,
+                       expr.lind.into_iter().map(|v| v.0).collect::<Vec<_>>().as_slice(),
+                       expr.lval.as_slice()));
+    try!(self.add_qpterms(expr.qrow.into_iter().map(|v| v.0).collect::<Vec<_>>().as_slice(),
+                          expr.qcol.into_iter().map(|v| v.0).collect::<Vec<_>>().as_slice(),
                           expr.qval.as_slice()));
     self.set(attr::ModelSense, sense)
   }
@@ -376,7 +468,7 @@ impl<'a> Model<'a> {
   }
 
   /// add Special Order Set (SOS) constraint to the model.
-  pub fn add_sos(&mut self, vars: &[i32], weights: &[f64], sostype: SOSType) -> Result<()> {
+  pub fn add_sos(&mut self, vars: &[Var], weights: &[f64], sostype: SOSType) -> Result<()> {
     if vars.len() != weights.len() {
       return Err(Error::InconsitentDims);
     }
@@ -393,7 +485,7 @@ impl<'a> Model<'a> {
                      vars.len() as ffi::c_int,
                      &sostype,
                      &beg,
-                     vars.as_ptr(),
+                     vars.into_iter().map(|v| v.0).collect::<Vec<_>>().as_ptr(),
                      weights.as_ptr())
     };
     if error != 0 {
@@ -435,7 +527,7 @@ impl<'a> Model<'a> {
 
 
   /// add a decision variable to the model.
-  pub fn add_var_scalar(&mut self, name: &str, vtype: VarType, obj: f64, _: ()) -> Result<i32> {
+  pub fn add_var_scalar(&mut self, name: &str, vtype: VarType, obj: f64, _: ()) -> Result<Var> {
     self.add_var(name, vtype, obj)
   }
 
@@ -444,7 +536,7 @@ impl<'a> Model<'a> {
   /// * The name of each variable is set to `name[i]`
   /// * All of the variable have the same VarType and ranges.
   ///
-  pub fn add_var_array(&mut self, name: &str, vtype: VarType, obj: f64, size: usize) -> Result<Vec<i32>> {
+  pub fn add_var_array(&mut self, name: &str, vtype: VarType, obj: f64, size: usize) -> Result<Vec<Var>> {
     let mut vars = Vec::with_capacity(size);
     for i in 0..size {
       let name = format!("{}[{}]", name, i);
@@ -461,7 +553,7 @@ impl<'a> Model<'a> {
   /// ...
   /// * All of the variable have the same VarType and ranges.
   ///
-  pub fn add_var_matrix(&mut self, name: &str, vtype: VarType, obj: f64, rows: usize, cols: usize) -> Result<Vec<i32>> {
+  pub fn add_var_matrix(&mut self, name: &str, vtype: VarType, obj: f64, rows: usize, cols: usize) -> Result<Vec<Var>> {
     let mut vars = Vec::with_capacity(rows * cols);
     for (i, j) in (0..rows).into_iter().zip((0..cols).into_iter()) {
       let name = format!("{}[{}][{}]", name, i, j);

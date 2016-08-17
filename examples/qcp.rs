@@ -1,5 +1,5 @@
 extern crate gurobi;
-use gurobi::{LinExpr, QuadExpr};
+use gurobi::*;
 
 fn main() {
   let env = gurobi::Env::new("qcp1.log").unwrap();
@@ -8,30 +8,30 @@ fn main() {
   let mut model = env.new_model("qcp1").unwrap();
 
   // add & integrate new variables.
-  let x = model.add_var("x", gurobi::Continuous(0.0, 1e+100), 0.0).unwrap();
-  let y = model.add_var("y", gurobi::Continuous(0.0, 1e+100), 0.0).unwrap();
-  let z = model.add_var("z", gurobi::Continuous(0.0, 1e+100), 0.0).unwrap();
+  let x = model.add_var("x", Continuous(0.0, 1e+100), 0.0).unwrap();
+  let y = model.add_var("y", Continuous(0.0, 1e+100), 0.0).unwrap();
+  let z = model.add_var("z", Continuous(0.0, 1e+100), 0.0).unwrap();
   model.update().unwrap();
 
   // set objective funtion:
   //   f(x,y,z) = x
-  model.set_objective(1.0 * x, gurobi::Maximize).unwrap();
+  model.set_objective(1.0 * x, Maximize).unwrap();
 
   // add linear constraints
 
   //  c0: x + y + z == 1
-  let c0 = model.add_constr("c0", 1.0 * x + 1.0 * y + 1.0 * z, gurobi::Equal, 1.0).unwrap();
+  let _ = model.add_constr("c0", 1.0 * x + 1.0 * y + 1.0 * z, Equal, 1.0).unwrap();
 
   // add quadratic constraints
 
   //  qc0: x^2 + y^2 - z^2 <= 0.0
-  let qc0 = model.add_qconstr("qc0", x * x + y * y - z * z, gurobi::Less, 0.0).unwrap();
+  let _ = model.add_qconstr("qc0", x * x + y * y - z * z, Less, 0.0).unwrap();
 
   //  qc1: x^2 - y*z <= 0.0
-  let qc1 = model.add_qconstr("qc1", x * x - y * z, gurobi::Less, 0.0).unwrap();
+  let _ = model.add_qconstr("qc1", x * x - y * z, Less, 0.0).unwrap();
 
-  let _ = model.get(gurobi::attr::ModelSense).unwrap();
-  let _ = model.get(gurobi::attr::ObjVal).unwrap();
+  let _ = model.get(attr::ModelSense).unwrap();
+  let _ = model.get(attr::ObjVal).unwrap();
 
   // optimize the model.
   model.optimize().unwrap();
@@ -40,6 +40,6 @@ fn main() {
   model.write("qcp.lp").unwrap();
   model.write("qcp.sol").unwrap();
 
-  let status = model.get(gurobi::attr::Status).unwrap();
+  let status = model.get(attr::Status).unwrap();
   assert_eq!(status, 2);
 }

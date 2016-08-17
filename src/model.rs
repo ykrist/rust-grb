@@ -2,13 +2,13 @@ extern crate gurobi_sys as ffi;
 
 use std::iter;
 use std::ffi::CString;
-use std::ops::{Add, Sub, Neg, Mul};
 use std::ptr::{null, null_mut};
 
 use env::Env;
 use error::{Error, Result};
 use util;
 use types;
+use expr::{LinExpr, QuadExpr};
 
 
 pub mod attr {
@@ -54,225 +54,6 @@ pub enum SOSType {
 
 #[derive(Copy,Clone)]
 pub struct Var(pub i32);
-
-
-#[derive(Copy,Clone)]
-pub struct LinTerm(Var, f64);
-
-impl Neg for LinTerm {
-  type Output = LinTerm;
-  fn neg(self) -> LinTerm { LinTerm(self.0, -self.1) }
-}
-
-impl Mul<f64> for Var {
-  type Output = LinTerm;
-  fn mul(self, rhs: f64) -> LinTerm { LinTerm(self, rhs) }
-}
-
-impl Mul<Var> for f64 {
-  type Output = LinTerm;
-  fn mul(self, rhs: Var) -> LinTerm { LinTerm(rhs, self) }
-}
-
-impl Add<LinTerm> for LinTerm {
-  type Output = LinExpr;
-  fn add(self, rhs: LinTerm) -> LinExpr { LinExpr::new() + self + rhs }
-}
-
-impl Sub<LinTerm> for LinTerm {
-  type Output = LinExpr;
-  fn sub(self, rhs: LinTerm) -> LinExpr { LinExpr::new() + self - rhs }
-}
-
-impl Add<QuadTerm> for LinTerm {
-  type Output = QuadExpr;
-  fn add(self, rhs: QuadTerm) -> QuadExpr { QuadExpr::new() + self + rhs }
-}
-
-impl Sub<QuadTerm> for LinTerm {
-  type Output = QuadExpr;
-  fn sub(self, rhs: QuadTerm) -> QuadExpr { QuadExpr::new() + self - rhs }
-}
-
-impl Into<QuadExpr> for LinTerm {
-  fn into(self) -> QuadExpr { QuadExpr::new().term(self) }
-}
-
-
-#[derive(Copy,Clone)]
-pub struct QuadTerm(Var, Var, f64);
-
-impl Neg for QuadTerm {
-  type Output = QuadTerm;
-  fn neg(self) -> QuadTerm { QuadTerm(self.0, self.1, -self.2) }
-}
-
-impl Mul for Var {
-  type Output = QuadTerm;
-  fn mul(self, rhs: Var) -> QuadTerm { QuadTerm(self, rhs, 1.0) }
-}
-
-impl Mul<f64> for QuadTerm {
-  type Output = QuadTerm;
-  fn mul(self, rhs: f64) -> QuadTerm { QuadTerm(self.0, self.1, self.2 * rhs) }
-}
-
-impl Mul<QuadTerm> for f64 {
-  type Output = QuadTerm;
-  fn mul(self, rhs: QuadTerm) -> QuadTerm { QuadTerm(rhs.0, rhs.1, self * rhs.2) }
-}
-
-impl Add for QuadTerm {
-  type Output = QuadExpr;
-  fn add(self, rhs: QuadTerm) -> QuadExpr { QuadExpr::new() + self + rhs }
-}
-
-impl Sub for QuadTerm {
-  type Output = QuadExpr;
-  fn sub(self, rhs: QuadTerm) -> QuadExpr { QuadExpr::new() + self - rhs }
-}
-
-pub struct LinExpr {
-  vars: Vec<Var>,
-  coeff: Vec<f64>,
-  offset: f64
-}
-
-impl LinExpr {
-  pub fn new() -> LinExpr {
-    LinExpr {
-      vars: Vec::new(),
-      coeff: Vec::new(),
-      offset: 0.0
-    }
-  }
-
-  pub fn term(mut self, term: LinTerm) -> LinExpr {
-    self.vars.push(term.0);
-    self.coeff.push(term.1);
-    self
-  }
-
-  pub fn offset(mut self, offset: f64) -> LinExpr {
-    self.offset += offset;
-    self
-  }
-}
-
-impl Add<LinTerm> for LinExpr {
-  type Output = LinExpr;
-  fn add(self, rhs: LinTerm) -> LinExpr { self.term(rhs) }
-}
-
-impl Sub<LinTerm> for LinExpr {
-  type Output = LinExpr;
-  fn sub(self, rhs: LinTerm) -> LinExpr { self.term(-rhs) }
-}
-
-impl Add<f64> for LinExpr {
-  type Output = LinExpr;
-  fn add(self, rhs: f64) -> LinExpr { self.offset(rhs) }
-}
-
-impl Sub<f64> for LinExpr {
-  type Output = LinExpr;
-  fn sub(self, rhs: f64) -> LinExpr { self.offset(-rhs) }
-}
-
-impl Add<QuadTerm> for LinExpr {
-  type Output = QuadExpr;
-  fn add(self, rhs: QuadTerm) -> QuadExpr { Into::<QuadExpr>::into(self).qterm(rhs) }
-}
-
-impl Sub<QuadTerm> for LinExpr {
-  type Output = QuadExpr;
-  fn sub(self, rhs: QuadTerm) -> QuadExpr { Into::<QuadExpr>::into(self).qterm(-rhs) }
-}
-
-
-impl Into<QuadExpr> for LinExpr {
-  fn into(self) -> QuadExpr {
-    QuadExpr {
-      lind: self.vars,
-      lval: self.coeff,
-      offset: self.offset,
-      qrow: Vec::new(),
-      qcol: Vec::new(),
-      qval: Vec::new()
-    }
-  }
-}
-
-
-pub struct QuadExpr {
-  lind: Vec<Var>,
-  lval: Vec<f64>,
-  qrow: Vec<Var>,
-  qcol: Vec<Var>,
-  qval: Vec<f64>,
-  offset: f64
-}
-
-impl QuadExpr {
-  pub fn new() -> QuadExpr {
-    QuadExpr {
-      lind: Vec::new(),
-      lval: Vec::new(),
-      qrow: Vec::new(),
-      qcol: Vec::new(),
-      qval: Vec::new(),
-      offset: 0.0
-    }
-  }
-
-  pub fn term(mut self, term: LinTerm) -> QuadExpr {
-    self.lind.push(term.0);
-    self.lval.push(term.1);
-    self
-  }
-
-  pub fn qterm(mut self, term: QuadTerm) -> QuadExpr {
-    self.qrow.push(term.0);
-    self.qcol.push(term.1);
-    self.qval.push(term.2);
-    self
-  }
-
-  pub fn offset(mut self, offset: f64) -> QuadExpr {
-    self.offset += offset;
-    self
-  }
-}
-
-impl Add<LinTerm> for QuadExpr {
-  type Output = QuadExpr;
-  fn add(self, rhs: LinTerm) -> QuadExpr { self.term(rhs) }
-}
-
-impl Sub<LinTerm> for QuadExpr {
-  type Output = QuadExpr;
-  fn sub(self, rhs: LinTerm) -> QuadExpr { self.term(-rhs) }
-}
-
-impl Add<QuadTerm> for QuadExpr {
-  type Output = QuadExpr;
-  fn add(self, rhs: QuadTerm) -> QuadExpr { self.qterm(rhs) }
-}
-
-impl Sub<QuadTerm> for QuadExpr {
-  type Output = QuadExpr;
-  fn sub(self, rhs: QuadTerm) -> QuadExpr { self.qterm(-rhs) }
-}
-
-impl Add<f64> for QuadExpr {
-  type Output = QuadExpr;
-  fn add(self, rhs: f64) -> QuadExpr { self.offset(rhs) }
-}
-
-impl Sub<f64> for QuadExpr {
-  type Output = QuadExpr;
-  fn sub(self, rhs: f64) -> QuadExpr { self.offset(-rhs) }
-}
 
 
 
@@ -385,11 +166,11 @@ impl<'a> Model<'a> {
 
     let error = unsafe {
       ffi::GRBaddconstr(self.model,
-                        expr.vars.len() as ffi::c_int,
-                        expr.vars.into_iter().map(|v| v.0).collect::<Vec<_>>().as_ptr(),
-                        expr.coeff.as_ptr(),
+                        expr.num_vars() as ffi::c_int,
+                        expr.vars_slice().as_ptr(),
+                        expr.coeff_slice().as_ptr(),
                         sense,
-                        rhs - expr.offset,
+                        rhs - expr.get_offset(),
                         constrname.as_ptr())
     };
     if error != 0 {
@@ -413,15 +194,15 @@ impl<'a> Model<'a> {
 
     let error = unsafe {
       ffi::GRBaddqconstr(self.model,
-                         expr.lind.len() as ffi::c_int,
-                         expr.lind.into_iter().map(|v| v.0).collect::<Vec<_>>().as_ptr(),
-                         expr.lval.as_ptr(),
-                         expr.qrow.len() as ffi::c_int,
-                         expr.qrow.into_iter().map(|v| v.0).collect::<Vec<_>>().as_ptr(),
-                         expr.qcol.into_iter().map(|v| v.0).collect::<Vec<_>>().as_ptr(),
-                         expr.qval.as_ptr(),
+                         expr.lin_len() as ffi::c_int,
+                         expr.lind_slice().as_ptr(),
+                         expr.lval_slice().as_ptr(),
+                         expr.quad_len() as ffi::c_int,
+                         expr.qrow_slice().as_ptr(),
+                         expr.qcol_slice().as_ptr(),
+                         expr.qval_slice().as_ptr(),
                          sense,
-                         rhs - expr.offset,
+                         rhs - expr.get_offset(),
                          constrname.as_ptr())
     };
     if error != 0 {
@@ -443,11 +224,11 @@ impl<'a> Model<'a> {
       ModelSense::Maximize => 1,
     };
     try!(self.set_list(attr::Obj,
-                       expr.lind.into_iter().map(|v| v.0).collect::<Vec<_>>().as_slice(),
-                       expr.lval.as_slice()));
-    try!(self.add_qpterms(expr.qrow.into_iter().map(|v| v.0).collect::<Vec<_>>().as_slice(),
-                          expr.qcol.into_iter().map(|v| v.0).collect::<Vec<_>>().as_slice(),
-                          expr.qval.as_slice()));
+                       expr.lind_slice(),
+                       expr.lval_slice()));
+    try!(self.add_qpterms(expr.qrow_slice(),
+                          expr.qcol_slice(),
+                          expr.qval_slice()));
     self.set(attr::ModelSense, sense)
   }
 

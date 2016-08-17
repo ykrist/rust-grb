@@ -1,5 +1,5 @@
 extern crate gurobi;
-use gurobi::{Env, LinExpr, QuadExpr};
+use gurobi::*;
 
 fn main() {
   let env = Env::new("qp.log").unwrap();
@@ -8,9 +8,9 @@ fn main() {
   let mut model = env.new_model("qp").unwrap();
 
   // add & integrate new variables.
-  let x = model.add_var("x", gurobi::Continuous(0.0, 1.0), 0.0).unwrap();
-  let y = model.add_var("y", gurobi::Continuous(0.0, 1.0), 0.0).unwrap();
-  let z = model.add_var("z", gurobi::Continuous(0.0, 1.0), 0.0).unwrap();
+  let x = model.add_var("x", Continuous(0.0, 1.0), 0.0).unwrap();
+  let y = model.add_var("y", Continuous(0.0, 1.0), 0.0).unwrap();
+  let z = model.add_var("z", Continuous(0.0, 1.0), 0.0).unwrap();
   model.update().unwrap();
 
   // set objective funtion:
@@ -18,17 +18,15 @@ fn main() {
   //            = f_q(x,y,z) + f_l(x,y,z)
   // quad term: f_q = x*x + x*y + y*y + y*z + z*z
   // linear term: f_l = 2*x
-  model.set_objective(2.0 * x + x * x + x * y + y * y + y * z + z * z,
-                   gurobi::Maximize)
-    .unwrap();
+  model.set_objective(2.0 * x + x * x + x * y + y * y + y * z + z * z, Maximize).unwrap();
 
   // add linear constraints
 
   //  g1(x,y,z) = x + 2*y + 3*z >= 4
-  let c0 = model.add_constr("c0", 1.0 * x + 2.0 * y + 3.0 * z, gurobi::Greater, 4.0).unwrap();
+  let _ = model.add_constr("c0", 1.0 * x + 2.0 * y + 3.0 * z, Greater, 4.0).unwrap();
 
   //  g2(x,y,z) = x + y >= 2
-  let c1 = model.add_constr("c1", 1.0 * x + 1.0 * y, gurobi::Greater, 1.0).unwrap();
+  let _ = model.add_constr("c1", 1.0 * x + 1.0 * y, Greater, 1.0).unwrap();
 
   // optimize the model.
   model.optimize().unwrap();
@@ -37,6 +35,6 @@ fn main() {
   model.write("qp.lp").unwrap();
   model.write("qp.sol").unwrap();
 
-  let status = model.get(gurobi::attr::Status).unwrap();
+  let status = model.get(attr::Status).unwrap();
   assert_eq!(status, 2);
 }

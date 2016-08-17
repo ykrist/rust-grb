@@ -1,7 +1,8 @@
 extern crate gurobi;
+use gurobi::{Env, LinExpr, QuadExpr};
 
 fn main() {
-  let env = gurobi::Env::new("qp.log").unwrap();
+  let env = Env::new("qp.log").unwrap();
 
   // create an empty model.
   let mut model = env.new_model("qp").unwrap();
@@ -17,24 +18,31 @@ fn main() {
   //            = f_q(x,y,z) + f_l(x,y,z)
   // quad term: f_q = x*x + x*y + y*y + y*z + z*z
   // linear term: f_l = 2*x
-  let expr = gurobi::QuadExpr::new(&[x, y, z],
-                                   &[1.0, 0.0, 0.0],
-                                   &[x, x, y, y, z],
-                                   &[x, y, y, z, z],
-                                   &[1., 1., 1., 1., 1.],
-                                   0.0)
+  model.set_objective(QuadExpr::new()
+                     .term(x, 2.0)
+                     .qterm(x, x, 1.0)
+                     .qterm(x, y, 1.0)
+                     .qterm(y, y, 1.0)
+                     .qterm(y, z, 1.0)
+                     .qterm(z, z, 1.0),
+                   gurobi::Maximize)
     .unwrap();
-  model.set_objective(expr, gurobi::Maximize).unwrap();
 
   // add linear constraints
 
   //  g1(x,y,z) = x + 2*y + 3*z >= 4
-  let c0 = gurobi::LinExpr::new(&[x, y, z], &[1., 2., 3.], 0.0).unwrap();
-  let c0 = model.add_constr("c0", c0, gurobi::Greater, 4.0).unwrap();
+  let c0 = model.add_constr("c0",
+                LinExpr::new().term(x, 1.0).term(y, 2.0).term(z, 3.0),
+                gurobi::Greater,
+                4.0)
+    .unwrap();
 
   //  g2(x,y,z) = x + y >= 2
-  let c1 = gurobi::LinExpr::new(&[x, y], &[1., 1.], 0.0).unwrap();
-  let c1 = model.add_constr("c1", c1, gurobi::Greater, 1.0).unwrap();
+  let c1 = model.add_constr("c1",
+                LinExpr::new().term(x, 1.0).term(y, 1.0),
+                gurobi::Greater,
+                1.0)
+    .unwrap();
 
   // optimize the model.
   model.optimize().unwrap();

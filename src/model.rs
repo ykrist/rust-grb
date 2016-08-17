@@ -58,15 +58,36 @@ pub struct LinExpr {
 }
 
 impl LinExpr {
-  pub fn new(vars: &[i32], coeff: &[f64], offset: f64) -> Result<LinExpr> {
-    if vars.len() != coeff.len() {
-      return Err(Error::InconsitentDims);
+  pub fn new() -> LinExpr {
+    LinExpr {
+      vars: Vec::new(),
+      coeff: Vec::new(),
+      offset: 0.0
     }
-    Ok(LinExpr {
-      vars: Vec::from(vars),
-      coeff: Vec::from(coeff),
-      offset: offset
-    })
+  }
+
+  pub fn term(mut self, var: i32, c: f64) -> LinExpr {
+    self.vars.push(var);
+    self.coeff.push(c);
+    self
+  }
+
+  pub fn offset(mut self, offset: f64) -> LinExpr {
+    self.offset += offset;
+    self
+  }
+}
+
+impl Into<QuadExpr> for LinExpr {
+  fn into(self) -> QuadExpr {
+    QuadExpr {
+      lind: self.vars,
+      lval: self.coeff,
+      offset: self.offset,
+      qrow: Vec::new(),
+      qcol: Vec::new(),
+      qval: Vec::new()
+    }
   }
 }
 
@@ -81,22 +102,33 @@ pub struct QuadExpr {
 }
 
 impl QuadExpr {
-  pub fn new(lind: &[i32], lval: &[f64], qrow: &[i32], qcol: &[i32], qval: &[f64], offset: f64) -> Result<QuadExpr> {
-    if lind.len() != lval.len() {
-      return Err(Error::InconsitentDims);
+  pub fn new() -> QuadExpr {
+    QuadExpr {
+      lind: Vec::new(),
+      lval: Vec::new(),
+      qrow: Vec::new(),
+      qcol: Vec::new(),
+      qval: Vec::new(),
+      offset: 0.0
     }
-    if qrow.len() != qcol.len() || qcol.len() != qval.len() {
-      return Err(Error::InconsitentDims);
-    }
+  }
 
-    Ok(QuadExpr {
-      lind: Vec::from(lind),
-      lval: Vec::from(lval),
-      qrow: Vec::from(qrow),
-      qcol: Vec::from(qcol),
-      qval: Vec::from(qval),
-      offset: offset
-    })
+  pub fn term(mut self, ind: i32, val: f64) -> QuadExpr {
+    self.lind.push(ind);
+    self.lval.push(val);
+    self
+  }
+
+  pub fn qterm(mut self, row: i32, col: i32, val: f64) -> QuadExpr {
+    self.qrow.push(row);
+    self.qcol.push(col);
+    self.qval.push(val);
+    self
+  }
+
+  pub fn offset(mut self, offset: f64) -> QuadExpr {
+    self.offset += offset;
+    self
   }
 }
 
@@ -260,7 +292,9 @@ impl<'a> Model<'a> {
   }
 
   /// Set the objective function of the model.
-  pub fn set_objective(&mut self, expr: QuadExpr, sense: ModelSense) -> Result<()> {
+  pub fn set_objective<Expr: Into<QuadExpr>>(&mut self, expr: Expr, sense: ModelSense) -> Result<()> {
+    let expr = expr.into();
+
     let sense = match sense {
       ModelSense::Minimize => -1,
       ModelSense::Maximize => 1,

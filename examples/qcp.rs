@@ -1,4 +1,5 @@
 extern crate gurobi;
+use gurobi::{LinExpr, QuadExpr};
 
 fn main() {
   let env = gurobi::Env::new("qcp1.log").unwrap();
@@ -14,24 +15,32 @@ fn main() {
 
   // set objective funtion:
   //   f(x,y,z) = x
-  let expr = gurobi::QuadExpr::new(&[x, y, z], &[1.0, 0.0, 0.0], &[], &[], &[], 0.0).unwrap();
-  model.set_objective(expr, gurobi::Maximize).unwrap();
+  model.set_objective(QuadExpr::new().term(x, 1.0), gurobi::Maximize).unwrap();
 
   // add linear constraints
 
   //  c0: x + y + z == 1
-  let c0 = gurobi::LinExpr::new(&[x, y, z], &[1., 1., 1.], 0.0).unwrap();
-  let c0 = model.add_constr("c0", c0, gurobi::Equal, 1.0).unwrap();
+  let c0 = model.add_constr("c0",
+                LinExpr::new().term(x, 1.0).term(y, 1.0).term(z, 1.0),
+                gurobi::Equal,
+                1.0)
+    .unwrap();
 
   // add quadratic constraints
 
   //  qc0: x^2 + y^2 - z^2 <= 0.0
-  let qc0 = gurobi::QuadExpr::new(&[], &[], &[x, y, z], &[x, y, z], &[1., 1., -1.0], 0.0).unwrap();
-  let qc0 = model.add_qconstr("qc0", qc0, gurobi::Less, 0.0).unwrap();
+  let qc0 = model.add_qconstr("qc0",
+                 QuadExpr::new().qterm(x, x, 1.0).qterm(y, y, 1.0).qterm(z, z, -1.0),
+                 gurobi::Less,
+                 0.0)
+    .unwrap();
 
   //  qc1: x^2 - y*z <= 0.0
-  let qc1 = gurobi::QuadExpr::new(&[], &[], &[x, y], &[x, z], &[1., -1.0], 0.0).unwrap();
-  let qc1 = model.add_qconstr("qc1", qc1, gurobi::Less, 0.0).unwrap();
+  let qc1 = model.add_qconstr("qc1",
+                 QuadExpr::new().qterm(x, x, 1.0).qterm(y, z, -1.0),
+                 gurobi::Less,
+                 0.0)
+    .unwrap();
 
   let _ = model.get(gurobi::attr::ModelSense).unwrap();
   let _ = model.get(gurobi::attr::ObjVal).unwrap();

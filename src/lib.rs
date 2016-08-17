@@ -32,6 +32,6 @@ pub use model::ConstrSense::*;
 pub use model::ModelSense::*;
 pub use model::SOSType::*;
 
-pub use expr::{LinExpr, QuadExpr, LinTerm,QuadTerm};
+pub use expr::{LinExpr, QuadExpr, LinTerm, QuadTerm};
 
 // vim: set foldmethod=syntax :

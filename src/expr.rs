@@ -103,7 +103,7 @@ impl QuadExpr {
 
   pub fn get_offset(&self) -> f64 { self.offset }
 
-  pub fn lind_slice(&self) -> &[ffi::c_int] { self.lind.as_slice()}
+  pub fn lind_slice(&self) -> &[ffi::c_int] { self.lind.as_slice() }
   pub fn qrow_slice(&self) -> &[ffi::c_int] { self.qrow.as_slice() }
   pub fn qcol_slice(&self) -> &[ffi::c_int] { self.qcol.as_slice() }
 

@@ -29,6 +29,18 @@ pub enum VarType {
   Integer(i64, i64)
 }
 
+impl Into<(ffi::c_char, f64, f64)> for VarType {
+  fn into(self) -> (ffi::c_char, f64, f64) {
+    use self::VarType::*;
+    match self {
+      Binary => ('B' as ffi::c_char, 0.0, 1.0),
+      Continuous(lb, ub) => ('C' as ffi::c_char, lb, ub),
+      Integer(lb, ub) => ('I' as ffi::c_char, lb as ffi::c_double, ub as ffi::c_double),
+    }
+  }
+}
+
+
 ///
 #[derive(Debug)]
 pub enum ConstrSense {
@@ -37,6 +49,17 @@ pub enum ConstrSense {
   Less
 }
 
+impl Into<ffi::c_char> for ConstrSense {
+  fn into(self) -> ffi::c_char {
+    match self {
+      ConstrSense::Equal => '=' as ffi::c_char,
+      ConstrSense::Less => '<' as ffi::c_char,
+      ConstrSense::Greater => '>' as ffi::c_char,
+    }
+  }
+}
+
+
 ///
 #[derive(Debug)]
 pub enum ModelSense {
@@ -44,11 +67,30 @@ pub enum ModelSense {
   Maximize
 }
 
+impl Into<i32> for ModelSense {
+  fn into(self) -> i32 {
+    match self {
+      ModelSense::Minimize => -1,
+      ModelSense::Maximize => 1,
+    }
+  }
+}
+
+
 ///
 #[derive(Debug)]
 pub enum SOSType {
   SOSType1,
   SOSType2
+}
+
+impl Into<i32> for SOSType {
+  fn into(self) -> i32 {
+    match self {
+      SOSType::SOSType1 => 1,
+      SOSType::SOSType2 => 2,
+    }
+  }
 }
 
 
@@ -127,13 +169,9 @@ impl<'a> Model<'a> {
   /// add a decision variable to the model.
   pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64) -> Result<Var> {
     // extract parameters
-    use self::VarType::*;
-    let (vtype, lb, ub) = match vtype {
-      Binary => ('B' as ffi::c_char, 0.0, 1.0),
-      Continuous(lb, ub) => ('C' as ffi::c_char, lb, ub),
-      Integer(lb, ub) => ('I' as ffi::c_char, lb as ffi::c_double, ub as ffi::c_double),
-    };
+    let (vtype, lb, ub) = vtype.into();
     let name = try!(util::make_c_str(name));
+
     let error = unsafe {
       ffi::GRBaddvar(self.model,
                      0,
@@ -157,11 +195,6 @@ impl<'a> Model<'a> {
 
   /// add a linear constraint to the model.
   pub fn add_constr(&mut self, name: &str, expr: LinExpr, sense: ConstrSense, rhs: f64) -> Result<i32> {
-    let sense = match sense {
-      ConstrSense::Equal => '=' as ffi::c_char,
-      ConstrSense::Less => '<' as ffi::c_char,
-      ConstrSense::Greater => '>' as ffi::c_char,
-    };
     let constrname = try!(util::make_c_str(name));
 
     let error = unsafe {
@@ -169,7 +202,7 @@ impl<'a> Model<'a> {
                         expr.num_vars() as ffi::c_int,
                         expr.vars_slice().as_ptr(),
                         expr.coeff_slice().as_ptr(),
-                        sense,
+                        sense.into(),
                         rhs - expr.get_offset(),
                         constrname.as_ptr())
     };
@@ -185,11 +218,6 @@ impl<'a> Model<'a> {
 
   /// add a quadratic constraint to the model.
   pub fn add_qconstr(&mut self, constrname: &str, expr: QuadExpr, sense: ConstrSense, rhs: f64) -> Result<i32> {
-    let sense = match sense {
-      ConstrSense::Equal => '=' as ffi::c_char,
-      ConstrSense::Less => '<' as ffi::c_char,
-      ConstrSense::Greater => '>' as ffi::c_char,
-    };
     let constrname = try!(util::make_c_str(constrname));
 
     let error = unsafe {
@@ -201,7 +229,7 @@ impl<'a> Model<'a> {
                          expr.qrow_slice().as_ptr(),
                          expr.qcol_slice().as_ptr(),
                          expr.qval_slice().as_ptr(),
-                         sense,
+                         sense.into(),
                          rhs - expr.get_offset(),
                          constrname.as_ptr())
     };
@@ -218,18 +246,9 @@ impl<'a> Model<'a> {
   /// Set the objective function of the model.
   pub fn set_objective<Expr: Into<QuadExpr>>(&mut self, expr: Expr, sense: ModelSense) -> Result<()> {
     let expr = expr.into();
-
-    let sense = match sense {
-      ModelSense::Minimize => -1,
-      ModelSense::Maximize => 1,
-    };
-    try!(self.set_list(attr::Obj,
-                       expr.lind_slice(),
-                       expr.lval_slice()));
-    try!(self.add_qpterms(expr.qrow_slice(),
-                          expr.qcol_slice(),
-                          expr.qval_slice()));
-    self.set(attr::ModelSense, sense)
+    try!(self.set_list(attr::Obj, expr.lind_slice(), expr.lval_slice()));
+    try!(self.add_qpterms(expr.qrow_slice(), expr.qcol_slice(), expr.qval_slice()));
+    self.set(attr::ModelSense, sense.into())
   }
 
   /// add quadratic terms of objective function.
@@ -254,17 +273,12 @@ impl<'a> Model<'a> {
       return Err(Error::InconsitentDims);
     }
 
-    let sostype = match sostype {
-      SOSType::SOSType1 => 1,
-      SOSType::SOSType2 => 2,
-    };
-
     let beg = 0;
     let error = unsafe {
       ffi::GRBaddsos(self.model,
                      1,
                      vars.len() as ffi::c_int,
-                     &sostype,
+                     &sostype.into(),
                      &beg,
                      vars.into_iter().map(|v| v.0).collect::<Vec<_>>().as_ptr(),
                      weights.as_ptr())

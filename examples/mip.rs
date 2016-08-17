@@ -9,19 +9,14 @@ fn main() {
   let z = model.add_var("z", gurobi::Binary, 2.0).unwrap();
   model.update().unwrap();
 
-  model.set_objective(&[x, y, z],
-                   &[1.0, 1.0, 2.0],
-                   &[],
-                   &[],
-                   &[],
-                   gurobi::Maximize)
-    .unwrap();
+  let expr = gurobi::QuadExpr::new(&[x, y, z], &[1.0, 1.0, 2.0], &[], &[], &[], 0.0).unwrap();
+  model.set_objective(expr, gurobi::Maximize).unwrap();
 
-  let c0 =
-    model.add_constr("c0", &[x, y, z], &[1.0, 2.0, 3.0], gurobi::Less, 4.0)
-      .unwrap();
-  let c1 = model.add_constr("c1", &[x, y], &[1.0, 1.0], gurobi::Greater, 1.0)
-    .unwrap();
+  let c0 = gurobi::LinExpr::new(&[x, y, z], &[1.0, 2.0, 3.0], 0.0).unwrap();
+  let c0 = model.add_constr("c0", c0, gurobi::Less, 4.0).unwrap();
+
+  let c1 = gurobi::LinExpr::new(&[x, y], &[1.0, 1.0], 0.0).unwrap();
+  let c1 = model.add_constr("c1", c1, gurobi::Greater, 1.0).unwrap();
 
   model.optimize().unwrap();
 

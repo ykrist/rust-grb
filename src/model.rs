@@ -51,6 +51,56 @@ pub enum SOSType {
 }
 
 
+pub struct LinExpr {
+  vars: Vec<i32>,
+  coeff: Vec<f64>,
+  offset: f64
+}
+
+impl LinExpr {
+  pub fn new(vars: &[i32], coeff: &[f64], offset: f64) -> Result<LinExpr> {
+    if vars.len() != coeff.len() {
+      return Err(Error::InconsitentDims);
+    }
+    Ok(LinExpr {
+      vars: Vec::from(vars),
+      coeff: Vec::from(coeff),
+      offset: offset
+    })
+  }
+}
+
+
+pub struct QuadExpr {
+  lind: Vec<i32>,
+  lval: Vec<f64>,
+  qrow: Vec<i32>,
+  qcol: Vec<i32>,
+  qval: Vec<f64>,
+  offset: f64
+}
+
+impl QuadExpr {
+  pub fn new(lind: &[i32], lval: &[f64], qrow: &[i32], qcol: &[i32], qval: &[f64], offset: f64) -> Result<QuadExpr> {
+    if lind.len() != lval.len() {
+      return Err(Error::InconsitentDims);
+    }
+    if qrow.len() != qcol.len() || qcol.len() != qval.len() {
+      return Err(Error::InconsitentDims);
+    }
+
+    Ok(QuadExpr {
+      lind: Vec::from(lind),
+      lval: Vec::from(lval),
+      qrow: Vec::from(qrow),
+      qcol: Vec::from(qcol),
+      qval: Vec::from(qval),
+      offset: offset
+    })
+  }
+}
+
+
 /// Gurobi Model
 pub struct Model<'a> {
   model: *mut ffi::GRBmodel,
@@ -150,11 +200,7 @@ impl<'a> Model<'a> {
   }
 
   /// add a linear constraint to the model.
-  pub fn add_constr(&mut self, name: &str, ind: &[i32], val: &[f64], sense: ConstrSense, rhs: f64) -> Result<i32> {
-    if ind.len() != val.len() {
-      return Err(Error::InconsitentDims);
-    }
-
+  pub fn add_constr(&mut self, name: &str, expr: LinExpr, sense: ConstrSense, rhs: f64) -> Result<i32> {
     let sense = match sense {
       ConstrSense::Equal => '=' as ffi::c_char,
       ConstrSense::Less => '<' as ffi::c_char,
@@ -164,11 +210,11 @@ impl<'a> Model<'a> {
 
     let error = unsafe {
       ffi::GRBaddconstr(self.model,
-                        ind.len() as ffi::c_int,
-                        ind.as_ptr(),
-                        val.as_ptr(),
+                        expr.vars.len() as ffi::c_int,
+                        expr.vars.as_ptr(),
+                        expr.coeff.as_ptr(),
                         sense,
-                        rhs,
+                        rhs - expr.offset,
                         constrname.as_ptr())
     };
     if error != 0 {
@@ -182,16 +228,7 @@ impl<'a> Model<'a> {
   }
 
   /// add a quadratic constraint to the model.
-  pub fn add_qconstr(&mut self, constrname: &str, lind: &[i32], lval: &[f64], qrow: &[i32], qcol: &[i32],
-                     qval: &[f64], sense: ConstrSense, rhs: f64)
-                     -> Result<i32> {
-    if lind.len() != lval.len() {
-      return Err(Error::InconsitentDims);
-    }
-    if qrow.len() != qcol.len() || qcol.len() != qval.len() {
-      return Err(Error::InconsitentDims);
-    }
-
+  pub fn add_qconstr(&mut self, constrname: &str, expr: QuadExpr, sense: ConstrSense, rhs: f64) -> Result<i32> {
     let sense = match sense {
       ConstrSense::Equal => '=' as ffi::c_char,
       ConstrSense::Less => '<' as ffi::c_char,
@@ -201,15 +238,15 @@ impl<'a> Model<'a> {
 
     let error = unsafe {
       ffi::GRBaddqconstr(self.model,
-                         lind.len() as ffi::c_int,
-                         lind.as_ptr(),
-                         lval.as_ptr(),
-                         qrow.len() as ffi::c_int,
-                         qrow.as_ptr(),
-                         qcol.as_ptr(),
-                         qval.as_ptr(),
+                         expr.lind.len() as ffi::c_int,
+                         expr.lind.as_ptr(),
+                         expr.lval.as_ptr(),
+                         expr.qrow.len() as ffi::c_int,
+                         expr.qrow.as_ptr(),
+                         expr.qcol.as_ptr(),
+                         expr.qval.as_ptr(),
                          sense,
-                         rhs,
+                         rhs - expr.offset,
                          constrname.as_ptr())
     };
     if error != 0 {
@@ -223,24 +260,20 @@ impl<'a> Model<'a> {
   }
 
   /// Set the objective function of the model.
-  pub fn set_objective(&mut self, lind: &[i32], lval: &[f64], qrow: &[i32], qcol: &[i32], qval: &[f64],
-                       sense: ModelSense)
-                       -> Result<()> {
+  pub fn set_objective(&mut self, expr: QuadExpr, sense: ModelSense) -> Result<()> {
     let sense = match sense {
       ModelSense::Minimize => -1,
       ModelSense::Maximize => 1,
     };
-    try!(self.set_list(attr::Obj, lind, lval));
-    try!(self.add_qpterms(qrow, qcol, qval));
+    try!(self.set_list(attr::Obj, expr.lind.as_slice(), expr.lval.as_slice()));
+    try!(self.add_qpterms(expr.qrow.as_slice(),
+                          expr.qcol.as_slice(),
+                          expr.qval.as_slice()));
     self.set(attr::ModelSense, sense)
   }
 
   /// add quadratic terms of objective function.
-  fn add_qpterms(&mut self, qrow: &[ffi::c_int], qcol: &[ffi::c_int], qval: &[ffi::c_double]) -> Result<()> {
-    if qrow.len() != qcol.len() || qcol.len() != qval.len() {
-      return Err(Error::InconsitentDims);
-    }
-
+  fn add_qpterms(&mut self, qrow: &[i32], qcol: &[i32], qval: &[f64]) -> Result<()> {
     let error = unsafe {
       ffi::GRBaddqpterms(self.model,
                          qrow.len() as ffi::c_int,

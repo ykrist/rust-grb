@@ -387,8 +387,10 @@ impl<'a> Model<'a> {
   }
 
   /// add an array of decision variables to the model.
+  ///
   /// * The name of each variable is set to `name[i]`
   /// * All of the variable have the same VarType and ranges.
+  ///
   pub fn add_var_array(&mut self, name: &str, vtype: VarType, obj: f64, size: usize) -> Result<Vec<i32>> {
     let mut vars = Vec::with_capacity(size);
     for i in 0..size {
@@ -400,10 +402,12 @@ impl<'a> Model<'a> {
   }
 
   /// add a matrix of decision variables to the model.
+  ///
   /// * The name of each variable is set to `name[i][j]`
   /// * The return value means the index of added variables ([0][0], [0][1], ..., [0][N], [1][0],
   /// ...
   /// * All of the variable have the same VarType and ranges.
+  ///
   pub fn add_var_matrix(&mut self, name: &str, vtype: VarType, obj: f64, rows: usize, cols: usize) -> Result<Vec<i32>> {
     let mut vars = Vec::with_capacity(rows * cols);
     for (i, j) in (0..rows).into_iter().zip((0..cols).into_iter()) {

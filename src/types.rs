@@ -9,6 +9,22 @@ pub trait From<T> {
   fn from(T) -> Self;
 }
 
+impl From<i32> for ffi::c_int {
+  fn from(val: i32) -> ffi::c_int { val }
+}
+
+impl From<i8> for ffi::c_char {
+  fn from(val: i8) -> ffi::c_char { val }
+}
+
+impl From<f64> for ffi::c_double {
+  fn from(val: f64) -> ffi::c_double { val }
+}
+
+impl From<String> for ffi::c_str {
+  fn from(val: String) -> ffi::c_str { CString::new(val.as_str()).unwrap().as_ptr() }
+}
+
 
 /// make an empty instance.
 pub trait Init {
@@ -53,6 +69,14 @@ impl Into<String> for Vec<ffi::c_char> {
   fn into(self) -> String { unsafe { util::from_c_str(self.as_ptr()) } }
 }
 
+impl Into<i8> for ffi::c_char {
+  fn into(self) -> i8 { self }
+}
+
+impl Into<String> for ffi::c_str {
+  fn into(self) -> String { unsafe { util::from_c_str(self).to_owned() } }
+}
+
 
 /// convert to Raw C Pointer.
 pub trait AsRawPtr<T> {
@@ -63,8 +87,16 @@ impl AsRawPtr<*mut ffi::c_int> for i32 {
   fn as_rawptr(&mut self) -> *mut ffi::c_int { self }
 }
 
+impl AsRawPtr<*mut ffi::c_char> for i8 {
+  fn as_rawptr(&mut self) -> *mut ffi::c_char { self }
+}
+
 impl AsRawPtr<*mut ffi::c_double> for f64 {
   fn as_rawptr(&mut self) -> *mut ffi::c_double { self }
+}
+
+impl AsRawPtr<*mut ffi::c_str> for ffi::c_str {
+  fn as_rawptr(&mut self) -> *mut ffi::c_str { self }
 }
 
 impl AsRawPtr<*mut ffi::c_char> for Vec<ffi::c_char> {

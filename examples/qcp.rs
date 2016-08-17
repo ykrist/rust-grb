@@ -15,13 +15,13 @@ fn main() {
 
   // set objective funtion:
   //   f(x,y,z) = x
-  model.set_objective(QuadExpr::new().term(x, 1.0), gurobi::Maximize).unwrap();
+  model.set_objective(QuadExpr::new() + (x, 1.0), gurobi::Maximize).unwrap();
 
   // add linear constraints
 
   //  c0: x + y + z == 1
   let c0 = model.add_constr("c0",
-                LinExpr::new().term(x, 1.0).term(y, 1.0).term(z, 1.0),
+                LinExpr::new() + (x, 1.0) + (y, 1.0) + (z, 1.0),
                 gurobi::Equal,
                 1.0)
     .unwrap();
@@ -30,14 +30,14 @@ fn main() {
 
   //  qc0: x^2 + y^2 - z^2 <= 0.0
   let qc0 = model.add_qconstr("qc0",
-                 QuadExpr::new().qterm(x, x, 1.0).qterm(y, y, 1.0).qterm(z, z, -1.0),
+                 QuadExpr::new() + (x, x, 1.0) + (y, y, 1.0) + (z, z, -1.0),
                  gurobi::Less,
                  0.0)
     .unwrap();
 
   //  qc1: x^2 - y*z <= 0.0
   let qc1 = model.add_qconstr("qc1",
-                 QuadExpr::new().qterm(x, x, 1.0).qterm(y, z, -1.0),
+                 QuadExpr::new() + (x, x, 1.0) + (y, z, -1.0),
                  gurobi::Less,
                  0.0)
     .unwrap();

@@ -1,8 +1,9 @@
 extern crate gurobi_sys as ffi;
 
 use std::iter;
-use std::ptr::{null, null_mut};
 use std::ffi::CString;
+use std::ops::{Add, Sub};
+use std::ptr::{null, null_mut};
 
 use env::Env;
 use error::{Error, Result};
@@ -78,6 +79,27 @@ impl LinExpr {
   }
 }
 
+impl Add<(i32, f64)> for LinExpr {
+  type Output = LinExpr;
+  fn add(self, rhs: (i32, f64)) -> LinExpr { self.term(rhs.0, rhs.1) }
+}
+
+impl Sub<(i32, f64)> for LinExpr {
+  type Output = LinExpr;
+  fn sub(self, rhs: (i32, f64)) -> LinExpr { self.term(rhs.0, -rhs.1) }
+}
+
+impl Add<f64> for LinExpr {
+  type Output = LinExpr;
+  fn add(self, rhs: f64) -> LinExpr { self.offset(rhs) }
+}
+
+impl Sub<f64> for LinExpr {
+  type Output = LinExpr;
+  fn sub(self, rhs: f64) -> LinExpr { self.offset(-rhs) }
+}
+
+
 impl Into<QuadExpr> for LinExpr {
   fn into(self) -> QuadExpr {
     QuadExpr {
@@ -131,6 +153,37 @@ impl QuadExpr {
     self
   }
 }
+
+impl Add<(i32, f64)> for QuadExpr {
+  type Output = QuadExpr;
+  fn add(self, rhs: (i32, f64)) -> QuadExpr { self.term(rhs.0, rhs.1) }
+}
+
+impl Sub<(i32, f64)> for QuadExpr {
+  type Output = QuadExpr;
+  fn sub(self, rhs: (i32, f64)) -> QuadExpr { self.term(rhs.0, -rhs.1) }
+}
+
+impl Add<(i32, i32, f64)> for QuadExpr {
+  type Output = QuadExpr;
+  fn add(self, rhs: (i32, i32, f64)) -> QuadExpr { self.qterm(rhs.0, rhs.1, rhs.2) }
+}
+
+impl Sub<(i32, i32, f64)> for QuadExpr {
+  type Output = QuadExpr;
+  fn sub(self, rhs: (i32, i32, f64)) -> QuadExpr { self.qterm(rhs.0, rhs.1, -rhs.2) }
+}
+
+impl Add<f64> for QuadExpr {
+  type Output = QuadExpr;
+  fn add(self, rhs: f64) -> QuadExpr { self.offset(rhs) }
+}
+
+impl Sub<f64> for QuadExpr {
+  type Output = QuadExpr;
+  fn sub(self, rhs: f64) -> QuadExpr { self.offset(-rhs) }
+}
+
 
 
 /// Gurobi Model

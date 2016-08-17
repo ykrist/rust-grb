@@ -23,8 +23,7 @@ mod types;
 // re-exports
 pub use error::{Error, Result};
 pub use env::Env;
-pub use model::{Model, Attr};
-
+pub use model::Model;
 pub use model::VarType::*;
 pub use model::ConstrSense::*;
 pub use model::ModelSense::*;

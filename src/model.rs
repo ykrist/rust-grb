@@ -21,7 +21,7 @@ pub mod attr {
 
 
 /// The type for new variable(s).
-#[derive(Debug)]
+#[derive(Debug,Clone,Copy)]
 pub enum VarType {
   Binary,
   Continuous(f64, f64),
@@ -312,6 +312,41 @@ impl<'a> Model<'a> {
   pub fn set_list<A: AttrArray>(&mut self, attr: A, ind: &[i32], values: &[A::Output]) -> Result<()> {
     A::set_list(self, attr, ind, values)
   }
+
+
+  /// add a decision variable to the model.
+  pub fn add_var_scalar(&mut self, name: &str, vtype: VarType, obj: f64, _: ()) -> Result<i32> {
+    self.add_var(name, vtype, obj)
+  }
+
+  /// add an array of decision variables to the model.
+  /// * The name of each variable is set to `name[i]`
+  /// * All of the variable have the same VarType and ranges.
+  pub fn add_var_array(&mut self, name: &str, vtype: VarType, obj: f64, size: usize) -> Result<Vec<i32>> {
+    let mut vars = Vec::with_capacity(size);
+    for i in 0..size {
+      let name = format!("{}[{}]", name, i);
+      let v = try!(self.add_var(name.as_str(), vtype, obj));
+      vars.push(v);
+    }
+    Ok(vars)
+  }
+
+  /// add a matrix of decision variables to the model.
+  /// * The name of each variable is set to `name[i][j]`
+  /// * The return value means the index of added variables ([0][0], [0][1], ..., [0][N], [1][0],
+  /// ...
+  /// * All of the variable have the same VarType and ranges.
+  pub fn add_var_matrix(&mut self, name: &str, vtype: VarType, obj: f64, rows: usize, cols: usize) -> Result<Vec<i32>> {
+    let mut vars = Vec::with_capacity(rows * cols);
+    for (i, j) in (0..rows).into_iter().zip((0..cols).into_iter()) {
+      let name = format!("{}[{}][{}]", name, i, j);
+      let v = try!(self.add_var(name.as_str(), vtype, obj));
+      vars.push(v);
+    }
+    Ok(vars)
+  }
+
 
   fn error_from_api(&self, errcode: ffi::c_int) -> Error { self.env.error_from_api(errcode) }
 }

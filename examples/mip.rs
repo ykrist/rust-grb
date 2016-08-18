@@ -1,6 +1,6 @@
 extern crate gurobi;
 use gurobi::*;
-use gurobi::model::Tensor;
+use gurobi::core::Tensor;
 
 fn main() {
   let env = Env::new("mip.log").unwrap();

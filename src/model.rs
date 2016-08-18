@@ -976,14 +976,16 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
+  /// Query the value of attribute which associated with the model.
   pub fn get<A: Attr>(&self, attr: A) -> Result<A::Out> { A::get(self, attr) }
+
+  /// Set the value of attribute which associated with the model.
   pub fn set<A: Attr>(&mut self, attr: A, value: A::Out) -> Result<()> { A::set(self, attr, value) }
 
-
-  fn get_value<A: AttrArray + Copy, S: Shape, E: Tensor<i32, S>>(&self, attr: A, e: &E)
-                                                                 -> Result<TensorVal<A::Out, S>> {
+  fn get_value<A, S, E>(&self, attr: A, e: &E) -> Result<TensorVal<A::Out, S>>
+    where A: AttrArray + Copy, S: Shape, E: Tensor<i32, S>
+  {
     let shape = try!(e.shape().ok_or(Error::InconsitentDims));
-
     let mut val = Vec::with_capacity(shape.size());
     for elem in e.body().iter() {
       let v = try!(A::get_element(self, attr, *elem));
@@ -992,17 +994,19 @@ impl<'a> Model<'a> {
     Ok(TensorVal::new(val, shape))
   }
 
-  fn set_value<A: AttrArray + Copy, S: Shape, E: Tensor<i32, S>>(&mut self, attr: A, e: &E, val: &Tensor<A::Out, S>)
-                                                                 -> Result<()> {
+  fn set_value<A, S, E>(&mut self, attr: A, e: &E, val: &Tensor<A::Out, S>) -> Result<()>
+    where A: AttrArray + Copy, S: Shape, E: Tensor<i32, S>
+  {
     for (elem, v) in e.body().iter().zip(val.body().iter()) {
       try!(A::set_element(self, attr, *elem, v.clone()));
     }
-
     Ok(())
   }
 
-  pub fn get_values<A: AttrArray + Copy, S: Shape, E: Tensor<i32, S>>(&self, attr: A, e: &[&E])
-                                                                      -> Result<Vec<TensorVal<A::Out, S>>> {
+  /// Query the value of attributes which associated with variable/constraints.
+  pub fn get_values<A, S, E>(&self, attr: A, e: &[&E]) -> Result<Vec<TensorVal<A::Out, S>>>
+    where A: AttrArray + Copy, S: Shape, E: Tensor<i32, S>
+  {
     let mut buf = Vec::with_capacity(e.len());
     for &e in e.iter() {
       let value = try!(self.get_value(attr, e));
@@ -1011,9 +1015,10 @@ impl<'a> Model<'a> {
     Ok(buf)
   }
 
-  pub fn set_values<A: AttrArray + Copy, S: Shape, E: Tensor<i32, S>>(&mut self, attr: A, e: &[&E],
-                                                                      val: &[&Tensor<A::Out, S>])
-                                                                      -> Result<()> {
+  /// Set the value of attributes which associated with variable/constraints.
+  pub fn set_values<A, S, E>(&mut self, attr: A, e: &[&E], val: &[&Tensor<A::Out, S>]) -> Result<()>
+    where A: AttrArray + Copy, S: Shape, E: Tensor<i32, S>
+  {
     for (&e, &val) in e.iter().zip(val.iter()) {
       try!(self.set_value(attr, e, val));
     }
@@ -1021,8 +1026,8 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
-
-  pub fn calc_value<S: Shape, E: Clone + Into<QuadExpr<S>>>(&self, expr: &E) -> Result<Vec<f64>> {
+  /// calculates the actual value of linear/quadratic expression.
+  pub fn calc_value<S: Shape, E: Clone + Into<QuadExpr<S>>>(&self, expr: &E) -> Result<TensorVal<f64, S>> {
     let expr: QuadExpr<S> = (*expr).clone().into();
 
     let mut lbuf = Vec::with_capacity(expr.lind.len());
@@ -1042,11 +1047,10 @@ impl<'a> Model<'a> {
     let mut val = Vec::with_capacity(shape.size());
     for i in 0..(shape.size()) {
       let lval = lbuf.iter().zip(expr.lval.iter()).fold(0.0, |acc, (v, c)| acc + v[i] * c);
-      let qval = qbuf.iter().zip(expr.qval.iter()).fold(0.0,
-                                                        |acc, (&(ref r, ref c), coeff)| acc + r[i] * c[i] * coeff);
+      let qval = qbuf.iter().zip(expr.qval.iter()).fold(0.0, |acc, (&(ref r, ref c), cf)| acc + r[i] * c[i] * cf);
       val.push(lval + qval + expr.offset);
     }
-    Ok(val)
+    Ok(TensorVal::new(val, shape))
   }
 
   fn error_from_api(&self, errcode: ffi::c_int) -> Error { self.env.error_from_api(errcode) }

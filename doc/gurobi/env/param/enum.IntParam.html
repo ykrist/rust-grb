@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `IntParam` enum in crate `gurobi`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, IntParam">
+
+    <title>gurobi::env::param::IntParam - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../index.html'>gurobi</a>::<wbr><a href='../index.html'>env</a>::<wbr><a href='index.html'>param</a></p><script>window.sidebarCurrent = {name: 'IntParam', ty: 'enum', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content enum">
+<h1 class='fqn'><span class='in-band'>Enum <a href='../../index.html'>gurobi</a>::<wbr><a href='../index.html'>env</a>::<wbr><a href='index.html'>param</a>::<wbr><a class='enum' href=''>IntParam</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-16' class='srclink' href='../../../gurobi_sys/enum.IntParam.html?gotosrc=16' title='goto source code'>[src]</a></span></h1>
+<pre class='rust enum'>pub enum IntParam {
+    SolutionLimit,
+    Method,
+    ScaleFlag,
+    SimplexPricing,
+    Quad,
+    NormAdjust,
+    Sifting,
+    SiftMethod,
+    SubMIPNodes,
+    VarBranch,
+    Cuts,
+    CliqueCuts,
+    CoverCuts,
+    FlowCoverCuts,
+    FlowPathCuts,
+    GUBCoverCuts,
+    ImpliedCuts,
+    MIPSepCuts,
+    MIRCuts,
+    ModKCuts,
+    ZeroHalfCuts,
+    NetworkCuts,
+    SubMIPCuts,
+    CutAggPasses,
+    CutPasses,
+    GomoryPasses,
+    NodeMethod,
+    Presolve,
+    Aggregate,
+    IISMethod,
+    PreCrush,
+    PreDepRow,
+    PrePasses,
+    DisplayInterval,
+    OutputFlag,
+    Threads,
+    BarIterLimit,
+    Crossover,
+    CrossoverBasis,
+    BarCorrectors,
+    BarOrder,
+    PumpPasses,
+    RINS,
+    Symmetry,
+    MIPFocus,
+    NumericFocus,
+    AggFill,
+    PreDual,
+    SolutionNumber,
+    MinRelNodes,
+    ZeroObjNodes,
+    BranchDir,
+    InfUnbdInfo,
+    DualReductions,
+    BarHomogeneous,
+    PreQLinearize,
+    MIQCPMethod,
+    QCPDual,
+    LogToConsole,
+    PreSparsify,
+    PreMIQCPForm,
+    Seed,
+    ConcurrentMIP,
+    ConcurrentJobs,
+    DistributedMIPJobs,
+    LazyConstraints,
+    TuneResults,
+    TuneTrials,
+    TuneOutput,
+    TuneJobs,
+    Disconnected,
+    NoRelHeuristic,
+    UpdateMode,
+    WorkerPort,
+    Record,
+}</pre><h2 class='variants'>Variants</h2>
+<table class='variants_table'><tr><td id='variant.SolutionLimit'><code>SolutionLimit</code></td><td></td><td></td></tr><tr><td id='variant.Method'><code>Method</code></td><td></td><td></td></tr><tr><td id='variant.ScaleFlag'><code>ScaleFlag</code></td><td></td><td></td></tr><tr><td id='variant.SimplexPricing'><code>SimplexPricing</code></td><td></td><td></td></tr><tr><td id='variant.Quad'><code>Quad</code></td><td></td><td></td></tr><tr><td id='variant.NormAdjust'><code>NormAdjust</code></td><td></td><td></td></tr><tr><td id='variant.Sifting'><code>Sifting</code></td><td></td><td></td></tr><tr><td id='variant.SiftMethod'><code>SiftMethod</code></td><td></td><td></td></tr><tr><td id='variant.SubMIPNodes'><code>SubMIPNodes</code></td><td></td><td></td></tr><tr><td id='variant.VarBranch'><code>VarBranch</code></td><td></td><td></td></tr><tr><td id='variant.Cuts'><code>Cuts</code></td><td></td><td></td></tr><tr><td id='variant.CliqueCuts'><code>CliqueCuts</code></td><td></td><td></td></tr><tr><td id='variant.CoverCuts'><code>CoverCuts</code></td><td></td><td></td></tr><tr><td id='variant.FlowCoverCuts'><code>FlowCoverCuts</code></td><td></td><td></td></tr><tr><td id='variant.FlowPathCuts'><code>FlowPathCuts</code></td><td></td><td></td></tr><tr><td id='variant.GUBCoverCuts'><code>GUBCoverCuts</code></td><td></td><td></td></tr><tr><td id='variant.ImpliedCuts'><code>ImpliedCuts</code></td><td></td><td></td></tr><tr><td id='variant.MIPSepCuts'><code>MIPSepCuts</code></td><td></td><td></td></tr><tr><td id='variant.MIRCuts'><code>MIRCuts</code></td><td></td><td></td></tr><tr><td id='variant.ModKCuts'><code>ModKCuts</code></td><td></td><td></td></tr><tr><td id='variant.ZeroHalfCuts'><code>ZeroHalfCuts</code></td><td></td><td></td></tr><tr><td id='variant.NetworkCuts'><code>NetworkCuts</code></td><td></td><td></td></tr><tr><td id='variant.SubMIPCuts'><code>SubMIPCuts</code></td><td></td><td></td></tr><tr><td id='variant.CutAggPasses'><code>CutAggPasses</code></td><td></td><td></td></tr><tr><td id='variant.CutPasses'><code>CutPasses</code></td><td></td><td></td></tr><tr><td id='variant.GomoryPasses'><code>GomoryPasses</code></td><td></td><td></td></tr><tr><td id='variant.NodeMethod'><code>NodeMethod</code></td><td></td><td></td></tr><tr><td id='variant.Presolve'><code>Presolve</code></td><td></td><td></td></tr><tr><td id='variant.Aggregate'><code>Aggregate</code></td><td></td><td></td></tr><tr><td id='variant.IISMethod'><code>IISMethod</code></td><td></td><td></td></tr><tr><td id='variant.PreCrush'><code>PreCrush</code></td><td></td><td></td></tr><tr><td id='variant.PreDepRow'><code>PreDepRow</code></td><td></td><td></td></tr><tr><td id='variant.PrePasses'><code>PrePasses</code></td><td></td><td></td></tr><tr><td id='variant.DisplayInterval'><code>DisplayInterval</code></td><td></td><td></td></tr><tr><td id='variant.OutputFlag'><code>OutputFlag</code></td><td></td><td></td></tr><tr><td id='variant.Threads'><code>Threads</code></td><td></td><td></td></tr><tr><td id='variant.BarIterLimit'><code>BarIterLimit</code></td><td></td><td></td></tr><tr><td id='variant.Crossover'><code>Crossover</code></td><td></td><td></td></tr><tr><td id='variant.CrossoverBasis'><code>CrossoverBasis</code></td><td></td><td></td></tr><tr><td id='variant.BarCorrectors'><code>BarCorrectors</code></td><td></td><td></td></tr><tr><td id='variant.BarOrder'><code>BarOrder</code></td><td></td><td></td></tr><tr><td id='variant.PumpPasses'><code>PumpPasses</code></td><td></td><td></td></tr><tr><td id='variant.RINS'><code>RINS</code></td><td></td><td></td></tr><tr><td id='variant.Symmetry'><code>Symmetry</code></td><td></td><td></td></tr><tr><td id='variant.MIPFocus'><code>MIPFocus</code></td><td></td><td></td></tr><tr><td id='variant.NumericFocus'><code>NumericFocus</code></td><td></td><td></td></tr><tr><td id='variant.AggFill'><code>AggFill</code></td><td></td><td></td></tr><tr><td id='variant.PreDual'><code>PreDual</code></td><td></td><td></td></tr><tr><td id='variant.SolutionNumber'><code>SolutionNumber</code></td><td></td><td></td></tr><tr><td id='variant.MinRelNodes'><code>MinRelNodes</code></td><td></td><td></td></tr><tr><td id='variant.ZeroObjNodes'><code>ZeroObjNodes</code></td><td></td><td></td></tr><tr><td id='variant.BranchDir'><code>BranchDir</code></td><td></td><td></td></tr><tr><td id='variant.InfUnbdInfo'><code>InfUnbdInfo</code></td><td></td><td></td></tr><tr><td id='variant.DualReductions'><code>DualReductions</code></td><td></td><td></td></tr><tr><td id='variant.BarHomogeneous'><code>BarHomogeneous</code></td><td></td><td></td></tr><tr><td id='variant.PreQLinearize'><code>PreQLinearize</code></td><td></td><td></td></tr><tr><td id='variant.MIQCPMethod'><code>MIQCPMethod</code></td><td></td><td></td></tr><tr><td id='variant.QCPDual'><code>QCPDual</code></td><td></td><td></td></tr><tr><td id='variant.LogToConsole'><code>LogToConsole</code></td><td></td><td></td></tr><tr><td id='variant.PreSparsify'><code>PreSparsify</code></td><td></td><td></td></tr><tr><td id='variant.PreMIQCPForm'><code>PreMIQCPForm</code></td><td></td><td></td></tr><tr><td id='variant.Seed'><code>Seed</code></td><td></td><td></td></tr><tr><td id='variant.ConcurrentMIP'><code>ConcurrentMIP</code></td><td></td><td></td></tr><tr><td id='variant.ConcurrentJobs'><code>ConcurrentJobs</code></td><td></td><td></td></tr><tr><td id='variant.DistributedMIPJobs'><code>DistributedMIPJobs</code></td><td></td><td></td></tr><tr><td id='variant.LazyConstraints'><code>LazyConstraints</code></td><td></td><td></td></tr><tr><td id='variant.TuneResults'><code>TuneResults</code></td><td></td><td></td></tr><tr><td id='variant.TuneTrials'><code>TuneTrials</code></td><td></td><td></td></tr><tr><td id='variant.TuneOutput'><code>TuneOutput</code></td><td></td><td></td></tr><tr><td id='variant.TuneJobs'><code>TuneJobs</code></td><td></td><td></td></tr><tr><td id='variant.Disconnected'><code>Disconnected</code></td><td></td><td></td></tr><tr><td id='variant.NoRelHeuristic'><code>NoRelHeuristic</code></td><td></td><td></td></tr><tr><td id='variant.UpdateMode'><code>UpdateMode</code></td><td></td><td></td></tr><tr><td id='variant.WorkerPort'><code>WorkerPort</code></td><td></td><td></td></tr><tr><td id='variant.Record'><code>Record</code></td><td></td><td></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='../../../gurobi/env/trait.Param.html' title='gurobi::env::Param'>Param</a> for <a class='enum' href='../../../gurobi/env/param/enum.IntParam.html' title='gurobi::env::param::IntParam'>IntParam</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-104' class='srclink' href='../../../src/gurobi/src/env.rs.html#114-127' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='associatedtype.Out' class='type'><code>type <a href='../../../gurobi/env/trait.Param.html#associatedtype.Out' class='type'>Out</a> = <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a></code></h4>
+<h4 id='associatedtype.Buf' class='type'><code>type <a href='../../../gurobi/env/trait.Param.html#associatedtype.Buf' class='type'>Buf</a> = <a class='type' href='https://doc.rust-lang.org/nightly/std/os/raw/type.c_int.html' title='std::os::raw::c_int'>c_int</a></code></h4>
+<h4 id='associatedtype.RawFrom' class='type'><code>type <a href='../../../gurobi/env/trait.Param.html#associatedtype.RawFrom' class='type'>RawFrom</a> = <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut </a><a class='type' href='https://doc.rust-lang.org/nightly/std/os/raw/type.c_int.html' title='std::os::raw::c_int'>c_int</a></code></h4>
+<h4 id='associatedtype.RawTo' class='type'><code>type <a href='../../../gurobi/env/trait.Param.html#associatedtype.RawTo' class='type'>RawTo</a> = <a class='type' href='https://doc.rust-lang.org/nightly/std/os/raw/type.c_int.html' title='std::os::raw::c_int'>c_int</a></code></h4>
+<h4 id='method.get_param' class='method'><code>unsafe fn <a href='../../../gurobi/env/trait.Param.html#tymethod.get_param' class='fnname'>get_param</a>(env: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut </a><a class='struct' href='../../../gurobi_sys/struct.GRBenv.html' title='gurobi_sys::GRBenv'>GRBenv</a>, paramname: <a class='type' href='../../../gurobi_sys/type.c_str.html' title='gurobi_sys::c_str'>c_str</a>, value: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut </a><a class='type' href='https://doc.rust-lang.org/nightly/std/os/raw/type.c_int.html' title='std::os::raw::c_int'>c_int</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/std/os/raw/type.c_int.html' title='std::os::raw::c_int'>c_int</a></code></h4>
+<h4 id='method.set_param' class='method'><code>unsafe fn <a href='../../../gurobi/env/trait.Param.html#tymethod.set_param' class='fnname'>set_param</a>(env: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut </a><a class='struct' href='../../../gurobi_sys/struct.GRBenv.html' title='gurobi_sys::GRBenv'>GRBenv</a>, paramname: <a class='type' href='../../../gurobi_sys/type.c_str.html' title='gurobi_sys::c_str'>c_str</a>, value: <a class='type' href='https://doc.rust-lang.org/nightly/std/os/raw/type.c_int.html' title='std::os::raw::c_int'>c_int</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/std/os/raw/type.c_int.html' title='std::os::raw::c_int'>c_int</a></code></h4>
+<h4 id='method.get' class='method'><code>fn <a href='../../../gurobi/env/trait.Param.html#method.get' class='fnname'>get</a>(env: &amp;<a class='struct' href='../../../gurobi/env/struct.Env.html' title='gurobi::env::Env'>Env</a>, param: Self) -&gt; <a class='type' href='../../../gurobi/error/type.Result.html' title='gurobi::error::Result'>Result</a>&lt;Self::<a class='trait' href='../../../gurobi/env/trait.Param.html' title='gurobi::env::Param'>Out</a>&gt;</code></h4>
+<h4 id='method.set' class='method'><code>fn <a href='../../../gurobi/env/trait.Param.html#method.set' class='fnname'>set</a>(env: &amp;mut <a class='struct' href='../../../gurobi/env/struct.Env.html' title='gurobi::env::Env'>Env</a>, param: Self, value: Self::<a class='trait' href='../../../gurobi/env/trait.Param.html' title='gurobi::env::Param'>Out</a>) -&gt; <a class='type' href='../../../gurobi/error/type.Result.html' title='gurobi::error::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>&gt;</code></h4>
+</div><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../../../gurobi/env/param/enum.IntParam.html' title='gurobi::env::param::IntParam'>IntParam</a></code></span><span class='out-of-band'></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Error.html' title='core::fmt::Error'>Error</a>&gt;</code></h4>
+<div class='docblock'><p>Formats the value using the given formatter.</p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "gurobi";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
+    
+    <script defer src="../../../search-index.js"></script>
+</body>
+</html>

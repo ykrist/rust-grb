@@ -2,6 +2,8 @@
 
 doc:
 	cargo doc
+	rm -rf doc
+	cp -r target/doc ./doc
 
 gh-pages:
 	[[ ! -d gh-pages ]] && git clone https://github.com/ys-nuem/rust-gurobi.git -b gh-pages gh-pages || echo

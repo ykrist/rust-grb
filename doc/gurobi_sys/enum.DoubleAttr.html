@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `DoubleAttr` enum in crate `gurobi_sys`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, DoubleAttr">
+
+    <title>gurobi_sys::DoubleAttr - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='index.html'>gurobi_sys</a></p><script>window.sidebarCurrent = {name: 'DoubleAttr', ty: 'enum', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content enum">
+<h1 class='fqn'><span class='in-band'>Enum <a href='index.html'>gurobi_sys</a>::<wbr><a class='enum' href=''>DoubleAttr</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-343' class='srclink' href='../src/gurobi_sys/gurobi-sys/src/lib.rs.html#199-271' title='goto source code'>[src]</a></span></h1>
+<pre class='rust enum'>pub enum DoubleAttr {
+    Runtime,
+    ObjCon,
+    LB,
+    UB,
+    Obj,
+    Start,
+    PreFixVal,
+    RHS,
+    QCRHS,
+    MaxCoeff,
+    MinCoeff,
+    MaxBound,
+    MinBound,
+    MaxObjCoeff,
+    MinObjCoeff,
+    MaxRHS,
+    MinRHS,
+    ObjVal,
+    ObjBound,
+    ObjBoundC,
+    MIPGap,
+    IterCount,
+    NodeCount,
+    X,
+    RC,
+    Pi,
+    QCPi,
+    Slack,
+    QCSlack,
+    BoundVio,
+    BoundSVio,
+    BoundVioSum,
+    BoundSVioSum,
+    ConstrVio,
+    ConstrSVio,
+    ConstrVioSum,
+    ConstrSVioSum,
+    ConstrResidual,
+    ConstrSResidual,
+    ConstrResidualSum,
+    ConstrSResidualSum,
+    DualVio,
+    DualSVio,
+    DualVioSum,
+    DualSVioSum,
+    DualResidual,
+    DualSResidual,
+    DualResidualSum,
+    DualSResidualSum,
+    ComplVio,
+    ComplVioSum,
+    IntVio,
+    IntVioSum,
+    Kappa,
+    KappaExact,
+    SAObjLow,
+    SAObjUp,
+    SALBLow,
+    SALBUp,
+    SARHSLow,
+    SAUBLow,
+    SAUBUp,
+    SARHSUp,
+    Xn,
+    FarkasProof,
+    FarkasDual,
+    UnbdRay,
+    PStart,
+    DStart,
+    BarX,
+    VarHintVal,
+}</pre><h2 class='variants'>Variants</h2>
+<table class='variants_table'><tr><td id='variant.Runtime'><code>Runtime</code></td><td></td><td></td></tr><tr><td id='variant.ObjCon'><code>ObjCon</code></td><td></td><td></td></tr><tr><td id='variant.LB'><code>LB</code></td><td></td><td></td></tr><tr><td id='variant.UB'><code>UB</code></td><td></td><td></td></tr><tr><td id='variant.Obj'><code>Obj</code></td><td></td><td></td></tr><tr><td id='variant.Start'><code>Start</code></td><td></td><td></td></tr><tr><td id='variant.PreFixVal'><code>PreFixVal</code></td><td></td><td></td></tr><tr><td id='variant.RHS'><code>RHS</code></td><td></td><td></td></tr><tr><td id='variant.QCRHS'><code>QCRHS</code></td><td></td><td></td></tr><tr><td id='variant.MaxCoeff'><code>MaxCoeff</code></td><td></td><td></td></tr><tr><td id='variant.MinCoeff'><code>MinCoeff</code></td><td></td><td></td></tr><tr><td id='variant.MaxBound'><code>MaxBound</code></td><td></td><td></td></tr><tr><td id='variant.MinBound'><code>MinBound</code></td><td></td><td></td></tr><tr><td id='variant.MaxObjCoeff'><code>MaxObjCoeff</code></td><td></td><td></td></tr><tr><td id='variant.MinObjCoeff'><code>MinObjCoeff</code></td><td></td><td></td></tr><tr><td id='variant.MaxRHS'><code>MaxRHS</code></td><td></td><td></td></tr><tr><td id='variant.MinRHS'><code>MinRHS</code></td><td></td><td></td></tr><tr><td id='variant.ObjVal'><code>ObjVal</code></td><td></td><td></td></tr><tr><td id='variant.ObjBound'><code>ObjBound</code></td><td></td><td></td></tr><tr><td id='variant.ObjBoundC'><code>ObjBoundC</code></td><td></td><td></td></tr><tr><td id='variant.MIPGap'><code>MIPGap</code></td><td></td><td></td></tr><tr><td id='variant.IterCount'><code>IterCount</code></td><td></td><td></td></tr><tr><td id='variant.NodeCount'><code>NodeCount</code></td><td></td><td></td></tr><tr><td id='variant.X'><code>X</code></td><td></td><td></td></tr><tr><td id='variant.RC'><code>RC</code></td><td></td><td></td></tr><tr><td id='variant.Pi'><code>Pi</code></td><td></td><td></td></tr><tr><td id='variant.QCPi'><code>QCPi</code></td><td></td><td></td></tr><tr><td id='variant.Slack'><code>Slack</code></td><td></td><td></td></tr><tr><td id='variant.QCSlack'><code>QCSlack</code></td><td></td><td></td></tr><tr><td id='variant.BoundVio'><code>BoundVio</code></td><td></td><td></td></tr><tr><td id='variant.BoundSVio'><code>BoundSVio</code></td><td></td><td></td></tr><tr><td id='variant.BoundVioSum'><code>BoundVioSum</code></td><td></td><td></td></tr><tr><td id='variant.BoundSVioSum'><code>BoundSVioSum</code></td><td></td><td></td></tr><tr><td id='variant.ConstrVio'><code>ConstrVio</code></td><td></td><td></td></tr><tr><td id='variant.ConstrSVio'><code>ConstrSVio</code></td><td></td><td></td></tr><tr><td id='variant.ConstrVioSum'><code>ConstrVioSum</code></td><td></td><td></td></tr><tr><td id='variant.ConstrSVioSum'><code>ConstrSVioSum</code></td><td></td><td></td></tr><tr><td id='variant.ConstrResidual'><code>ConstrResidual</code></td><td></td><td></td></tr><tr><td id='variant.ConstrSResidual'><code>ConstrSResidual</code></td><td></td><td></td></tr><tr><td id='variant.ConstrResidualSum'><code>ConstrResidualSum</code></td><td></td><td></td></tr><tr><td id='variant.ConstrSResidualSum'><code>ConstrSResidualSum</code></td><td></td><td></td></tr><tr><td id='variant.DualVio'><code>DualVio</code></td><td></td><td></td></tr><tr><td id='variant.DualSVio'><code>DualSVio</code></td><td></td><td></td></tr><tr><td id='variant.DualVioSum'><code>DualVioSum</code></td><td></td><td></td></tr><tr><td id='variant.DualSVioSum'><code>DualSVioSum</code></td><td></td><td></td></tr><tr><td id='variant.DualResidual'><code>DualResidual</code></td><td></td><td></td></tr><tr><td id='variant.DualSResidual'><code>DualSResidual</code></td><td></td><td></td></tr><tr><td id='variant.DualResidualSum'><code>DualResidualSum</code></td><td></td><td></td></tr><tr><td id='variant.DualSResidualSum'><code>DualSResidualSum</code></td><td></td><td></td></tr><tr><td id='variant.ComplVio'><code>ComplVio</code></td><td></td><td></td></tr><tr><td id='variant.ComplVioSum'><code>ComplVioSum</code></td><td></td><td></td></tr><tr><td id='variant.IntVio'><code>IntVio</code></td><td></td><td></td></tr><tr><td id='variant.IntVioSum'><code>IntVioSum</code></td><td></td><td></td></tr><tr><td id='variant.Kappa'><code>Kappa</code></td><td></td><td></td></tr><tr><td id='variant.KappaExact'><code>KappaExact</code></td><td></td><td></td></tr><tr><td id='variant.SAObjLow'><code>SAObjLow</code></td><td></td><td></td></tr><tr><td id='variant.SAObjUp'><code>SAObjUp</code></td><td></td><td></td></tr><tr><td id='variant.SALBLow'><code>SALBLow</code></td><td></td><td></td></tr><tr><td id='variant.SALBUp'><code>SALBUp</code></td><td></td><td></td></tr><tr><td id='variant.SARHSLow'><code>SARHSLow</code></td><td></td><td></td></tr><tr><td id='variant.SAUBLow'><code>SAUBLow</code></td><td></td><td></td></tr><tr><td id='variant.SAUBUp'><code>SAUBUp</code></td><td></td><td></td></tr><tr><td id='variant.SARHSUp'><code>SARHSUp</code></td><td></td><td></td></tr><tr><td id='variant.Xn'><code>Xn</code></td><td></td><td></td></tr><tr><td id='variant.FarkasProof'><code>FarkasProof</code></td><td></td><td></td></tr><tr><td id='variant.FarkasDual'><code>FarkasDual</code></td><td></td><td></td></tr><tr><td id='variant.UnbdRay'><code>UnbdRay</code></td><td></td><td></td></tr><tr><td id='variant.PStart'><code>PStart</code></td><td></td><td></td></tr><tr><td id='variant.DStart'><code>DStart</code></td><td></td><td></td></tr><tr><td id='variant.BarX'><code>BarX</code></td><td></td><td></td></tr><tr><td id='variant.VarHintVal'><code>VarHintVal</code></td><td></td><td></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../gurobi_sys/enum.DoubleAttr.html' title='gurobi_sys::DoubleAttr'>DoubleAttr</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-415' class='srclink' href='../src/gurobi_sys/gurobi-sys/src/lib.rs.html#198' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+<div class='docblock'><p>Formats the value using the given formatter.</p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "gurobi_sys";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

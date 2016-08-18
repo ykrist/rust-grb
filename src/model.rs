@@ -1,4 +1,5 @@
-extern crate gurobi_sys as ffi;
+use super::ffi;
+use super::itertools::Zip;
 
 use std::iter;
 use std::ffi::CString;
@@ -905,7 +906,7 @@ impl<'a> Model<'a> {
   pub fn set_values<A, S, E>(&mut self, attr: A, e: &[&E], val: &[&Tensor<A::Out, S>]) -> Result<()>
     where A: AttrArray + Copy, S: Shape, E: Tensor<i32, S>
   {
-    for (&e, &val) in e.iter().zip(val.iter()) {
+    for (&e, &val) in Zip::new((e.iter(), val.iter())) {
       try!(self.set_value(attr, e, val));
     }
 
@@ -913,7 +914,9 @@ impl<'a> Model<'a> {
   }
 
   /// calculates the actual value of linear/quadratic expression.
-  pub fn calc_value<S: Shape, E: Clone + Into<QuadExpr<S>>>(&self, expr: &E) -> Result<TensorVal<f64, S>> {
+  pub fn calc_value<S, E>(&self, expr: &E) -> Result<TensorVal<f64, S>>
+    where S: Shape, E: Clone + Into<QuadExpr<S>>
+  {
     let expr: QuadExpr<S> = (*expr).clone().into();
 
     let mut lbuf = Vec::with_capacity(expr.lind.len());
@@ -922,18 +925,24 @@ impl<'a> Model<'a> {
       lbuf.push(val.body().clone());
     }
 
-    let mut qbuf = Vec::with_capacity(expr.qval.len());
-    for (r, c) in expr.qrow.iter().zip(expr.qcol.iter()) {
+    let mut qrow = Vec::with_capacity(expr.qval.len());
+    for r in expr.qrow.iter() {
       let vrow = try!(self.get_value(attr::X, r));
+      qrow.push(vrow.body().clone());
+    }
+
+    let mut qcol = Vec::with_capacity(expr.qval.len());
+    for c in expr.qcol.iter() {
       let vcol = try!(self.get_value(attr::X, c));
-      qbuf.push((vrow.body().clone(), vcol.body().clone()));
+      qcol.push(vcol.body().clone());
     }
 
     let shape = try!(expr.shape().ok_or(Error::InconsitentDims));
     let mut val = Vec::with_capacity(shape.size());
     for i in 0..(shape.size()) {
-      let lval = lbuf.iter().zip(expr.lval.iter()).fold(0.0, |acc, (v, c)| acc + v[i] * c);
-      let qval = qbuf.iter().zip(expr.qval.iter()).fold(0.0, |acc, (&(ref r, ref c), cf)| acc + r[i] * c[i] * cf);
+      let lval = Zip::new((lbuf.iter(), expr.lval.iter())).fold(0.0, |acc, (v, c)| acc + v[i] * c);
+      let qval = Zip::new((qrow.iter(), qcol.iter(), expr.qval.iter()))
+        .fold(0.0, |acc, (r, c, cf)| acc + r[i] * c[i] * cf);
       val.push(lval + qval + expr.offset);
     }
     Ok(TensorVal::new(val, shape))

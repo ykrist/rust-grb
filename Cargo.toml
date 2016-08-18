@@ -8,6 +8,9 @@ homepage = "https://github.com/ys-nuem/rust-gurobi"
 repository = "https://github.com/ys-nuem/rust-gurobi.git"
 documentation = "https://ys-nuem.github.io/rust-gurobi/doc/gurobi/index.html"
 
+[dependencies]
+itertools = "*"
+
 [dependencies.gurobi-sys]
 path = "./gurobi-sys"
 version = "0.1.3"

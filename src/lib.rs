@@ -13,6 +13,7 @@
 //! Work in progress...
 
 extern crate gurobi_sys as ffi;
+extern crate itertools;
 
 pub mod core;
 pub mod error;

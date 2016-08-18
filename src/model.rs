@@ -104,6 +104,9 @@ pub struct Constr<S: Shape>(Vec<i32>, S);
 pub struct QConstr<S: Shape>(Vec<i32>, S);
 
 
+impl<S: Shape> Variable<S> {
+  pub fn shape(&self) -> Option<S> { Some(self.1) }
+}
 
 /// It represents a set of linear expressions of decision variables.
 pub struct LinExpr<S: Shape> {
@@ -511,7 +514,7 @@ impl<'a> Model<'a> {
     let qrow: Vec<_> = expr.qrow.into_iter().map(|v| v.0[0]).collect();
     let qcol: Vec<_> = expr.qcol.into_iter().map(|v| v.0[0]).collect();
 
-    try!(self.set_list(attr::Obj, lind.as_slice(), expr.lval.as_slice()));
+    try!(AttrArray::set_list(self, attr::Obj, lind.as_slice(), expr.lval.as_slice()));
     try!(self.add_qpterms(qrow.as_slice(), qcol.as_slice(), expr.qval.as_slice()));
     self.set(attr::ModelSense, sense.into())
   }
@@ -555,39 +558,32 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
-  /// Query the value of a scalar attribute of the model.
   pub fn get<A: Attr>(&self, attr: A) -> Result<A::Output> { Attr::get(self, attr) }
-
-  /// Set the value of a scalar attribute of the model.
   pub fn set<A: Attr>(&mut self, attr: A, value: A::Output) -> Result<()> { Attr::set(self, attr, value) }
 
-  /// Query one of the value of a vector attribute from the model.
-  pub fn get_element<A: AttrArray>(&self, attr: A, element: i32) -> Result<A::Output> {
-    A::get_element(self, attr, element)
+  pub fn get_var<A: AttrArray + Copy, S: Shape>(&self, attr: A, var: &Variable<S>) -> Result<Vec<A::Output>> {
+    let shape = try!(var.shape().ok_or(Error::InconsitentDims));
+
+    let mut val = Vec::with_capacity(shape.size());
+    for elem in var.0.iter() {
+      let v = try!(A::get_element(self, attr, *elem));
+      val.push(v);
+    }
+    Ok(val)
   }
 
-  /// Set one of the value of a vector attribute to the model.
-  pub fn set_element<A: AttrArray>(&mut self, attr: A, element: i32, value: A::Output) -> Result<()> {
-    A::set_element(self, attr, element, value)
+  pub fn set_var<A: AttrArray + Copy, S: Shape>(&mut self, attr: A, var: &Variable<S>, val: &[A::Output])
+                                                -> Result<()> {
+    for (elem, v) in var.0.iter().zip(val.iter()) {
+      try!(A::set_element(self, attr, *elem, v.clone()));
+    }
+
+    Ok(())
   }
-
-  pub fn get_array<A: AttrArray>(&self, attr: A, first: usize, len: usize) -> Result<Vec<A::Output>> {
-    A::get_array(self, attr, first, len)
-  }
-
-  pub fn set_array<A: AttrArray>(&mut self, attr: A, first: usize, values: &[A::Output]) -> Result<()> {
-    A::set_array(self, attr, first, values)
-  }
-
-  pub fn get_list<A: AttrArray>(&self, attr: A, ind: &[i32]) -> Result<Vec<A::Output>> { A::get_list(self, attr, ind) }
-
-  pub fn set_list<A: AttrArray>(&mut self, attr: A, ind: &[i32], values: &[A::Output]) -> Result<()> {
-    A::set_list(self, attr, ind, values)
-  }
-
 
   fn error_from_api(&self, errcode: ffi::c_int) -> Error { self.env.error_from_api(errcode) }
 }
+
 
 impl<'a> Drop for Model<'a> {
   fn drop(&mut self) {

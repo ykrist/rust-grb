@@ -14,6 +14,7 @@
 
 extern crate gurobi_sys as ffi;
 
+pub mod core;
 pub mod error;
 pub mod env;
 pub mod model;
@@ -25,7 +26,7 @@ pub use error::{Error, Result};
 
 pub use env::{param, Env};
 
-pub use model::{attr, Model, Variable, LinExpr, QuadExpr};
+pub use model::{attr, Model, Var, LinExpr, QuadExpr};
 pub use model::VarType::*;
 pub use model::ConstrSense::*;
 pub use model::ModelSense::*;

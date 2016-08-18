@@ -1,5 +1,6 @@
 extern crate gurobi;
 use gurobi::*;
+use gurobi::model::Tensor;
 
 fn main() {
   let env = Env::new("mip.log").unwrap();
@@ -33,14 +34,10 @@ fn main() {
   let numvars = model.get(attr::NumVars).unwrap() as usize;
   assert_eq!(numvars, 3);
 
-  let x = model.get_var(attr::X, &x).unwrap();
-  assert_eq!(x[0], 0.0);
-
-  let y = model.get_var(attr::X, &y).unwrap();
-  assert_eq!(x[1], 1.0);
-
-  let z = model.get_var(attr::X, &z).unwrap();
-  assert_eq!(x[2], 0.0);
+  let xval = model.get_values(attr::X, &[&x, &y, &z]).unwrap();
+  assert_eq!(xval[0].body()[0], 0.0);
+  assert_eq!(xval[1].body()[0], 1.0);
+  assert_eq!(xval[2].body()[0], 0.0);
 
   model.write("mip.lp").unwrap();
   model.write("mip.sol").unwrap();

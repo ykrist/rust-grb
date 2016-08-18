@@ -42,7 +42,7 @@ impl Into<(ffi::c_char, f64, f64)> for VarType {
 
 
 ///
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub enum ConstrSense {
   Equal,
   Greater,
@@ -93,20 +93,28 @@ impl Into<i32> for SOSType {
   }
 }
 
+/// It represents a set of decision variables.
+#[derive(Clone)]
+pub struct Variable<S: Shape>(Vec<i32>, S);
 
-#[derive(Copy,Clone)]
-pub struct Var(pub i32);
+#[derive(Clone)]
+pub struct Constr<S: Shape>(Vec<i32>, S);
+
+#[derive(Clone)]
+pub struct QConstr<S: Shape>(Vec<i32>, S);
 
 
-pub struct LinExpr {
-  vars: Vec<i32>,
+
+/// It represents a set of linear expressions of decision variables.
+pub struct LinExpr<S: Shape> {
+  vars: Vec<Variable<S>>,
   coeff: Vec<f64>,
   offset: f64
 }
 
 
-impl LinExpr {
-  pub fn new() -> LinExpr {
+impl<S: Shape> LinExpr<S> {
+  pub fn new() -> Self {
     LinExpr {
       vars: Vec::new(),
       coeff: Vec::new(),
@@ -114,20 +122,23 @@ impl LinExpr {
     }
   }
 
-  pub fn term(mut self, v: Var, c: f64) -> LinExpr {
-    self.vars.push(v.0);
+  pub fn term(mut self, v: Variable<S>, c: f64) -> Self {
+    self.vars.push(v);
     self.coeff.push(c);
     self
   }
 
-  pub fn offset(mut self, offset: f64) -> LinExpr {
+  pub fn offset(mut self, offset: f64) -> Self {
     self.offset += offset;
     self
   }
+
+  /// Get the shape of expression.
+  pub fn shape(&self) -> Option<S> { self.vars.get(0).map(|v| v.1) }
 }
 
-impl Into<QuadExpr> for LinExpr {
-  fn into(self) -> QuadExpr {
+impl<S: Shape> Into<QuadExpr<S>> for LinExpr<S> {
+  fn into(self) -> QuadExpr<S> {
     QuadExpr {
       lind: self.vars,
       lval: self.coeff,
@@ -141,17 +152,17 @@ impl Into<QuadExpr> for LinExpr {
 
 
 
-pub struct QuadExpr {
-  lind: Vec<i32>,
+pub struct QuadExpr<S: Shape> {
+  lind: Vec<Variable<S>>,
   lval: Vec<f64>,
-  qrow: Vec<i32>,
-  qcol: Vec<i32>,
+  qrow: Vec<Variable<S>>,
+  qcol: Vec<Variable<S>>,
   qval: Vec<f64>,
   offset: f64
 }
 
-impl QuadExpr {
-  pub fn new() -> QuadExpr {
+impl<S: Shape> QuadExpr<S> {
+  pub fn new() -> Self {
     QuadExpr {
       lind: Vec::new(),
       lval: Vec::new(),
@@ -162,45 +173,48 @@ impl QuadExpr {
     }
   }
 
-  pub fn term(mut self, var: Var, coeff: f64) -> QuadExpr {
-    self.lind.push(var.0);
+  pub fn term(mut self, var: Variable<S>, coeff: f64) -> Self {
+    self.lind.push(var);
     self.lval.push(coeff);
     self
   }
 
-  pub fn qterm(mut self, row: Var, col: Var, coeff: f64) -> QuadExpr {
-    self.qrow.push(row.0);
-    self.qcol.push(col.0);
+  pub fn qterm(mut self, row: Variable<S>, col: Variable<S>, coeff: f64) -> Self {
+    self.qrow.push(row);
+    self.qcol.push(col);
     self.qval.push(coeff);
     self
   }
 
-  pub fn offset(mut self, offset: f64) -> QuadExpr {
+  pub fn offset(mut self, offset: f64) -> Self {
     self.offset += offset;
     self
   }
+
+  /// Get the shape of expression.
+  pub fn shape(&self) -> Option<S> { self.lind.get(0).map(|v| v.1) }
 }
 
 
-impl Mul<f64> for Var {
-  type Output = LinExpr;
-  fn mul(self, rhs: f64) -> LinExpr { LinExpr::new().term(self, rhs) }
+impl<S: Shape> Mul<f64> for Variable<S> {
+  type Output = LinExpr<S>;
+  fn mul(self, rhs: f64) -> Self::Output { LinExpr::new().term(self, rhs) }
 }
 
-impl Mul<Var> for f64 {
-  type Output = LinExpr;
-  fn mul(self, rhs: Var) -> LinExpr { LinExpr::new().term(rhs, self) }
+impl<S: Shape> Mul<Variable<S>> for f64 {
+  type Output = LinExpr<S>;
+  fn mul(self, rhs: Variable<S>) -> Self::Output { LinExpr::new().term(rhs, self) }
 }
 
 
-impl Mul<Var> for Var {
-  type Output = QuadExpr;
-  fn mul(self, rhs: Var) -> QuadExpr { QuadExpr::new().qterm(self, rhs, 1.0) }
+impl<S: Shape> Mul for Variable<S> {
+  type Output = QuadExpr<S>;
+  fn mul(self, rhs: Variable<S>) -> Self::Output { QuadExpr::new().qterm(self, rhs, 1.0) }
 }
 
-impl Mul<f64> for QuadExpr {
-  type Output = QuadExpr;
-  fn mul(mut self, rhs: f64) -> QuadExpr {
+impl<S: Shape> Mul<f64> for QuadExpr<S> {
+  type Output = QuadExpr<S>;
+  fn mul(mut self, rhs: f64) -> Self::Output {
     for i in 0..(self.lval.len()) {
       self.lval[i] *= rhs;
     }
@@ -213,20 +227,20 @@ impl Mul<f64> for QuadExpr {
 }
 
 
-impl Add<f64> for LinExpr {
-  type Output = LinExpr;
-  fn add(self, rhs: f64) -> LinExpr { self.offset(rhs) }
+impl<S: Shape> Add<f64> for LinExpr<S> {
+  type Output = LinExpr<S>;
+  fn add(self, rhs: f64) -> Self::Output { self.offset(rhs) }
 }
 
-impl Sub<f64> for LinExpr {
-  type Output = LinExpr;
-  fn sub(self, rhs: f64) -> LinExpr { self.offset(-rhs) }
+impl<S: Shape> Sub<f64> for LinExpr<S> {
+  type Output = LinExpr<S>;
+  fn sub(self, rhs: f64) -> Self::Output { self.offset(-rhs) }
 }
 
 
-impl Add for LinExpr {
-  type Output = LinExpr;
-  fn add(mut self, rhs: LinExpr) -> LinExpr {
+impl<S: Shape> Add for LinExpr<S> {
+  type Output = LinExpr<S>;
+  fn add(mut self, rhs: LinExpr<S>) -> Self::Output {
     self.vars.extend(rhs.vars);
     self.coeff.extend(rhs.coeff);
     self.offset += rhs.offset;
@@ -234,9 +248,9 @@ impl Add for LinExpr {
   }
 }
 
-impl Sub for LinExpr {
-  type Output = LinExpr;
-  fn sub(mut self, rhs: LinExpr) -> LinExpr {
+impl<S: Shape> Sub for LinExpr<S> {
+  type Output = LinExpr<S>;
+  fn sub(mut self, rhs: LinExpr<S>) -> Self::Output {
     self.vars.extend(rhs.vars);
     self.coeff.extend(rhs.coeff.into_iter().map(|c| -c));
     self.offset -= rhs.offset;
@@ -245,9 +259,9 @@ impl Sub for LinExpr {
 }
 
 
-impl Add<LinExpr> for QuadExpr {
-  type Output = QuadExpr;
-  fn add(mut self, rhs: LinExpr) -> QuadExpr {
+impl<S: Shape> Add<LinExpr<S>> for QuadExpr<S> {
+  type Output = QuadExpr<S>;
+  fn add(mut self, rhs: LinExpr<S>) -> Self::Output {
     self.lind.extend(rhs.vars);
     self.lval.extend(rhs.coeff);
     self.offset += rhs.offset;
@@ -255,9 +269,9 @@ impl Add<LinExpr> for QuadExpr {
   }
 }
 
-impl Sub<LinExpr> for QuadExpr {
-  type Output = QuadExpr;
-  fn sub(mut self, rhs: LinExpr) -> QuadExpr {
+impl<S: Shape> Sub<LinExpr<S>> for QuadExpr<S> {
+  type Output = QuadExpr<S>;
+  fn sub(mut self, rhs: LinExpr<S>) -> Self::Output {
     self.lind.extend(rhs.vars);
     self.lval.extend(rhs.coeff.into_iter().map(|c| -c));
     self.offset -= rhs.offset;
@@ -266,9 +280,9 @@ impl Sub<LinExpr> for QuadExpr {
 }
 
 
-impl Add for QuadExpr {
-  type Output = QuadExpr;
-  fn add(mut self, rhs:QuadExpr) -> QuadExpr {
+impl<S: Shape> Add for QuadExpr<S> {
+  type Output = QuadExpr<S>;
+  fn add(mut self, rhs: QuadExpr<S>) -> QuadExpr<S> {
     self.lind.extend(rhs.lind);
     self.lval.extend(rhs.lval);
     self.qrow.extend(rhs.qrow);
@@ -279,14 +293,14 @@ impl Add for QuadExpr {
   }
 }
 
-impl Sub for QuadExpr {
-  type Output = QuadExpr;
-  fn sub(mut self, rhs: QuadExpr) -> QuadExpr {
+impl<S: Shape> Sub for QuadExpr<S> {
+  type Output = QuadExpr<S>;
+  fn sub(mut self, rhs: QuadExpr<S>) -> QuadExpr<S> {
     self.lind.extend(rhs.lind);
-    self.lval.extend(rhs.lval);
-    self.qrow.extend(rhs.qrow.into_iter().map(|c|-c));
+    self.lval.extend(rhs.lval.into_iter().map(|c| -c));
+    self.qrow.extend(rhs.qrow);
     self.qcol.extend(rhs.qcol);
-    self.qval.extend(rhs.qval.into_iter().map(|c|-c));
+    self.qval.extend(rhs.qval.into_iter().map(|c| -c));
     self.offset -= rhs.offset;
     self
   }
@@ -363,7 +377,7 @@ impl<'a> Model<'a> {
   }
 
   /// add a decision variable to the model.
-  pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64) -> Result<Var> {
+  fn add_var(&mut self, name: &str, vtype: VarType, obj: f64) -> Result<i32> {
     // extract parameters
     let (vtype, lb, ub) = vtype.into();
     let name = try!(util::make_c_str(name));
@@ -386,47 +400,74 @@ impl<'a> Model<'a> {
     let col_no = self.vars.len() as i32;
     self.vars.push(col_no);
 
-    Ok(Var(col_no))
+    Ok(col_no)
   }
 
-  /// add a linear constraint to the model.
-  pub fn add_constr(&mut self, name: &str, expr: LinExpr, sense: ConstrSense, rhs: f64) -> Result<i32> {
-    let constrname = try!(util::make_c_str(name));
+  /// add a set of decision variables to the model.
+  pub fn add_vars<S: Shape>(&mut self, name: &str, vtype: VarType, shape: S) -> Result<Variable<S>> {
+    let mut vars = Vec::with_capacity(shape.size());
+    for vname in shape.names(name) {
+      let v = try!(self.add_var(vname.as_str(), vtype, 0.0));
+      vars.push(v);
+    }
+    Ok(Variable(vars, shape))
+  }
 
+  fn add_constr(&mut self, name: &str, vars: &[i32], coeff: &[f64], sense: ConstrSense, rhs: f64) -> Result<i32> {
+    let constrname = try!(util::make_c_str(name));
     let error = unsafe {
       ffi::GRBaddconstr(self.model,
-                        expr.vars.len() as ffi::c_int,
-                        expr.vars.as_ptr(),
-                        expr.coeff.as_ptr(),
+                        coeff.len() as ffi::c_int,
+                        vars.as_ptr(),
+                        coeff.as_ptr(),
                         sense.into(),
-                        rhs - expr.offset,
+                        rhs,
                         constrname.as_ptr())
     };
     if error != 0 {
       return Err(self.error_from_api(error));
     }
-
     let row_no = self.constrs.len() as i32;
     self.constrs.push(row_no);
 
     Ok(row_no)
   }
 
-  /// add a quadratic constraint to the model.
-  pub fn add_qconstr(&mut self, constrname: &str, expr: QuadExpr, sense: ConstrSense, rhs: f64) -> Result<i32> {
+
+  /// add a linear constraint to the model.
+  pub fn add_constrs<S: Shape>(&mut self, name: &str, expr: LinExpr<S>, sense: ConstrSense, rhs: f64)
+                               -> Result<Constr<S>> {
+    let shape = try!(expr.shape().ok_or(Error::InconsitentDims));
+
+    let mut constrs = Vec::with_capacity(shape.size());
+    for (i, cname) in shape.names(name).into_iter().enumerate() {
+      let vars: Vec<_> = expr.vars.iter().map(|v| v.0[i]).collect();
+      let c = try!(self.add_constr(cname.as_str(),
+                                   vars.as_slice(),
+                                   expr.coeff.as_slice(),
+                                   sense,
+                                   rhs - expr.offset));
+      constrs.push(c);
+    }
+    Ok(Constr(constrs, shape))
+  }
+
+  fn add_qconstr(&mut self, constrname: &str, lind: &[i32], lval: &[f64], qrow: &[i32], qcol: &[i32], qval: &[f64],
+                 sense: ConstrSense, rhs: f64)
+                 -> Result<i32> {
     let constrname = try!(util::make_c_str(constrname));
 
     let error = unsafe {
       ffi::GRBaddqconstr(self.model,
-                         expr.lval.len() as ffi::c_int,
-                         expr.lind.as_ptr(),
-                         expr.lval.as_ptr(),
-                         expr.qval.len() as ffi::c_int,
-                         expr.qrow.as_ptr(),
-                         expr.qcol.as_ptr(),
-                         expr.qval.as_ptr(),
+                         lval.len() as ffi::c_int,
+                         lind.as_ptr(),
+                         lval.as_ptr(),
+                         qval.len() as ffi::c_int,
+                         qrow.as_ptr(),
+                         qcol.as_ptr(),
+                         qval.as_ptr(),
                          sense.into(),
-                         rhs - expr.offset,
+                         rhs,
                          constrname.as_ptr())
     };
     if error != 0 {
@@ -439,13 +480,39 @@ impl<'a> Model<'a> {
     Ok(qrow_no)
   }
 
+  /// add a quadratic constraint to the model.
+  pub fn add_qconstrs<S: Shape>(&mut self, name: &str, expr: QuadExpr<S>, sense: ConstrSense, rhs: f64)
+                                -> Result<QConstr<S>> {
+    let shape = try!(expr.shape().ok_or(Error::InconsitentDims));
+
+    let mut constrs = Vec::with_capacity(shape.size());
+    for (i, cname) in shape.names(name).into_iter().enumerate() {
+      let lind: Vec<_> = expr.lind.iter().map(|v| v.0[i]).collect();
+      let qrow: Vec<_> = expr.qrow.iter().map(|v| v.0[i]).collect();
+      let qcol: Vec<_> = expr.qcol.iter().map(|v| v.0[i]).collect();
+      let c = try!(self.add_qconstr(cname.as_str(),
+                                    lind.as_slice(),
+                                    expr.lval.as_slice(),
+                                    qrow.as_slice(),
+                                    qcol.as_slice(),
+                                    expr.qval.as_slice(),
+                                    sense,
+                                    rhs - expr.offset));
+      constrs.push(c);
+    }
+    Ok(QConstr(constrs, shape))
+  }
+
   /// Set the objective function of the model.
-  pub fn set_objective<Expr: Into<QuadExpr>>(&mut self, expr: Expr, sense: ModelSense) -> Result<()> {
+  pub fn set_objective<Expr: Into<QuadExpr<()>>>(&mut self, expr: Expr, sense: ModelSense) -> Result<()> {
     let expr = expr.into();
-    try!(self.set_list(attr::Obj, expr.lind.as_slice(), expr.lval.as_slice()));
-    try!(self.add_qpterms(expr.qrow.as_slice(),
-                          expr.qcol.as_slice(),
-                          expr.qval.as_slice()));
+
+    let lind: Vec<_> = expr.lind.into_iter().map(|v| v.0[0]).collect();
+    let qrow: Vec<_> = expr.qrow.into_iter().map(|v| v.0[0]).collect();
+    let qcol: Vec<_> = expr.qcol.into_iter().map(|v| v.0[0]).collect();
+
+    try!(self.set_list(attr::Obj, lind.as_slice(), expr.lval.as_slice()));
+    try!(self.add_qpterms(qrow.as_slice(), qcol.as_slice(), expr.qval.as_slice()));
     self.set(attr::ModelSense, sense.into())
   }
 
@@ -466,7 +533,7 @@ impl<'a> Model<'a> {
   }
 
   /// add Special Order Set (SOS) constraint to the model.
-  pub fn add_sos(&mut self, vars: &[Var], weights: &[f64], sostype: SOSType) -> Result<()> {
+  fn add_sos(&mut self, vars: &[i32], weights: &[f64], sostype: SOSType) -> Result<()> {
     if vars.len() != weights.len() {
       return Err(Error::InconsitentDims);
     }
@@ -478,7 +545,7 @@ impl<'a> Model<'a> {
                      vars.len() as ffi::c_int,
                      &sostype.into(),
                      &beg,
-                     vars.into_iter().map(|v| v.0).collect::<Vec<_>>().as_ptr(),
+                     vars.as_ptr(),
                      weights.as_ptr())
     };
     if error != 0 {
@@ -519,44 +586,6 @@ impl<'a> Model<'a> {
   }
 
 
-  /// add a decision variable to the model.
-  pub fn add_var_scalar(&mut self, name: &str, vtype: VarType, obj: f64, _: ()) -> Result<Var> {
-    self.add_var(name, vtype, obj)
-  }
-
-  /// add an array of decision variables to the model.
-  ///
-  /// * The name of each variable is set to `name[i]`
-  /// * All of the variable have the same VarType and ranges.
-  ///
-  pub fn add_var_array(&mut self, name: &str, vtype: VarType, obj: f64, size: usize) -> Result<Vec<Var>> {
-    let mut vars = Vec::with_capacity(size);
-    for i in 0..size {
-      let name = format!("{}[{}]", name, i);
-      let v = try!(self.add_var(name.as_str(), vtype, obj));
-      vars.push(v);
-    }
-    Ok(vars)
-  }
-
-  /// add a matrix of decision variables to the model.
-  ///
-  /// * The name of each variable is set to `name[i][j]`
-  /// * The return value means the index of added variables ([0][0], [0][1], ..., [0][N], [1][0],
-  /// ...
-  /// * All of the variable have the same VarType and ranges.
-  ///
-  pub fn add_var_matrix(&mut self, name: &str, vtype: VarType, obj: f64, rows: usize, cols: usize) -> Result<Vec<Var>> {
-    let mut vars = Vec::with_capacity(rows * cols);
-    for (i, j) in (0..rows).into_iter().zip((0..cols).into_iter()) {
-      let name = format!("{}[{}][{}]", name, i, j);
-      let v = try!(self.add_var(name.as_str(), vtype, obj));
-      vars.push(v);
-    }
-    Ok(vars)
-  }
-
-
   fn error_from_api(&self, errcode: ffi::c_int) -> Error { self.env.error_from_api(errcode) }
 }
 
@@ -564,6 +593,41 @@ impl<'a> Drop for Model<'a> {
   fn drop(&mut self) {
     unsafe { ffi::GRBfreemodel(self.model) };
     self.model = null_mut();
+  }
+}
+
+
+///
+pub trait Shape: Copy {
+  fn size(&self) -> usize;
+  fn names(&self, name: &str) -> Vec<String>;
+}
+
+impl Shape for () {
+  fn size(&self) -> usize { 1 }
+  fn names(&self, name: &str) -> Vec<String> { vec![name.to_string()] }
+}
+
+impl Shape for (usize) {
+  fn size(&self) -> usize { *self }
+  fn names(&self, name: &str) -> Vec<String> { (0..(*self)).map(|i| format!("{}[{}]", name, i)).collect() }
+}
+
+impl Shape for (usize, usize) {
+  fn size(&self) -> usize { self.0 * self.1 }
+  fn names(&self, name: &str) -> Vec<String> {
+    (0..(self.0)).zip((0..(self.1))).map(|(i, j)| format!("{}[{}][{}]", name, i, j)).collect()
+  }
+}
+
+impl Shape for (usize, usize, usize) {
+  fn size(&self) -> usize { self.0 * self.1 * self.2 }
+  fn names(&self, name: &str) -> Vec<String> {
+    (0..(self.0))
+      .zip((0..(self.1)))
+      .zip((0..(self.2)))
+      .map(|((i, j), k)| format!("{}[{}][{}][{}]", name, i, j, k))
+      .collect()
   }
 }
 

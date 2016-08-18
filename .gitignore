@@ -5,4 +5,5 @@ Cargo.lock
 *.lp
 *.sol
 gh-pages/
+doc/
 doc/.lock

@@ -18,7 +18,7 @@ fn main() {
   //            = f_q(x,y,z) + f_l(x,y,z)
   // quad term: f_q = x*x + x*y + y*y + y*z + z*z
   // linear term: f_l = 2*x
-  model.set_objective(2.0 * x + x * x + x * y + y * y + y * z + z * z, Maximize).unwrap();
+  model.set_objective(x * x + x * y + y * y + y * z + z * z + 2.0 * x, Maximize).unwrap();
 
   // add linear constraints
 

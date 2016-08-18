@@ -1,19 +1,11 @@
-use super::ffi;
-use std::ops::{Add, Sub, Mul, Neg};
+use std::ops::{Add, Sub, Mul};
 use model::Var;
 
 
-#[derive(Copy,Clone)]
-pub struct LinTerm(Var, f64);
-
-#[derive(Copy,Clone)]
-pub struct QuadTerm(Var, Var, f64);
-
-
 pub struct LinExpr {
-  vars: Vec<i32>,
-  coeff: Vec<f64>,
-  offset: f64
+  pub vars: Vec<i32>,
+  pub coeff: Vec<f64>,
+  pub offset: f64
 }
 
 
@@ -26,17 +18,9 @@ impl LinExpr {
     }
   }
 
-  pub fn num_vars(&self) -> usize { self.vars.len() }
-
-  pub fn vars_slice(&self) -> &[ffi::c_int] { self.vars.as_slice() }
-
-  pub fn coeff_slice(&self) -> &[ffi::c_double] { self.coeff.as_slice() }
-
-  pub fn get_offset(&self) -> f64 { self.offset }
-
-  pub fn term(mut self, term: LinTerm) -> LinExpr {
-    self.vars.push((term.0).0);
-    self.coeff.push(term.1);
+  pub fn term(mut self, v: Var, c: f64) -> LinExpr {
+    self.vars.push(v.0);
+    self.coeff.push(c);
     self
   }
 
@@ -62,12 +46,12 @@ impl Into<QuadExpr> for LinExpr {
 
 
 pub struct QuadExpr {
-  lind: Vec<i32>,
-  lval: Vec<f64>,
-  qrow: Vec<i32>,
-  qcol: Vec<i32>,
-  qval: Vec<f64>,
-  offset: f64
+  pub lind: Vec<i32>,
+  pub lval: Vec<f64>,
+  pub qrow: Vec<i32>,
+  pub qcol: Vec<i32>,
+  pub qval: Vec<f64>,
+  pub offset: f64
 }
 
 impl QuadExpr {
@@ -82,118 +66,56 @@ impl QuadExpr {
     }
   }
 
-  pub fn term(mut self, term: LinTerm) -> QuadExpr {
-    self.lind.push((term.0).0);
-    self.lval.push(term.1);
+  pub fn term(mut self, var: Var, coeff: f64) -> QuadExpr {
+    self.lind.push(var.0);
+    self.lval.push(coeff);
     self
   }
 
-  pub fn qterm(mut self, term: QuadTerm) -> QuadExpr {
-    self.qrow.push((term.0).0);
-    self.qcol.push((term.1).0);
-    self.qval.push(term.2);
+  pub fn qterm(mut self, row: Var, col: Var, coeff: f64) -> QuadExpr {
+    self.qrow.push(row.0);
+    self.qcol.push(col.0);
+    self.qval.push(coeff);
     self
   }
 
   pub fn offset(mut self, offset: f64) -> QuadExpr {
     self.offset += offset;
     self
-
   }
-
-  pub fn get_offset(&self) -> f64 { self.offset }
-
-  pub fn lind_slice(&self) -> &[ffi::c_int] { self.lind.as_slice() }
-  pub fn qrow_slice(&self) -> &[ffi::c_int] { self.qrow.as_slice() }
-  pub fn qcol_slice(&self) -> &[ffi::c_int] { self.qcol.as_slice() }
-
-  pub fn lval_slice(&self) -> &[ffi::c_double] { self.lval.as_slice() }
-  pub fn qval_slice(&self) -> &[ffi::c_double] { self.qval.as_slice() }
-
-  pub fn lin_len(&self) -> usize { self.lval.len() }
-  pub fn quad_len(&self) -> usize { self.qval.len() }
 }
 
-
-
-impl Neg for LinTerm {
-  type Output = LinTerm;
-  fn neg(self) -> LinTerm { LinTerm(self.0, -self.1) }
-}
 
 impl Mul<f64> for Var {
-  type Output = LinTerm;
-  fn mul(self, rhs: f64) -> LinTerm { LinTerm(self, rhs) }
+  type Output = LinExpr;
+  fn mul(self, rhs: f64) -> LinExpr { LinExpr::new().term(self, rhs) }
 }
 
 impl Mul<Var> for f64 {
-  type Output = LinTerm;
-  fn mul(self, rhs: Var) -> LinTerm { LinTerm(rhs, self) }
-}
-
-impl Add<LinTerm> for LinTerm {
   type Output = LinExpr;
-  fn add(self, rhs: LinTerm) -> LinExpr { LinExpr::new() + self + rhs }
+  fn mul(self, rhs: Var) -> LinExpr { LinExpr::new().term(rhs, self) }
 }
 
-impl Sub<LinTerm> for LinTerm {
-  type Output = LinExpr;
-  fn sub(self, rhs: LinTerm) -> LinExpr { LinExpr::new() + self - rhs }
-}
 
-impl Add<QuadTerm> for LinTerm {
+impl Mul<Var> for Var {
   type Output = QuadExpr;
-  fn add(self, rhs: QuadTerm) -> QuadExpr { QuadExpr::new() + self + rhs }
+  fn mul(self, rhs: Var) -> QuadExpr { QuadExpr::new().qterm(self, rhs, 1.0) }
 }
 
-impl Sub<QuadTerm> for LinTerm {
+impl Mul<f64> for QuadExpr {
   type Output = QuadExpr;
-  fn sub(self, rhs: QuadTerm) -> QuadExpr { QuadExpr::new() + self - rhs }
+  fn mul(mut self, rhs: f64) -> QuadExpr {
+    for i in 0..(self.lval.len()) {
+      self.lval[i] *= rhs;
+    }
+    for j in 0..(self.qval.len()) {
+      self.qval[j] *= rhs;
+    }
+    self.offset *= rhs;
+    self
+  }
 }
 
-impl Into<QuadExpr> for LinTerm {
-  fn into(self) -> QuadExpr { QuadExpr::new().term(self) }
-}
-
-impl Neg for QuadTerm {
-  type Output = QuadTerm;
-  fn neg(self) -> QuadTerm { QuadTerm(self.0, self.1, -self.2) }
-}
-
-impl Mul for Var {
-  type Output = QuadTerm;
-  fn mul(self, rhs: Var) -> QuadTerm { QuadTerm(self, rhs, 1.0) }
-}
-
-impl Mul<f64> for QuadTerm {
-  type Output = QuadTerm;
-  fn mul(self, rhs: f64) -> QuadTerm { QuadTerm(self.0, self.1, self.2 * rhs) }
-}
-
-impl Mul<QuadTerm> for f64 {
-  type Output = QuadTerm;
-  fn mul(self, rhs: QuadTerm) -> QuadTerm { QuadTerm(rhs.0, rhs.1, self * rhs.2) }
-}
-
-impl Add for QuadTerm {
-  type Output = QuadExpr;
-  fn add(self, rhs: QuadTerm) -> QuadExpr { QuadExpr::new() + self + rhs }
-}
-
-impl Sub for QuadTerm {
-  type Output = QuadExpr;
-  fn sub(self, rhs: QuadTerm) -> QuadExpr { QuadExpr::new() + self - rhs }
-}
-
-impl Add<LinTerm> for LinExpr {
-  type Output = LinExpr;
-  fn add(self, rhs: LinTerm) -> LinExpr { self.term(rhs) }
-}
-
-impl Sub<LinTerm> for LinExpr {
-  type Output = LinExpr;
-  fn sub(self, rhs: LinTerm) -> LinExpr { self.term(-rhs) }
-}
 
 impl Add<f64> for LinExpr {
   type Output = LinExpr;
@@ -205,42 +127,71 @@ impl Sub<f64> for LinExpr {
   fn sub(self, rhs: f64) -> LinExpr { self.offset(-rhs) }
 }
 
-impl Add<QuadTerm> for LinExpr {
-  type Output = QuadExpr;
-  fn add(self, rhs: QuadTerm) -> QuadExpr { Into::<QuadExpr>::into(self).qterm(rhs) }
+
+impl Add for LinExpr {
+  type Output = LinExpr;
+  fn add(mut self, rhs: LinExpr) -> LinExpr {
+    self.vars.extend(rhs.vars);
+    self.coeff.extend(rhs.coeff);
+    self.offset += rhs.offset;
+    self
+  }
 }
 
-impl Sub<QuadTerm> for LinExpr {
-  type Output = QuadExpr;
-  fn sub(self, rhs: QuadTerm) -> QuadExpr { Into::<QuadExpr>::into(self).qterm(-rhs) }
+impl Sub for LinExpr {
+  type Output = LinExpr;
+  fn sub(mut self, rhs: LinExpr) -> LinExpr {
+    self.vars.extend(rhs.vars);
+    self.coeff.extend(rhs.coeff.into_iter().map(|c| -c));
+    self.offset -= rhs.offset;
+    self
+  }
 }
 
-impl Add<LinTerm> for QuadExpr {
+
+impl Add<LinExpr> for QuadExpr {
   type Output = QuadExpr;
-  fn add(self, rhs: LinTerm) -> QuadExpr { self.term(rhs) }
+  fn add(mut self, rhs: LinExpr) -> QuadExpr {
+    self.lind.extend(rhs.vars);
+    self.lval.extend(rhs.coeff);
+    self.offset += rhs.offset;
+    self
+  }
 }
 
-impl Sub<LinTerm> for QuadExpr {
+impl Sub<LinExpr> for QuadExpr {
   type Output = QuadExpr;
-  fn sub(self, rhs: LinTerm) -> QuadExpr { self.term(-rhs) }
+  fn sub(mut self, rhs: LinExpr) -> QuadExpr {
+    self.lind.extend(rhs.vars);
+    self.lval.extend(rhs.coeff.into_iter().map(|c| -c));
+    self.offset -= rhs.offset;
+    self
+  }
 }
 
-impl Add<QuadTerm> for QuadExpr {
+
+impl Add for QuadExpr {
   type Output = QuadExpr;
-  fn add(self, rhs: QuadTerm) -> QuadExpr { self.qterm(rhs) }
+  fn add(mut self, rhs:QuadExpr) -> QuadExpr {
+    self.lind.extend(rhs.lind);
+    self.lval.extend(rhs.lval);
+    self.qrow.extend(rhs.qrow);
+    self.qcol.extend(rhs.qcol);
+    self.qval.extend(rhs.qval);
+    self.offset += rhs.offset;
+    self
+  }
 }
 
-impl Sub<QuadTerm> for QuadExpr {
+impl Sub for QuadExpr {
   type Output = QuadExpr;
-  fn sub(self, rhs: QuadTerm) -> QuadExpr { self.qterm(-rhs) }
-}
-
-impl Add<f64> for QuadExpr {
-  type Output = QuadExpr;
-  fn add(self, rhs: f64) -> QuadExpr { self.offset(rhs) }
-}
-
-impl Sub<f64> for QuadExpr {
-  type Output = QuadExpr;
-  fn sub(self, rhs: f64) -> QuadExpr { self.offset(-rhs) }
+  fn sub(mut self, rhs: QuadExpr) -> QuadExpr {
+    self.lind.extend(rhs.lind);
+    self.lval.extend(rhs.lval);
+    self.qrow.extend(rhs.qrow.into_iter().map(|c|-c));
+    self.qcol.extend(rhs.qcol);
+    self.qval.extend(rhs.qval.into_iter().map(|c|-c));
+    self.offset -= rhs.offset;
+    self
+  }
 }

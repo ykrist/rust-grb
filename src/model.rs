@@ -199,11 +199,11 @@ impl<'a> Model<'a> {
 
     let error = unsafe {
       ffi::GRBaddconstr(self.model,
-                        expr.num_vars() as ffi::c_int,
-                        expr.vars_slice().as_ptr(),
-                        expr.coeff_slice().as_ptr(),
+                        expr.vars.len() as ffi::c_int,
+                        expr.vars.as_ptr(),
+                        expr.coeff.as_ptr(),
                         sense.into(),
-                        rhs - expr.get_offset(),
+                        rhs - expr.offset,
                         constrname.as_ptr())
     };
     if error != 0 {
@@ -222,15 +222,15 @@ impl<'a> Model<'a> {
 
     let error = unsafe {
       ffi::GRBaddqconstr(self.model,
-                         expr.lin_len() as ffi::c_int,
-                         expr.lind_slice().as_ptr(),
-                         expr.lval_slice().as_ptr(),
-                         expr.quad_len() as ffi::c_int,
-                         expr.qrow_slice().as_ptr(),
-                         expr.qcol_slice().as_ptr(),
-                         expr.qval_slice().as_ptr(),
+                         expr.lval.len() as ffi::c_int,
+                         expr.lind.as_ptr(),
+                         expr.lval.as_ptr(),
+                         expr.qval.len() as ffi::c_int,
+                         expr.qrow.as_ptr(),
+                         expr.qcol.as_ptr(),
+                         expr.qval.as_ptr(),
                          sense.into(),
-                         rhs - expr.get_offset(),
+                         rhs - expr.offset,
                          constrname.as_ptr())
     };
     if error != 0 {
@@ -246,8 +246,10 @@ impl<'a> Model<'a> {
   /// Set the objective function of the model.
   pub fn set_objective<Expr: Into<QuadExpr>>(&mut self, expr: Expr, sense: ModelSense) -> Result<()> {
     let expr = expr.into();
-    try!(self.set_list(attr::Obj, expr.lind_slice(), expr.lval_slice()));
-    try!(self.add_qpterms(expr.qrow_slice(), expr.qcol_slice(), expr.qval_slice()));
+    try!(self.set_list(attr::Obj, expr.lind.as_slice(), expr.lval.as_slice()));
+    try!(self.add_qpterms(expr.qrow.as_slice(),
+                          expr.qcol.as_slice(),
+                          expr.qval.as_slice()));
     self.set(attr::ModelSense, sense.into())
   }
 

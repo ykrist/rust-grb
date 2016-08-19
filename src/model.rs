@@ -394,6 +394,16 @@ impl Into<i32> for SOSType {
 #[derive(Clone)]
 pub struct Var<S: Shape>(Vec<i32>, S);
 
+impl<S: Shape> Var<S> {
+  pub fn get<A: AttrArray + Copy>(&self, model: &Model, attr: A) -> Result<TensorVal<A::Out, S>> {
+    model.get_value(attr, self)
+  }
+
+  pub fn set_value<A: AttrArray + Copy>(&mut self, model: &mut Model, attr: A, val: &Tensor<A::Out, S>) -> Result<()> {
+    model.set_value(attr, self, val)
+  }
+}
+
 impl<S: Shape> Tensor<i32, S> for Var<S> {
   fn shape(&self) -> Option<S> { Some(self.1) }
   fn body(&self) -> &Vec<i32> { &self.0 }
@@ -403,6 +413,16 @@ impl<S: Shape> Tensor<i32, S> for Var<S> {
 /// The proxy object of a set of linear constraints.
 #[derive(Clone)]
 pub struct Constr<S: Shape>(Vec<i32>, S);
+
+impl<S: Shape> Constr<S> {
+  pub fn get<A: AttrArray + Copy>(&self, model: &Model, attr: A) -> Result<TensorVal<A::Out, S>> {
+    model.get_value(attr, self)
+  }
+
+  pub fn set_value<A: AttrArray + Copy>(&mut self, model: &mut Model, attr: A, val: &Tensor<A::Out, S>) -> Result<()> {
+    model.set_value(attr, self, val)
+  }
+}
 
 impl<S: Shape> Tensor<i32, S> for Constr<S> {
   fn shape(&self) -> Option<S> { Some(self.1) }
@@ -414,6 +434,16 @@ impl<S: Shape> Tensor<i32, S> for Constr<S> {
 #[derive(Clone)]
 pub struct QConstr<S: Shape>(Vec<i32>, S);
 
+impl<S: Shape> QConstr<S> {
+  pub fn get<A: AttrArray + Copy>(&self, model: &Model, attr: A) -> Result<TensorVal<A::Out, S>> {
+    model.get_value(attr, self)
+  }
+
+  pub fn set_value<A: AttrArray + Copy>(&mut self, model: &mut Model, attr: A, val: &Tensor<A::Out, S>) -> Result<()> {
+    model.set_value(attr, self, val)
+  }
+}
+
 impl<S: Shape> Tensor<i32, S> for QConstr<S> {
   fn shape(&self) -> Option<S> { Some(self.1) }
   fn body(&self) -> &Vec<i32> { &self.0 }
@@ -422,12 +452,12 @@ impl<S: Shape> Tensor<i32, S> for QConstr<S> {
 
 
 /// represents a set of linear expressions of decision variables.
+#[derive(Clone)]
 pub struct LinExpr<S: Shape> {
   vars: Vec<Var<S>>,
   coeff: Vec<f64>,
   offset: f64
 }
-
 
 impl<S: Shape> LinExpr<S> {
   pub fn new() -> Self {
@@ -449,6 +479,9 @@ impl<S: Shape> LinExpr<S> {
     self
   }
 
+  /// Get actual value of the expression.
+  pub fn value(&self, model: &Model) -> Result<TensorVal<f64, S>> { model.calc_value(self) }
+
   /// Get the shape of expression.
   pub fn shape(&self) -> Option<S> { self.vars.get(0).map(|v| v.1) }
 }
@@ -468,6 +501,7 @@ impl<S: Shape> Into<QuadExpr<S>> for LinExpr<S> {
 
 
 /// represents a set of quadratic expressions of decision variables.
+#[derive(Clone)]
 pub struct QuadExpr<S: Shape> {
   lind: Vec<Var<S>>,
   lval: Vec<f64>,
@@ -506,6 +540,9 @@ impl<S: Shape> QuadExpr<S> {
     self.offset += offset;
     self
   }
+
+  /// Get actual value of the expression.
+  pub fn value(&self, model: &Model) -> Result<TensorVal<f64, S>> { model.calc_value(self) }
 
   /// Get the shape of expression.
   pub fn shape(&self) -> Option<S> { self.lind.get(0).map(|v| v.1) }
@@ -914,7 +951,7 @@ impl<'a> Model<'a> {
   }
 
   /// calculates the actual value of linear/quadratic expression.
-  pub fn calc_value<S, E>(&self, expr: &E) -> Result<TensorVal<f64, S>>
+  fn calc_value<S, E>(&self, expr: &E) -> Result<TensorVal<f64, S>>
     where S: Shape, E: Clone + Into<QuadExpr<S>>
   {
     let expr: QuadExpr<S> = (*expr).clone().into();

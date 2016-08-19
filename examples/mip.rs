@@ -34,10 +34,14 @@ fn main() {
   let numvars = model.get(attr::NumVars).unwrap() as usize;
   assert_eq!(numvars, 3);
 
-  let xval = model.get_values(attr::X, &[&x, &y, &z]).unwrap();
-  assert_eq!(xval[0].body()[0], 0.0);
-  assert_eq!(xval[1].body()[0], 1.0);
-  assert_eq!(xval[2].body()[0], 0.0);
+  let x = x.get(&model, attr::X).unwrap();
+  assert_eq!(x.at(()).cloned().unwrap(), 0.0);
+
+  let y = y.get(&model, attr::X).unwrap();
+  assert_eq!(y.at(()).cloned().unwrap(), 1.0);
+
+  let z = z.get(&model, attr::X).unwrap();
+  assert_eq!(z.at(()).cloned().unwrap(), 0.0);
 
   model.write("mip.lp").unwrap();
   model.write("mip.sol").unwrap();

@@ -47,8 +47,8 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-59' class='srclink' href='../../src/gurobi/src/core.rs.html#38-41' title='goto source code'>[src]</a></span></h1>
-<pre class='rust trait'>pub trait Tensor&lt;T, S: <a class='trait' href='../../gurobi/core/trait.Shape.html' title='gurobi::core::Shape'>Shape</a>&gt; {
+               </span><a id='src-71' class='srclink' href='../../src/gurobi/src/core.rs.html#48-51' title='goto source code'>[src]</a></span></h1>
+<pre class='rust trait'>pub trait Tensor&lt;T,&nbsp;S:&nbsp;<a class='trait' href='../../gurobi/core/trait.Shape.html' title='gurobi::core::Shape'>Shape</a>&gt; {
     fn <a href='#tymethod.shape' class='fnname'>shape</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;S&gt;;
     fn <a href='#tymethod.body' class='fnname'>body</a>(&amp;self) -&gt; &amp;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;T&gt;;
 }</pre><div class='docblock'><p>represents a tensor object which contains an array of values with type T.</p>
@@ -58,10 +58,10 @@
         <h3 id='tymethod.shape' class='method stab '><code>fn <a href='#tymethod.shape' class='fnname'>shape</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;S&gt;</code></h3><h3 id='tymethod.body' class='method stab '><code>fn <a href='#tymethod.body' class='fnname'>body</a>(&amp;self) -&gt; &amp;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;T&gt;</code></h3></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
-    <li><code>impl&lt;T, S: <a class='trait' href='../../gurobi/core/trait.Shape.html' title='gurobi::core::Shape'>Shape</a>&gt; Tensor&lt;T, S&gt; for <a class='struct' href='../../gurobi/core/struct.TensorVal.html' title='gurobi::core::TensorVal'>TensorVal</a>&lt;T, S&gt;</code></li>
-<li><code>impl&lt;S: <a class='trait' href='../../gurobi/core/trait.Shape.html' title='gurobi::core::Shape'>Shape</a>&gt; Tensor&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>, S&gt; for <a class='struct' href='../../gurobi/model/struct.Var.html' title='gurobi::model::Var'>Var</a>&lt;S&gt;</code></li>
-<li><code>impl&lt;S: <a class='trait' href='../../gurobi/core/trait.Shape.html' title='gurobi::core::Shape'>Shape</a>&gt; Tensor&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>, S&gt; for <a class='struct' href='../../gurobi/model/struct.Constr.html' title='gurobi::model::Constr'>Constr</a>&lt;S&gt;</code></li>
-<li><code>impl&lt;S: <a class='trait' href='../../gurobi/core/trait.Shape.html' title='gurobi::core::Shape'>Shape</a>&gt; Tensor&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>, S&gt; for <a class='struct' href='../../gurobi/model/struct.QConstr.html' title='gurobi::model::QConstr'>QConstr</a>&lt;S&gt;</code></li>
+    <li><code>impl&lt;T,&nbsp;S:&nbsp;<a class='trait' href='../../gurobi/core/trait.Shape.html' title='gurobi::core::Shape'>Shape</a>&gt; Tensor&lt;T,&nbsp;S&gt; for <a class='struct' href='../../gurobi/core/struct.TensorVal.html' title='gurobi::core::TensorVal'>TensorVal</a>&lt;T,&nbsp;S&gt;</code></li>
+<li><code>impl&lt;S:&nbsp;<a class='trait' href='../../gurobi/core/trait.Shape.html' title='gurobi::core::Shape'>Shape</a>&gt; Tensor&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>,&nbsp;S&gt; for <a class='struct' href='../../gurobi/model/struct.Var.html' title='gurobi::model::Var'>Var</a>&lt;S&gt;</code></li>
+<li><code>impl&lt;S:&nbsp;<a class='trait' href='../../gurobi/core/trait.Shape.html' title='gurobi::core::Shape'>Shape</a>&gt; Tensor&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>,&nbsp;S&gt; for <a class='struct' href='../../gurobi/model/struct.Constr.html' title='gurobi::model::Constr'>Constr</a>&lt;S&gt;</code></li>
+<li><code>impl&lt;S:&nbsp;<a class='trait' href='../../gurobi/core/trait.Shape.html' title='gurobi::core::Shape'>Shape</a>&gt; Tensor&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>,&nbsp;S&gt; for <a class='struct' href='../../gurobi/model/struct.QConstr.html' title='gurobi::model::QConstr'>QConstr</a>&lt;S&gt;</code></li>
 </ul><script type="text/javascript" async
                          src="../../implementors/gurobi/core/trait.Tensor.js">
                  </script></section>

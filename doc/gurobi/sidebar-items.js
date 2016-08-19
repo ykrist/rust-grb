@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["core",""],["env",""],["error",""],["model",""]]});
+initSidebarItems({"mod":[["env",""],["error",""],["model",""]]});

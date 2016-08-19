@@ -15,7 +15,6 @@
 extern crate gurobi_sys as ffi;
 extern crate itertools;
 
-pub mod core;
 pub mod error;
 pub mod env;
 pub mod model;
@@ -27,7 +26,7 @@ pub use error::{Error, Result};
 
 pub use env::{param, Env};
 
-pub use model::{attr, Model, Var, LinExpr, QuadExpr};
+pub use model::{attr, Model, Proxy, Var, Constr, QConstr, SOS, LinExpr, QuadExpr};
 pub use model::VarType::*;
 pub use model::ConstrSense::*;
 pub use model::ModelSense::*;

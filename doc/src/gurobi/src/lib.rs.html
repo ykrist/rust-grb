@@ -77,7 +77,6 @@
 <span id="33">33</span>
 <span id="34">34</span>
 <span id="35">35</span>
-<span id="36">36</span>
 </pre><pre class='rust '>
 <span class='doccomment'>//! A crate which provides low-level Rust API of Gurobi Optimizer.</span>
 <span class='doccomment'>//!</span>
@@ -96,7 +95,6 @@
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>gurobi_sys</span> <span class='kw'>as</span> <span class='ident'>ffi</span>;
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>itertools</span>;
 
-<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>core</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>error</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>env</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>model</span>;
@@ -108,7 +106,7 @@
 
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>env</span>::{<span class='ident'>param</span>, <span class='ident'>Env</span>};
 
-<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>model</span>::{<span class='ident'>attr</span>, <span class='ident'>Model</span>, <span class='ident'>Var</span>, <span class='ident'>LinExpr</span>, <span class='ident'>QuadExpr</span>};
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>model</span>::{<span class='ident'>attr</span>, <span class='ident'>Model</span>, <span class='ident'>Proxy</span>, <span class='ident'>Var</span>, <span class='ident'>Constr</span>, <span class='ident'>QConstr</span>, <span class='ident'>SOS</span>, <span class='ident'>LinExpr</span>, <span class='ident'>QuadExpr</span>};
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>model</span>::<span class='ident'>VarType</span>::<span class='op'>*</span>;
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>model</span>::<span class='ident'>ConstrSense</span>::<span class='op'>*</span>;
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>model</span>::<span class='ident'>ModelSense</span>::<span class='op'>*</span>;

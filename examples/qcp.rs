@@ -8,27 +8,27 @@ fn main() {
   let mut model = env.new_model("qcp1").unwrap();
 
   // add & integrate new variables.
-  let x = model.add_vars("x", Continuous(0.0, 1e+100), ()).unwrap();
-  let y = model.add_vars("y", Continuous(0.0, 1e+100), ()).unwrap();
-  let z = model.add_vars("z", Continuous(0.0, 1e+100), ()).unwrap();
+  let x = model.add_var("x", Continuous(0.0, 1e+100)).unwrap();
+  let y = model.add_var("y", Continuous(0.0, 1e+100)).unwrap();
+  let z = model.add_var("z", Continuous(0.0, 1e+100)).unwrap();
   model.update().unwrap();
 
   // set objective funtion:
   //   f(x,y,z) = x
-  model.set_objective(1.0 * x.clone(), Maximize).unwrap();
+  model.set_objective(x, Maximize).unwrap();
 
   // add linear constraints
 
   //  c0: x + y + z == 1
-  let _ = model.add_constrs("c0", 1.0 * x.clone() + 1.0 * y.clone() + 1.0 * z.clone(), Equal, 1.0).unwrap();
+  let c0 = model.add_constr("c0", x + y + z, Equal, 1.0).unwrap();
 
   // add quadratic constraints
 
   //  qc0: x^2 + y^2 - z^2 <= 0.0
-  let _ = model.add_qconstrs("qc0", x.clone() * x.clone() + y.clone() * y.clone() - z.clone() * z.clone(), Less, 0.0).unwrap();
+  let qc0 = model.add_qconstr("qc0", x * x + y * y - z * z, Less, 0.0).unwrap();
 
   //  qc1: x^2 - y*z <= 0.0
-  let _ = model.add_qconstrs("qc1", x.clone() * x.clone() - y.clone() * z.clone(), Less, 0.0).unwrap();
+  let qc1 = model.add_qconstr("qc1", x * x - y * z, Less, 0.0).unwrap();
 
   let _ = model.get(attr::ModelSense).unwrap();
   let _ = model.get(attr::ObjVal).unwrap();

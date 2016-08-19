@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["TensorVal",""]],"trait":[["Shape",""],["Tensor","represents a tensor object which contains an array of values with type T."]]});

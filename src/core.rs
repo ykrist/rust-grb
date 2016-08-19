@@ -1,45 +1,38 @@
+use super::itertools::Zip;
 
 ///
 pub trait Shape: Copy {
   fn size(&self) -> usize;
-  fn names(&self, name: &str) -> Vec<String>;
-
+  fn indices(&self) -> Vec<Self>;
+  fn to_str(&self) -> String;
   fn to_usize(&self, shape: Self) -> usize;
 }
 
 impl Shape for () {
   fn size(&self) -> usize { 1 }
-  fn names(&self, name: &str) -> Vec<String> { vec![name.to_string()] }
-
+  fn indices(&self) -> Vec<()> { vec![()] }
+  fn to_str(&self) -> String { "".to_owned() }
   fn to_usize(&self, _: Self) -> usize { 0 }
 }
 
 impl Shape for (usize) {
   fn size(&self) -> usize { *self }
-  fn names(&self, name: &str) -> Vec<String> { (0..(*self)).map(|i| format!("{}[{}]", name, i)).collect() }
-
+  fn indices(&self) -> Vec<usize> { (0..(*self)).collect() }
+  fn to_str(&self) -> String { format!("[{}]", self) }
   fn to_usize(&self, _: Self) -> usize { *self }
 }
 
 impl Shape for (usize, usize) {
   fn size(&self) -> usize { self.0 * self.1 }
-  fn names(&self, name: &str) -> Vec<String> {
-    (0..(self.0)).zip((0..(self.1))).map(|(i, j)| format!("{}[{}][{}]", name, i, j)).collect()
-  }
-
+  fn indices(&self) -> Vec<Self> { Zip::new(((0..(self.0)), (0..(self.1)))).collect() }
+  fn to_str(&self) -> String { format!("[{}][{}]", self.0, self.1) }
   fn to_usize(&self, shape: Self) -> usize { self.0 * shape.0 + self.1 }
 }
 
 impl Shape for (usize, usize, usize) {
   fn size(&self) -> usize { self.0 * self.1 * self.2 }
-  fn names(&self, name: &str) -> Vec<String> {
-    (0..(self.0))
-      .zip((0..(self.1)))
-      .zip((0..(self.2)))
-      .map(|((i, j), k)| format!("{}[{}][{}][{}]", name, i, j, k))
-      .collect()
-  }
-
+  fn indices(&self) -> Vec<Self> { Zip::new(((0..(self.0)), (0..(self.1)), (0..(self.2)))).collect() }
+  fn to_str(&self) -> String { format!("[{}][{}][{}]", self.0, self.1, self.2) }
   fn to_usize(&self, shape: Self) -> usize { (self.0 * shape.0 + self.1) * shape.1 + self.2 }
 }
 

@@ -759,7 +759,7 @@ impl<'a> Model<'a> {
   /// add a set of decision variables to the model.
   pub fn add_vars<S: Shape>(&mut self, name: &str, vtype: VarType, shape: S) -> Result<Var<S>> {
     let mut vars = Vec::with_capacity(shape.size());
-    for vname in shape.names(name) {
+    for vname in shape.indices().into_iter().map(|idx| format!("{}{}", name, idx.to_str())) {
       let v = try!(self.add_var(vname.as_str(), vtype, 0.0));
       vars.push(v);
     }
@@ -793,7 +793,7 @@ impl<'a> Model<'a> {
     let shape = try!(expr.shape().ok_or(Error::InconsitentDims));
 
     let mut constrs = Vec::with_capacity(shape.size());
-    for (i, cname) in shape.names(name).into_iter().enumerate() {
+    for (i, cname) in shape.indices().into_iter().map(|idx| format!("{}{}", name, idx.to_str())).enumerate() {
       let vars: Vec<_> = expr.vars.iter().map(|v| v.0[i]).collect();
       let c = try!(self.add_constr(cname.as_str(),
                                    vars.as_slice(),
@@ -839,7 +839,7 @@ impl<'a> Model<'a> {
     let shape = try!(expr.shape().ok_or(Error::InconsitentDims));
 
     let mut constrs = Vec::with_capacity(shape.size());
-    for (i, cname) in shape.names(name).into_iter().enumerate() {
+    for (i, cname) in shape.indices().into_iter().map(|idx| format!("{}{}", name, idx.to_str())).enumerate() {
       let lind: Vec<_> = expr.lind.iter().map(|v| v.0[i]).collect();
       let qrow: Vec<_> = expr.qrow.iter().map(|v| v.0[i]).collect();
       let qcol: Vec<_> = expr.qcol.iter().map(|v| v.0[i]).collect();

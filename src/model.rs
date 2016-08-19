@@ -861,10 +861,12 @@ impl<'a> Model<'a> {
   }
 
   /// add Special Order Set (SOS) constraint to the model.
-  pub fn add_sos(&mut self, vars: &[i32], weights: &[f64], sostype: SOSType) -> Result<SOS> {
+  pub fn add_sos(&mut self, vars: &[Var], weights: &[f64], sostype: SOSType) -> Result<SOS> {
     if vars.len() != weights.len() {
       return Err(Error::InconsitentDims);
     }
+
+    let vars = vars.iter().map(|v|v.0).collect::<Vec<_>>();
 
     let beg = 0;
     let error = unsafe {

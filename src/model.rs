@@ -719,10 +719,10 @@ impl Add<Var> for LinExpr {
 pub struct Model<'a> {
   model: *mut ffi::GRBmodel,
   env: &'a Env,
-  vars: Vec<i32>,
-  constrs: Vec<i32>,
-  qconstrs: Vec<i32>,
-  sos: Vec<i32>
+  vars: Vec<Var>,
+  constrs: Vec<Constr>,
+  qconstrs: Vec<QConstr>,
+  sos: Vec<SOS>
 }
 
 impl<'a> Model<'a> {
@@ -807,9 +807,9 @@ impl<'a> Model<'a> {
     }
 
     let col_no = self.vars.len() as i32;
-    self.vars.push(col_no);
+    self.vars.push(Var(col_no));
 
-    Ok(Var(col_no))
+    self.vars.last().cloned().ok_or(Error::InconsitentDims)
   }
 
   /// add a linear constraint to the model.
@@ -828,9 +828,9 @@ impl<'a> Model<'a> {
       return Err(self.error_from_api(error));
     }
     let row_no = self.constrs.len() as i32;
-    self.constrs.push(row_no);
+    self.constrs.push(Constr(row_no));
 
-    Ok(Constr(row_no))
+    self.constrs.last().cloned().ok_or(Error::InconsitentDims)
   }
 
   /// add a quadratic constraint to the model.
@@ -855,9 +855,9 @@ impl<'a> Model<'a> {
     }
 
     let qrow_no = self.qconstrs.len() as i32;
-    self.qconstrs.push(qrow_no);
+    self.qconstrs.push(QConstr(qrow_no));
 
-    Ok(QConstr(qrow_no))
+    self.qconstrs.last().cloned().ok_or(Error::InconsitentDims)
   }
 
   /// add Special Order Set (SOS) constraint to the model.
@@ -866,7 +866,7 @@ impl<'a> Model<'a> {
       return Err(Error::InconsitentDims);
     }
 
-    let vars = vars.iter().map(|v|v.0).collect::<Vec<_>>();
+    let vars = vars.iter().map(|v| v.0).collect::<Vec<_>>();
 
     let beg = 0;
     let error = unsafe {
@@ -883,9 +883,9 @@ impl<'a> Model<'a> {
     }
 
     let sos_no = self.sos.len() as i32;
-    self.sos.push(sos_no);
+    self.sos.push(SOS(sos_no));
 
-    Ok(SOS(sos_no))
+    self.sos.last().cloned().ok_or(Error::InconsitentDims)
   }
 
   /// Set the objective function of the model.
@@ -926,6 +926,12 @@ impl<'a> Model<'a> {
                 attr,
                 item.iter().map(|e| e.index()).collect::<Vec<_>>().as_slice(),
                 val)
+  }
+
+  ///
+  pub fn feas_relax(&mut self, vars: &[Var], constrs: &[Constr], qconstrs: &[QConstr])
+                       -> Result<(f64, Vec<Var>, Vec<Constr>, Vec<QConstr>)> {
+    Err(Error::NotImplemented)
   }
 
   /// add quadratic terms of objective function.

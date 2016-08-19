@@ -399,7 +399,7 @@ impl<S: Shape> Var<S> {
     model.get_value(attr, self)
   }
 
-  pub fn set_value<A: AttrArray + Copy>(&mut self, model: &mut Model, attr: A, val: &Tensor<A::Out, S>) -> Result<()> {
+  pub fn set<A: AttrArray + Copy>(&mut self, model: &mut Model, attr: A, val: &Tensor<A::Out, S>) -> Result<()> {
     model.set_value(attr, self, val)
   }
 }
@@ -419,7 +419,7 @@ impl<S: Shape> Constr<S> {
     model.get_value(attr, self)
   }
 
-  pub fn set_value<A: AttrArray + Copy>(&mut self, model: &mut Model, attr: A, val: &Tensor<A::Out, S>) -> Result<()> {
+  pub fn set<A: AttrArray + Copy>(&mut self, model: &mut Model, attr: A, val: &Tensor<A::Out, S>) -> Result<()> {
     model.set_value(attr, self, val)
   }
 }
@@ -439,7 +439,7 @@ impl<S: Shape> QConstr<S> {
     model.get_value(attr, self)
   }
 
-  pub fn set_value<A: AttrArray + Copy>(&mut self, model: &mut Model, attr: A, val: &Tensor<A::Out, S>) -> Result<()> {
+  pub fn set<A: AttrArray + Copy>(&mut self, model: &mut Model, attr: A, val: &Tensor<A::Out, S>) -> Result<()> {
     model.set_value(attr, self, val)
   }
 }
@@ -886,6 +886,7 @@ impl<'a> Model<'a> {
   }
 
   /// add Special Order Set (SOS) constraint to the model.
+  #[allow(dead_code)]
   fn add_sos(&mut self, vars: &[i32], weights: &[f64], sostype: SOSType) -> Result<()> {
     if vars.len() != weights.len() {
       return Err(Error::InconsitentDims);

@@ -928,9 +928,9 @@ impl<'a> Model<'a> {
                 val)
   }
 
-  ///
-  pub fn feas_relax(&mut self, vars: &[Var], constrs: &[Constr], qconstrs: &[QConstr])
-                       -> Result<(f64, Vec<Var>, Vec<Constr>, Vec<QConstr>)> {
+  /// 
+  pub fn feas_relax(&mut self, vars: &[Var], constrs: &[Constr], lbpen: &[f64], ubpen: &[f64], rhspen: &[f64])
+                    -> Result<(f64, Vec<Var>, Vec<Constr>)> {
     Err(Error::NotImplemented)
   }
 

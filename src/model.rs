@@ -1,5 +1,5 @@
 use super::ffi;
-use super::itertools::Zip;
+use super::itertools::{Itertools, Zip};
 
 use std::iter;
 use std::ffi::CString;
@@ -866,7 +866,7 @@ impl<'a> Model<'a> {
     let error = unsafe {
       ffi::GRBaddconstr(self.model,
                         expr.coeff.len() as ffi::c_int,
-                        expr.vars.into_iter().map(|e| e.0).collect::<Vec<_>>().as_ptr(),
+                        expr.vars.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
                         expr.coeff.as_ptr(),
                         sense.into(),
                         rhs - expr.offset,
@@ -888,11 +888,11 @@ impl<'a> Model<'a> {
     let error = unsafe {
       ffi::GRBaddqconstr(self.model,
                          expr.lval.len() as ffi::c_int,
-                         expr.lind.into_iter().map(|e| e.0).collect::<Vec<_>>().as_ptr(),
+                         expr.lind.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
                          expr.lval.as_ptr(),
                          expr.qval.len() as ffi::c_int,
-                         expr.qrow.into_iter().map(|e| e.0).collect::<Vec<_>>().as_ptr(),
-                         expr.qcol.into_iter().map(|e| e.0).collect::<Vec<_>>().as_ptr(),
+                         expr.qrow.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
+                         expr.qcol.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
                          expr.qval.as_ptr(),
                          sense.into(),
                          rhs,
@@ -914,9 +914,9 @@ impl<'a> Model<'a> {
       return Err(Error::InconsitentDims);
     }
 
-    let vars = vars.iter().map(|v| v.0).collect::<Vec<_>>();
-
+    let vars = vars.iter().map(|v| v.index()).collect_vec();
     let beg = 0;
+
     let error = unsafe {
       ffi::GRBaddsos(self.model,
                      1,
@@ -940,9 +940,9 @@ impl<'a> Model<'a> {
   pub fn set_objective<Expr: Into<QuadExpr>>(&mut self, expr: Expr, sense: ModelSense) -> Result<()> {
     let expr = expr.into();
 
-    let lind: Vec<_> = expr.lind.into_iter().map(|v| v.0).collect();
-    let qrow: Vec<_> = expr.qrow.into_iter().map(|v| v.0).collect();
-    let qcol: Vec<_> = expr.qcol.into_iter().map(|v| v.0).collect();
+    let lind = expr.lind.into_iter().map(|v| v.index()).collect_vec();
+    let qrow = expr.qrow.into_iter().map(|v| v.index()).collect_vec();
+    let qcol = expr.qcol.into_iter().map(|v| v.index()).collect_vec();
 
     try!(AttrArray::set_list(self, attr::Obj, lind.as_slice(), expr.lval.as_slice()));
     try!(self.add_qpterms(qrow.as_slice(), qcol.as_slice(), expr.qval.as_slice()));
@@ -965,14 +965,14 @@ impl<'a> Model<'a> {
   pub fn get_values<A: AttrArray, P: Proxy>(&self, attr: A, item: &[P]) -> Result<Vec<A::Out>> {
     A::get_list(self,
                 attr,
-                item.iter().map(|e| e.index()).collect::<Vec<_>>().as_slice())
+                item.iter().map(|e| e.index()).collect_vec().as_slice())
   }
 
   /// Set the value of attributes which associated with variable/constraints.
   pub fn set_values<A: AttrArray, P: Proxy>(&mut self, attr: A, item: &[P], val: &[A::Out]) -> Result<()> {
     A::set_list(self,
                 attr,
-                item.iter().map(|e| e.index()).collect::<Vec<_>>().as_slice(),
+                item.iter().map(|e| e.index()).collect_vec().as_slice(),
                 val)
   }
 
@@ -988,11 +988,8 @@ impl<'a> Model<'a> {
       return Err(Error::InconsitentDims);
     }
 
-    let mut pen_lb = Vec::with_capacity(self.vars.len());
-    pen_lb.resize(self.vars.len(), super::INFINITY);
-    let mut pen_ub = Vec::with_capacity(self.vars.len());
-    pen_ub.resize(self.vars.len(), super::INFINITY);
-
+    let mut pen_lb = vec![super::INFINITY; self.vars.len()];
+    let mut pen_ub = vec![super::INFINITY; self.vars.len()];
     for (&v, &lb, &ub) in Zip::new((vars, lbpen, ubpen)) {
       let idx = v.index();
       if idx >= self.vars.len() as i32 {
@@ -1002,9 +999,7 @@ impl<'a> Model<'a> {
       pen_ub[idx as usize] = ub;
     }
 
-    let mut pen_rhs = Vec::with_capacity(self.constrs.len());
-    pen_rhs.resize(self.constrs.len(), super::INFINITY);
-
+    let mut pen_rhs = vec![super::INFINITY; self.constrs.len()];
     for (&c, &rhs) in Zip::new((constrs, rhspen)) {
       let idx = c.index();
       if idx >= self.constrs.len() as i32 {
@@ -1093,9 +1088,8 @@ impl<'a> Model<'a> {
     let qrow = try!(self.get_values(attr::X, expr.qrow.as_slice()));
     let qcol = try!(self.get_values(attr::X, expr.qcol.as_slice()));
 
-    Ok(Zip::new((lind.into_iter(), expr.lval.into_iter())).fold(0.0, |acc, (ind, val)| acc + ind * val) +
-       Zip::new((qrow.into_iter(), qcol.into_iter(), expr.qval.into_iter()))
-      .fold(0.0, |acc, (row, col, val)| acc + row * col * val) + expr.offset)
+    Ok(Zip::new((lind, expr.lval)).fold(0.0, |acc, (ind, val)| acc + ind * val) +
+       Zip::new((qrow, qcol, expr.qval)).fold(0.0, |acc, (row, col, val)| acc + row * col * val) + expr.offset)
   }
 
   fn error_from_api(&self, errcode: ffi::c_int) -> Error { self.env.error_from_api(errcode) }

@@ -6,6 +6,7 @@ use std::ffi::CString;
 use std::ptr::{null, null_mut};
 use std::ops::{Add, Sub, Mul};
 use std::mem::transmute;
+use std::rc::Rc;
 
 use env::Env;
 use error::{Error, Result};
@@ -484,35 +485,35 @@ pub trait Proxy {
 }
 
 /// represents a set of decision variables.
-#[derive(Clone,Copy)]
-pub struct Var(i32);
+#[derive(Clone)]
+pub struct Var(Rc<i32>);
 
 /// The proxy object of a set of linear constraints.
-#[derive(Clone,Copy)]
-pub struct Constr(i32);
+#[derive(Clone)]
+pub struct Constr(Rc<i32>);
 
 /// The proxy object of a set of quadratic constraints.
-#[derive(Clone,Copy)]
-pub struct QConstr(i32);
+#[derive(Clone)]
+pub struct QConstr(Rc<i32>);
 
 /// The proxy object of a Special Order Set (SOS) constraint.
-#[derive(Clone,Copy)]
-pub struct SOS(i32);
+#[derive(Clone)]
+pub struct SOS(Rc<i32>);
 
 impl Proxy for Var {
-  fn index(&self) -> i32 { self.0 }
+  fn index(&self) -> i32 { *self.0 }
 }
 
 impl Proxy for Constr {
-  fn index(&self) -> i32 { self.0 }
+  fn index(&self) -> i32 { *self.0 }
 }
 
 impl Proxy for QConstr {
-  fn index(&self) -> i32 { self.0 }
+  fn index(&self) -> i32 { *self.0 }
 }
 
 impl Proxy for SOS {
-  fn index(&self) -> i32 { self.0 }
+  fn index(&self) -> i32 { *self.0 }
 }
 
 
@@ -855,9 +856,9 @@ impl<'a> Model<'a> {
     }
 
     let col_no = self.vars.len() as i32;
-    self.vars.push(Var(col_no));
+    self.vars.push(Var(Rc::new(col_no)));
 
-    self.vars.last().cloned().ok_or(Error::InconsitentDims)
+    Ok(self.vars.last().cloned().unwrap())
   }
 
   /// add a linear constraint to the model.
@@ -876,9 +877,9 @@ impl<'a> Model<'a> {
       return Err(self.error_from_api(error));
     }
     let row_no = self.constrs.len() as i32;
-    self.constrs.push(Constr(row_no));
+    self.constrs.push(Constr(Rc::new(row_no)));
 
-    self.constrs.last().cloned().ok_or(Error::InconsitentDims)
+    Ok(self.constrs.last().cloned().unwrap())
   }
 
   /// add a quadratic constraint to the model.
@@ -903,9 +904,9 @@ impl<'a> Model<'a> {
     }
 
     let qrow_no = self.qconstrs.len() as i32;
-    self.qconstrs.push(QConstr(qrow_no));
+    self.qconstrs.push(QConstr(Rc::new(qrow_no)));
 
-    self.qconstrs.last().cloned().ok_or(Error::InconsitentDims)
+    Ok(self.qconstrs.last().cloned().unwrap())
   }
 
   /// add Special Order Set (SOS) constraint to the model.
@@ -931,9 +932,9 @@ impl<'a> Model<'a> {
     }
 
     let sos_no = self.sos.len() as i32;
-    self.sos.push(SOS(sos_no));
+    self.sos.push(SOS(Rc::new(sos_no)));
 
-    self.sos.last().cloned().ok_or(Error::InconsitentDims)
+    Ok(self.sos.last().cloned().unwrap())
   }
 
   /// Set the objective function of the model.
@@ -990,7 +991,7 @@ impl<'a> Model<'a> {
 
     let mut pen_lb = vec![super::INFINITY; self.vars.len()];
     let mut pen_ub = vec![super::INFINITY; self.vars.len()];
-    for (&v, &lb, &ub) in Zip::new((vars, lbpen, ubpen)) {
+    for (ref v, &lb, &ub) in Zip::new((vars, lbpen, ubpen)) {
       let idx = v.index();
       if idx >= self.vars.len() as i32 {
         return Err(Error::InconsitentDims);
@@ -1000,7 +1001,7 @@ impl<'a> Model<'a> {
     }
 
     let mut pen_rhs = vec![super::INFINITY; self.constrs.len()];
-    for (&c, &rhs) in Zip::new((constrs, rhspen)) {
+    for (ref c, &rhs) in Zip::new((constrs, rhspen)) {
       let idx = c.index();
       if idx >= self.constrs.len() as i32 {
         return Err(Error::InconsitentDims);
@@ -1033,9 +1034,9 @@ impl<'a> Model<'a> {
     let xrows = self.constrs.len();
     let xqrows = self.qconstrs.len();
 
-    self.vars.extend((xcols..cols).map(|idx| Var(idx as i32)));
-    self.constrs.extend((xrows..rows).map(|idx| Constr(idx as i32)));
-    self.qconstrs.extend((xqrows..qrows).map(|idx| QConstr(idx as i32)));
+    self.vars.extend((xcols..cols).map(|idx| Var(Rc::new(idx as i32))));
+    self.constrs.extend((xrows..rows).map(|idx| Constr(Rc::new(idx as i32))));
+    self.qconstrs.extend((xqrows..qrows).map(|idx| QConstr(Rc::new(idx as i32))));
 
     Ok((feasobj, self.vars[cols..].into(), self.constrs[rows..].into(), self.qconstrs[qrows..].into()))
   }
@@ -1052,10 +1053,10 @@ impl<'a> Model<'a> {
   /// Get all of the linear constraints which includes IIS.
   pub fn get_iis_constrs(&self) -> Result<Vec<Constr>> {
     let mut buf = Vec::new();
-    for &c in self.constrs.iter() {
+    for ref c in self.constrs.iter() {
       let iis = try!(self.get_value(attr::IISConstr, c.index()));
       if iis != 0 {
-        buf.push(c);
+        buf.push((*c).clone());
       }
     }
     Ok(buf)

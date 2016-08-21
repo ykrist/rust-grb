@@ -4,6 +4,7 @@ Cargo.lock
 *.log
 *.lp
 *.sol
+*.ilp
 gh-pages/
 doc/
 doc/.lock

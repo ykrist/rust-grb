@@ -714,6 +714,24 @@ impl Add<Var> for LinExpr {
 
 
 
+#[derive(Debug)]
+pub enum FeasType {
+  Linear,
+  Quadratic,
+  Cardinality
+}
+
+impl Into<i32> for FeasType {
+  fn into(self) -> i32 {
+    match self {
+      FeasType::Linear => 0,
+      FeasType::Quadratic => 1,
+      FeasType::Cardinality => 2,
+    }
+  }
+}
+
+
 
 /// Gurobi Model
 pub struct Model<'a> {
@@ -928,10 +946,73 @@ impl<'a> Model<'a> {
                 val)
   }
 
-  ///
-  pub fn feas_relax(&mut self, vars: &[Var], constrs: &[Constr], qconstrs: &[QConstr])
-                       -> Result<(f64, Vec<Var>, Vec<Constr>, Vec<QConstr>)> {
-    Err(Error::NotImplemented)
+  /// Modify the model to create a feasibility relaxation.
+  pub fn feas_relax(&mut self, feasobjtype: FeasType, minrelax: bool, vars: &[Var], constrs: &[Constr],
+                    lbpen: &[f64], ubpen: &[f64], rhspen: &[f64])
+                    -> Result<(f64, Vec<Var>, Vec<Constr>, Vec<QConstr>)> {
+    if vars.len() != lbpen.len() || vars.len() != ubpen.len() {
+      return Err(Error::InconsitentDims);
+    }
+
+    if constrs.len() != rhspen.len() {
+      return Err(Error::InconsitentDims);
+    }
+
+    let mut pen_lb = Vec::with_capacity(self.vars.len());
+    pen_lb.resize(self.vars.len(), super::INFINITY);
+    let mut pen_ub = Vec::with_capacity(self.vars.len());
+    pen_ub.resize(self.vars.len(), super::INFINITY);
+
+    for (&v, &lb, &ub) in Zip::new((vars, lbpen, ubpen)) {
+      let idx = v.index();
+      if idx >= self.vars.len() as i32 {
+        return Err(Error::InconsitentDims);
+      }
+      pen_lb[idx as usize] = lb;
+      pen_ub[idx as usize] = ub;
+    }
+
+    let mut pen_rhs = Vec::with_capacity(self.constrs.len());
+    pen_rhs.resize(self.constrs.len(), super::INFINITY);
+
+    for (&c, &rhs) in Zip::new((constrs, rhspen)) {
+      let idx = c.index();
+      if idx >= self.constrs.len() as i32 {
+        return Err(Error::InconsitentDims);
+      }
+
+      pen_rhs[idx as usize] = rhs;
+    }
+
+    let minrelax = if minrelax { 1 } else { 0 };
+
+    let mut feasobj = 0f64;
+    let error = unsafe {
+      ffi::GRBfeasrelax(self.model,
+                        feasobjtype.into(),
+                        minrelax,
+                        pen_lb.as_ptr(),
+                        pen_ub.as_ptr(),
+                        pen_rhs.as_ptr(),
+                        &mut feasobj)
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    let cols = try!(self.get(attr::NumVars)) as usize;
+    let rows = try!(self.get(attr::NumConstrs)) as usize;
+    let qrows = try!(self.get(attr::NumQConstrs)) as usize;
+
+    let xcols = self.vars.len();
+    let xrows = self.constrs.len();
+    let xqrows = self.qconstrs.len();
+
+    self.vars.extend((xcols..cols).map(|idx| Var(idx as i32)));
+    self.constrs.extend((xrows..rows).map(|idx| Constr(idx as i32)));
+    self.qconstrs.extend((xqrows..qrows).map(|idx| QConstr(idx as i32)));
+
+    Ok((feasobj, self.vars[cols..].into(), self.constrs[rows..].into(), self.qconstrs[qrows..].into()))
   }
 
   /// add quadratic terms of objective function.

@@ -32,4 +32,9 @@ pub use model::ConstrSense::*;
 pub use model::ModelSense::*;
 pub use model::SOSType::*;
 
+// constants
+pub const INFINITY: f64 = 1e100;
+pub const UNDEFINED: f64 = 1e101;
+
+
 // vim: set foldmethod=syntax :

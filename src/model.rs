@@ -1015,6 +1015,15 @@ impl<'a> Model<'a> {
     Ok((feasobj, self.vars[cols..].into(), self.constrs[rows..].into(), self.qconstrs[qrows..].into()))
   }
 
+  /// Compute an Irreducible Inconsistent Subsystem (IIS) of the model.
+  pub fn compute_iis(&mut self) -> Result<()> {
+    let error = unsafe { ffi::GRBcomputeIIS(self.model) };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
+  }
+
   /// add quadratic terms of objective function.
   fn add_qpterms(&mut self, qrow: &[i32], qcol: &[i32], qval: &[f64]) -> Result<()> {
     let error = unsafe {

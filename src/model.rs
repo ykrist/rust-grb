@@ -988,7 +988,7 @@ impl<'a> Model<'a> {
   /// Modify the model to create a feasibility relaxation.
   pub fn feas_relax(&mut self, feasobjtype: FeasType, minrelax: bool, vars: &[Var], constrs: &[Constr],
                     lbpen: &[f64], ubpen: &[f64], rhspen: &[f64])
-                    -> Result<(f64, Vec<Var>, Vec<Constr>, Vec<QConstr>)> {
+                    -> Result<(f64, Iter<Var>, Iter<Constr>, Iter<QConstr>)> {
     if vars.len() != lbpen.len() || vars.len() != ubpen.len() {
       return Err(Error::InconsitentDims);
     }
@@ -1046,7 +1046,7 @@ impl<'a> Model<'a> {
     self.constrs.extend((xrows..rows).map(|idx| Constr::new(idx as i32)));
     self.qconstrs.extend((xqrows..qrows).map(|idx| QConstr::new(idx as i32)));
 
-    Ok((feasobj, self.vars[cols..].into(), self.constrs[rows..].into(), self.qconstrs[qrows..].into()))
+    Ok((feasobj, self.vars[cols..].iter(), self.constrs[rows..].iter(), self.qconstrs[qrows..].iter()))
   }
 
   /// Compute an Irreducible Inconsistent Subsystem (IIS) of the model.

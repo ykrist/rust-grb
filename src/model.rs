@@ -8,6 +8,7 @@ use std::ops::{Add, Sub, Mul};
 use std::mem::transmute;
 use std::rc::Rc;
 use std::cell::Cell;
+use std::slice::Iter;
 
 use env::Env;
 use error::{Error, Result};
@@ -1057,20 +1058,21 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
-  /// Get all of the linear constraints which includes IIS.
-  pub fn get_iis_constrs(&self) -> Result<Vec<Constr>> {
-    let mut buf = Vec::new();
-    for ref c in self.constrs.iter() {
-      let iis = try!(self.get_value(attr::IISConstr, c.index()));
-      if iis != 0 {
-        buf.push((*c).clone());
-      }
-    }
-    Ok(buf)
-  }
-
   ///
   pub fn status(&self) -> Result<Status> { self.get(attr::Status).map(|val| val.into()) }
+
+  ///
+  pub fn get_vars(&self) -> Iter<Var> { self.vars.iter() }
+
+  ///
+  pub fn get_constrs(&self) -> Iter<Constr> { self.constrs.iter() }
+
+  ///
+  pub fn get_qconstrs(&self) -> Iter<QConstr> { self.qconstrs.iter() }
+
+  ///
+  pub fn get_sos(&self) -> Iter<SOS> { self.sos.iter() }
+
 
   /// add quadratic terms of objective function.
   fn add_qpterms(&mut self, qrow: &[i32], qcol: &[i32], qval: &[f64]) -> Result<()> {

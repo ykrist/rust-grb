@@ -71,14 +71,7 @@ fn main() {
     model.write("assignment.ilp").unwrap();
 
     println!("The following constraint(s) cannot be satisfied:");
-    let iis_constrs = model.get_constrs().filter_map(|c| {
-      if c.get(&model, attr::IISConstr).unwrap() != 0 {
-        Some(c)
-      } else {
-        None
-      }
-    });
-    for c in iis_constrs {
+    for c in model.get_constrs().filter(|c| c.get(&model, attr::IISConstr).unwrap() != 0) {
       let cname = c.get(&model, attr::ConstrName).unwrap();
       println!("{}", cname);
     }

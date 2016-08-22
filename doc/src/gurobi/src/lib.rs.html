@@ -77,6 +77,11 @@
 <span id="33">33</span>
 <span id="34">34</span>
 <span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
 </pre><pre class='rust '>
 <span class='doccomment'>//! A crate which provides low-level Rust API of Gurobi Optimizer.</span>
 <span class='doccomment'>//!</span>
@@ -111,6 +116,11 @@
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>model</span>::<span class='ident'>ConstrSense</span>::<span class='op'>*</span>;
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>model</span>::<span class='ident'>ModelSense</span>::<span class='op'>*</span>;
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>model</span>::<span class='ident'>SOSType</span>::<span class='op'>*</span>;
+
+<span class='comment'>// constants</span>
+<span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>INFINITY</span>: <span class='ident'>f64</span> <span class='op'>=</span> <span class='number'>1e100</span>;
+<span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>UNDEFINED</span>: <span class='ident'>f64</span> <span class='op'>=</span> <span class='number'>1e101</span>;
+
 
 <span class='comment'>// vim: set foldmethod=syntax :</span>
 </pre>

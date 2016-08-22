@@ -1051,7 +1051,7 @@ impl<'a> Model<'a> {
     self.constrs.extend((xrows..rows).map(|idx| Constr::new(idx as i32)));
     self.qconstrs.extend((xqrows..qrows).map(|idx| QConstr::new(idx as i32)));
 
-    Ok((feasobj, self.vars[cols..].iter(), self.constrs[rows..].iter(), self.qconstrs[qrows..].iter()))
+    Ok((feasobj, self.vars[xcols..].iter(), self.constrs[xrows..].iter(), self.qconstrs[xqrows..].iter()))
   }
 
   /// Compute an Irreducible Inconsistent Subsystem (IIS) of the model.

@@ -75,29 +75,29 @@ fn main() {
       let mut model = model.copy().unwrap();
       model.set(attr::ModelName, "assignment_relaxed".to_owned()).unwrap();
 
-      let num_vars = model.get(attr::NumVars).unwrap();
-      
       // do relaxation.
       let constrs = model.get_constrs().cloned().collect_vec();
-      model.feas_relax(FeasType::Linear,
-                    false,
-                    &[],
-                    &constrs[..],
-                    &[],
-                    &[],
-                    RepeatN::new(1.0, constrs.len()).collect_vec().as_slice())
-        .unwrap();
+      let slacks = {
+        let (_, svars, _, _) = model.feas_relax(FeasType::Linear,
+                      false,
+                      &[],
+                      &constrs[..],
+                      &[],
+                      &[],
+                      RepeatN::new(1.0, constrs.len()).collect_vec().as_slice())
+          .unwrap();
+        svars.cloned().collect_vec()
+      };
       model.optimize().unwrap();
       model.write("assignment_relaxes.lp").unwrap();
       model.write("assignment_relaxes.sol").unwrap();
 
       println!("slack variables: ");
-      let slack_vars = model.get_vars().skip(num_vars as usize).cloned();
-      for svar in slack_vars {
-        let value = svar.get(&model, attr::X).unwrap();
+      for slack in slacks {
+        let value = slack.get(&model, attr::X).unwrap();
+        let vname = slack.get(&model, attr::VarName).unwrap();
         if value > 1e-6 {
-          let vname = svar.get(&model, attr::VarName).unwrap();
-          println!("{} = {}", vname, value);
+          println!("  * {} = {}", vname, value);
         }
       }
     }

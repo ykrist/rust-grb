@@ -15,23 +15,20 @@ fn main() {
 
   // set objective funtion:
   //   f(x,y,z) = x
-  model.set_objective(x, Maximize).unwrap();
+  model.set_objective(&x, Maximize).unwrap();
 
   // add linear constraints
 
   //  c0: x + y + z == 1
-  let c0 = model.add_constr("c0", x + y + z, Equal, 1.0).unwrap();
+  let c0 = model.add_constr("c0", &x + &y + &z, Equal, 1.0).unwrap();
 
   // add quadratic constraints
 
   //  qc0: x^2 + y^2 - z^2 <= 0.0
-  let qc0 = model.add_qconstr("qc0", x * x + y * y - z * z, Less, 0.0).unwrap();
+  let qc0 = model.add_qconstr("qc0", &x * &x + &y * &y - &z * &z, Less, 0.0).unwrap();
 
   //  qc1: x^2 - y*z <= 0.0
-  let qc1 = model.add_qconstr("qc1", x * x - y * z, Less, 0.0).unwrap();
-
-  let _ = model.get(attr::ModelSense).unwrap();
-  let _ = model.get(attr::ObjVal).unwrap();
+  let qc1 = model.add_qconstr("qc1", &x * &x - &y * &z, Less, 0.0).unwrap();
 
   // optimize the model.
   model.optimize().unwrap();

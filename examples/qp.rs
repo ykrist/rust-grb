@@ -15,15 +15,15 @@ fn main() {
 
   // set objective funtion:
   //   f(x,y,z) = x*x + x*y + y*y + y*z + z*z + 2*x
-  model.set_objective(x * x + x * y + y * y + y * z + z * z + 2.0 * x, Maximize).unwrap();
+  model.set_objective(&x * &x + &x * &y + &y * &y + &y * &z + &z * &z + 2.0 * &x, Maximize).unwrap();
 
   // add linear constraints
 
   //  g1(x,y,z) = x + 2*y + 3*z >= 4
-  let _ = model.add_constr("c0", x + 2.0 * y + 3.0 * z, Greater, 4.0).unwrap();
+  let _ = model.add_constr("c0", &x + 2.0 * &y + 3.0 * &z, Greater, 4.0).unwrap();
 
   //  g2(x,y,z) = x + y >= 2
-  let _ = model.add_constr("c1", x + y, Greater, 1.0).unwrap();
+  let _ = model.add_constr("c1", &x + &y, Greater, 1.0).unwrap();
 
   // optimize the model.
   model.optimize().unwrap();

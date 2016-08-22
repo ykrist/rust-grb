@@ -10,11 +10,11 @@ fn main() {
   let z = model.add_var("z", Binary).unwrap();
   model.update().unwrap();
 
-  model.set_objective(x + y + 2.0 * z, Maximize).unwrap();
+  model.set_objective(&x + &y + 2.0 * &z, Maximize).unwrap();
 
-  let _ = model.add_constr("c0", x + 2.0 * y + 3.0 * z, Less, 4.0).unwrap();
+  let _ = model.add_constr("c0", &x + 2.0 * &y + 3.0 * &z, Less, 4.0).unwrap();
 
-  let _ = model.add_constr("c1", x + y, Greater, 1.0).unwrap();
+  let _ = model.add_constr("c1", &x + &y, Greater, 1.0).unwrap();
 
   model.optimize().unwrap();
 

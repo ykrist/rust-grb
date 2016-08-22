@@ -7,6 +7,7 @@ use std::ptr::{null, null_mut};
 use std::ops::{Add, Sub, Mul};
 use std::mem::transmute;
 use std::rc::Rc;
+use std::cell::Cell;
 
 use env::Env;
 use error::{Error, Result};
@@ -475,6 +476,7 @@ impl From<i32> for Status {
 
 
 pub trait Proxy {
+  fn new(i32) -> Self;
   fn index(&self) -> i32;
 
   fn get<A: AttrArray>(&self, model: &Model, attr: A) -> Result<A::Out> { model.get_value(attr, self.index()) }
@@ -486,35 +488,40 @@ pub trait Proxy {
 
 /// represents a set of decision variables.
 #[derive(Clone)]
-pub struct Var(Rc<i32>);
+pub struct Var(Rc<Cell<i32>>);
 
 /// The proxy object of a set of linear constraints.
 #[derive(Clone)]
-pub struct Constr(Rc<i32>);
+pub struct Constr(Rc<Cell<i32>>);
 
 /// The proxy object of a set of quadratic constraints.
 #[derive(Clone)]
-pub struct QConstr(Rc<i32>);
+pub struct QConstr(Rc<Cell<i32>>);
 
 /// The proxy object of a Special Order Set (SOS) constraint.
 #[derive(Clone)]
-pub struct SOS(Rc<i32>);
+pub struct SOS(Rc<Cell<i32>>);
 
 impl Proxy for Var {
-  fn index(&self) -> i32 { *self.0 }
+  fn new(idx: i32) -> Var { Var(Rc::new(Cell::new(idx))) }
+  fn index(&self) -> i32 { self.0.get() }
 }
 
 impl Proxy for Constr {
-  fn index(&self) -> i32 { *self.0 }
+  fn new(idx: i32) -> Constr { Constr(Rc::new(Cell::new(idx))) }
+  fn index(&self) -> i32 { self.0.get() }
 }
 
 impl Proxy for QConstr {
-  fn index(&self) -> i32 { *self.0 }
+  fn new(idx: i32) -> QConstr { QConstr(Rc::new(Cell::new(idx))) }
+  fn index(&self) -> i32 { self.0.get() }
 }
 
 impl Proxy for SOS {
-  fn index(&self) -> i32 { *self.0 }
+  fn new(idx: i32) -> SOS { SOS(Rc::new(Cell::new(idx))) }
+  fn index(&self) -> i32 { self.0.get() }
 }
+
 
 
 
@@ -550,8 +557,8 @@ impl LinExpr {
   pub fn value(&self, model: &Model) -> Result<f64> { model.calc_value(self) }
 }
 
-impl Into<QuadExpr> for Var {
-  fn into(self) -> QuadExpr { QuadExpr::new().term(self, 1.0) }
+impl<'a> Into<QuadExpr> for &'a Var {
+  fn into(self) -> QuadExpr { QuadExpr::new().term(self.clone(), 1.0) }
 }
 
 impl Into<QuadExpr> for LinExpr {
@@ -619,15 +626,15 @@ impl Mul<f64> for Var {
   fn mul(self, rhs: f64) -> Self::Output { LinExpr::new().term(self, rhs) }
 }
 
-impl Mul<Var> for f64 {
+impl<'a> Mul<&'a Var> for f64 {
   type Output = LinExpr;
-  fn mul(self, rhs: Var) -> Self::Output { LinExpr::new().term(rhs, self) }
+  fn mul(self, rhs: &'a Var) -> Self::Output { LinExpr::new().term(rhs.clone(), self) }
 }
 
 
-impl Mul for Var {
+impl<'a> Mul for &'a Var {
   type Output = QuadExpr;
-  fn mul(self, rhs: Var) -> Self::Output { QuadExpr::new().qterm(self, rhs, 1.0) }
+  fn mul(self, rhs: &'a Var) -> Self::Output { QuadExpr::new().qterm(self.clone(), rhs.clone(), 1.0) }
 }
 
 impl Mul<f64> for QuadExpr {
@@ -723,24 +730,24 @@ impl Sub for QuadExpr {
   }
 }
 
-impl Add for Var {
+impl<'a> Add for &'a Var {
   type Output = LinExpr;
-  fn add(self, rhs: Var) -> LinExpr { LinExpr::new().term(self, 1.0).term(rhs, 1.0) }
+  fn add(self, rhs: &Var) -> LinExpr { LinExpr::new().term(self.clone(), 1.0).term(rhs.clone(), 1.0) }
 }
 
-impl Sub for Var {
+impl<'a> Sub for &'a Var {
   type Output = LinExpr;
-  fn sub(self, rhs: Var) -> LinExpr { LinExpr::new().term(self, 1.0).term(rhs, -1.0) }
+  fn sub(self, rhs: &Var) -> LinExpr { LinExpr::new().term(self.clone(), 1.0).term(rhs.clone(), -1.0) }
 }
 
-impl Add<LinExpr> for Var {
+impl<'a> Add<LinExpr> for &'a Var {
   type Output = LinExpr;
-  fn add(self, rhs: LinExpr) -> LinExpr { rhs.term(self, 1.0) }
+  fn add(self, rhs: LinExpr) -> LinExpr { rhs.term(self.clone(), 1.0) }
 }
 
-impl Add<Var> for LinExpr {
+impl<'a> Add<&'a Var> for LinExpr {
   type Output = LinExpr;
-  fn add(self, rhs: Var) -> LinExpr { self.term(rhs, 1.0) }
+  fn add(self, rhs: &'a Var) -> LinExpr { self.term(rhs.clone(), 1.0) }
 }
 
 
@@ -856,7 +863,7 @@ impl<'a> Model<'a> {
     }
 
     let col_no = self.vars.len() as i32;
-    self.vars.push(Var(Rc::new(col_no)));
+    self.vars.push(Var::new(col_no));
 
     Ok(self.vars.last().cloned().unwrap())
   }
@@ -877,7 +884,7 @@ impl<'a> Model<'a> {
       return Err(self.error_from_api(error));
     }
     let row_no = self.constrs.len() as i32;
-    self.constrs.push(Constr(Rc::new(row_no)));
+    self.constrs.push(Constr::new(row_no));
 
     Ok(self.constrs.last().cloned().unwrap())
   }
@@ -904,7 +911,7 @@ impl<'a> Model<'a> {
     }
 
     let qrow_no = self.qconstrs.len() as i32;
-    self.qconstrs.push(QConstr(Rc::new(qrow_no)));
+    self.qconstrs.push(QConstr::new(qrow_no));
 
     Ok(self.qconstrs.last().cloned().unwrap())
   }
@@ -932,7 +939,7 @@ impl<'a> Model<'a> {
     }
 
     let sos_no = self.sos.len() as i32;
-    self.sos.push(SOS(Rc::new(sos_no)));
+    self.sos.push(SOS::new(sos_no));
 
     Ok(self.sos.last().cloned().unwrap())
   }
@@ -1034,9 +1041,9 @@ impl<'a> Model<'a> {
     let xrows = self.constrs.len();
     let xqrows = self.qconstrs.len();
 
-    self.vars.extend((xcols..cols).map(|idx| Var(Rc::new(idx as i32))));
-    self.constrs.extend((xrows..rows).map(|idx| Constr(Rc::new(idx as i32))));
-    self.qconstrs.extend((xqrows..qrows).map(|idx| QConstr(Rc::new(idx as i32))));
+    self.vars.extend((xcols..cols).map(|idx| Var::new(idx as i32)));
+    self.constrs.extend((xrows..rows).map(|idx| Constr::new(idx as i32)));
+    self.qconstrs.extend((xqrows..qrows).map(|idx| QConstr::new(idx as i32)));
 
     Ok((feasobj, self.vars[cols..].into(), self.constrs[rows..].into(), self.qconstrs[qrows..].into()))
   }

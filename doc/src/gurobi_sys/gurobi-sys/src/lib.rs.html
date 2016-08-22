@@ -675,6 +675,8 @@
 <span id="631">631</span>
 <span id="632">632</span>
 <span id="633">633</span>
+<span id="634">634</span>
+<span id="635">635</span>
 </pre><pre class='rust '>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>allow</span>(<span class='ident'>improper_ctypes</span>)]</span>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>allow</span>(<span class='ident'>non_camel_case_types</span>)]</span>
@@ -1035,6 +1037,8 @@
 
   <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>GRBchgcoeffs</span>(<span class='ident'>model</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>GRBmodel</span>, <span class='ident'>cnt</span>: <span class='ident'>c_int</span>, <span class='ident'>cind</span>: <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>c_int</span>, <span class='ident'>vind</span>: <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>c_int</span>, <span class='ident'>val</span>: <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>c_double</span>)
                       <span class='op'>-&gt;</span> <span class='ident'>c_int</span>;
+
+  <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>GRBdelvars</span>(<span class='ident'>model</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>GRBmodel</span>, <span class='ident'>numdel</span>: <span class='ident'>c_int</span>, <span class='ident'>ind</span>: <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>c_int</span>) <span class='op'>-&gt;</span> <span class='ident'>c_int</span>;
 
   <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>GRBdelconstrs</span>(<span class='ident'>model</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>GRBmodel</span>, <span class='ident'>numdel</span>: <span class='ident'>c_int</span>, <span class='ident'>ind</span>: <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>c_int</span>) <span class='op'>-&gt;</span> <span class='ident'>c_int</span>;
 

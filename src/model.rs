@@ -777,7 +777,7 @@ impl Into<i32> for FeasType {
 
 
 
-/// Gurobi Model
+/// A Gurobi model object associated with certain environment.
 pub struct Model<'a> {
   model: *mut ffi::GRBmodel,
   env: &'a Env,

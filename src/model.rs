@@ -479,6 +479,7 @@ impl From<i32> for Status {
 pub trait Proxy {
   fn new(i32) -> Self;
   fn index(&self) -> i32;
+  fn set_index(&mut self, value: i32);
 
   fn get<A: AttrArray>(&self, model: &Model, attr: A) -> Result<A::Out> { model.get_value(attr, self.index()) }
 
@@ -506,21 +507,25 @@ pub struct SOS(Rc<Cell<i32>>);
 impl Proxy for Var {
   fn new(idx: i32) -> Var { Var(Rc::new(Cell::new(idx))) }
   fn index(&self) -> i32 { self.0.get() }
+  fn set_index(&mut self, value: i32) { self.0.set(value) }
 }
 
 impl Proxy for Constr {
   fn new(idx: i32) -> Constr { Constr(Rc::new(Cell::new(idx))) }
   fn index(&self) -> i32 { self.0.get() }
+  fn set_index(&mut self, value: i32) { self.0.set(value) }
 }
 
 impl Proxy for QConstr {
   fn new(idx: i32) -> QConstr { QConstr(Rc::new(Cell::new(idx))) }
   fn index(&self) -> i32 { self.0.get() }
+  fn set_index(&mut self, value: i32) { self.0.set(value) }
 }
 
 impl Proxy for SOS {
   fn new(idx: i32) -> SOS { SOS(Rc::new(Cell::new(idx))) }
   fn index(&self) -> i32 { self.0.get() }
+  fn set_index(&mut self, value: i32) { self.0.set(value) }
 }
 
 
@@ -1089,6 +1094,103 @@ impl<'a> Model<'a> {
 
     Ok(())
   }
+
+  /// Remove a variable from the model.
+  pub fn remove_var(&mut self, mut item: Var) -> Result<()> {
+    let index = item.index();
+    if index >= self.vars.len() as i32 {
+      return Err(Error::InconsitentDims);
+    }
+
+    if index != -1 {
+      let error = unsafe { ffi::GRBdelvars(self.model, 1, &index) };
+      if error != 0 {
+        return Err(self.error_from_api(error));
+      }
+
+      self.vars.remove(index as usize);
+      item.set_index(-1);
+
+      // reset all of the remaining items.
+      for (idx, ref mut v) in self.vars.iter_mut().enumerate().skip(index as usize) {
+        v.set_index(idx as i32);
+      }
+    }
+    Ok(())
+  }
+
+  /// Remove a linear constraint from the model.
+  pub fn remove_constr(&mut self, mut item: Constr) -> Result<()> {
+    let index = item.index();
+    if index >= self.constrs.len() as i32 {
+      return Err(Error::InconsitentDims);
+    }
+
+    if index != -1 {
+      let error = unsafe { ffi::GRBdelconstrs(self.model, 1, &index) };
+      if error != 0 {
+        return Err(self.error_from_api(error));
+      }
+
+      self.constrs.remove(index as usize);
+      item.set_index(-1);
+
+      // reset all of the remaining items.
+      for (idx, ref mut c) in self.constrs.iter_mut().enumerate().skip(index as usize) {
+        c.set_index(idx as i32);
+      }
+    }
+    Ok(())
+  }
+
+  /// Remove a quadratic constraint from the model.
+  pub fn remove_qconstr(&mut self, mut item: QConstr) -> Result<()> {
+    let index = item.index();
+    if index >= self.qconstrs.len() as i32 {
+      return Err(Error::InconsitentDims);
+    }
+
+    if index != -1 {
+      let error = unsafe { ffi::GRBdelqconstrs(self.model, 1, &index) };
+      if error != 0 {
+        return Err(self.error_from_api(error));
+      }
+
+      self.qconstrs.remove(index as usize);
+      item.set_index(-1);
+
+      // reset all of the remaining items.
+      for (idx, ref mut qc) in self.qconstrs.iter_mut().enumerate().skip(index as usize) {
+        qc.set_index(idx as i32);
+      }
+    }
+    Ok(())
+  }
+
+  /// Remove a special order set (SOS) cnstraint from the model.
+  pub fn remove_sos(&mut self, mut item: SOS) -> Result<()> {
+    let index = item.index();
+    if index >= self.sos.len() as i32 {
+      return Err(Error::InconsitentDims);
+    }
+
+    if index != -1 {
+      let error = unsafe { ffi::GRBdelsos(self.model, 1, &index) };
+      if error != 0 {
+        return Err(self.error_from_api(error));
+      }
+
+      self.sos.remove(index as usize);
+      item.set_index(-1);
+
+      // reset all of the remaining items.
+      for (idx, ref mut s) in self.sos.iter_mut().enumerate().skip(index as usize) {
+        s.set_index(idx as i32);
+      }
+    }
+    Ok(())
+  }
+
 
   /// calculates the actual value of linear/quadratic expression.
   fn calc_value<E: Into<QuadExpr> + Clone>(&self, expr: &E) -> Result<f64> {

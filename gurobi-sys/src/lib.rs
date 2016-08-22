@@ -358,6 +358,8 @@ extern "C" {
   pub fn GRBchgcoeffs(model: *mut GRBmodel, cnt: c_int, cind: *const c_int, vind: *const c_int, val: *const c_double)
                       -> c_int;
 
+  pub fn GRBdelvars(model: *mut GRBmodel, numdel: c_int, ind: *const c_int) -> c_int;
+
   pub fn GRBdelconstrs(model: *mut GRBmodel, numdel: c_int, ind: *const c_int) -> c_int;
 
   pub fn GRBdelq(model: *mut GRBmodel) -> c_int;

@@ -447,7 +447,7 @@ impl Into<i32> for SOSType {
 }
 
 
-///
+/// A set of values which represents the status of a model.
 #[derive(Debug,PartialEq)]
 pub enum Status {
   Loaded = 1,
@@ -470,7 +470,7 @@ impl From<i32> for Status {
   fn from(val: i32) -> Status {
     match val {
       1...14 => unsafe { transmute(val as i8) },
-      _ => panic!("cannot convert to ModelStatus: {}", val)
+      _ => panic!("cannot convert to Status: {}", val)
     }
   }
 }
@@ -1058,19 +1058,19 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
-  ///
+  /// Retrieve the status of the model.
   pub fn status(&self) -> Result<Status> { self.get(attr::Status).map(|val| val.into()) }
 
-  ///
+  /// Retrieve an iterator of the variables in the model.
   pub fn get_vars(&self) -> Iter<Var> { self.vars.iter() }
 
-  ///
+  /// Retrieve an iterator of the linear constraints in the model.
   pub fn get_constrs(&self) -> Iter<Constr> { self.constrs.iter() }
 
-  ///
+  /// Retrieve an iterator of the quadratic constraints in the model.
   pub fn get_qconstrs(&self) -> Iter<QConstr> { self.qconstrs.iter() }
 
-  ///
+  /// Retrieve an iterator of the special order set (SOS) constraints in the model.
   pub fn get_sos(&self) -> Iter<SOS> { self.sos.iter() }
 
 

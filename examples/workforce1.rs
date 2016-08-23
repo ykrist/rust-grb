@@ -65,7 +65,7 @@ fn main() {
   model.optimize().unwrap();
 
   let status = model.status().unwrap();
-  if status == model::Status::Infeasible {
+  if status == Status::Infeasible {
     // compute IIS.
     model.compute_iis().unwrap();
     model.write("assignment.ilp").unwrap();

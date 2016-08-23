@@ -56,9 +56,9 @@
 extern crate gurobi_sys as ffi;
 extern crate itertools;
 
-pub mod error;
-pub mod env;
-pub mod model;
+mod error;
+mod env;
+mod model;
 mod util;
 mod types;
 

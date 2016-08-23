@@ -10,13 +10,13 @@ fn main() {
   let x2 = model.add_var("x2", Continuous(0.0, 2.0)).unwrap();
   model.update().unwrap();
 
-  model.set_objective(2.0 * x0 + 1.0 * x1 + 1.0 * x2, Minimize).unwrap();
+  model.set_objective(2.0 * &x0 + 1.0 * &x1 + 1.0 * &x2, Minimize).unwrap();
 
   // [x0 = 0] or [x1 = 0]
-  model.add_sos(&[x0, x1], &[1.0, 2.0], SOSType1).unwrap();
+  model.add_sos(&[x0.clone(), x1.clone()], &[1.0, 2.0], SOSType1).unwrap();
 
   // [x0 = 0] or [x2 = 0]
-  model.add_sos(&[x0, x2], &[1.0, 2.0], SOSType1).unwrap();
+  model.add_sos(&[x0.clone(), x2.clone()], &[1.0, 2.0], SOSType1).unwrap();
 
   model.optimize().unwrap();
 

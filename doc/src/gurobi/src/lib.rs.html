@@ -82,6 +82,48 @@
 <span id="38">38</span>
 <span id="39">39</span>
 <span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
 </pre><pre class='rust '>
 <span class='doccomment'>//! A crate which provides low-level Rust API of Gurobi Optimizer.</span>
 <span class='doccomment'>//!</span>
@@ -94,8 +136,49 @@
 <span class='doccomment'>//! The instruction can be found</span>
 <span class='doccomment'>//! [here](http://www.gurobi.com/downloads/licenses/license-center).</span>
 <span class='doccomment'>//!</span>
+<span class='doccomment'>//! Fix your `Cargo.toml` as follows:</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! ```toml</span>
+<span class='doccomment'>//! [dependencies]</span>
+<span class='doccomment'>//! gurobi = &quot;0.1.7&quot;</span>
+<span class='doccomment'>//! ```</span>
+<span class='doccomment'>//!</span>
 <span class='doccomment'>//! ## Examples</span>
-<span class='doccomment'>//! Work in progress...</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! ```</span>
+<span class='doccomment'>//! extern crate gurobi;</span>
+<span class='doccomment'>//! use gurobi::*;</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! fn main() {</span>
+<span class='doccomment'>//!   let env = Env::new(&quot;logfile.log&quot;).unwrap();</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!   // create an empty model which associated with `env`:</span>
+<span class='doccomment'>//!   let mut model = env.new_model(&quot;model1&quot;).unwrap();</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!   // add decision variables.</span>
+<span class='doccomment'>//!   let x = model.add_var(&quot;x&quot;, Binary).unwrap();</span>
+<span class='doccomment'>//!   let y = model.add_var(&quot;y&quot;, Continuous(-10.0, 10.0)).unwrap();</span>
+<span class='doccomment'>//!   let z = model.add_var(&quot;z&quot;, Continuous(-INFINITY, INFINITY)).unwrap();</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!   // integrate all the variables into the model.</span>
+<span class='doccomment'>//!   model.update().unwrap();</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!   // add a linear constraint</span>
+<span class='doccomment'>//!   model.add_constr(&quot;c0&quot;, &amp;x - &amp;y + 2.0 * &amp;z, Equal, 0.0).unwrap();</span>
+<span class='doccomment'>//!   // ...</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!   model.set_objective(&amp;x, Maximize).unwrap();</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!   // optimize the model. </span>
+<span class='doccomment'>//!   model.optimize().unwrap();</span>
+<span class='doccomment'>//!   assert_eq!(model.status().unwrap(), Status::Optimal);</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!   assert_eq!(model.get(attr::ObjVal).unwrap() , 0.0);</span>
+<span class='doccomment'>//!   </span>
+<span class='doccomment'>//!   let val = model.get_values(attr::X, &amp;[x, y, z]).unwrap();</span>
+<span class='doccomment'>//!   assert_eq!(val, [0.0, -10.0, -5.0]);</span>
+<span class='doccomment'>//! }</span>
+<span class='doccomment'>//! ```</span>
 
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>gurobi_sys</span> <span class='kw'>as</span> <span class='ident'>ffi</span>;
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>itertools</span>;
@@ -111,7 +194,8 @@
 
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>env</span>::{<span class='ident'>param</span>, <span class='ident'>Env</span>};
 
-<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>model</span>::{<span class='ident'>attr</span>, <span class='ident'>Model</span>, <span class='ident'>Proxy</span>, <span class='ident'>Var</span>, <span class='ident'>Constr</span>, <span class='ident'>QConstr</span>, <span class='ident'>SOS</span>, <span class='ident'>LinExpr</span>, <span class='ident'>QuadExpr</span>};
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>model</span>::{<span class='ident'>attr</span>, <span class='ident'>Model</span>, <span class='ident'>Var</span>, <span class='ident'>Constr</span>, <span class='ident'>QConstr</span>, <span class='ident'>SOS</span>, <span class='ident'>LinExpr</span>, <span class='ident'>QuadExpr</span>};
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>model</span>::{<span class='ident'>Proxy</span>, <span class='ident'>Status</span>, <span class='ident'>FeasType</span>};
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>model</span>::<span class='ident'>VarType</span>::<span class='op'>*</span>;
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>model</span>::<span class='ident'>ConstrSense</span>::<span class='op'>*</span>;
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>model</span>::<span class='ident'>ModelSense</span>::<span class='op'>*</span>;

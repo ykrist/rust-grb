@@ -4,9 +4,6 @@ use std;
 /// The error type for operations in Gurobi Rust API.
 #[derive(Debug)]
 pub enum Error {
-  /// This function has yet implemented
-  NotImplemented,
-
   /// An exception returned from Gurobi C API
   FromAPI(String, ffi::c_int),
 

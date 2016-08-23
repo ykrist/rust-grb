@@ -3,7 +3,6 @@ extern crate itertools;
 
 use std::iter::repeat;
 use gurobi::*;
-use gurobi::model::Status;
 use itertools::*;
 
 fn main() {

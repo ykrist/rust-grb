@@ -65,9 +65,6 @@
 <span id="21">21</span>
 <span id="22">22</span>
 <span id="23">23</span>
-<span id="24">24</span>
-<span id="25">25</span>
-<span id="26">26</span>
 </pre><pre class='rust '>
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>gurobi_sys</span> <span class='kw'>as</span> <span class='ident'>ffi</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>;
@@ -75,9 +72,6 @@
 <span class='doccomment'>/// The error type for operations in Gurobi Rust API.</span>
 <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Debug</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>enum</span> <span class='ident'>Error</span> {
-  <span class='doccomment'>/// This function has yet implemented</span>
-  <span class='ident'>NotImplemented</span>,
-
   <span class='doccomment'>/// An exception returned from Gurobi C API</span>
   <span class='ident'>FromAPI</span>(<span class='ident'>String</span>, <span class='ident'>ffi</span>::<span class='ident'>c_int</span>),
 

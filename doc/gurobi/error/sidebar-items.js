@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["Error","The error type for operations in Gurobi Rust API."]],"type":[["Result","A specialized `Result` type for operations in Gurobi Rust API."]]});

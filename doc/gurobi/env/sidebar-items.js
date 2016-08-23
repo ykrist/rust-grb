@@ -1,1 +1,0 @@
-initSidebarItems({"mod":[["param",""]],"struct":[["Env","Gurobi environment object"]],"trait":[["Param","provides function to query/set the value of parameters."]]});

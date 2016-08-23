@@ -1,19 +1,19 @@
 .PHONY: doc gh-pages publish
 
-doc:
-	cargo doc
-	rm -rf doc/*
-	cp -r target/doc/* ./doc/
+TAG	:= master
 
 gh-pages:
-	[[ ! -d gh-pages ]] && git clone https://github.com/ys-nuem/rust-gurobi.git -b gh-pages gh-pages || echo
-	cd gh-pages && git checkout -f gh-pages
-	cd gh-pages && git pull --ff
+	[[ -d gh-pages ]] && rm -rf gh-pages || echo
+	git clone https://github.com/ys-nuem/rust-gurobi.git -b gh-pages gh-pages
 
-publish: doc | gh-pages
-	rm -rf gh-pages/*
-	cp -r target/doc/* gh-pages
-	rm -f gh-pages/.lock
+doc:
+	cargo clean && cargo doc
+	mkdir -p gh-pages/$(TAG) || echo
+	rm -rf doc/$(TAG)/*
+	cp -r target/doc/* gh-pages/$(TAG)/
+	rm -f gh-pages/$(TAG)/.lock
+
+publish: gh-pages | doc
 	cd gh-pages && git add .
 	cd gh-pages && git commit --amend -m "update doc"
 	cd gh-pages && git push -f origin gh-pages

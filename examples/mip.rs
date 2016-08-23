@@ -12,9 +12,9 @@ fn main() {
 
   model.set_objective(&x + &y + 2.0 * &z, Maximize).unwrap();
 
-  let _ = model.add_constr("c0", &x + 2.0 * &y + 3.0 * &z, Less, 4.0).unwrap();
+  model.add_constr("c0", &x + 2.0 * &y + 3.0 * &z, Less, 4.0).unwrap();
 
-  let _ = model.add_constr("c1", &x + &y, Greater, 1.0).unwrap();
+  model.add_constr("c1", &x + &y, Greater, 1.0).unwrap();
 
   model.optimize().unwrap();
 
@@ -35,8 +35,8 @@ fn main() {
   model.write("mip.sol").unwrap();
 
   model.remove_var(y.clone()).unwrap();
-  assert_eq!(x.index(), 0);
-  assert_eq!(z.index(), 1);
 
+  assert_eq!(x.index(), 0);
   assert_eq!(y.index(), -1);
+  assert_eq!(z.index(), 1);
 }

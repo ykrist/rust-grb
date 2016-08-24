@@ -53,14 +53,12 @@ fn main() {
   model.update().unwrap();
 
   let objterm = pays.iter().map(|pay| repeat(pay).take(shifts.len()));
-
-  let objexpr = Zip::new((x.iter().flatten(), objterm.flatten())).fold(LinExpr::new(),
-                                                                       |expr, (ref x, &c)| expr.term((*x).clone(), c));
+  let objexpr = Zip::new((x.iter().flatten(), objterm.flatten())).fold(LinExpr::new(), |expr, (x, &c)| expr + c * x);
   model.set_objective(objexpr, Minimize).unwrap();
 
   for (s, (shift, &requirement)) in shifts.iter().zip(shift_requirements.iter()).enumerate() {
     model.add_constr(format!("c.{}", shift).as_str(),
-                  x.iter().map(|ref x| x[s].clone()).fold(LinExpr::new(), |expr, x| expr.term(x, 1.0)),
+                  x.iter().map(|ref x| &x[s]).fold(LinExpr::new(), |expr, x| expr + x),
                   Equal,
                   requirement)
       .unwrap();

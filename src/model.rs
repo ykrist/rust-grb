@@ -502,7 +502,8 @@ impl Proxy for SOS {
 
 
 
-/// represents a set of linear expressions of decision variables.
+/// A linear expression of Gurobi model which consists of a constant term
+/// plus a list of coefficients and variables.
 #[derive(Clone)]
 pub struct LinExpr {
   vars: Vec<Var>,
@@ -511,6 +512,7 @@ pub struct LinExpr {
 }
 
 impl LinExpr {
+  /// Create an empty linear expression.
   pub fn new() -> Self {
     LinExpr {
       vars: Vec::new(),
@@ -519,23 +521,25 @@ impl LinExpr {
     }
   }
 
-  pub fn term(mut self, v: Var, c: f64) -> Self {
-    self.vars.push(v);
-    self.coeff.push(c);
+  /// Add a linear term into the expression.
+  pub fn add_term(mut self, coeff: f64, var: Var) -> Self {
+    self.coeff.push(coeff);
+    self.vars.push(var);
     self
   }
 
-  pub fn offset(mut self, offset: f64) -> Self {
-    self.offset += offset;
+  /// Add a constant into the expression.
+  pub fn add_constant(mut self, constant: f64) -> Self {
+    self.offset += constant;
     self
   }
 
   /// Get actual value of the expression.
-  pub fn value(&self, model: &Model) -> Result<f64> { model.calc_value(self) }
+  pub fn get_value(&self, model: &Model) -> Result<f64> { model.calc_value(self) }
 }
 
 impl<'a> Into<QuadExpr> for &'a Var {
-  fn into(self) -> QuadExpr { QuadExpr::new().term(self.clone(), 1.0) }
+  fn into(self) -> QuadExpr { QuadExpr::new().add_term(1.0, self.clone()) }
 }
 
 impl Into<QuadExpr> for LinExpr {
@@ -552,7 +556,9 @@ impl Into<QuadExpr> for LinExpr {
 }
 
 
-/// represents a set of quadratic expressions of decision variables.
+/// A quadratic expression of Gurobi model which consists of a linear expression,
+/// and a set of variable-variable-coefficient triples to express the quadratic
+/// term.
 #[derive(Clone)]
 pub struct QuadExpr {
   lind: Vec<Var>,
@@ -575,43 +581,46 @@ impl QuadExpr {
     }
   }
 
-  pub fn term(mut self, var: Var, coeff: f64) -> Self {
+  /// Add a linear term into the expression.
+  pub fn add_term(mut self, coeff: f64, var: Var) -> Self {
     self.lind.push(var);
     self.lval.push(coeff);
     self
   }
 
-  pub fn qterm(mut self, row: Var, col: Var, coeff: f64) -> Self {
+  /// Add a quadratic term into the expression.
+  pub fn add_qterm(mut self, coeff: f64, row: Var, col: Var) -> Self {
+    self.qval.push(coeff);
     self.qrow.push(row);
     self.qcol.push(col);
-    self.qval.push(coeff);
     self
   }
 
-  pub fn offset(mut self, offset: f64) -> Self {
-    self.offset += offset;
+  /// Add a constant into the expression.
+  pub fn add_constant(mut self, constant: f64) -> Self {
+    self.offset += constant;
     self
   }
 
   /// Get actual value of the expression.
-  pub fn value(&self, model: &Model) -> Result<f64> { model.calc_value(self) }
+  pub fn get_value(&self, model: &Model) -> Result<f64> { model.calc_value(self) }
 }
 
 
 impl Mul<f64> for Var {
   type Output = LinExpr;
-  fn mul(self, rhs: f64) -> Self::Output { LinExpr::new().term(self, rhs) }
+  fn mul(self, rhs: f64) -> Self::Output { LinExpr::new().add_term(rhs, self) }
 }
 
 impl<'a> Mul<&'a Var> for f64 {
   type Output = LinExpr;
-  fn mul(self, rhs: &'a Var) -> Self::Output { LinExpr::new().term(rhs.clone(), self) }
+  fn mul(self, rhs: &'a Var) -> Self::Output { LinExpr::new().add_term(self, rhs.clone()) }
 }
 
 
 impl<'a> Mul for &'a Var {
   type Output = QuadExpr;
-  fn mul(self, rhs: &'a Var) -> Self::Output { QuadExpr::new().qterm(self.clone(), rhs.clone(), 1.0) }
+  fn mul(self, rhs: &'a Var) -> Self::Output { QuadExpr::new().add_qterm(1.0, self.clone(), rhs.clone()) }
 }
 
 impl Mul<f64> for QuadExpr {
@@ -631,12 +640,12 @@ impl Mul<f64> for QuadExpr {
 
 impl Add<f64> for LinExpr {
   type Output = LinExpr;
-  fn add(self, rhs: f64) -> Self::Output { self.offset(rhs) }
+  fn add(self, rhs: f64) -> Self::Output { self.add_constant(rhs) }
 }
 
 impl Sub<f64> for LinExpr {
   type Output = LinExpr;
-  fn sub(self, rhs: f64) -> Self::Output { self.offset(-rhs) }
+  fn sub(self, rhs: f64) -> Self::Output { self.add_constant(-rhs) }
 }
 
 
@@ -709,22 +718,22 @@ impl Sub for QuadExpr {
 
 impl<'a> Add for &'a Var {
   type Output = LinExpr;
-  fn add(self, rhs: &Var) -> LinExpr { LinExpr::new().term(self.clone(), 1.0).term(rhs.clone(), 1.0) }
+  fn add(self, rhs: &Var) -> LinExpr { LinExpr::new().add_term(1.0, self.clone()).add_term(1.0, rhs.clone()) }
 }
 
 impl<'a> Sub for &'a Var {
   type Output = LinExpr;
-  fn sub(self, rhs: &Var) -> LinExpr { LinExpr::new().term(self.clone(), 1.0).term(rhs.clone(), -1.0) }
+  fn sub(self, rhs: &Var) -> LinExpr { LinExpr::new().add_term(1.0, self.clone()).add_term(-1.0, rhs.clone()) }
 }
 
 impl<'a> Add<LinExpr> for &'a Var {
   type Output = LinExpr;
-  fn add(self, rhs: LinExpr) -> LinExpr { rhs.term(self.clone(), 1.0) }
+  fn add(self, rhs: LinExpr) -> LinExpr { rhs.add_term(1.0, self.clone()) }
 }
 
 impl<'a> Add<&'a Var> for LinExpr {
   type Output = LinExpr;
-  fn add(self, rhs: &'a Var) -> LinExpr { self.term(rhs.clone(), 1.0) }
+  fn add(self, rhs: &'a Var) -> LinExpr { self.add_term(1.0, rhs.clone()) }
 }
 
 

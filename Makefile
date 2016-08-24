@@ -7,7 +7,7 @@ gh-pages:
 	git clone https://github.com/ys-nuem/rust-gurobi.git -b gh-pages gh-pages
 
 doc:
-	cargo clean && cargo doc
+	cargo doc
 	mkdir -p gh-pages/$(TAG) || echo
 	rm -rf doc/$(TAG)/*
 	cp -r target/doc/* gh-pages/$(TAG)/

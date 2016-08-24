@@ -68,7 +68,7 @@ pub use error::{Error, Result};
 pub use env::{param, Env};
 
 pub use model::{attr, Model, Var, Constr, QConstr, SOS, LinExpr, QuadExpr};
-pub use model::{Proxy, Status, FeasType};
+pub use model::{Proxy, Status, RelaxType};
 pub use model::VarType::*;
 pub use model::ConstrSense::*;
 pub use model::ModelSense::*;

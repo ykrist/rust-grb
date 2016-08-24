@@ -758,19 +758,28 @@ impl<'a> Add<&'a Var> for LinExpr {
 
 
 
+/// The type of cost function at feasibility relaxation.
 #[derive(Debug)]
-pub enum FeasType {
+pub enum RelaxType {
+  /// The weighted magnitude of bounds and constraint violations
+  /// (`penalty(s_i) = w_i s_i`)
   Linear,
+
+  /// The weighted square of magnitude of bounds and constraint violations
+  /// (`penalty(s_i) = w_i s_i^2`)
   Quadratic,
+
+  /// The weighted count of bounds and constraint violations
+  /// (`penalty(s_i) = w_i * [s_i > 0]`)
   Cardinality
 }
 
-impl Into<i32> for FeasType {
+impl Into<i32> for RelaxType {
   fn into(self) -> i32 {
     match self {
-      FeasType::Linear => 0,
-      FeasType::Quadratic => 1,
-      FeasType::Cardinality => 2,
+      RelaxType::Linear => 0,
+      RelaxType::Quadratic => 1,
+      RelaxType::Cardinality => 2,
     }
   }
 }
@@ -991,8 +1000,26 @@ impl<'a> Model<'a> {
   }
 
   /// Modify the model to create a feasibility relaxation.
-  pub fn feas_relax(&mut self, feasobjtype: FeasType, minrelax: bool, vars: &[Var], constrs: &[Constr],
-                    lbpen: &[f64], ubpen: &[f64], rhspen: &[f64])
+  ///
+  /// If you don't want to modify the model, copy the model before invoking
+  /// this method (see also [`copy()`](#method.copy)).
+  ///
+  /// ## Arguments
+  /// * `relaxtype` : The type of cost function used when finding the minimum cost relaxation.
+  ///   See also [`RelaxType`](enum.RelaxType.html).
+  /// * `minrelax` : The type of feasibility relaxation to perform.
+  /// * `vars` : Variables whose bounds are allowed to be violated.
+  /// * `lbpen` / `ubpen` : Penalty for violating a variable lower/upper bound.
+  ///   `INFINITY` means that the bounds doesn't allow to be violated.
+  /// * `constrs` : Linear constraints that are allowed to be violated.
+  /// * `rhspen` : Penalty for violating a linear constraint.
+  ///   `INFINITY` means that the bounds doesn't allow to be violated.
+  ///
+  /// ## Returns
+  /// * The objective value for the relaxation performed (if `minrelax` is `true`).
+  /// * Slack variables for relaxation and linear/quadratic constraints related to theirs.
+  pub fn feas_relax(&mut self, relaxtype: RelaxType, minrelax: bool, vars: &[Var], lbpen: &[f64],
+                    ubpen: &[f64], constrs: &[Constr], rhspen: &[f64])
                     -> Result<(f64, Iter<Var>, Iter<Constr>, Iter<QConstr>)> {
     if vars.len() != lbpen.len() || vars.len() != ubpen.len() {
       return Err(Error::InconsitentDims);
@@ -1028,7 +1055,7 @@ impl<'a> Model<'a> {
     let mut feasobj = 0f64;
     let error = unsafe {
       ffi::GRBfeasrelax(self.model,
-                        feasobjtype.into(),
+                        relaxtype.into(),
                         minrelax,
                         pen_lb.as_ptr(),
                         pen_ub.as_ptr(),

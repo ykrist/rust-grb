@@ -3,16 +3,31 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-//! A crate which provides low-level Rust API of Gurobi Optimizer.
+//! This crate provides primitive Rust APIs for Gurobi Optimizer.
 //!
-//! This crate provides wrappers of the Gurobi solver which supports some
-//! types of mathematical programming problems (e.g. Linear programming; LP,
+//! It supports some types of mathematical programming problems (e.g. Linear programming; LP,
 //! Mixed Integer Linear Programming; MILP, and so on).
 //!
-//! ## Installation
-//! Before using this crate, you should install Gurobi and obtain a license.
-//! The instruction can be found
-//! [here](http://www.gurobi.com/downloads/licenses/license-center).
+//! ## Notices
+//!
+//! * Before using this crate, you should install Gurobi and obtain a license.
+//!   The instruction can be found
+//!   [here](http://www.gurobi.com/downloads/licenses/license-center).
+//!
+//! * Make sure that the environment variable `GUROBI_HOME` is set to the installation path of Gurobi
+//!   (like `C:\gurobi652\win64`, `/opt/gurobi652/linux64`).
+//!
+//! * On Windows, the toolchain should be MSVC ABI (it also requires Visual Studio or
+//!   Visual C++ Build Tools).
+//!   If you want to use GNU ABI with MinGW-w64/MSYS2 toolchain, you should create the import
+//!   library for Gurobi runtime DLL (e.g. `gurobi65.dll`) and put it into `GUROBI_HOME/lib`.
+//!   Procedure of creating import library is as follows:
+//!
+//!   ```shell-session
+//!   $ pacman -S mingw-w64-x86_64-tools-git
+//!   $ gendef - $(cygpath $GUROBI_HOME)/bin/gurobi65.dll > gurobi65.def
+//!   $ dlltool --dllname gurobi65.dll --def gurobi65.def --output-lib $(cygpath $GUROBI}HOME)/lib/libgurobi65.dll.a
+//!   ```
 //!
 //! ## Examples
 //!

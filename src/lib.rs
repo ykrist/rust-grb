@@ -61,12 +61,14 @@ mod util;
 
 // re-exports
 pub use env::{param, Env};
-pub use model::{attr, Model, Var, Constr, QConstr, SOS, LinExpr, QuadExpr};
-pub use model::{Proxy, Status, RelaxType};
+pub use model::{attr, Model, Var, Constr, QConstr, SOS, LinExpr, QuadExpr, Proxy};
+
+pub use model::{VarType, ConstrSense, ModelSense, SOSType, Status, RelaxType};
 pub use model::VarType::*;
 pub use model::ConstrSense::*;
 pub use model::ModelSense::*;
 pub use model::SOSType::*;
+pub use model::RelaxType::*;
 
 pub use error::{Error, Result};
 

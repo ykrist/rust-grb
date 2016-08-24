@@ -1,4 +1,9 @@
-extern crate gurobi_sys as ffi;
+// Copyright (c) 2016 Yusuke Sasaki
+//
+// This software is released under the MIT License.
+// See http://opensource.org/licenses/mit-license.php or <LICENSE>.
+
+use super::ffi;
 use std;
 
 /// The error type for operations in Gurobi Rust API.

@@ -1,3 +1,8 @@
+// Copyright (c) 2016 Yusuke Sasaki
+//
+// This software is released under the MIT License.
+// See http://opensource.org/licenses/mit-license.php or <LICENSE>.
+
 extern crate gurobi;
 extern crate itertools;
 
@@ -65,11 +70,9 @@ fn main() {
 
   model.write("assignment.lp").unwrap();
 
-
   model.optimize().unwrap();
 
   match model.status().unwrap() {
-
     Status::Infeasible => {
       let mut model = model.copy().unwrap();
       model.set(attr::ModelName, "assignment_relaxed".to_owned()).unwrap();
@@ -113,5 +116,4 @@ fn main() {
       println!("Optimization is stopped with status {:?}", status);
     }
   }
-
 }

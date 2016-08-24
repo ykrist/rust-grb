@@ -1,3 +1,8 @@
+// Copyright (c) 2016 Yusuke Sasaki
+//
+// This software is released under the MIT License.
+// See http://opensource.org/licenses/mit-license.php or <LICENSE>.
+
 use super::ffi;
 use super::itertools::{Itertools, Zip};
 
@@ -13,7 +18,6 @@ use std::slice::Iter;
 use env::Env;
 use error::{Error, Result};
 use util;
-use types;
 
 
 pub mod attr {
@@ -28,9 +32,9 @@ pub mod attr {
 /// provides function to query/set the value of scalar attribute.
 pub trait Attr: Into<CString> {
   type Out;
-  type Buf: types::Init + types::Into<Self::Out> + types::AsRawPtr<Self::RawGet>;
+  type Buf: util::Init + util::Into<Self::Out> + util::AsRawPtr<Self::RawGet>;
   type RawGet;
-  type RawSet: types::From<Self::Out>;
+  type RawSet: util::From<Self::Out>;
 
   unsafe fn get_attr(model: *mut ffi::GRBmodel, attrname: ffi::c_str, value: Self::RawGet) -> ffi::c_int;
 
@@ -38,21 +42,21 @@ pub trait Attr: Into<CString> {
 
 
   fn get(model: &Model, attr: Self) -> Result<Self::Out> {
-    let mut value: Self::Buf = types::Init::init();
+    let mut value: Self::Buf = util::Init::init();
 
     let error = unsafe {
-      use types::AsRawPtr;
+      use util::AsRawPtr;
       Self::get_attr(model.model, attr.into().as_ptr(), value.as_rawptr())
     };
     if error != 0 {
       return Err(model.error_from_api(error));
     }
 
-    Ok(types::Into::into(value))
+    Ok(util::Into::into(value))
   }
 
   fn set(model: &mut Model, attr: Self, value: Self::Out) -> Result<()> {
-    let error = unsafe { Self::set_attr(model.model, attr.into().as_ptr(), types::From::from(value)) };
+    let error = unsafe { Self::set_attr(model.model, attr.into().as_ptr(), util::From::from(value)) };
     if error != 0 {
       return Err(model.error_from_api(error));
     }
@@ -113,9 +117,9 @@ impl Attr for attr::StringAttr {
 /// provides function to query/set the value of vectorized attribute.
 pub trait AttrArray: Into<CString> {
   type Out: Clone;
-  type Buf: Clone + types::Init + types::Into<Self::Out> + types::AsRawPtr<Self::RawGet>;
+  type Buf: Clone + util::Init + util::Into<Self::Out> + util::AsRawPtr<Self::RawGet>;
   type RawGet;
-  type RawSet: types::From<Self::Out>;
+  type RawSet: util::From<Self::Out>;
 
   unsafe fn get_attrelement(model: *mut ffi::GRBmodel, attrname: ffi::c_str, element: ffi::c_int,
                             values: Self::RawGet)
@@ -133,10 +137,10 @@ pub trait AttrArray: Into<CString> {
                          -> ffi::c_int;
 
   fn get_element(model: &Model, attr: Self, element: i32) -> Result<Self::Out> {
-    let mut value: Self::Buf = types::Init::init();
+    let mut value: Self::Buf = util::Init::init();
 
     let error = unsafe {
-      use types::AsRawPtr;
+      use util::AsRawPtr;
       Self::get_attrelement(model.model,
                             attr.into().as_ptr(),
                             element,
@@ -146,7 +150,7 @@ pub trait AttrArray: Into<CString> {
       return Err(model.error_from_api(error));
     }
 
-    Ok(types::Into::into(value))
+    Ok(util::Into::into(value))
   }
 
   fn set_element(model: &mut Model, attr: Self, element: i32, value: Self::Out) -> Result<()> {
@@ -154,7 +158,7 @@ pub trait AttrArray: Into<CString> {
       Self::set_attrelement(model.model,
                             attr.into().as_ptr(),
                             element,
-                            types::From::from(value))
+                            util::From::from(value))
     };
     if error != 0 {
       return Err(model.error_from_api(error));
@@ -163,41 +167,8 @@ pub trait AttrArray: Into<CString> {
     Ok(())
   }
 
-  // fn get_array(model: &Model, attr: Self, first: usize, len: usize) -> Result<Vec<Self::Out>> {
-  //   let mut values: Vec<_> = iter::repeat(types::Init::init()).take(len).collect();
-  //   let error = unsafe {
-  //     Self::get_attrarray(model.model,
-  //                         attr.into().as_ptr(),
-  //                         first as ffi::c_int,
-  //                         len as ffi::c_int,
-  //                         values.as_mut_ptr())
-  //   };
-  //   if error != 0 {
-  //     return Err(model.error_from_api(error));
-  //   }
-  //
-  //   Ok(values.into_iter().map(|s| types::Into::into(s)).collect())
-  // }
-  //
-  // fn set_array(model: &mut Model, attr: Self, first: usize, values: &[Self::Out]) -> Result<()> {
-  //   let values = try!(Self::to_rawsets(values));
-  //
-  //   let error = unsafe {
-  //     Self::set_attrarray(model.model,
-  //                         attr.into().as_ptr(),
-  //                         first as ffi::c_int,
-  //                         values.len() as ffi::c_int,
-  //                         values.as_ptr())
-  //   };
-  //   if error != 0 {
-  //     return Err(model.error_from_api(error));
-  //   }
-  //
-  //   Ok(())
-  // }
-
   fn get_list(model: &Model, attr: Self, ind: &[i32]) -> Result<Vec<Self::Out>> {
-    let mut values: Vec<_> = iter::repeat(types::Init::init()).take(ind.len()).collect();
+    let mut values: Vec<_> = iter::repeat(util::Init::init()).take(ind.len()).collect();
 
     let error = unsafe {
       Self::get_attrlist(model.model,
@@ -210,7 +181,7 @@ pub trait AttrArray: Into<CString> {
       return Err(model.error_from_api(error));
     }
 
-    Ok(values.into_iter().map(|s| types::Into::into(s)).collect())
+    Ok(values.into_iter().map(|s| util::Into::into(s)).collect())
   }
 
   fn set_list(model: &mut Model, attr: Self, ind: &[i32], values: &[Self::Out]) -> Result<()> {
@@ -235,7 +206,7 @@ pub trait AttrArray: Into<CString> {
   }
 
   fn to_rawsets(values: &[Self::Out]) -> Result<Vec<Self::RawSet>> {
-    Ok(values.iter().map(|v| types::From::from(v.clone())).collect())
+    Ok(values.iter().map(|v| util::From::from(v.clone())).collect())
   }
 }
 
@@ -1018,8 +989,8 @@ impl<'a> Model<'a> {
   /// ## Returns
   /// * The objective value for the relaxation performed (if `minrelax` is `true`).
   /// * Slack variables for relaxation and linear/quadratic constraints related to theirs.
-  pub fn feas_relax(&mut self, relaxtype: RelaxType, minrelax: bool, vars: &[Var], lbpen: &[f64],
-                    ubpen: &[f64], constrs: &[Constr], rhspen: &[f64])
+  pub fn feas_relax(&mut self, relaxtype: RelaxType, minrelax: bool, vars: &[Var], lbpen: &[f64], ubpen: &[f64],
+                    constrs: &[Constr], rhspen: &[f64])
                     -> Result<(f64, Iter<Var>, Iter<Constr>, Iter<QConstr>)> {
     if vars.len() != lbpen.len() || vars.len() != ubpen.len() {
       return Err(Error::InconsitentDims);

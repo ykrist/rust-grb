@@ -1,11 +1,15 @@
-extern crate gurobi_sys as ffi;
+// Copyright (c) 2016 Yusuke Sasaki
+//
+// This software is released under the MIT License.
+// See http://opensource.org/licenses/mit-license.php or <LICENSE>.
+
+use super::ffi;
 
 use std::ptr::{null, null_mut};
 use std::ffi::CString;
 use error::{Error, Result};
 use model::Model;
 use util;
-use types;
 
 
 pub mod param {
@@ -77,25 +81,25 @@ impl Drop for Env {
 /// provides function to query/set the value of parameters.
 pub trait Param: Sized + Into<CString> {
   type Out;
-  type Buf: types::Init + types::Into<Self::Out> + types::AsRawPtr<Self::RawFrom>;
+  type Buf: util::Init + util::Into<Self::Out> + util::AsRawPtr<Self::RawFrom>;
   type RawFrom;
-  type RawTo: types::FromRaw<Self::Out>;
+  type RawTo: util::FromRaw<Self::Out>;
 
   #[allow(unused_imports)]
   fn get(env: &Env, param: Self) -> Result<Self::Out> {
-    use types::{AsRawPtr, Into};
+    use util::{AsRawPtr, Into};
 
-    let mut value: Self::Buf = types::Init::init();
+    let mut value: Self::Buf = util::Init::init();
     let error = unsafe { Self::get_param(env.env, param.into().as_ptr(), value.as_rawptr()) };
     if error != 0 {
       return Err(env.error_from_api(error));
     }
 
-    Ok(types::Into::into(value))
+    Ok(util::Into::into(value))
   }
 
   fn set(env: &mut Env, param: Self, value: Self::Out) -> Result<()> {
-    let error = unsafe { Self::set_param(env.env, param.into().as_ptr(), types::FromRaw::from(value)) };
+    let error = unsafe { Self::set_param(env.env, param.into().as_ptr(), util::FromRaw::from(value)) };
     if error != 0 {
       return Err(env.error_from_api(error));
     }

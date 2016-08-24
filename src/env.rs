@@ -12,6 +12,7 @@ use model::Model;
 use util;
 
 
+/// Defines the name of parameters
 pub mod param {
   pub use ffi::{IntParam, DoubleParam, StringParam};
 

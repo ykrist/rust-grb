@@ -72,8 +72,5 @@ pub use model::RelaxType::*;
 
 pub use error::{Error, Result};
 
-// constants
+/// Large number used in C API
 pub const INFINITY: f64 = 1e100;
-pub const UNDEFINED: f64 = 1e101;
-
-// vim: set foldmethod=syntax :

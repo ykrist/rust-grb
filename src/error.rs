@@ -6,7 +6,7 @@
 use super::ffi;
 use std;
 
-/// The error type for operations in Gurobi Rust API.
+/// The error type for operations in Gurobi Rust API
 #[derive(Debug)]
 pub enum Error {
   /// An exception returned from Gurobi C API
@@ -24,5 +24,5 @@ pub enum Error {
 
 /// A specialized
 /// [`Result`](https://doc.rust-lang.org/std/result/enum.Result.html)
-/// type for operations in Gurobi Rust API.
+/// type for operations in Gurobi Rust API
 pub type Result<T> = std::result::Result<T, Error>;

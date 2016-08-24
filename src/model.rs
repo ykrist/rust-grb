@@ -20,6 +20,7 @@ use error::{Error, Result};
 use util;
 
 
+/// Defines the name of attributes
 pub mod attr {
   pub use ffi::{IntAttr, DoubleAttr, CharAttr, StringAttr};
 
@@ -345,7 +346,7 @@ impl AttrArray for attr::StringAttr {
 } // }}}
 
 
-/// The type for new variable(s).
+/// Type for new variable
 #[derive(Debug,Clone,Copy)]
 pub enum VarType {
   Binary,
@@ -365,7 +366,7 @@ impl Into<(ffi::c_char, f64, f64)> for VarType {
 }
 
 
-///
+/// Sense for new linear/quadratic constraint
 #[derive(Debug,Copy,Clone)]
 pub enum ConstrSense {
   Equal,
@@ -384,7 +385,7 @@ impl Into<ffi::c_char> for ConstrSense {
 }
 
 
-///
+/// Sense of new objective function
 #[derive(Debug)]
 pub enum ModelSense {
   Minimize,
@@ -401,7 +402,7 @@ impl Into<i32> for ModelSense {
 }
 
 
-///
+/// Type of new SOS constraint
 #[derive(Debug)]
 pub enum SOSType {
   SOSType1,
@@ -418,7 +419,7 @@ impl Into<i32> for SOSType {
 }
 
 
-/// A set of values which represents the status of a model.
+/// Status of a model
 #[derive(Debug,PartialEq)]
 pub enum Status {
   Loaded = 1,
@@ -453,30 +454,31 @@ pub trait ProxyBase {
   fn set_index(&mut self, value: i32);
 }
 
+/// Provides methods to query/modify attributes associated with certain element.
 pub trait Proxy: ProxyBase {
+  /// Query the value of attribute.
   fn get<A: AttrArray>(&self, model: &Model, attr: A) -> Result<A::Out> { model.get_value(attr, self.index()) }
 
+  /// Set the value of attribute.
   fn set<A: AttrArray>(&mut self, model: &mut Model, attr: A, val: A::Out) -> Result<()> {
     model.set_value(attr, self.index(), val)
   }
 }
 
-impl<T: ProxyBase> Proxy for T {}
 
-
-/// represents a set of decision variables.
+/// Proxy object of a variables
 #[derive(Clone)]
 pub struct Var(Rc<Cell<i32>>);
 
-/// The proxy object of a set of linear constraints.
+/// Proxy object of a linear constraint
 #[derive(Clone)]
 pub struct Constr(Rc<Cell<i32>>);
 
-/// The proxy object of a set of quadratic constraints.
+/// Proxy object of a quadratic constraint
 #[derive(Clone)]
 pub struct QConstr(Rc<Cell<i32>>);
 
-/// The proxy object of a Special Order Set (SOS) constraint.
+/// Proxy object of a Special Order Set (SOS) constraint
 #[derive(Clone)]
 pub struct SOS(Rc<Cell<i32>>);
 
@@ -486,11 +488,15 @@ impl ProxyBase for Var {
   fn set_index(&mut self, value: i32) { self.0.set(value) }
 }
 
+impl Proxy for Var {}
+
 impl ProxyBase for Constr {
   fn new(idx: i32) -> Constr { Constr(Rc::new(Cell::new(idx))) }
   fn index(&self) -> i32 { self.0.get() }
   fn set_index(&mut self, value: i32) { self.0.set(value) }
 }
+
+impl Proxy for Constr {}
 
 impl ProxyBase for QConstr {
   fn new(idx: i32) -> QConstr { QConstr(Rc::new(Cell::new(idx))) }
@@ -498,18 +504,21 @@ impl ProxyBase for QConstr {
   fn set_index(&mut self, value: i32) { self.0.set(value) }
 }
 
+impl Proxy for QConstr {}
+
 impl ProxyBase for SOS {
   fn new(idx: i32) -> SOS { SOS(Rc::new(Cell::new(idx))) }
   fn index(&self) -> i32 { self.0.get() }
   fn set_index(&mut self, value: i32) { self.0.set(value) }
 }
 
+impl Proxy for SOS {}
 
 
 
-/// A linear expression of Gurobi model.
+/// Linear expression of variables
 ///
-/// It consists of a constant term plus a list of coefficients and variables.
+/// A linear expression consists of a constant term plus a list of coefficients and variables.
 #[derive(Clone)]
 pub struct LinExpr {
   vars: Vec<Var>,
@@ -562,9 +571,9 @@ impl Into<QuadExpr> for LinExpr {
 }
 
 
-/// A quadratic expression of Gurobi model.
+/// Quadratic expression of variables
 ///
-/// It consists of a linear expression, and a set of
+/// A quadratic expression consists of a linear expression and a set of
 /// variable-variable-coefficient triples to express the quadratic term.
 #[derive(Clone)]
 pub struct QuadExpr {
@@ -745,7 +754,7 @@ impl<'a> Add<&'a Var> for LinExpr {
 
 
 
-/// The type of cost function at feasibility relaxation.
+/// Type of cost function at feasibility relaxation
 #[derive(Debug)]
 pub enum RelaxType {
   /// The weighted magnitude of bounds and constraint violations
@@ -773,7 +782,7 @@ impl Into<i32> for RelaxType {
 
 
 
-/// A Gurobi model object associated with certain environment.
+/// Gurobi model object associated with certain environment.
 pub struct Model<'a> {
   model: *mut ffi::GRBmodel,
   env: &'a Env,
@@ -949,13 +958,16 @@ impl<'a> Model<'a> {
   /// Set the objective function of the model.
   pub fn set_objective<Expr: Into<QuadExpr>>(&mut self, expr: Expr, sense: ModelSense) -> Result<()> {
     let expr = expr.into();
-
     let lind = expr.lind.into_iter().map(|v| v.index()).collect_vec();
     let qrow = expr.qrow.into_iter().map(|v| v.index()).collect_vec();
     let qcol = expr.qcol.into_iter().map(|v| v.index()).collect_vec();
 
+    try!(self.del_qpterms());
+    try!(self.update());
+
     try!(AttrArray::set_list(self, attr::Obj, lind.as_slice(), expr.lval.as_slice()));
     try!(self.add_qpterms(qrow.as_slice(), qcol.as_slice(), expr.qval.as_slice()));
+
     self.set(attr::ModelSense, sense.into())
   }
 
@@ -1092,23 +1104,6 @@ impl<'a> Model<'a> {
   /// Retrieve an iterator of the special order set (SOS) constraints in the model.
   pub fn get_sos(&self) -> Iter<SOS> { self.sos.iter() }
 
-
-  /// add quadratic terms of objective function.
-  fn add_qpterms(&mut self, qrow: &[i32], qcol: &[i32], qval: &[f64]) -> Result<()> {
-    let error = unsafe {
-      ffi::GRBaddqpterms(self.model,
-                         qrow.len() as ffi::c_int,
-                         qrow.as_ptr(),
-                         qcol.as_ptr(),
-                         qval.as_ptr())
-    };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-
-    Ok(())
-  }
-
   /// Remove a variable from the model.
   pub fn remove_var(&mut self, mut item: Var) -> Result<()> {
     let index = item.index();
@@ -1206,7 +1201,33 @@ impl<'a> Model<'a> {
   }
 
 
-  /// calculates the actual value of linear/quadratic expression.
+  // add quadratic terms of objective function.
+  fn add_qpterms(&mut self, qrow: &[i32], qcol: &[i32], qval: &[f64]) -> Result<()> {
+    let error = unsafe {
+      ffi::GRBaddqpterms(self.model,
+                         qrow.len() as ffi::c_int,
+                         qrow.as_ptr(),
+                         qcol.as_ptr(),
+                         qval.as_ptr())
+    };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    Ok(())
+  }
+
+  // remove quadratic terms of objective function.
+  fn del_qpterms(&mut self) -> Result<()> {
+    let error = unsafe { ffi::GRBdelq(self.model) };
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+
+    Ok(())
+  }
+
+  // calculates the actual value of linear/quadratic expression.
   fn calc_value<E: Into<QuadExpr> + Clone>(&self, expr: &E) -> Result<f64> {
     let expr: QuadExpr = (*expr).clone().into();
 
@@ -1231,7 +1252,7 @@ impl<'a> Drop for Model<'a> {
 
 #[test]
 fn test_proxy() {
-use super::*;
+  use super::*;
 
   let mut env = Env::new("").unwrap();
   env.set(param::OutputFlag, 0).unwrap();

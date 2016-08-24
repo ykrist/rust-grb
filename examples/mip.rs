@@ -38,10 +38,4 @@ fn main() {
 
   model.write("mip.lp").unwrap();
   model.write("mip.sol").unwrap();
-
-  model.remove_var(y.clone()).unwrap();
-
-  assert_eq!(x.index(), 0);
-  assert_eq!(y.index(), -1);
-  assert_eq!(z.index(), 1);
 }

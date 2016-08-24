@@ -447,17 +447,22 @@ impl From<i32> for Status {
 }
 
 
-pub trait Proxy {
+pub trait ProxyBase {
   fn new(i32) -> Self;
   fn index(&self) -> i32;
   fn set_index(&mut self, value: i32);
+}
 
+pub trait Proxy: ProxyBase {
   fn get<A: AttrArray>(&self, model: &Model, attr: A) -> Result<A::Out> { model.get_value(attr, self.index()) }
 
   fn set<A: AttrArray>(&mut self, model: &mut Model, attr: A, val: A::Out) -> Result<()> {
     model.set_value(attr, self.index(), val)
   }
 }
+
+impl<T: ProxyBase> Proxy for T {}
+
 
 /// represents a set of decision variables.
 #[derive(Clone)]
@@ -475,25 +480,25 @@ pub struct QConstr(Rc<Cell<i32>>);
 #[derive(Clone)]
 pub struct SOS(Rc<Cell<i32>>);
 
-impl Proxy for Var {
+impl ProxyBase for Var {
   fn new(idx: i32) -> Var { Var(Rc::new(Cell::new(idx))) }
   fn index(&self) -> i32 { self.0.get() }
   fn set_index(&mut self, value: i32) { self.0.set(value) }
 }
 
-impl Proxy for Constr {
+impl ProxyBase for Constr {
   fn new(idx: i32) -> Constr { Constr(Rc::new(Cell::new(idx))) }
   fn index(&self) -> i32 { self.0.get() }
   fn set_index(&mut self, value: i32) { self.0.set(value) }
 }
 
-impl Proxy for QConstr {
+impl ProxyBase for QConstr {
   fn new(idx: i32) -> QConstr { QConstr(Rc::new(Cell::new(idx))) }
   fn index(&self) -> i32 { self.0.get() }
   fn set_index(&mut self, value: i32) { self.0.set(value) }
 }
 
-impl Proxy for SOS {
+impl ProxyBase for SOS {
   fn new(idx: i32) -> SOS { SOS(Rc::new(Cell::new(idx))) }
   fn index(&self) -> i32 { self.0.get() }
   fn set_index(&mut self, value: i32) { self.0.set(value) }
@@ -1222,4 +1227,24 @@ impl<'a> Drop for Model<'a> {
     unsafe { ffi::GRBfreemodel(self.model) };
     self.model = null_mut();
   }
+}
+
+#[test]
+fn test_proxy() {
+use super::*;
+
+  let mut env = Env::new("").unwrap();
+  env.set(param::OutputFlag, 0).unwrap();
+
+  let mut model = env.new_model("hoge").unwrap();
+  let x = model.add_var("x", Binary).unwrap();
+  let y = model.add_var("y", Binary).unwrap();
+  let z = model.add_var("z", Binary).unwrap();
+  model.update().unwrap();
+
+  model.remove_var(y.clone()).unwrap();
+
+  assert_eq!(x.index(), 0);
+  assert_eq!(y.index(), -1);
+  assert_eq!(z.index(), 1);
 }

@@ -3,7 +3,7 @@
 TAG	:= master
 
 gh-pages:
-	[[ -d gh-pages ]] && rm -rf gh-pages || echo
+	[[ -d gh-pages ]] && rm -rf gh-pages/* gh-pages/.[^.] gh-pages/.??* || echo
 	git clone https://github.com/ys-nuem/rust-gurobi.git -b gh-pages gh-pages
 
 doc:

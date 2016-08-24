@@ -502,8 +502,9 @@ impl Proxy for SOS {
 
 
 
-/// A linear expression of Gurobi model which consists of a constant term
-/// plus a list of coefficients and variables.
+/// A linear expression of Gurobi model.
+///
+/// It consists of a constant term plus a list of coefficients and variables.
 #[derive(Clone)]
 pub struct LinExpr {
   vars: Vec<Var>,
@@ -556,9 +557,10 @@ impl Into<QuadExpr> for LinExpr {
 }
 
 
-/// A quadratic expression of Gurobi model which consists of a linear expression,
-/// and a set of variable-variable-coefficient triples to express the quadratic
-/// term.
+/// A quadratic expression of Gurobi model.
+///
+/// It consists of a linear expression, and a set of
+/// variable-variable-coefficient triples to express the quadratic term.
 #[derive(Clone)]
 pub struct QuadExpr {
   lind: Vec<Var>,

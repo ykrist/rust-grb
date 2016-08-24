@@ -15,5 +15,5 @@ doc:
 
 publish: gh-pages | doc
 	cd gh-pages && git add .
-	cd gh-pages && git commit --amend -m "update doc"
+	cd gh-pages && git commit -m "update doc (tag: $(TAG))"
 	cd gh-pages && git push -f origin gh-pages

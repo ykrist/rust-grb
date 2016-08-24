@@ -45,24 +45,16 @@ pub trait Attr: Into<CString> {
   fn get(model: &Model, attr: Self) -> Result<Self::Out> {
     let mut value: Self::Buf = util::Init::init();
 
-    let error = unsafe {
+    try!(model.call_api(unsafe {
       use util::AsRawPtr;
       Self::get_attr(model.model, attr.into().as_ptr(), value.as_rawptr())
-    };
-    if error != 0 {
-      return Err(model.error_from_api(error));
-    }
+    }));
 
     Ok(util::Into::into(value))
   }
 
   fn set(model: &mut Model, attr: Self, value: Self::Out) -> Result<()> {
-    let error = unsafe { Self::set_attr(model.model, attr.into().as_ptr(), util::From::from(value)) };
-    if error != 0 {
-      return Err(model.error_from_api(error));
-    }
-
-    Ok(())
+    model.call_api(unsafe { Self::set_attr(model.model, attr.into().as_ptr(), util::From::from(value)) })
   }
 }
 
@@ -140,47 +132,36 @@ pub trait AttrArray: Into<CString> {
   fn get_element(model: &Model, attr: Self, element: i32) -> Result<Self::Out> {
     let mut value: Self::Buf = util::Init::init();
 
-    let error = unsafe {
+    try!(model.call_api(unsafe {
       use util::AsRawPtr;
       Self::get_attrelement(model.model,
                             attr.into().as_ptr(),
                             element,
                             value.as_rawptr())
-    };
-    if error != 0 {
-      return Err(model.error_from_api(error));
-    }
+    }));
 
     Ok(util::Into::into(value))
   }
 
   fn set_element(model: &mut Model, attr: Self, element: i32, value: Self::Out) -> Result<()> {
-    let error = unsafe {
+    model.call_api(unsafe {
       Self::set_attrelement(model.model,
                             attr.into().as_ptr(),
                             element,
                             util::From::from(value))
-    };
-    if error != 0 {
-      return Err(model.error_from_api(error));
-    }
-
-    Ok(())
+    })
   }
 
   fn get_list(model: &Model, attr: Self, ind: &[i32]) -> Result<Vec<Self::Out>> {
     let mut values: Vec<_> = iter::repeat(util::Init::init()).take(ind.len()).collect();
 
-    let error = unsafe {
+    try!(model.call_api(unsafe {
       Self::get_attrlist(model.model,
                          attr.into().as_ptr(),
                          ind.len() as ffi::c_int,
                          ind.as_ptr(),
                          values.as_mut_ptr())
-    };
-    if error != 0 {
-      return Err(model.error_from_api(error));
-    }
+    }));
 
     Ok(values.into_iter().map(|s| util::Into::into(s)).collect())
   }
@@ -192,18 +173,13 @@ pub trait AttrArray: Into<CString> {
 
     let values = try!(Self::to_rawsets(values));
 
-    let error = unsafe {
+    model.call_api(unsafe {
       Self::set_attrlist(model.model,
                          attr.into().as_ptr(),
                          ind.len() as ffi::c_int,
                          ind.as_ptr(),
                          values.as_ptr())
-    };
-    if error != 0 {
-      return Err(model.error_from_api(error));
-    }
-
-    Ok(())
+    })
   }
 
   fn to_rawsets(values: &[Self::Out]) -> Result<Vec<Self::RawSet>> {
@@ -806,13 +782,7 @@ impl<'a> Model<'a> {
   }
 
   /// apply all modification of the model to process.
-  pub fn update(&mut self) -> Result<()> {
-    let error = unsafe { ffi::GRBupdatemodel(self.model) };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-    Ok(())
-  }
+  pub fn update(&mut self) -> Result<()> { self.call_api(unsafe { ffi::GRBupdatemodel(self.model) }) }
 
   /// create a copy of the model
   pub fn copy(&self) -> Result<Model> {
@@ -833,23 +803,13 @@ impl<'a> Model<'a> {
   /// optimize the model.
   pub fn optimize(&mut self) -> Result<()> {
     try!(self.update());
-
-    let error = unsafe { ffi::GRBoptimize(self.model) };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-
-    Ok(())
+    self.call_api(unsafe { ffi::GRBoptimize(self.model) })
   }
 
   /// write information of the model to file.
   pub fn write(&self, filename: &str) -> Result<()> {
     let filename = try!(util::make_c_str(filename));
-    let error = unsafe { ffi::GRBwrite(self.model, filename.as_ptr()) };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-    Ok(())
+    self.call_api(unsafe { ffi::GRBwrite(self.model, filename.as_ptr()) })
   }
 
   /// add a decision variable to the model.
@@ -858,7 +818,7 @@ impl<'a> Model<'a> {
     let (vtype, lb, ub) = vtype.into();
     let name = try!(util::make_c_str(name));
 
-    let error = unsafe {
+    try!(self.call_api(unsafe {
       ffi::GRBaddvar(self.model,
                      0,
                      null(),
@@ -868,10 +828,7 @@ impl<'a> Model<'a> {
                      ub,
                      vtype,
                      name.as_ptr())
-    };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
+    }));
 
     let col_no = self.vars.len() as i32;
     self.vars.push(Var::new(col_no));
@@ -882,7 +839,7 @@ impl<'a> Model<'a> {
   /// add a linear constraint to the model.
   pub fn add_constr(&mut self, name: &str, expr: LinExpr, sense: ConstrSense, rhs: f64) -> Result<Constr> {
     let constrname = try!(util::make_c_str(name));
-    let error = unsafe {
+    try!(self.call_api(unsafe {
       ffi::GRBaddconstr(self.model,
                         expr.coeff.len() as ffi::c_int,
                         expr.vars.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
@@ -890,10 +847,8 @@ impl<'a> Model<'a> {
                         sense.into(),
                         rhs - expr.offset,
                         constrname.as_ptr())
-    };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
+    }));
+
     let row_no = self.constrs.len() as i32;
     self.constrs.push(Constr::new(row_no));
 
@@ -904,7 +859,7 @@ impl<'a> Model<'a> {
   pub fn add_qconstr(&mut self, constrname: &str, expr: QuadExpr, sense: ConstrSense, rhs: f64) -> Result<QConstr> {
     let constrname = try!(util::make_c_str(constrname));
 
-    let error = unsafe {
+    try!(self.call_api(unsafe {
       ffi::GRBaddqconstr(self.model,
                          expr.lval.len() as ffi::c_int,
                          expr.lind.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
@@ -916,10 +871,7 @@ impl<'a> Model<'a> {
                          sense.into(),
                          rhs,
                          constrname.as_ptr())
-    };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
+    }));
 
     let qrow_no = self.qconstrs.len() as i32;
     self.qconstrs.push(QConstr::new(qrow_no));
@@ -936,7 +888,7 @@ impl<'a> Model<'a> {
     let vars = vars.iter().map(|v| v.index()).collect_vec();
     let beg = 0;
 
-    let error = unsafe {
+    try!(self.call_api(unsafe {
       ffi::GRBaddsos(self.model,
                      1,
                      vars.len() as ffi::c_int,
@@ -944,10 +896,7 @@ impl<'a> Model<'a> {
                      &beg,
                      vars.as_ptr(),
                      weights.as_ptr())
-    };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
+    }));
 
     let sos_no = self.sos.len() as i32;
     self.sos.push(SOS::new(sos_no));
@@ -1052,7 +1001,7 @@ impl<'a> Model<'a> {
     let minrelax = if minrelax { 1 } else { 0 };
 
     let mut feasobj = 0f64;
-    let error = unsafe {
+    try!(self.call_api(unsafe {
       ffi::GRBfeasrelax(self.model,
                         relaxtype.into(),
                         minrelax,
@@ -1060,10 +1009,7 @@ impl<'a> Model<'a> {
                         pen_ub.as_ptr(),
                         pen_rhs.as_ptr(),
                         &mut feasobj)
-    };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
+    }));
 
     let cols = try!(self.get(attr::NumVars)) as usize;
     let rows = try!(self.get(attr::NumConstrs)) as usize;
@@ -1081,13 +1027,7 @@ impl<'a> Model<'a> {
   }
 
   /// Compute an Irreducible Inconsistent Subsystem (IIS) of the model.
-  pub fn compute_iis(&mut self) -> Result<()> {
-    let error = unsafe { ffi::GRBcomputeIIS(self.model) };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-    Ok(())
-  }
+  pub fn compute_iis(&mut self) -> Result<()> { self.call_api(unsafe { ffi::GRBcomputeIIS(self.model) }) }
 
   /// Retrieve the status of the model.
   pub fn status(&self) -> Result<Status> { self.get(attr::Status).map(|val| val.into()) }
@@ -1112,10 +1052,7 @@ impl<'a> Model<'a> {
     }
 
     if index != -1 {
-      let error = unsafe { ffi::GRBdelvars(self.model, 1, &index) };
-      if error != 0 {
-        return Err(self.error_from_api(error));
-      }
+      try!(self.call_api(unsafe { ffi::GRBdelvars(self.model, 1, &index) }));
 
       self.vars.remove(index as usize);
       item.set_index(-1);
@@ -1136,10 +1073,7 @@ impl<'a> Model<'a> {
     }
 
     if index != -1 {
-      let error = unsafe { ffi::GRBdelconstrs(self.model, 1, &index) };
-      if error != 0 {
-        return Err(self.error_from_api(error));
-      }
+      try!(self.call_api(unsafe { ffi::GRBdelconstrs(self.model, 1, &index) }));
 
       self.constrs.remove(index as usize);
       item.set_index(-1);
@@ -1160,10 +1094,7 @@ impl<'a> Model<'a> {
     }
 
     if index != -1 {
-      let error = unsafe { ffi::GRBdelqconstrs(self.model, 1, &index) };
-      if error != 0 {
-        return Err(self.error_from_api(error));
-      }
+      try!(self.call_api(unsafe { ffi::GRBdelqconstrs(self.model, 1, &index) }));
 
       self.qconstrs.remove(index as usize);
       item.set_index(-1);
@@ -1184,10 +1115,7 @@ impl<'a> Model<'a> {
     }
 
     if index != -1 {
-      let error = unsafe { ffi::GRBdelsos(self.model, 1, &index) };
-      if error != 0 {
-        return Err(self.error_from_api(error));
-      }
+      try!(self.call_api(unsafe { ffi::GRBdelsos(self.model, 1, &index) }));
 
       self.sos.remove(index as usize);
       item.set_index(-1);
@@ -1203,29 +1131,17 @@ impl<'a> Model<'a> {
 
   // add quadratic terms of objective function.
   fn add_qpterms(&mut self, qrow: &[i32], qcol: &[i32], qval: &[f64]) -> Result<()> {
-    let error = unsafe {
+    self.call_api(unsafe {
       ffi::GRBaddqpterms(self.model,
                          qrow.len() as ffi::c_int,
                          qrow.as_ptr(),
                          qcol.as_ptr(),
                          qval.as_ptr())
-    };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-
-    Ok(())
+    })
   }
 
   // remove quadratic terms of objective function.
-  fn del_qpterms(&mut self) -> Result<()> {
-    let error = unsafe { ffi::GRBdelq(self.model) };
-    if error != 0 {
-      return Err(self.error_from_api(error));
-    }
-
-    Ok(())
-  }
+  fn del_qpterms(&mut self) -> Result<()> { self.call_api(unsafe { ffi::GRBdelq(self.model) }) }
 
   // calculates the actual value of linear/quadratic expression.
   fn calc_value<E: Into<QuadExpr> + Clone>(&self, expr: &E) -> Result<f64> {
@@ -1237,6 +1153,13 @@ impl<'a> Model<'a> {
 
     Ok(Zip::new((lind, expr.lval)).fold(0.0, |acc, (ind, val)| acc + ind * val) +
        Zip::new((qrow, qcol, expr.qval)).fold(0.0, |acc, (row, col, val)| acc + row * col * val) + expr.offset)
+  }
+
+  fn call_api(&self, error: ffi::c_int) -> Result<()> {
+    if error != 0 {
+      return Err(self.error_from_api(error));
+    }
+    Ok(())
   }
 
   fn error_from_api(&self, errcode: ffi::c_int) -> Error { self.env.error_from_api(errcode) }
@@ -1251,19 +1174,21 @@ impl<'a> Drop for Model<'a> {
 }
 
 #[test]
-fn test_proxy() {
+fn removing_variable_should_be_successed() {
   use super::*;
-
   let mut env = Env::new("").unwrap();
   env.set(param::OutputFlag, 0).unwrap();
-
   let mut model = env.new_model("hoge").unwrap();
+
   let x = model.add_var("x", Binary).unwrap();
   let y = model.add_var("y", Binary).unwrap();
   let z = model.add_var("z", Binary).unwrap();
   model.update().unwrap();
 
   model.remove_var(y.clone()).unwrap();
+  model.update().unwrap();
+
+  assert_eq!(model.get(attr::NumVars).unwrap(), 2);
 
   assert_eq!(x.index(), 0);
   assert_eq!(y.index(), -1);

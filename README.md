@@ -4,10 +4,10 @@
 
 An unofficial Rust API for Gurobi optimizer.
 
-* [Documentation](https://ys-nuem.github.io/rust-gurobi/doc/gurobi/)
+* Documentation - [master](https://ys-nuem.github.io/rust-gurobi/master/gurobi/index.html) / [0.2.0 (latest)](https://ys-nuem.github.io/rust-gurobi/v0.2.0/gurobi/index.html)
 
 
-**Notices**
+## Notices
 
 * This wrapper library is not officially supported by Gurobi.
 * Too many works have not finished yet.

@@ -227,7 +227,11 @@ impl LinExpr {
   }
 
   /// Get actual value of the expression.
-  pub fn get_value(&self, model: &Model) -> Result<f64> { model.calc_value(self) }
+  pub fn get_value(&self, model: &Model) -> Result<f64> {
+    let vars = try!(model.get_values(attr::X, self.vars.as_slice()));
+
+    Ok(Zip::new((vars, self.coeff.iter())).fold(0.0, |acc, (ind, val)| acc + ind * val) + self.offset)
+  }
 }
 
 impl<'a> Into<QuadExpr> for &'a Var {
@@ -296,7 +300,15 @@ impl QuadExpr {
   }
 
   /// Get actual value of the expression.
-  pub fn get_value(&self, model: &Model) -> Result<f64> { model.calc_value(self) }
+  pub fn get_value(&self, model: &Model) -> Result<f64> {
+    let lind = try!(model.get_values(attr::X, self.lind.as_slice()));
+    let qrow = try!(model.get_values(attr::X, self.qrow.as_slice()));
+    let qcol = try!(model.get_values(attr::X, self.qcol.as_slice()));
+
+    Ok(Zip::new((lind, self.lval.iter())).fold(0.0, |acc, (ind, val)| acc + ind * val) +
+       Zip::new((qrow, qcol, self.qval.iter())).fold(0.0, |acc, (row, col, val)| acc + row * col * val) +
+       self.offset)
+  }
 }
 
 
@@ -898,18 +910,6 @@ impl<'a> Model<'a> {
 
   // remove quadratic terms of objective function.
   fn del_qpterms(&mut self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBdelq(self.model) }) }
-
-  // calculates the actual value of linear/quadratic expression.
-  fn calc_value<E: Into<QuadExpr> + Clone>(&self, expr: &E) -> Result<f64> {
-    let expr: QuadExpr = (*expr).clone().into();
-
-    let lind = try!(self.get_values(attr::X, expr.lind.as_slice()));
-    let qrow = try!(self.get_values(attr::X, expr.qrow.as_slice()));
-    let qcol = try!(self.get_values(attr::X, expr.qcol.as_slice()));
-
-    Ok(Zip::new((lind, expr.lval)).fold(0.0, |acc, (ind, val)| acc + ind * val) +
-       Zip::new((qrow, qcol, expr.qval)).fold(0.0, |acc, (row, col, val)| acc + row * col * val) + expr.offset)
-  }
 
   fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
     if error != 0 {

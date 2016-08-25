@@ -3,17 +3,15 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-//! Defines the name of attributes
-
-pub use ffi::{IntAttr, DoubleAttr, CharAttr, StringAttr};
-
-pub mod values {
-  pub use super::IntAttr::*;
-  pub use super::DoubleAttr::*;
-  pub use super::CharAttr::*;
-  pub use super::StringAttr::*;
+/// Defines the name of attributes
+pub mod exports {
+  pub use ffi::{IntAttr, DoubleAttr, CharAttr, StringAttr};
+  pub use self::IntAttr::*;
+  pub use self::DoubleAttr::*;
+  pub use self::CharAttr::*;
+  pub use self::StringAttr::*;
 }
-
+use self::exports::*;
 
 use super::ffi;
 use std::ffi::CString;

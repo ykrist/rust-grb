@@ -71,12 +71,15 @@ extern crate itertools;
 
 mod attrib;
 mod env;
-mod model;
 mod error;
+mod model;
+mod parameter;
 mod util;
 
 // re-exports
-pub use env::{param, Env};
+pub use error::{Error, Result};
+
+pub use env::Env;
 pub use model::{Model, Var, Constr, QConstr, SOS, LinExpr, QuadExpr, Proxy};
 
 pub use model::{VarType, ConstrSense, ModelSense, SOSType, Status, RelaxType};
@@ -86,9 +89,8 @@ pub use model::ModelSense::*;
 pub use model::SOSType::*;
 pub use model::RelaxType::*;
 
-pub use error::{Error, Result};
-
-pub use attrib::values as attr;
+pub use parameter::exports as param;
+pub use attrib::exports as attr;
 
 
 /// Large number used in C API

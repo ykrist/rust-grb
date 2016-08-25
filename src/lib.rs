@@ -69,6 +69,7 @@
 extern crate gurobi_sys as ffi;
 extern crate itertools;
 
+mod attrib;
 mod env;
 mod model;
 mod error;
@@ -76,7 +77,7 @@ mod util;
 
 // re-exports
 pub use env::{param, Env};
-pub use model::{attr, Model, Var, Constr, QConstr, SOS, LinExpr, QuadExpr, Proxy};
+pub use model::{Model, Var, Constr, QConstr, SOS, LinExpr, QuadExpr, Proxy};
 
 pub use model::{VarType, ConstrSense, ModelSense, SOSType, Status, RelaxType};
 pub use model::VarType::*;
@@ -86,6 +87,9 @@ pub use model::SOSType::*;
 pub use model::RelaxType::*;
 
 pub use error::{Error, Result};
+
+pub use attrib::values as attr;
+
 
 /// Large number used in C API
 pub const INFINITY: f64 = 1e100;

@@ -14,11 +14,11 @@ use std::rc::Rc;
 use std::cell::Cell;
 use std::slice::Iter;
 
+use attrib as attr;
 use env::Env;
 use error::{Error, Result};
 use util;
 
-pub mod attr;
 
 
 /// Type for new variable
@@ -228,7 +228,7 @@ impl LinExpr {
 
   /// Get actual value of the expression.
   pub fn get_value(&self, model: &Model) -> Result<f64> {
-    let vars = try!(model.get_values(attr::X, self.vars.as_slice()));
+    let vars = try!(model.get_values(attr::DoubleAttr::X, self.vars.as_slice()));
 
     Ok(Zip::new((vars, self.coeff.iter())).fold(0.0, |acc, (ind, val)| acc + ind * val) + self.offset)
   }
@@ -301,9 +301,9 @@ impl QuadExpr {
 
   /// Get actual value of the expression.
   pub fn get_value(&self, model: &Model) -> Result<f64> {
-    let lind = try!(model.get_values(attr::X, self.lind.as_slice()));
-    let qrow = try!(model.get_values(attr::X, self.qrow.as_slice()));
-    let qcol = try!(model.get_values(attr::X, self.qcol.as_slice()));
+    let lind = try!(model.get_values(attr::DoubleAttr::X, self.lind.as_slice()));
+    let qrow = try!(model.get_values(attr::DoubleAttr::X, self.qrow.as_slice()));
+    let qcol = try!(model.get_values(attr::DoubleAttr::X, self.qcol.as_slice()));
 
     Ok(Zip::new((lind, self.lval.iter())).fold(0.0, |acc, (ind, val)| acc + ind * val) +
        Zip::new((qrow, qcol, self.qval.iter())).fold(0.0, |acc, (row, col, val)| acc + row * col * val) +
@@ -627,10 +627,10 @@ impl<'a> Model<'a> {
     try!(self.del_qpterms());
     try!(self.update());
 
-    try!(self.set_list(attr::Obj, lind.as_slice(), expr.lval.as_slice()));
+    try!(self.set_list(attr::DoubleAttr::Obj, lind.as_slice(), expr.lval.as_slice()));
     try!(self.add_qpterms(qrow.as_slice(), qcol.as_slice(), expr.qval.as_slice()));
 
-    self.set(attr::ModelSense, sense.into())
+    self.set(attr::IntAttr::ModelSense, sense.into())
   }
 
   /// Query the value of attributes which associated with variable/constraints.
@@ -779,9 +779,9 @@ impl<'a> Model<'a> {
                         &mut feasobj)
     }));
 
-    let cols = try!(self.get(attr::NumVars)) as usize;
-    let rows = try!(self.get(attr::NumConstrs)) as usize;
-    let qrows = try!(self.get(attr::NumQConstrs)) as usize;
+    let cols = try!(self.get(attr::IntAttr::NumVars)) as usize;
+    let rows = try!(self.get(attr::IntAttr::NumConstrs)) as usize;
+    let qrows = try!(self.get(attr::IntAttr::NumQConstrs)) as usize;
 
     let xcols = self.vars.len();
     let xrows = self.constrs.len();
@@ -798,7 +798,7 @@ impl<'a> Model<'a> {
   pub fn compute_iis(&mut self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBcomputeIIS(self.model) }) }
 
   /// Retrieve the status of the model.
-  pub fn status(&self) -> Result<Status> { self.get(attr::Status).map(|val| val.into()) }
+  pub fn status(&self) -> Result<Status> { self.get(attr::IntAttr::Status).map(|val| val.into()) }
 
   /// Retrieve an iterator of the variables in the model.
   pub fn get_vars(&self) -> Iter<Var> { self.vars.iter() }

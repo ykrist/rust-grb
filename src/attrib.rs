@@ -6,12 +6,16 @@
 //! Defines the name of attributes
 
 pub use ffi::{IntAttr, DoubleAttr, CharAttr, StringAttr};
-pub use self::IntAttr::*;
-pub use self::DoubleAttr::*;
-pub use self::CharAttr::*;
-pub use self::StringAttr::*;
 
-use super::super::ffi;
+pub mod values {
+  pub use super::IntAttr::*;
+  pub use super::DoubleAttr::*;
+  pub use super::CharAttr::*;
+  pub use super::StringAttr::*;
+}
+
+
+use super::ffi;
 use std::ffi::CString;
 use util;
 use error::{Error, Result};

@@ -7,8 +7,6 @@ use super::ffi;
 use std::ffi::{CStr, CString};
 use std::ptr::null;
 
-pub fn get_error_msg_env(env: *mut ffi::GRBenv) -> String { unsafe { from_c_str(ffi::GRBgeterrormsg(env)) } }
-
 pub unsafe fn from_c_str(s: *const ffi::c_char) -> String { CStr::from_ptr(s).to_string_lossy().into_owned() }
 
 

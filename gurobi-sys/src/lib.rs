@@ -397,6 +397,8 @@ extern "C" {
 
   pub fn GRBfixedmodel(model: *mut GRBmodel) -> *mut GRBmodel;
 
+  pub fn GRBrelaxmodel(model: *mut GRBmodel) -> *mut GRBmodel;
+
   pub fn GRBresetmodel(model: *mut GRBmodel) -> c_int;
 
   pub fn GRBsync(model: *mut GRBmodel) -> c_int;

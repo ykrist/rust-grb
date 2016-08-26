@@ -16,7 +16,7 @@ use std::cell::Cell;
 use std::slice::Iter;
 
 use attrib as attr;
-use env::{Env, ErrorFromAPI};
+use env::{Env, FromRaw, ErrorFromAPI};
 use error::{Error, Result};
 use util;
 
@@ -748,8 +748,8 @@ pub struct Model<'a> {
 
 impl<'a> Model<'a> {
   /// create an empty model which associated with certain environment.
-  pub fn new(env: &'a Env, model: *mut ffi::GRBmodel) -> Model<'a> {
-    Model {
+  pub fn new(env: &'a Env, model: *mut ffi::GRBmodel) -> Result<Model> {
+    let mut model = Model {
       model: model,
       env: env,
       vars: Vec::new(),
@@ -757,7 +757,9 @@ impl<'a> Model<'a> {
       qconstrs: Vec::new(),
       sos: Vec::new(),
       callback: None
-    }
+    };
+    try!(model.populate());
+    Ok(model)
   }
 
   /// create a copy of the model
@@ -766,14 +768,10 @@ impl<'a> Model<'a> {
     if copied.is_null() {
       return Err(Error::FromAPI("Failed to create a copy of the model".to_owned(), 20002));
     }
-    Ok(Model {
-      env: self.env,
-      model: copied,
-      vars: self.vars.clone(),
-      constrs: self.constrs.clone(),
-      qconstrs: self.qconstrs.clone(),
-      sos: self.sos.clone(),
-      callback: self.callback
+
+    Model::new(self.env, copied).map(|mut model| {
+      model.callback = self.callback;
+      model
     })
   }
 
@@ -782,12 +780,21 @@ impl<'a> Model<'a> {
   /// In fixed model, each integer variable is fixed to the value that it takes in the
   /// original MIP solution.
   /// Note that the model must be MIP and have a solution loaded.
-  pub fn fixed(&mut self) -> Result<Model<'a>> {
+  pub fn fixed(&self) -> Result<Model> {
     let fixed = unsafe { ffi::GRBfixedmodel(self.model) };
     if fixed.is_null() {
       return Err(Error::FromAPI("failed to create fixed model".to_owned(), 20002));
     }
-    Ok(Model::new(self.env, fixed))
+    Model::new(self.env, fixed)
+  }
+
+  /// Create an relaxation of the model (undocumented).
+  pub fn relax(&self) -> Result<Model> {
+    let relaxed = unsafe { ffi::GRBrelaxmodel(self.model) };
+    if relaxed.is_null() {
+      return Err(Error::FromAPI("failed to create relaxed model".to_owned(), 20002));
+    }
+    Model::new(self.env, relaxed)
   }
 
   /// Apply all modification of the model to process
@@ -1264,6 +1271,23 @@ impl<'a> Model<'a> {
   pub fn reset_callback(&mut self) -> Result<()> {
     try!(self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, callback_wrapper, null_mut()) }));
     self.callback = None;
+    Ok(())
+  }
+
+
+  fn populate(&mut self) -> Result<()> {
+    self.callback = None;
+
+    let cols = try!(self.get(attr::exports::NumVars)) as usize;
+    let rows = try!(self.get(attr::exports::NumConstrs)) as usize;
+    let numqconstrs = try!(self.get(attr::exports::NumQConstrs)) as usize;
+    let numsos = try!(self.get(attr::exports::NumSOS)) as usize;
+
+    self.vars = (0..cols).map(|idx| Var::new(idx as i32)).collect_vec();
+    self.constrs = (0..rows).map(|idx| Constr::new(idx as i32)).collect_vec();
+    self.qconstrs = (0..numqconstrs).map(|idx| QConstr::new(idx as i32)).collect_vec();
+    self.sos = (0..numsos).map(|idx| SOS::new(idx as i32)).collect_vec();
+
     Ok(())
   }
 

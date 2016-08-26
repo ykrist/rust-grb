@@ -18,15 +18,13 @@ pub struct Env {
 }
 
 impl Env {
-  pub fn from_raw(env: *mut ffi::GRBenv) -> Env { Env { env: env } }
-
   /// Create an environment with log file
   pub fn new(logfilename: &str) -> Result<Env> {
     let mut env = null_mut();
     let logfilename = try!(CString::new(logfilename));
     let error = unsafe { ffi::GRBloadenv(&mut env, logfilename.as_ptr()) };
     if error != 0 {
-      return Err(Error::FromAPI(util::get_error_msg_env(env), error));
+      return Err(Error::FromAPI(get_error_msg(env), error));
     }
     Ok(Env { env: env })
   }
@@ -48,7 +46,7 @@ impl Env {
                             timeout)
     };
     if error != 0 {
-      return Err(Error::FromAPI(util::get_error_msg_env(env), error));
+      return Err(Error::FromAPI(get_error_msg(env), error));
     }
     Ok(Env { env: env })
   }
@@ -68,7 +66,7 @@ impl Env {
                        null(),
                        null())
     }));
-    Ok(Model::new(self, model))
+    Model::new(self, model)
   }
 
   /// Read a model from a file
@@ -76,7 +74,7 @@ impl Env {
     let filename = try!(CString::new(filename));
     let mut model = null_mut();
     try!(self.check_apicall(unsafe { ffi::GRBreadmodel(self.env, filename.as_ptr(), &mut model) }));
-    Ok(Model::new(self, model))
+    Model::new(self, model)
   }
 
 
@@ -133,8 +131,19 @@ pub trait ErrorFromAPI {
 }
 
 impl ErrorFromAPI for Env {
-  fn error_from_api(&self, error: ffi::c_int) -> Error { Error::FromAPI(util::get_error_msg_env(self.env), error) }
+  fn error_from_api(&self, error: ffi::c_int) -> Error { Error::FromAPI(get_error_msg(self.env), error) }
 }
+
+pub trait FromRaw {
+  fn from_raw(env: *mut ffi::GRBenv) -> Self;
+}
+
+impl FromRaw for Env {
+  fn from_raw(env: *mut ffi::GRBenv) -> Env { Env { env: env } }
+}
+
+
+fn get_error_msg(env: *mut ffi::GRBenv) -> String { unsafe { util::from_c_str(ffi::GRBgeterrormsg(env)) } }
 
 
 // #[test]

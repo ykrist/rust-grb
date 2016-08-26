@@ -95,3 +95,11 @@ pub use attrib::exports as attr;
 
 /// Large number used in C API
 pub const INFINITY: f64 = 1e100;
+
+
+/// Returns the version number of Gurobi
+pub fn version() -> (i32, i32, i32) {
+  let (mut major, mut minor, mut technical) = (0, 0, 0);
+  unsafe { ffi::GRBversion(&mut major, &mut minor, &mut technical) };
+  (major, minor, technical)
+}

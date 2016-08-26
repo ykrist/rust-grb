@@ -470,6 +470,264 @@ impl Into<i32> for RelaxType {
   }
 }
 
+#[derive(Debug, Clone)]
+pub enum CallbackLocation {
+  Polling = 0,
+  PreSolve,
+  Simplex,
+  MIP,
+  MIPSol,
+  MIPNode,
+  Message,
+  Barrier
+}
+
+impl From<i32> for CallbackLocation {
+  fn from(val: i32) -> CallbackLocation {
+    match val {
+      0...7 => unsafe { transmute(val as u8) },
+      _ => panic!("invalid conversion")
+    }
+  }
+}
+
+impl Into<i32> for CallbackLocation {
+  fn into(self) -> i32 { self as i32 }
+}
+
+
+pub enum CallbackWhatInt {
+  PreColDel = 1000,
+  PreRowDel = 1001,
+  PreSenChg = 1002,
+  PreBndChg = 1003,
+  PreCoeChg = 1004,
+  SpxIsPert = 2004,
+  MIPSolCnt = 3003,
+  MIPCutCnt = 3004,
+  MIPSolSolCnt = 4001,
+  MIPNodeStatus = 5001,
+  MIPNodeSolCnt = 5006,
+  BarrierItrCnt = 7001
+}
+
+pub enum CallbackWhatDouble {
+  Runtime = 6001,
+  SpxItrCnt = 2000,
+  SpxObjVal = 2001,
+  SpxPrimInf = 2002,
+  SpxDualInf = 2003,
+  MIPObjBst = 3000,
+  MIPObjBnd = 3001,
+  MIPNodCnt = 3002,
+  MIPNodLeft = 3005,
+  MIPItrCnt = 3006,
+  MIPSolObj = 4002,
+  MIPSolObjBst = 4003,
+  MIPSolObjBnd = 4004,
+  MIPSolNodCnt = 4005,
+  MIPNodeObjBst = 5003,
+  MIPNodeObjBnd = 5004,
+  MIPNodeNodCnt = 5005,
+  BarrierPrimObj = 7002,
+  BarrierDualObj = 7003,
+  BarrierPrimInf = 7004,
+  BarrierDualInf = 7005,
+  BarrierCompl = 7006
+}
+
+pub enum CallbackWhatDoubleArray {
+  MIPSolSol = 4001,
+  MIPNodeRel = 5002
+}
+
+pub enum CallbackWhatString {
+  MsgString = 6002
+}
+
+pub mod callback {
+  pub use super::CallbackWhatInt;
+  pub use super::CallbackWhatDouble;
+  pub use super::CallbackWhatDoubleArray;
+  pub use super::CallbackWhatString;
+
+  pub use self::CallbackWhatInt::*;
+  pub use self::CallbackWhatDouble::*;
+  pub use self::CallbackWhatDoubleArray::*;
+  pub use self::CallbackWhatString::*;
+}
+
+pub trait CallbackWhat: Into<i32> {
+  type Output;
+  type Buf;
+
+  fn init() -> Self::Buf;
+  fn to_out(buf: Self::Buf) -> Self::Output;
+}
+
+impl Into<i32> for CallbackWhatInt {
+  fn into(self) -> i32 { self as i32 }
+}
+
+impl Into<i32> for CallbackWhatDouble {
+  fn into(self) -> i32 { self as i32 }
+}
+
+impl Into<i32> for CallbackWhatDoubleArray {
+  fn into(self) -> i32 { self as i32 }
+}
+
+impl Into<i32> for CallbackWhatString {
+  fn into(self) -> i32 { self as i32 }
+}
+
+impl CallbackWhat for CallbackWhatInt {
+  type Output = i32;
+  type Buf = ffi::c_int;
+  fn init() -> ffi::c_int { 0 }
+  fn to_out(buf: ffi::c_int) -> i32 { buf }
+}
+
+impl CallbackWhat for CallbackWhatDouble {
+  type Output = f64;
+  type Buf = ffi::c_double;
+  fn init() -> ffi::c_double { 0.0 }
+  fn to_out(buf: ffi::c_double) -> f64 { buf }
+}
+
+impl CallbackWhat for CallbackWhatString {
+  type Output = String;
+  type Buf = ffi::c_str;
+  fn init() -> ffi::c_str { null() }
+  fn to_out(buf: ffi::c_str) -> String { unsafe { util::from_c_str(buf) } }
+}
+
+
+#[allow(dead_code)]
+pub struct CallbackContext<'a> {
+  cbdata: *mut ffi::c_void,
+  loc: CallbackLocation,
+  model: &'a Model<'a>,
+  ncols: usize
+}
+
+impl<'a> CallbackContext<'a> {
+  pub fn get_loc(&self) -> &CallbackLocation { &self.loc }
+
+  pub fn get_model(&self) -> &Model { self.model }
+
+  pub fn get<C: CallbackWhat>(&self, what: C) -> Result<C::Output> {
+    let mut buf = C::init();
+    let error = unsafe {
+      ffi::GRBcbget(self.cbdata,
+                    self.loc.clone().into(),
+                    what.into(),
+                    transmute(&mut buf))
+    };
+    if error != 0 {
+      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
+    }
+    Ok(C::to_out(buf))
+  }
+
+  pub fn get_array(&self, what: CallbackWhatDoubleArray) -> Result<Vec<f64>> {
+    let mut buf = Vec::with_capacity(self.ncols);
+    buf.resize(self.ncols, 0.0);
+    let error = unsafe {
+      ffi::GRBcbget(self.cbdata,
+                    self.loc.clone().into(),
+                    what.into(),
+                    transmute(buf.as_mut_ptr()))
+    };
+    if error != 0 {
+      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
+    }
+    Ok(buf)
+  }
+
+  /// Add a new cutting plane to the MIP model.
+  pub fn add_cut(&self, lhs: LinExpr, sense: ConstrSense, rhs: f64) -> Result<()> {
+    let error = unsafe {
+      ffi::GRBcbcut(self.cbdata,
+                    lhs.coeff.len() as ffi::c_int,
+                    lhs.vars.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
+                    lhs.coeff.as_ptr(),
+                    sense.into(),
+                    rhs - lhs.offset)
+    };
+    if error != 0 {
+      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
+    }
+    Ok(())
+  }
+
+
+  /// Add a new lazy constraint to the MIP model.
+  pub fn add_lazy(&self, lhs: LinExpr, sense: ConstrSense, rhs: f64) -> Result<()> {
+    let error = unsafe {
+      ffi::GRBcblazy(self.cbdata,
+                     lhs.coeff.len() as ffi::c_int,
+                     lhs.vars.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
+                     lhs.coeff.as_ptr(),
+                     sense.into(),
+                     rhs - lhs.offset)
+    };
+    if error != 0 {
+      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
+    }
+    Ok(())
+  }
+
+  /// Provide a new feasible solution for a MIP model.
+  pub fn set_solution(&self, solution: &[f64]) -> Result<()> {
+    if solution.len() < self.ncols {
+      return Err(Error::InconsitentDims);
+    }
+    let error = unsafe { ffi::GRBcbsolution(self.cbdata, solution.as_ptr()) };
+
+    if error != 0 {
+      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
+    }
+    Ok(())
+  }
+
+  /// terminate the optimization.
+  pub fn terminate(&self) { self.get_model().terminate(); }
+}
+
+
+pub type Callback = fn(CallbackContext) -> Result<()>;
+
+extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_void, loc: ffi::c_int,
+                               usrdata: *mut ffi::c_void)
+                               -> ffi::c_int {
+  // null callback
+  if usrdata.is_null() {
+    return 0;
+  }
+
+  let themodel: &Model = unsafe { transmute(usrdata) };
+  if themodel.model != model {
+    println!("invalid callback context.");
+    return -1;
+  }
+
+  if let Some(callback) = themodel.callback {
+    let context = CallbackContext {
+      cbdata: cbdata,
+      loc: loc.into(),
+      model: &themodel,
+      ncols: themodel.vars.len()
+    };
+
+    match callback(context) {
+      Ok(_) => 0,
+      Err(_) => -1,
+    }
+  } else {
+    0
+  }
+}
 
 
 /// Gurobi model object associated with certain environment.
@@ -479,7 +737,8 @@ pub struct Model<'a> {
   vars: Vec<Var>,
   constrs: Vec<Constr>,
   qconstrs: Vec<QConstr>,
-  sos: Vec<SOS>
+  sos: Vec<SOS>,
+  callback: Option<Callback>
 }
 
 impl<'a> Model<'a> {
@@ -491,7 +750,8 @@ impl<'a> Model<'a> {
       vars: Vec::new(),
       constrs: Vec::new(),
       qconstrs: Vec::new(),
-      sos: Vec::new()
+      sos: Vec::new(),
+      callback: None
     }
   }
 
@@ -507,7 +767,8 @@ impl<'a> Model<'a> {
       vars: self.vars.clone(),
       constrs: self.constrs.clone(),
       qconstrs: self.qconstrs.clone(),
-      sos: self.sos.clone()
+      sos: self.sos.clone(),
+      callback: self.callback
     })
   }
 
@@ -986,6 +1247,18 @@ impl<'a> Model<'a> {
         s.set_index(idx as i32);
       }
     }
+    Ok(())
+  }
+
+  pub fn set_callback(&mut self, callback: Callback) -> Result<()> {
+    try!(self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, callback_wrapper, transmute(&self)) }));
+    self.callback = Some(callback);
+    Ok(())
+  }
+
+  pub fn reset_callback(&mut self) -> Result<()> {
+    try!(self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, callback_wrapper, null_mut()) }));
+    self.callback = None;
     Ok(())
   }
 

@@ -606,7 +606,7 @@ extern "C" {
                   -> c_int;
 
   pub fn GRBcblazy(cbdata: *mut c_void, lazylen: c_int, lazyind: *const c_int, lazyval: *const c_double,
-                   lazysense: char, lazyrhs: c_double)
+                   lazysense: c_char, lazyrhs: c_double)
                    -> c_int;
 
   pub fn GRBcbsolution(cbdata: *mut c_void, solution: *const c_double) -> c_int;

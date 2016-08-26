@@ -470,153 +470,158 @@ impl Into<i32> for RelaxType {
   }
 }
 
-#[derive(Debug, Clone)]
-pub enum CallbackLocation {
-  Polling = 0,
-  PreSolve,
-  Simplex,
-  MIP,
-  MIPSol,
-  MIPNode,
-  Message,
-  Barrier
-}
+pub mod callback {
+  use std::mem::transmute;
+  use super::super::ffi;
+  use std::ptr::null;
+  use util;
 
-impl From<i32> for CallbackLocation {
-  fn from(val: i32) -> CallbackLocation {
-    match val {
-      0...7 => unsafe { transmute(val as u8) },
-      _ => panic!("invalid conversion")
+
+  #[derive(Debug, Clone)]
+  pub enum Where {
+    Polling = 0,
+    PreSolve,
+    Simplex,
+    MIP,
+    MIPSol,
+    MIPNode,
+    Message,
+    Barrier
+  }
+
+  impl From<i32> for Where {
+    fn from(val: i32) -> Where {
+      match val {
+        0...7 => unsafe { transmute(val as u8) },
+        _ => panic!("invalid conversion")
+      }
     }
   }
-}
 
-impl Into<i32> for CallbackLocation {
-  fn into(self) -> i32 { self as i32 }
-}
+  impl Into<i32> for Where {
+    fn into(self) -> i32 { self as i32 }
+  }
 
 
-pub enum CallbackWhatInt {
-  PreColDel = 1000,
-  PreRowDel = 1001,
-  PreSenChg = 1002,
-  PreBndChg = 1003,
-  PreCoeChg = 1004,
-  SpxIsPert = 2004,
-  MIPSolCnt = 3003,
-  MIPCutCnt = 3004,
-  MIPSolSolCnt = 4001,
-  MIPNodeStatus = 5001,
-  MIPNodeSolCnt = 5006,
-  BarrierItrCnt = 7001
-}
+  pub enum WhatInt {
+    PreColDel = 1000,
+    PreRowDel = 1001,
+    PreSenChg = 1002,
+    PreBndChg = 1003,
+    PreCoeChg = 1004,
+    SpxIsPert = 2004,
+    MIPSolCnt = 3003,
+    MIPCutCnt = 3004,
+    MIPSolSolCnt = 4001,
+    MIPNodeStatus = 5001,
+    MIPNodeSolCnt = 5006,
+    BarrierItrCnt = 7001
+  }
 
-pub enum CallbackWhatDouble {
-  Runtime = 6001,
-  SpxItrCnt = 2000,
-  SpxObjVal = 2001,
-  SpxPrimInf = 2002,
-  SpxDualInf = 2003,
-  MIPObjBst = 3000,
-  MIPObjBnd = 3001,
-  MIPNodCnt = 3002,
-  MIPNodLeft = 3005,
-  MIPItrCnt = 3006,
-  MIPSolObj = 4002,
-  MIPSolObjBst = 4003,
-  MIPSolObjBnd = 4004,
-  MIPSolNodCnt = 4005,
-  MIPNodeObjBst = 5003,
-  MIPNodeObjBnd = 5004,
-  MIPNodeNodCnt = 5005,
-  BarrierPrimObj = 7002,
-  BarrierDualObj = 7003,
-  BarrierPrimInf = 7004,
-  BarrierDualInf = 7005,
-  BarrierCompl = 7006
-}
+  pub enum WhatDouble {
+    Runtime = 6001,
+    SpxItrCnt = 2000,
+    SpxObjVal = 2001,
+    SpxPrimInf = 2002,
+    SpxDualInf = 2003,
+    MIPObjBst = 3000,
+    MIPObjBnd = 3001,
+    MIPNodCnt = 3002,
+    MIPNodLeft = 3005,
+    MIPItrCnt = 3006,
+    MIPSolObj = 4002,
+    MIPSolObjBst = 4003,
+    MIPSolObjBnd = 4004,
+    MIPSolNodCnt = 4005,
+    MIPNodeObjBst = 5003,
+    MIPNodeObjBnd = 5004,
+    MIPNodeNodCnt = 5005,
+    BarrierPrimObj = 7002,
+    BarrierDualObj = 7003,
+    BarrierPrimInf = 7004,
+    BarrierDualInf = 7005,
+    BarrierCompl = 7006
+  }
 
-pub enum CallbackWhatDoubleArray {
-  MIPSolSol = 4001,
-  MIPNodeRel = 5002
-}
+  pub enum WhatDoubleArray {
+    MIPSolSol = 4001,
+    MIPNodeRel = 5002
+  }
 
-pub enum CallbackWhatString {
-  MsgString = 6002
-}
+  pub enum WhatString {
+    MsgString = 6002
+  }
 
-pub mod callback {
-  pub use super::CallbackWhatInt;
-  pub use super::CallbackWhatDouble;
-  pub use super::CallbackWhatDoubleArray;
-  pub use super::CallbackWhatString;
+  pub trait What: Into<i32> {
+    type Output;
+    type Buf;
 
-  pub use self::CallbackWhatInt::*;
-  pub use self::CallbackWhatDouble::*;
-  pub use self::CallbackWhatDoubleArray::*;
-  pub use self::CallbackWhatString::*;
-}
+    fn init() -> Self::Buf;
+    fn to_out(buf: Self::Buf) -> Self::Output;
+  }
 
-pub trait CallbackWhat: Into<i32> {
-  type Output;
-  type Buf;
 
-  fn init() -> Self::Buf;
-  fn to_out(buf: Self::Buf) -> Self::Output;
-}
+  impl Into<i32> for WhatInt {
+    fn into(self) -> i32 { self as i32 }
+  }
 
-impl Into<i32> for CallbackWhatInt {
-  fn into(self) -> i32 { self as i32 }
-}
+  impl Into<i32> for WhatDouble {
+    fn into(self) -> i32 { self as i32 }
+  }
 
-impl Into<i32> for CallbackWhatDouble {
-  fn into(self) -> i32 { self as i32 }
-}
+  impl Into<i32> for WhatDoubleArray {
+    fn into(self) -> i32 { self as i32 }
+  }
 
-impl Into<i32> for CallbackWhatDoubleArray {
-  fn into(self) -> i32 { self as i32 }
-}
+  impl Into<i32> for WhatString {
+    fn into(self) -> i32 { self as i32 }
+  }
 
-impl Into<i32> for CallbackWhatString {
-  fn into(self) -> i32 { self as i32 }
-}
+  impl What for WhatInt {
+    type Output = i32;
+    type Buf = ffi::c_int;
+    fn init() -> ffi::c_int { 0 }
+    fn to_out(buf: ffi::c_int) -> i32 { buf }
+  }
 
-impl CallbackWhat for CallbackWhatInt {
-  type Output = i32;
-  type Buf = ffi::c_int;
-  fn init() -> ffi::c_int { 0 }
-  fn to_out(buf: ffi::c_int) -> i32 { buf }
-}
+  impl What for WhatDouble {
+    type Output = f64;
+    type Buf = ffi::c_double;
+    fn init() -> ffi::c_double { 0.0 }
+    fn to_out(buf: ffi::c_double) -> f64 { buf }
+  }
 
-impl CallbackWhat for CallbackWhatDouble {
-  type Output = f64;
-  type Buf = ffi::c_double;
-  fn init() -> ffi::c_double { 0.0 }
-  fn to_out(buf: ffi::c_double) -> f64 { buf }
-}
+  impl What for WhatString {
+    type Output = String;
+    type Buf = ffi::c_str;
+    fn init() -> ffi::c_str { null() }
+    fn to_out(buf: ffi::c_str) -> String { unsafe { util::from_c_str(buf) } }
+  }
 
-impl CallbackWhat for CallbackWhatString {
-  type Output = String;
-  type Buf = ffi::c_str;
-  fn init() -> ffi::c_str { null() }
-  fn to_out(buf: ffi::c_str) -> String { unsafe { util::from_c_str(buf) } }
+
+  // re-exports
+  pub use self::Where::*;
+  pub use self::WhatInt::*;
+  pub use self::WhatDouble::*;
+  pub use self::WhatDoubleArray::*;
+  pub use self::WhatString::*;
 }
 
 
 #[allow(dead_code)]
-pub struct CallbackContext<'a> {
+pub struct Context<'a> {
   cbdata: *mut ffi::c_void,
-  loc: CallbackLocation,
+  loc: callback::Where,
   model: &'a Model<'a>,
   ncols: usize
 }
 
-impl<'a> CallbackContext<'a> {
-  pub fn get_loc(&self) -> &CallbackLocation { &self.loc }
+impl<'a> Context<'a> {
+  pub fn get_loc(&self) -> &callback::Where { &self.loc }
 
   pub fn get_model(&self) -> &Model { self.model }
 
-  pub fn get<C: CallbackWhat>(&self, what: C) -> Result<C::Output> {
+  pub fn get<C: callback::What>(&self, what: C) -> Result<C::Output> {
     let mut buf = C::init();
     let error = unsafe {
       ffi::GRBcbget(self.cbdata,
@@ -630,7 +635,7 @@ impl<'a> CallbackContext<'a> {
     Ok(C::to_out(buf))
   }
 
-  pub fn get_array(&self, what: CallbackWhatDoubleArray) -> Result<Vec<f64>> {
+  pub fn get_array(&self, what: callback::WhatDoubleArray) -> Result<Vec<f64>> {
     let mut buf = Vec::with_capacity(self.ncols);
     buf.resize(self.ncols, 0.0);
     let error = unsafe {
@@ -696,7 +701,7 @@ impl<'a> CallbackContext<'a> {
 }
 
 
-pub type Callback = fn(CallbackContext) -> Result<()>;
+pub type Callback = fn(Context) -> Result<()>;
 
 extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_void, loc: ffi::c_int,
                                usrdata: *mut ffi::c_void)
@@ -713,7 +718,7 @@ extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_vo
   }
 
   if let Some(callback) = themodel.callback {
-    let context = CallbackContext {
+    let context = Context {
       cbdata: cbdata,
       loc: loc.into(),
       model: &themodel,

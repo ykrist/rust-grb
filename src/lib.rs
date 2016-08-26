@@ -92,7 +92,7 @@ pub use model::RelaxType::*;
 pub use parameter::exports as param;
 pub use attrib::exports as attr;
 
-pub use model::{Callback, CallbackContext, CallbackLocation};
+pub use model::{Callback, Context};
 pub use model::callback;
 
 /// Large number used in C API

@@ -399,6 +399,10 @@ extern "C" {
 
   pub fn GRBrelaxmodel(model: *mut GRBmodel) -> *mut GRBmodel;
 
+  pub fn GRBpresolvemodel(model: *mut GRBmodel) -> *mut GRBmodel;
+
+  pub fn GRBfeasibility(model: *mut GRBmodel) -> *mut GRBmodel;
+
   pub fn GRBresetmodel(model: *mut GRBmodel) -> c_int;
 
   pub fn GRBsync(model: *mut GRBmodel) -> c_int;

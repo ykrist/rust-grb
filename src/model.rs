@@ -797,6 +797,24 @@ impl<'a> Model<'a> {
     Model::new(self.env, relaxed)
   }
 
+  /// Perform presolve on the model.
+  pub fn presolve(&self) -> Result<Model> {
+    let presolved = unsafe { ffi::GRBpresolvemodel(self.model) };
+    if presolved.is_null() {
+      return Err(Error::FromAPI("failed to create presolved model".to_owned(), 20002));
+    }
+    Model::new(self.env, presolved)
+  }
+
+  /// Create a feasibility model (undocumented).
+  pub fn feasibility(&self) -> Result<Model> {
+    let feasibility = unsafe { ffi::GRBfeasibility(self.model) };
+    if feasibility.is_null() {
+      return Err(Error::FromAPI("failed to create feasibility model".to_owned(), 20002));
+    }
+    Model::new(self.env, feasibility)
+  }
+
   /// Apply all modification of the model to process
   pub fn update(&mut self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBupdatemodel(self.model) }) }
 

@@ -443,7 +443,7 @@ extern "C" {
 extern "C" {
   pub fn GRBreadmodel(env: *mut GRBenv, filename: c_str, modelP: *mut *mut GRBmodel) -> c_int;
 
-  pub fn GRBread(model: *mut GRBmodel, filename: c_str, modelP: *mut *mut GRBmodel) -> c_int;
+  pub fn GRBread(model: *mut GRBmodel, filename: c_str) -> c_int;
 
   pub fn GRBwrite(model: *mut GRBmodel, filename: c_str) -> c_int;
 

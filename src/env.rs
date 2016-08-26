@@ -18,6 +18,8 @@ pub struct Env {
 }
 
 impl Env {
+  pub fn from_raw(env: *mut ffi::GRBenv) -> Env { Env { env: env } }
+
   /// Create an environment with log file
   pub fn new(logfilename: &str) -> Result<Env> {
     let mut env = null_mut();
@@ -107,9 +109,7 @@ impl Env {
   /// Insert a message into log file.
   ///
   /// When **message** cannot convert to raw C string, a panic is occurred.
-  pub fn message(&self, message: &str) {
-    unsafe { ffi::GRBmsg(self.env, CString::new(message).unwrap().as_ptr()) };
-  }
+  pub fn message(&self, message: &str) { unsafe { ffi::GRBmsg(self.env, CString::new(message).unwrap().as_ptr()) }; }
 
 
   fn check_apicall(&self, error: ffi::c_int) -> Result<()> {

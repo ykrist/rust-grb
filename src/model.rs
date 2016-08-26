@@ -495,9 +495,6 @@ impl<'a> Model<'a> {
     }
   }
 
-  /// apply all modification of the model to process.
-  pub fn update(&mut self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBupdatemodel(self.model) }) }
-
   /// create a copy of the model
   pub fn copy(&self) -> Result<Model> {
     let copied = unsafe { ffi::GRBcopymodel(self.model) };
@@ -514,17 +511,102 @@ impl<'a> Model<'a> {
     })
   }
 
-  /// optimize the model.
+  /// Create an fixed model associated with the model.
+  ///
+  /// In fixed model, each integer variable is fixed to the value that it takes in the
+  /// original MIP solution.
+  /// Note that the model must be MIP and have a solution loaded.
+  pub fn fixed(&mut self) -> Result<Model<'a>> {
+    let fixed = unsafe { ffi::GRBfixedmodel(self.model) };
+    if fixed.is_null() {
+      return Err(Error::FromAPI("failed to create fixed model".to_owned(), 20002));
+    }
+    Ok(Model::new(self.env, fixed))
+  }
+
+  /// Apply all modification of the model to process
+  pub fn update(&mut self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBupdatemodel(self.model) }) }
+
+  /// Optimize the model synchronously
   pub fn optimize(&mut self) -> Result<()> {
     try!(self.update());
     self.check_apicall(unsafe { ffi::GRBoptimize(self.model) })
   }
 
-  /// write information of the model to file.
+  /// Optimize the model asynchronously
+  pub fn optimize_async(&mut self) -> Result<()> {
+    try!(self.update());
+    self.check_apicall(unsafe { ffi::GRBoptimizeasync(self.model) })
+  }
+
+  /// Wait for a optimization called asynchronously.
+  pub fn sync(&self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBsync(self.model) }) }
+
+  /// Compute an Irreducible Inconsistent Subsystem (IIS) of the model.
+  pub fn compute_iis(&mut self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBcomputeIIS(self.model) }) }
+
+  /// Send a request to the model to terminate the current optimization process.
+  pub fn terminate(&self) { unsafe { ffi::GRBterminate(self.model) } }
+
+  /// Reset the model to an unsolved state.
+  ///
+  /// All solution information previously computed are discarded.
+  pub fn reset(&self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBresetmodel(self.model) }) }
+
+  /// Perform an automated search for parameter settings that improve performance on the model.
+  /// See also references [on official
+  /// manual](https://www.gurobi.com/documentation/6.5/refman/parameter_tuning_tool.html#sec:Tuning).
+  #[deprecated]
+  pub fn tune(&self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBtunemodel(self.model) }) }
+
+  /// Prepare to retrieve the results of `tune()`.
+  /// See also references [on official
+  /// manual](https://www.gurobi.com/documentation/6.5/refman/parameter_tuning_tool.html#sec:Tuning).
+  #[deprecated]
+  pub fn get_tune_result(&self, n: i32) -> Result<()> {
+    self.check_apicall(unsafe { ffi::GRBgettuneresult(self.model, n) })
+  }
+
+  /// Create/retrieve a concurrent environment for the model
+  ///
+  /// Note that the number of concurrent environments (`num`) must be contiguously numbered.
+  ///
+  /// # Example
+  /// ```ignore
+  /// let env1 = model.get_concurrent_env(0).unwrap();
+  /// let env2 = model.get_concurrent_env(1).unwrap();
+  /// let env3 = model.get_concurrent_env(2).unwrap();
+  /// ...
+  /// ```
+  #[deprecated]
+  pub fn get_concurrent_env(&self, num: i32) -> Result<Env> {
+    let env = unsafe { ffi::GRBgetconcurrentenv(self.model, num) };
+    if env.is_null() {
+      return Err(Error::FromAPI("Cannot get a concurrent environment.".to_owned(), 20003));
+    }
+    Ok(Env::from_raw(env))
+  }
+
+  /// Discard all concurrent environments for the model.
+  pub fn discard_concurrent_envs(&self) { unsafe { ffi::GRBdiscardconcurrentenvs(self.model) } }
+
+  /// Insert a message into log file.
+  ///
+  /// When **message** cannot convert to raw C string, a panic is occurred.
+  pub fn message(&self, message: &str) { self.env.message(message); }
+
+  /// Import optimization data of the model from a file.
+  pub fn read(&mut self, filename: &str) -> Result<()> {
+    let filename = try!(CString::new(filename));
+    self.check_apicall(unsafe { ffi::GRBread(self.model, filename.as_ptr()) })
+  }
+
+  /// Export optimization data of the model to a file.
   pub fn write(&self, filename: &str) -> Result<()> {
     let filename = try!(CString::new(filename));
     self.check_apicall(unsafe { ffi::GRBwrite(self.model, filename.as_ptr()) })
   }
+
 
   /// add a decision variable to the model.
   pub fn add_var(&mut self, name: &str, vtype: VarType) -> Result<Var> {
@@ -794,8 +876,19 @@ impl<'a> Model<'a> {
     Ok((feasobj, self.vars[xcols..].iter(), self.constrs[xrows..].iter(), self.qconstrs[xqrows..].iter()))
   }
 
-  /// Compute an Irreducible Inconsistent Subsystem (IIS) of the model.
-  pub fn compute_iis(&mut self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBcomputeIIS(self.model) }) }
+  /// Set a piecewise-linear objective function of a certain variable in the model.
+  pub fn set_pwl_obj(&mut self, var: &Var, x: &[f64], y: &[f64]) -> Result<()> {
+    if x.len() != y.len() {
+      return Err(Error::InconsitentDims);
+    }
+    self.check_apicall(unsafe {
+      ffi::GRBsetpwlobj(self.model,
+                        var.index(),
+                        x.len() as ffi::c_int,
+                        x.as_ptr(),
+                        y.as_ptr())
+    })
+  }
 
   /// Retrieve the status of the model.
   pub fn status(&self) -> Result<Status> { self.get(attr::exports::Status).map(|val| val.into()) }

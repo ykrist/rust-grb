@@ -5,11 +5,12 @@
 
 use super::ffi;
 
+use std::ffi::CString;
 use std::ptr::{null, null_mut};
 use error::{Error, Result};
 use model::Model;
-use util;
 use parameter;
+use util;
 
 /// Gurobi environment object
 pub struct Env {
@@ -20,7 +21,7 @@ impl Env {
   /// Create an environment with log file
   pub fn new(logfilename: &str) -> Result<Env> {
     let mut env = null_mut();
-    let logfilename = try!(util::make_c_str(logfilename));
+    let logfilename = try!(CString::new(logfilename));
     let error = unsafe { ffi::GRBloadenv(&mut env, logfilename.as_ptr()) };
     if error != 0 {
       return Err(Error::FromAPI(util::get_error_msg_env(env), error));
@@ -32,9 +33,9 @@ impl Env {
   pub fn client(logfilename: &str, computeserver: &str, port: i32, password: &str, priority: i32, timeout: f64)
                 -> Result<Env> {
     let mut env = null_mut();
-    let logfilename = try!(util::make_c_str(logfilename));
-    let computeserver = try!(util::make_c_str(computeserver));
-    let password = try!(util::make_c_str(password));
+    let logfilename = try!(CString::new(logfilename));
+    let computeserver = try!(CString::new(computeserver));
+    let password = try!(CString::new(password));
     let error = unsafe {
       ffi::GRBloadclientenv(&mut env,
                             logfilename.as_ptr(),
@@ -52,7 +53,7 @@ impl Env {
 
   /// Create an empty model object associted with the environment
   pub fn new_model(&self, modelname: &str) -> Result<Model> {
-    let modelname = try!(util::make_c_str(modelname));
+    let modelname = try!(CString::new(modelname));
     let mut model = null_mut();
     try!(self.check_apicall(unsafe {
       ffi::GRBnewmodel(self.env,
@@ -70,7 +71,7 @@ impl Env {
 
   /// Read a model from a file
   pub fn read_model(&self, filename: &str) -> Result<Model> {
-    let filename = try!(util::make_c_str(filename));
+    let filename = try!(CString::new(filename));
     let mut model = null_mut();
     try!(self.check_apicall(unsafe { ffi::GRBreadmodel(self.env, filename.as_ptr(), &mut model) }));
     Ok(Model::new(self, model))
@@ -93,13 +94,13 @@ impl Env {
 
   /// Import a set of parameter values from a file
   pub fn read_params(&mut self, filename: &str) -> Result<()> {
-    let filename = try!(util::make_c_str(filename));
+    let filename = try!(CString::new(filename));
     self.check_apicall(unsafe { ffi::GRBreadparams(self.env, filename.as_ptr()) })
   }
 
   /// Write the set of parameter values to a file
   pub fn write_params(&self, filename: &str) -> Result<()> {
-    let filename = try!(util::make_c_str(filename));
+    let filename = try!(CString::new(filename));
     self.check_apicall(unsafe { ffi::GRBwriteparams(self.env, filename.as_ptr()) })
   }
 
@@ -107,7 +108,7 @@ impl Env {
   ///
   /// When **message** cannot convert to raw C string, a panic is occurred.
   pub fn message(&self, message: &str) {
-    unsafe { ffi::GRBmsg(self.env, util::make_c_str(message).unwrap().as_ptr()) };
+    unsafe { ffi::GRBmsg(self.env, CString::new(message).unwrap().as_ptr()) };
   }
 
 

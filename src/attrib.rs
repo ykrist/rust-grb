@@ -16,7 +16,7 @@ use self::exports::*;
 use super::ffi;
 use std::ffi::CString;
 use util;
-use error::{Error, Result};
+use error::Result;
 
 /// provides function to query/set the value of scalar attribute.
 pub trait AttrBase: Into<CString> {
@@ -201,11 +201,12 @@ impl AttrArrayBase for StringAttr {
   type RawSet = ffi::c_str;
 
   fn to_rawsets(values: &[String]) -> Result<Vec<ffi::c_str>> {
-    let values = values.into_iter().map(|s| util::make_c_str(s)).collect::<Vec<_>>();
-    if values.iter().any(|ref s| s.is_err()) {
-      return Err(Error::StringConversion);
+    let mut buf = Vec::with_capacity(values.len());
+    for value in values.into_iter() {
+      let value = try!(CString::new(value.as_str()));
+      buf.push(value.as_ptr())
     }
-    Ok(values.into_iter().map(|s| s.unwrap().as_ptr()).collect())
+    Ok(buf)
   }
 
   unsafe fn get_attrelement(model: *mut ffi::GRBmodel, attrname: ffi::c_str, element: ffi::c_int,

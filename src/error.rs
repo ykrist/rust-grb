@@ -22,6 +22,11 @@ pub enum Error {
   StringConversion
 }
 
+impl From<std::ffi::NulError> for Error {
+  fn from(err: std::ffi::NulError) -> Error { Error::NulError(err) }
+}
+
+
 /// A specialized
 /// [`Result`](https://doc.rust-lang.org/std/result/enum.Result.html)
 /// type for operations in Gurobi Rust API

@@ -6,6 +6,7 @@
 use super::ffi;
 use super::itertools::{Itertools, Zip};
 
+use std::ffi::CString;
 use std::iter;
 use std::ptr::{null, null_mut};
 use std::ops::{Add, Sub, Mul};
@@ -521,7 +522,7 @@ impl<'a> Model<'a> {
 
   /// write information of the model to file.
   pub fn write(&self, filename: &str) -> Result<()> {
-    let filename = try!(util::make_c_str(filename));
+    let filename = try!(CString::new(filename));
     self.check_apicall(unsafe { ffi::GRBwrite(self.model, filename.as_ptr()) })
   }
 
@@ -529,7 +530,7 @@ impl<'a> Model<'a> {
   pub fn add_var(&mut self, name: &str, vtype: VarType) -> Result<Var> {
     // extract parameters
     let (vtype, lb, ub) = vtype.into();
-    let name = try!(util::make_c_str(name));
+    let name = try!(CString::new(name));
 
     try!(self.check_apicall(unsafe {
       ffi::GRBaddvar(self.model,
@@ -551,7 +552,7 @@ impl<'a> Model<'a> {
 
   /// add a linear constraint to the model.
   pub fn add_constr(&mut self, name: &str, expr: LinExpr, sense: ConstrSense, rhs: f64) -> Result<Constr> {
-    let constrname = try!(util::make_c_str(name));
+    let constrname = try!(CString::new(name));
     try!(self.check_apicall(unsafe {
       ffi::GRBaddconstr(self.model,
                         expr.coeff.len() as ffi::c_int,
@@ -570,8 +571,7 @@ impl<'a> Model<'a> {
 
   /// add a quadratic constraint to the model.
   pub fn add_qconstr(&mut self, constrname: &str, expr: QuadExpr, sense: ConstrSense, rhs: f64) -> Result<QConstr> {
-    let constrname = try!(util::make_c_str(constrname));
-
+    let constrname = try!(CString::new(constrname));
     try!(self.check_apicall(unsafe {
       ffi::GRBaddqconstr(self.model,
                          expr.lval.len() as ffi::c_int,

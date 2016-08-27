@@ -636,8 +636,7 @@ impl<'a> Context<'a> {
   }
 
   pub fn get_array(&self, what: callback::WhatDoubleArray) -> Result<Vec<f64>> {
-    let mut buf = Vec::with_capacity(self.ncols);
-    buf.resize(self.ncols, 0.0);
+    let mut buf = vec![self.ncols; 0.0];
     let error = unsafe {
       ffi::GRBcbget(self.cbdata,
                     self.loc.clone().into(),
@@ -923,6 +922,50 @@ impl<'a> Model<'a> {
     Ok(self.vars.last().cloned().unwrap())
   }
 
+  /// add decision variables to the model.
+  pub fn add_vars(&mut self, names: &[&str], vtypes: &[VarType]) -> Result<Vec<Var>> {
+    if names.len() != vtypes.len() {
+      return Err(Error::InconsitentDims);
+    }
+
+    let mut _vtypes = Vec::with_capacity(vtypes.len());
+    let mut _names = Vec::with_capacity(vtypes.len());
+    let mut lbs = Vec::with_capacity(vtypes.len());
+    let mut ubs = Vec::with_capacity(vtypes.len());
+    for (&name, &vtype) in Zip::new((names, vtypes)) {
+      let (vtype, lb, ub) = vtype.into();
+      let name = try!(CString::new(name));
+      _vtypes.push(vtype);
+      _names.push(name.as_ptr());
+      lbs.push(lb);
+      ubs.push(ub);
+    }
+    let mut objs = vec![vtypes.len(); 0.0];
+
+    try!(self.check_apicall(unsafe {
+      ffi::GRBaddvars(self.model,
+                      _names.len() as ffi::c_int,
+                      0,
+                      null(),
+                      null(),
+                      null(),
+                      objs.as_ptr(),
+                      lbs.as_ptr(),
+                      ubs.as_ptr(),
+                      _vtypes.as_ptr(),
+                      _names.as_ptr())
+    }));
+
+    let xcols = self.vars.len();
+    let cols = self.vars.len() + _names.len();
+    for col_no in xcols..cols {
+      self.vars.push(Var::new(col_no as i32));
+    }
+
+    Ok(self.vars[xcols..].iter().cloned().collect_vec())
+  }
+
+
   /// add a linear constraint to the model.
   pub fn add_constr(&mut self, name: &str, expr: LinExpr, sense: ConstrSense, rhs: f64) -> Result<Constr> {
     let constrname = try!(CString::new(name));
@@ -940,6 +983,54 @@ impl<'a> Model<'a> {
     self.constrs.push(Constr::new(row_no));
 
     Ok(self.constrs.last().cloned().unwrap())
+  }
+
+  /// add linear constraints to the model.
+  pub fn add_constrs(&mut self, name: &[&str], expr: &[LinExpr], sense: &[ConstrSense], rhs: &[f64])
+                     -> Result<Vec<Constr>> {
+    let mut constrnames = Vec::with_capacity(name.len());
+    for &s in name.iter() {
+      let name = try!(CString::new(s));
+      constrnames.push(name.as_ptr());
+    }
+
+    let sense = sense.iter().map(|&s| s.into()).collect_vec();
+    let rhs = Zip::new((rhs, expr)).map(|(rhs, expr)| rhs - expr.offset).collect_vec();
+
+    let mut beg = Vec::with_capacity(expr.len());
+
+    let numnz = expr.iter().map(|expr| expr.vars.len()).sum();
+    let mut ind = Vec::with_capacity(numnz);
+    let mut val = Vec::with_capacity(numnz);
+
+    for expr in expr.iter() {
+      let nz = ind.len();
+      let vars = expr.vars.iter().map(|e| e.index()).collect_vec();
+
+      beg.push(nz as i32);
+      ind.extend(vars);
+      val.extend(&expr.coeff);
+    }
+
+    try!(self.check_apicall(unsafe {
+      ffi::GRBaddconstrs(self.model,
+                         constrnames.len() as ffi::c_int,
+                         beg.len() as ffi::c_int,
+                         beg.as_ptr(),
+                         ind.as_ptr(),
+                         val.as_ptr(),
+                         sense.as_ptr(),
+                         rhs.as_ptr(),
+                         constrnames.as_ptr())
+    }));
+
+    let xrows = self.constrs.len();
+    let rows = self.constrs.len() + constrnames.len();
+    for row_no in xrows..rows {
+      self.constrs.push(Constr::new(row_no as i32));
+    }
+
+    Ok(self.constrs[xrows..].iter().cloned().collect_vec())
   }
 
   /// add a quadratic constraint to the model.

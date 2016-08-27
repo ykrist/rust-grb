@@ -682,6 +682,7 @@ impl<'a> Model<'a> {
                      vtype,
                      name.as_ptr())
     }));
+    try!(self.update());
 
     let col_no = self.vars.len() as i32;
     self.vars.push(Var::new(col_no));
@@ -722,6 +723,7 @@ impl<'a> Model<'a> {
                       _vtypes.as_ptr(),
                       _names.as_ptr())
     }));
+    try!(self.update());
 
     let xcols = self.vars.len();
     let cols = self.vars.len() + _names.len();
@@ -745,6 +747,7 @@ impl<'a> Model<'a> {
                         rhs - expr.offset,
                         constrname.as_ptr())
     }));
+    try!(self.update());
 
     let row_no = self.constrs.len() as i32;
     self.constrs.push(Constr::new(row_no));
@@ -790,6 +793,7 @@ impl<'a> Model<'a> {
                          rhs.as_ptr(),
                          constrnames.as_ptr())
     }));
+    try!(self.update());
 
     let xrows = self.constrs.len();
     let rows = self.constrs.len() + constrnames.len();
@@ -819,6 +823,7 @@ impl<'a> Model<'a> {
                              ub - expr.offset,
                              constrname.as_ptr())
     }));
+    try!(self.update());
 
     let col_no = self.vars.len() as i32;
     self.vars.push(Var::new(col_no));
@@ -868,6 +873,7 @@ impl<'a> Model<'a> {
                               rhs.as_ptr(),
                               constrnames.as_ptr())
     }));
+    try!(self.update());
 
     let xcols = self.vars.len();
     let cols = self.vars.len() + names.len();
@@ -900,6 +906,7 @@ impl<'a> Model<'a> {
                          rhs,
                          constrname.as_ptr())
     }));
+    try!(self.update());
 
     let qrow_no = self.qconstrs.len() as i32;
     self.qconstrs.push(QConstr::new(qrow_no));
@@ -925,6 +932,7 @@ impl<'a> Model<'a> {
                      vars.as_ptr(),
                      weights.as_ptr())
     }));
+    try!(self.update());
 
     let sos_no = self.sos.len() as i32;
     self.sos.push(SOS::new(sos_no));
@@ -940,10 +948,9 @@ impl<'a> Model<'a> {
     let qcol = expr.qcol.into_iter().map(|v| v.index()).collect_vec();
 
     try!(self.del_qpterms());
-    try!(self.update());
+    try!(self.add_qpterms(qrow.as_slice(), qcol.as_slice(), expr.qval.as_slice()));
 
     try!(self.set_list(attr::exports::Obj, lind.as_slice(), expr.lval.as_slice()));
-    try!(self.add_qpterms(qrow.as_slice(), qcol.as_slice(), expr.qval.as_slice()));
 
     self.set(attr::exports::ModelSense, sense.into())
   }
@@ -962,7 +969,8 @@ impl<'a> Model<'a> {
 
   /// Set the value of attributes which associated with variable/constraints.
   pub fn set<A: attr::AttrBase>(&mut self, attr: A, value: A::Out) -> Result<()> {
-    self.check_apicall(unsafe { A::set_attr(self.model, attr.into().as_ptr(), util::From::from(value)) })
+    try!(self.check_apicall(unsafe { A::set_attr(self.model, attr.into().as_ptr(), util::From::from(value)) }));
+    self.update()
   }
 
 
@@ -978,12 +986,13 @@ impl<'a> Model<'a> {
   }
 
   fn set_element<A: attr::AttrArrayBase>(&mut self, attr: A, element: i32, value: A::Out) -> Result<()> {
-    self.check_apicall(unsafe {
+    try!(self.check_apicall(unsafe {
       A::set_attrelement(self.model,
                          attr.into().as_ptr(),
                          element,
                          util::From::from(value))
-    })
+    }));
+    self.update()
   }
 
   /// Query the value of attributes which associated with variable/constraints.
@@ -1009,9 +1018,10 @@ impl<'a> Model<'a> {
 
   /// Set the value of attributes which associated with variable/constraints.
   pub fn set_values<A: attr::AttrArrayBase, P: Proxy>(&mut self, attr: A, item: &[P], val: &[A::Out]) -> Result<()> {
-    self.set_list(attr,
-                  item.iter().map(|e| e.index()).collect_vec().as_slice(),
-                  val)
+    try!(self.set_list(attr,
+                       item.iter().map(|e| e.index()).collect_vec().as_slice(),
+                       val));
+    self.update()
   }
 
   fn set_list<A: attr::AttrArrayBase>(&mut self, attr: A, ind: &[i32], values: &[A::Out]) -> Result<()> {
@@ -1093,6 +1103,7 @@ impl<'a> Model<'a> {
                         pen_rhs.as_ptr(),
                         &mut feasobj)
     }));
+    try!(self.update());
 
     let cols = try!(self.get(attr::exports::NumVars)) as usize;
     let rows = try!(self.get(attr::exports::NumConstrs)) as usize;
@@ -1114,13 +1125,14 @@ impl<'a> Model<'a> {
     if x.len() != y.len() {
       return Err(Error::InconsitentDims);
     }
-    self.check_apicall(unsafe {
+    try!(self.check_apicall(unsafe {
       ffi::GRBsetpwlobj(self.model,
                         var.index(),
                         x.len() as ffi::c_int,
                         x.as_ptr(),
                         y.as_ptr())
-    })
+    }));
+    self.update()
   }
 
   /// Retrieve the status of the model.
@@ -1147,6 +1159,7 @@ impl<'a> Model<'a> {
 
     if index != -1 {
       try!(self.check_apicall(unsafe { ffi::GRBdelvars(self.model, 1, &index) }));
+      try!(self.update());
 
       self.vars.remove(index as usize);
       item.set_index(-1);
@@ -1168,6 +1181,7 @@ impl<'a> Model<'a> {
 
     if index != -1 {
       try!(self.check_apicall(unsafe { ffi::GRBdelconstrs(self.model, 1, &index) }));
+      try!(self.update());
 
       self.constrs.remove(index as usize);
       item.set_index(-1);
@@ -1189,6 +1203,7 @@ impl<'a> Model<'a> {
 
     if index != -1 {
       try!(self.check_apicall(unsafe { ffi::GRBdelqconstrs(self.model, 1, &index) }));
+      try!(self.update());
 
       self.qconstrs.remove(index as usize);
       item.set_index(-1);
@@ -1210,6 +1225,7 @@ impl<'a> Model<'a> {
 
     if index != -1 {
       try!(self.check_apicall(unsafe { ffi::GRBdelsos(self.model, 1, &index) }));
+      try!(self.update());
 
       self.sos.remove(index as usize);
       item.set_index(-1);
@@ -1225,6 +1241,7 @@ impl<'a> Model<'a> {
   /// a
   pub fn set_callback(&mut self, callback: Callback) -> Result<()> {
     try!(self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, callback_wrapper, transmute(&self)) }));
+    try!(self.update());
     self.callback = Some(callback);
     Ok(())
   }
@@ -1232,6 +1249,7 @@ impl<'a> Model<'a> {
   /// a
   pub fn reset_callback(&mut self) -> Result<()> {
     try!(self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, callback_wrapper, null_mut()) }));
+    try!(self.update());
     self.callback = None;
     Ok(())
   }
@@ -1245,7 +1263,8 @@ impl<'a> Model<'a> {
 
   /// Change a single constant matrix coefficient of the model.
   pub fn set_coeff(&mut self, var: &Var, constr: &Constr, value: f64) -> Result<()> {
-    self.check_apicall(unsafe { ffi::GRBchgcoeffs(self.model, 1, &var.index(), &constr.index(), &value) })
+    try!(self.check_apicall(unsafe { ffi::GRBchgcoeffs(self.model, 1, &var.index(), &constr.index(), &value) }));
+    self.update()
   }
 
   /// Change a set of constant matrix coefficients of the model.
@@ -1257,13 +1276,14 @@ impl<'a> Model<'a> {
     let vars = vars.iter().map(|v| v.index()).collect_vec();
     let constrs = constrs.iter().map(|c| c.index()).collect_vec();
 
-    self.check_apicall(unsafe {
+    try!(self.check_apicall(unsafe {
       ffi::GRBchgcoeffs(self.model,
                         vars.len() as ffi::c_int,
                         vars.as_ptr(),
                         constrs.as_ptr(),
                         values.as_ptr())
-    })
+    }));
+    self.update()
   }
 
   fn populate(&mut self) -> Result<()> {
@@ -1285,17 +1305,21 @@ impl<'a> Model<'a> {
 
   // add quadratic terms of objective function.
   fn add_qpterms(&mut self, qrow: &[i32], qcol: &[i32], qval: &[f64]) -> Result<()> {
-    self.check_apicall(unsafe {
+    try!(self.check_apicall(unsafe {
       ffi::GRBaddqpterms(self.model,
                          qrow.len() as ffi::c_int,
                          qrow.as_ptr(),
                          qcol.as_ptr(),
                          qval.as_ptr())
-    })
+    }));
+    self.update()
   }
 
   // remove quadratic terms of objective function.
-  fn del_qpterms(&mut self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBdelq(self.model) }) }
+  fn del_qpterms(&mut self) -> Result<()> {
+    try!(self.check_apicall(unsafe { ffi::GRBdelq(self.model) }));
+    self.update()
+  }
 
   fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
     if error != 0 {

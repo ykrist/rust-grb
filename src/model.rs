@@ -1033,6 +1033,90 @@ impl<'a> Model<'a> {
     Ok(self.constrs[xrows..].iter().cloned().collect_vec())
   }
 
+  /// Add a range constraint to the model.
+  ///
+  /// This operation adds a decision variable with lower/upper bound, and a linear
+  /// equality constraint which states that the value of variable must equal to `expr`.
+  ///
+  /// # Returns
+  /// * An decision variable associated with the model. It has lower/upper bound constraints.
+  /// * An linear equality constraint associated with the model.
+  pub fn add_range(&mut self, name: &str, expr: LinExpr, lb: f64, ub: f64) -> Result<(Var, Constr)> {
+    let constrname = try!(CString::new(name));
+    try!(self.check_apicall(unsafe {
+      ffi::GRBaddrangeconstr(self.model,
+                             expr.coeff.len() as ffi::c_int,
+                             expr.vars.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
+                             expr.coeff.as_ptr(),
+                             lb - expr.offset,
+                             ub - expr.offset,
+                             constrname.as_ptr())
+    }));
+
+    let col_no = self.vars.len() as i32;
+    self.vars.push(Var::new(col_no));
+
+    let row_no = self.constrs.len() as i32;
+    self.constrs.push(Constr::new(row_no));
+
+    Ok((self.vars.last().cloned().unwrap(), self.constrs.last().cloned().unwrap()))
+  }
+
+  /// Add range constraints to the model.
+  pub fn add_ranges(&mut self, names: &[&str], expr: &[LinExpr], lb: &[f64], ub: &[f64])
+                    -> Result<(Vec<Var>, Vec<Constr>)> {
+
+    let mut constrnames = Vec::with_capacity(names.len());
+    for &s in names.iter() {
+      let name = try!(CString::new(s));
+      constrnames.push(name.as_ptr());
+    }
+
+    let lhs = Zip::new((lb, expr)).map(|(lb, expr)| lb - expr.offset).collect_vec();
+    let rhs = Zip::new((ub, expr)).map(|(ub, expr)| ub - expr.offset).collect_vec();
+
+    let mut beg = Vec::with_capacity(expr.len());
+
+    let numnz = expr.iter().map(|expr| expr.vars.len()).sum();
+    let mut ind = Vec::with_capacity(numnz);
+    let mut val = Vec::with_capacity(numnz);
+
+    for expr in expr.iter() {
+      let nz = ind.len();
+      let vars = expr.vars.iter().map(|e| e.index()).collect_vec();
+
+      beg.push(nz as i32);
+      ind.extend(vars);
+      val.extend(&expr.coeff);
+    }
+
+    try!(self.check_apicall(unsafe {
+      ffi::GRBaddrangeconstrs(self.model,
+                              constrnames.len() as ffi::c_int,
+                              beg.len() as ffi::c_int,
+                              beg.as_ptr(),
+                              ind.as_ptr(),
+                              val.as_ptr(),
+                              lhs.as_ptr(),
+                              rhs.as_ptr(),
+                              constrnames.as_ptr())
+    }));
+
+    let xcols = self.vars.len();
+    let cols = self.vars.len() + names.len();
+    for col_no in xcols..cols {
+      self.vars.push(Var::new(col_no as i32));
+    }
+
+    let xrows = self.constrs.len();
+    let rows = self.constrs.len() + constrnames.len();
+    for row_no in xrows..rows {
+      self.constrs.push(Constr::new(row_no as i32));
+    }
+
+    Ok((self.vars[xcols..].iter().cloned().collect_vec(), self.constrs[xrows..].iter().cloned().collect_vec()))
+  }
+
   /// add a quadratic constraint to the model.
   pub fn add_qconstr(&mut self, constrname: &str, expr: QuadExpr, sense: ConstrSense, rhs: f64) -> Result<QConstr> {
     let constrname = try!(CString::new(constrname));

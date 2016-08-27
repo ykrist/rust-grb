@@ -3,6 +3,9 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
+pub mod attr;
+pub mod callback;
+
 use super::ffi;
 use super::itertools::{Itertools, Zip};
 
@@ -15,11 +18,9 @@ use std::rc::Rc;
 use std::cell::Cell;
 use std::slice::Iter;
 
-use attrib as attr;
 use env::{Env, FromRaw, ErrorFromAPI};
 use error::{Error, Result};
 use util;
-
 
 
 /// Type for new variable
@@ -470,238 +471,6 @@ impl Into<i32> for RelaxType {
   }
 }
 
-pub mod callback {
-  use std::mem::transmute;
-  use super::super::ffi;
-  use std::ptr::null;
-  use util;
-
-
-  #[derive(Debug, Clone)]
-  pub enum Where {
-    Polling = 0,
-    PreSolve,
-    Simplex,
-    MIP,
-    MIPSol,
-    MIPNode,
-    Message,
-    Barrier
-  }
-
-  impl From<i32> for Where {
-    fn from(val: i32) -> Where {
-      match val {
-        0...7 => unsafe { transmute(val as u8) },
-        _ => panic!("invalid conversion")
-      }
-    }
-  }
-
-  impl Into<i32> for Where {
-    fn into(self) -> i32 { self as i32 }
-  }
-
-
-  pub enum WhatInt {
-    PreColDel = 1000,
-    PreRowDel = 1001,
-    PreSenChg = 1002,
-    PreBndChg = 1003,
-    PreCoeChg = 1004,
-    SpxIsPert = 2004,
-    MIPSolCnt = 3003,
-    MIPCutCnt = 3004,
-    MIPSolSolCnt = 4001,
-    MIPNodeStatus = 5001,
-    MIPNodeSolCnt = 5006,
-    BarrierItrCnt = 7001
-  }
-
-  pub enum WhatDouble {
-    Runtime = 6001,
-    SpxItrCnt = 2000,
-    SpxObjVal = 2001,
-    SpxPrimInf = 2002,
-    SpxDualInf = 2003,
-    MIPObjBst = 3000,
-    MIPObjBnd = 3001,
-    MIPNodCnt = 3002,
-    MIPNodLeft = 3005,
-    MIPItrCnt = 3006,
-    MIPSolObj = 4002,
-    MIPSolObjBst = 4003,
-    MIPSolObjBnd = 4004,
-    MIPSolNodCnt = 4005,
-    MIPNodeObjBst = 5003,
-    MIPNodeObjBnd = 5004,
-    MIPNodeNodCnt = 5005,
-    BarrierPrimObj = 7002,
-    BarrierDualObj = 7003,
-    BarrierPrimInf = 7004,
-    BarrierDualInf = 7005,
-    BarrierCompl = 7006
-  }
-
-  pub enum WhatDoubleArray {
-    MIPSolSol = 4001,
-    MIPNodeRel = 5002
-  }
-
-  pub enum WhatString {
-    MsgString = 6002
-  }
-
-  pub trait What: Into<i32> {
-    type Output;
-    type Buf;
-
-    fn init() -> Self::Buf;
-    fn to_out(buf: Self::Buf) -> Self::Output;
-  }
-
-
-  impl Into<i32> for WhatInt {
-    fn into(self) -> i32 { self as i32 }
-  }
-
-  impl Into<i32> for WhatDouble {
-    fn into(self) -> i32 { self as i32 }
-  }
-
-  impl Into<i32> for WhatDoubleArray {
-    fn into(self) -> i32 { self as i32 }
-  }
-
-  impl Into<i32> for WhatString {
-    fn into(self) -> i32 { self as i32 }
-  }
-
-  impl What for WhatInt {
-    type Output = i32;
-    type Buf = ffi::c_int;
-    fn init() -> ffi::c_int { 0 }
-    fn to_out(buf: ffi::c_int) -> i32 { buf }
-  }
-
-  impl What for WhatDouble {
-    type Output = f64;
-    type Buf = ffi::c_double;
-    fn init() -> ffi::c_double { 0.0 }
-    fn to_out(buf: ffi::c_double) -> f64 { buf }
-  }
-
-  impl What for WhatString {
-    type Output = String;
-    type Buf = ffi::c_str;
-    fn init() -> ffi::c_str { null() }
-    fn to_out(buf: ffi::c_str) -> String { unsafe { util::from_c_str(buf) } }
-  }
-
-
-  // re-exports
-  pub use self::Where::*;
-  pub use self::WhatInt::*;
-  pub use self::WhatDouble::*;
-  pub use self::WhatDoubleArray::*;
-  pub use self::WhatString::*;
-}
-
-
-#[allow(dead_code)]
-pub struct Context<'a> {
-  cbdata: *mut ffi::c_void,
-  loc: callback::Where,
-  model: &'a Model<'a>,
-  ncols: usize
-}
-
-impl<'a> Context<'a> {
-  pub fn get_loc(&self) -> &callback::Where { &self.loc }
-
-  pub fn get_model(&self) -> &Model { self.model }
-
-  pub fn get<C: callback::What>(&self, what: C) -> Result<C::Output> {
-    let mut buf = C::init();
-    let error = unsafe {
-      ffi::GRBcbget(self.cbdata,
-                    self.loc.clone().into(),
-                    what.into(),
-                    transmute(&mut buf))
-    };
-    if error != 0 {
-      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
-    }
-    Ok(C::to_out(buf))
-  }
-
-  pub fn get_array(&self, what: callback::WhatDoubleArray) -> Result<Vec<f64>> {
-    let mut buf = vec![0.0; self.ncols];
-    let error = unsafe {
-      ffi::GRBcbget(self.cbdata,
-                    self.loc.clone().into(),
-                    what.into(),
-                    transmute(buf.as_mut_ptr()))
-    };
-    if error != 0 {
-      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
-    }
-    Ok(buf)
-  }
-
-  /// Add a new cutting plane to the MIP model.
-  pub fn add_cut(&self, lhs: LinExpr, sense: ConstrSense, rhs: f64) -> Result<()> {
-    let error = unsafe {
-      ffi::GRBcbcut(self.cbdata,
-                    lhs.coeff.len() as ffi::c_int,
-                    lhs.vars.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
-                    lhs.coeff.as_ptr(),
-                    sense.into(),
-                    rhs - lhs.offset)
-    };
-    if error != 0 {
-      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
-    }
-    Ok(())
-  }
-
-
-  /// Add a new lazy constraint to the MIP model.
-  pub fn add_lazy(&self, lhs: LinExpr, sense: ConstrSense, rhs: f64) -> Result<()> {
-    let error = unsafe {
-      ffi::GRBcblazy(self.cbdata,
-                     lhs.coeff.len() as ffi::c_int,
-                     lhs.vars.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
-                     lhs.coeff.as_ptr(),
-                     sense.into(),
-                     rhs - lhs.offset)
-    };
-    if error != 0 {
-      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
-    }
-    Ok(())
-  }
-
-  /// Provide a new feasible solution for a MIP model.
-  pub fn set_solution(&self, solution: &[f64]) -> Result<()> {
-    if solution.len() < self.ncols {
-      return Err(Error::InconsitentDims);
-    }
-    let error = unsafe { ffi::GRBcbsolution(self.cbdata, solution.as_ptr()) };
-
-    if error != 0 {
-      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
-    }
-    Ok(())
-  }
-
-  /// terminate the optimization.
-  pub fn terminate(&self) { self.get_model().terminate(); }
-}
-
-
-pub type Callback = fn(Context) -> Result<()>;
-
 extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_void, loc: ffi::c_int,
                                usrdata: *mut ffi::c_void)
                                -> ffi::c_int {
@@ -717,13 +486,7 @@ extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_vo
   }
 
   if let Some(callback) = themodel.callback {
-    let context = Context {
-      cbdata: cbdata,
-      loc: loc.into(),
-      model: &themodel,
-      ncols: themodel.vars.len()
-    };
-
+    let context = callback::Context::new(cbdata, loc.into(), &themodel);
     match callback(context) {
       Ok(_) => 0,
       Err(_) => -1,
@@ -742,7 +505,7 @@ pub struct Model<'a> {
   constrs: Vec<Constr>,
   qconstrs: Vec<QConstr>,
   sos: Vec<SOS>,
-  callback: Option<Callback>
+  callback: Option<callback::Callback>
 }
 
 impl<'a> Model<'a> {
@@ -1455,12 +1218,14 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
-  pub fn set_callback(&mut self, callback: Callback) -> Result<()> {
+  /// a
+  pub fn set_callback(&mut self, callback: callback::Callback) -> Result<()> {
     try!(self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, callback_wrapper, transmute(&self)) }));
     self.callback = Some(callback);
     Ok(())
   }
 
+  /// a
   pub fn reset_callback(&mut self) -> Result<()> {
     try!(self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, callback_wrapper, null_mut()) }));
     self.callback = None;

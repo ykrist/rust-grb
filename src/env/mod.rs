@@ -3,13 +3,14 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
+pub mod param;
+
 use super::ffi;
 
 use std::ffi::CString;
 use std::ptr::{null, null_mut};
 use error::{Error, Result};
 use model::Model;
-use parameter;
 use util;
 
 /// Gurobi environment object
@@ -79,7 +80,7 @@ impl Env {
 
 
   /// Query the value of a parameter
-  pub fn get<P: parameter::ParamBase>(&self, param: P) -> Result<P::Out> {
+  pub fn get<P: param::ParamBase>(&self, param: P) -> Result<P::Out> {
     use util::AsRawPtr;
     let mut value: P::Buf = util::Init::init();
     try!(self.check_apicall(unsafe { P::get_param(self.env, param.into().as_ptr(), value.as_rawptr()) }));
@@ -88,7 +89,7 @@ impl Env {
   }
 
   /// Set the value of a parameter
-  pub fn set<P: parameter::ParamBase>(&mut self, param: P, value: P::Out) -> Result<()> {
+  pub fn set<P: param::ParamBase>(&mut self, param: P, value: P::Out) -> Result<()> {
     self.check_apicall(unsafe { P::set_param(self.env, param.into().as_ptr(), util::FromRaw::from(value)) })
   }
 

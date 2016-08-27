@@ -13,7 +13,7 @@ pub mod exports {
 }
 use self::exports::*;
 
-use super::ffi;
+use super::super::ffi;
 use std::ffi::CString;
 use util;
 use error::Result;

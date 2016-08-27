@@ -18,7 +18,7 @@ use std::rc::Rc;
 use std::cell::Cell;
 use std::slice::Iter;
 
-use self::callback::Context;
+use self::callback::{Context, New};
 use env::{Env, FromRaw, ErrorFromAPI};
 use error::{Error, Result};
 use util;
@@ -490,7 +490,7 @@ extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_vo
   }
 
   if let Some(callback) = themodel.callback {
-    let context = callback::Context::new(cbdata, loc.into(), &themodel);
+    let context = Context::new(cbdata, loc.into(), &themodel);
     match callback(context) {
       Ok(_) => 0,
       Err(_) => -1,

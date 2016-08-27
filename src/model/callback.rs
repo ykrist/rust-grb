@@ -252,9 +252,14 @@ impl<'a> Context<'a> {
     }
     Ok(())
   }
+}
 
+pub trait New<'a> {
+  fn new(cbdata: *mut ffi::c_void, where_: Where, model: &'a Model<'a>) -> Context<'a>;
+}
 
-  pub fn new(cbdata: *mut ffi::c_void, where_: Where, model: &'a Model<'a>) -> Context<'a> {
+impl<'a> New<'a> for Context<'a> {
+  fn new(cbdata: *mut ffi::c_void, where_: Where, model: &'a Model<'a>) -> Context<'a> {
     Context {
       cbdata: cbdata,
       where_: where_,
@@ -263,8 +268,8 @@ impl<'a> Context<'a> {
   }
 }
 
+
 impl<'a> Deref for Context<'a> {
   type Target = Model<'a>;
   fn deref(&self) -> &Model<'a> { self.model }
 }
-

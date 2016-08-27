@@ -18,6 +18,7 @@ use std::rc::Rc;
 use std::cell::Cell;
 use std::slice::Iter;
 
+use self::callback::Context;
 use env::{Env, FromRaw, ErrorFromAPI};
 use error::{Error, Result};
 use util;
@@ -123,6 +124,33 @@ impl From<i32> for Status {
     }
   }
 }
+
+/// Type of cost function at feasibility relaxation
+#[derive(Debug)]
+pub enum RelaxType {
+  /// The weighted magnitude of bounds and constraint violations
+  /// (`penalty(s_i) = w_i s_i`)
+  Linear,
+
+  /// The weighted square of magnitude of bounds and constraint violations
+  /// (`penalty(s_i) = w_i s_i^2`)
+  Quadratic,
+
+  /// The weighted count of bounds and constraint violations
+  /// (`penalty(s_i) = w_i * [s_i > 0]`)
+  Cardinality
+}
+
+impl Into<i32> for RelaxType {
+  fn into(self) -> i32 {
+    match self {
+      RelaxType::Linear => 0,
+      RelaxType::Quadratic => 1,
+      RelaxType::Cardinality => 2,
+    }
+  }
+}
+
 
 
 pub trait ProxyBase {
@@ -445,31 +473,7 @@ impl<'a> Add<&'a Var> for LinExpr {
 
 
 
-/// Type of cost function at feasibility relaxation
-#[derive(Debug)]
-pub enum RelaxType {
-  /// The weighted magnitude of bounds and constraint violations
-  /// (`penalty(s_i) = w_i s_i`)
-  Linear,
-
-  /// The weighted square of magnitude of bounds and constraint violations
-  /// (`penalty(s_i) = w_i s_i^2`)
-  Quadratic,
-
-  /// The weighted count of bounds and constraint violations
-  /// (`penalty(s_i) = w_i * [s_i > 0]`)
-  Cardinality
-}
-
-impl Into<i32> for RelaxType {
-  fn into(self) -> i32 {
-    match self {
-      RelaxType::Linear => 0,
-      RelaxType::Quadratic => 1,
-      RelaxType::Cardinality => 2,
-    }
-  }
-}
+pub type Callback = fn(Context) -> Result<()>;
 
 extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_void, loc: ffi::c_int,
                                usrdata: *mut ffi::c_void)
@@ -505,7 +509,7 @@ pub struct Model<'a> {
   constrs: Vec<Constr>,
   qconstrs: Vec<QConstr>,
   sos: Vec<SOS>,
-  callback: Option<callback::Callback>
+  callback: Option<Callback>
 }
 
 impl<'a> Model<'a> {
@@ -1219,7 +1223,7 @@ impl<'a> Model<'a> {
   }
 
   /// a
-  pub fn set_callback(&mut self, callback: callback::Callback) -> Result<()> {
+  pub fn set_callback(&mut self, callback: Callback) -> Result<()> {
     try!(self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, callback_wrapper, transmute(&self)) }));
     self.callback = Some(callback);
     Ok(())

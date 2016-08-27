@@ -268,6 +268,3 @@ impl<'a> Deref for Context<'a> {
   fn deref(&self) -> &Model<'a> { self.model }
 }
 
-
-
-pub type Callback = fn(Context) -> Result<()>;

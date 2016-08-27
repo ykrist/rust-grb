@@ -1292,6 +1292,35 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
+  /// Retrieve a single constant matrix coefficient of the model.
+  pub fn get_coeff(&self, var: &Var, constr: &Constr) -> Result<f64> {
+    let mut value = 0.0;
+    try!(self.check_apicall(unsafe { ffi::GRBgetcoeff(self.model, var.index(), constr.index(), &mut value) }));
+    Ok(value)
+  }
+
+  /// Change a single constant matrix coefficient of the model.
+  pub fn set_coeff(&mut self, var: &Var, constr: &Constr, value: f64) -> Result<()> {
+    self.check_apicall(unsafe { ffi::GRBchgcoeffs(self.model, 1, &var.index(), &constr.index(), &value) })
+  }
+
+  /// Change a set of constant matrix coefficients of the model.
+  pub fn set_coeffs(&mut self, vars: &[&Var], constrs: &[&Constr], values: &[f64]) -> Result<()> {
+    if vars.len() != values.len() || constrs.len() != values.len() {
+      return Err(Error::InconsitentDims);
+    }
+
+    let vars = vars.iter().map(|v| v.index()).collect_vec();
+    let constrs = constrs.iter().map(|c| c.index()).collect_vec();
+
+    self.check_apicall(unsafe {
+      ffi::GRBchgcoeffs(self.model,
+                        vars.len() as ffi::c_int,
+                        vars.as_ptr(),
+                        constrs.as_ptr(),
+                        values.as_ptr())
+    })
+  }
 
   fn populate(&mut self) -> Result<()> {
     self.callback = None;

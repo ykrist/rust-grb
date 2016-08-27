@@ -151,16 +151,13 @@ impl<'a> Context<'a> {
   /// a
   pub fn get<C: What>(&self, what: C) -> Result<C::Out> {
     let mut buf = C::Buf::default();
-    let error = unsafe {
-      ffi::GRBcbget(self.cbdata,
-                    self.where_.clone().into(),
-                    what.into(),
-                    transmute(&mut buf))
-    };
-    if error != 0 {
-      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
-    }
-    Ok(buf.into())
+    self.check_apicall(unsafe {
+        ffi::GRBcbget(self.cbdata,
+                      self.where_.clone().into(),
+                      what.into(),
+                      transmute(&mut buf))
+      })
+      .and(Ok(buf.into()))
   }
 
   /// a
@@ -168,17 +165,13 @@ impl<'a> Context<'a> {
     const MSG_STRING: i32 = 6002;
 
     let mut buf = null();
-    let error = unsafe {
-      ffi::GRBcbget(self.cbdata,
-                    self.where_.clone().into(),
-                    MSG_STRING,
-                    transmute(&mut buf))
-    };
-    if error != 0 {
-      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
-    }
-
-    Ok(unsafe { util::from_c_str(buf) })
+    self.check_apicall(unsafe {
+        ffi::GRBcbget(self.cbdata,
+                      self.where_.clone().into(),
+                      MSG_STRING,
+                      transmute(&mut buf))
+      })
+      .and(Ok(unsafe { util::from_c_str(buf) }))
   }
 
   /// a
@@ -195,17 +188,14 @@ impl<'a> Context<'a> {
 
   fn get_double_array(&self, vars: &[Var], what: i32) -> Result<Vec<f64>> {
     let mut buf = vec![0.0; self.model.vars.len()];
-    let error = unsafe {
-      ffi::GRBcbget(self.cbdata,
-                    self.where_.clone().into(),
-                    what,
-                    transmute(buf.as_mut_ptr()))
-    };
-    if error != 0 {
-      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
-    }
 
-    Ok(vars.iter().map(|v| buf[v.index() as usize]).collect_vec())
+    self.check_apicall(unsafe {
+        ffi::GRBcbget(self.cbdata,
+                      self.where_.clone().into(),
+                      what,
+                      transmute(buf.as_mut_ptr()))
+      })
+      .and(Ok(vars.iter().map(|v| buf[v.index() as usize]).collect_vec()))
   }
 
   /// Provide a new feasible solution for a MIP model.
@@ -213,40 +203,35 @@ impl<'a> Context<'a> {
     if solution.len() < self.model.vars.len() {
       return Err(Error::InconsitentDims);
     }
-    let error = unsafe { ffi::GRBcbsolution(self.cbdata, solution.as_ptr()) };
 
-    if error != 0 {
-      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
-    }
-    Ok(())
+    self.check_apicall(unsafe { ffi::GRBcbsolution(self.cbdata, solution.as_ptr()) })
   }
 
   /// Add a new cutting plane to the MIP model.
   pub fn add_cut(&self, lhs: LinExpr, sense: ConstrSense, rhs: f64) -> Result<()> {
-    let error = unsafe {
+    self.check_apicall(unsafe {
       ffi::GRBcbcut(self.cbdata,
                     lhs.coeff.len() as ffi::c_int,
                     lhs.vars.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
                     lhs.coeff.as_ptr(),
                     sense.into(),
                     rhs - lhs.offset)
-    };
-    if error != 0 {
-      return Err(Error::FromAPI("Callback error".to_owned(), 40000));
-    }
-    Ok(())
+    })
   }
 
   /// Add a new lazy constraint to the MIP model.
   pub fn add_lazy(&self, lhs: LinExpr, sense: ConstrSense, rhs: f64) -> Result<()> {
-    let error = unsafe {
+    self.check_apicall(unsafe {
       ffi::GRBcblazy(self.cbdata,
                      lhs.coeff.len() as ffi::c_int,
                      lhs.vars.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
                      lhs.coeff.as_ptr(),
                      sense.into(),
                      rhs - lhs.offset)
-    };
+    })
+  }
+
+  fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
     if error != 0 {
       return Err(Error::FromAPI("Callback error".to_owned(), 40000));
     }

@@ -6,7 +6,6 @@
 extern crate gurobi;
 use gurobi::*;
 
-
 fn main() {
   let mut env = Env::new("callback.log").unwrap();
   env.set(param::OutputFlag, 0).unwrap();

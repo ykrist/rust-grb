@@ -1,4 +1,4 @@
-# rust-gurobi-sys
+# gurobi-sys
 
 Rust FFI declaration for Gurobi C API.
 

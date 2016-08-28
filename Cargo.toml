@@ -1,16 +1,16 @@
 [package]
 name = "gurobi"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Yusuke Sasaki <y_sasaki@nuem.nagoya-u.ac.jp>"]
 description = "An unofficial Rust API for Gurobi optimizer"
 license = "MIT"
 homepage = "https://github.com/ys-nuem/rust-gurobi"
 repository = "https://github.com/ys-nuem/rust-gurobi.git"
-documentation = "https://ys-nuem.github.io/rust-gurobi/v0.2.0/gurobi/index.html"
+documentation = "https://ys-nuem.github.io/rust-gurobi/index.html"
 
 [dependencies]
 itertools = "0.4.18"
 
 [dependencies.gurobi-sys]
 path = "./gurobi-sys"
-version = "0.1.4"
+version = "0.3.0"

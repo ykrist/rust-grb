@@ -1,10 +1,10 @@
 [package]
 name = "gurobi-sys"
-version = "0.1.4"
+version = "0.3.0"
 authors = ["Yusuke Sasaki <y_sasaki@nuem.nagoya-u.ac.jp>"]
-description = "Unofficial low-level FFI bindings for Gurobi C API"
+description = "Low-level FFI bindings of Gurobi C API for Rust (unofficial)"
 license = "MIT"
+homepage = "https://github.com/ys-nuem/rust-gurobi/tree/master/gurobi-sys"
 repository = "https://github.com/ys-nuem/rust-gurobi.git"
-documentation = "https://ys-nuem.github.io/rust-gurobi/doc/gurobi_sys/index.html"
 
 build = "build.rs"

@@ -4,7 +4,7 @@
 
 An unofficial Rust API for Gurobi optimizer.
 
-* Documentation - [master](https://ys-nuem.github.io/rust-gurobi/master/gurobi/index.html) / [0.2.0 (latest)](https://ys-nuem.github.io/rust-gurobi/v0.2.0/gurobi/index.html)
+* Documentation - [master](https://ys-nuem.github.io/rust-gurobi/master/gurobi/index.html) / [0.3.0 (latest)](https://ys-nuem.github.io/rust-gurobi/v0.3.0/gurobi/index.html) / [0.2.0](https://ys-nuem.github.io/rust-gurobi/v0.2.0/gurobi/index.html)
 
 
 ## Notices

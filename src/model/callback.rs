@@ -45,7 +45,6 @@ const MIP_SOLCNT: i32 = 3003;
 const MIP_CUTCNT: i32 = 3004;
 const MIP_NODLFT: i32 = 3005;
 const MIP_ITRCNT: i32 = 3006;
-
 #[allow(dead_code)]
 const MIP_OBJBNDC: i32 = 3007;
 
@@ -80,12 +79,16 @@ const BARRIER_DUALINF: i32 = 7005;
 const BARRIER_COMPL: i32 = 7006;
 
 
+/// Location where the callback called
+///
+/// If you want to get more information, see [official
+/// manual](https://www.gurobi.com/documentation/6.5/refman/callback_codes.html).
 #[derive(Debug, Clone)]
 pub enum Where {
-  /// b
+  /// Periodic polling callback
   Polling,
 
-  /// a
+  /// Currently performing presolve
   PreSolve {
     /// The number of columns removed by presolve to this point.
     coldel: i32,
@@ -99,7 +102,7 @@ pub enum Where {
     coecfg: i32
   },
 
-  /// c
+  /// Currently in simplex
   Simplex {
     /// Current simplex iteration count.
     itrcnt: f64,
@@ -113,7 +116,7 @@ pub enum Where {
     ispert: i32
   },
 
-  /// d
+  /// Currently in MIP
   MIP {
     /// Current best objective.
     objbst: f64,
@@ -131,7 +134,7 @@ pub enum Where {
     itrcnt: f64
   },
 
-  /// e
+  /// Found a new MIP incumbent
   MIPSol {
     /// Objective value for new solution.
     obj: f64,
@@ -145,7 +148,7 @@ pub enum Where {
     solcnt: f64
   },
 
-  /// f
+  /// Currently exploring a MIP node
   MIPNode {
     /// Optimization status of current MIP node (see the Status Code section for further information).
     status: i32,
@@ -159,10 +162,10 @@ pub enum Where {
     solcnt: i32
   },
 
-  /// f
+  /// Printing a log message
   Message(String),
 
-  /// d
+  /// Currently in barrier.
   Barrier {
     /// Current barrier iteration count.
     itrcnt: i32,
@@ -195,7 +198,7 @@ impl Into<i32> for Where {
 }
 
 
-/// Gurobi callback object
+/// The context object for Gurobi callback.
 pub struct Callback<'a> {
   cbdata: *mut ffi::c_void,
   where_: Where,
@@ -315,7 +318,7 @@ impl<'a> Callback<'a> {
     self.check_apicall(unsafe { ffi::GRBcbsolution(self.cbdata, buf.as_ptr()) })
   }
 
-  ///
+  /// Retrieve the elapsed solver runtime [sec].
   pub fn get_runtime(&self) -> Result<f64> {
     match self.get_where() {
       Where::Polling => return Err(Error::FromAPI("bad call in callback".to_owned(), 40001)),

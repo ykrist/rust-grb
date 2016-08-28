@@ -5,7 +5,7 @@
 
 pub mod param;
 
-use super::ffi;
+use ffi;
 
 use std::ffi::CString;
 use std::ptr::{null, null_mut};

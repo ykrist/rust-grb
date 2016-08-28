@@ -6,8 +6,8 @@
 pub mod attr;
 pub mod callback;
 
-use super::ffi;
-use super::itertools::{Itertools, Zip};
+use ffi;
+use itertools::{Itertools, Zip};
 
 use std::ffi::CString;
 use std::iter;
@@ -18,7 +18,7 @@ use std::rc::Rc;
 use std::cell::Cell;
 use std::slice::Iter;
 
-use self::callback::{Context, New};
+use self::callback::{Callback, New};
 use env::{Env, FromRaw, ErrorFromAPI};
 use error::{Error, Result};
 use util;
@@ -472,32 +472,39 @@ impl<'a> Add<&'a Var> for LinExpr {
 }
 
 
+struct CallbackData<'a> {
+  model: &'a Model<'a>,
+  callback: &'a mut FnMut(Callback) -> Result<()>
+}
 
-pub type Callback = fn(Context) -> Result<()>;
-
+#[allow(unused_variables)]
 extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_void, loc: ffi::c_int,
                                usrdata: *mut ffi::c_void)
                                -> ffi::c_int {
-  // null callback
-  if usrdata.is_null() {
-    return 0;
-  }
 
-  let themodel: &Model = unsafe { transmute(usrdata) };
-  if themodel.model != model {
-    println!("invalid callback context.");
+  let mut usrdata: &mut CallbackData = unsafe { transmute(usrdata) };
+
+  let callback: &mut FnMut(Callback) -> Result<()> = usrdata.callback;
+
+  let context = Callback::new(cbdata, loc.into(), &usrdata.model);
+  if context.is_err() {
+    println!("failed to create context: {:?}", context.err().unwrap());
     return -1;
   }
+  let context = context.unwrap();
 
-  if let Some(callback) = themodel.callback {
-    let context = Context::new(cbdata, loc.into(), &themodel);
-    match callback(context) {
-      Ok(_) => 0,
-      Err(_) => -1,
-    }
-  } else {
-    0
+  let ret = callback(context);
+  match ret {
+    Ok(_) => 0,
+    Err(_) => -1,
   }
+}
+
+#[allow(unused_variables)]
+extern "C" fn null_callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_void, loc: ffi::c_int,
+                                    usrdata: *mut ffi::c_void)
+                                    -> ffi::c_int {
+  0
 }
 
 
@@ -508,8 +515,7 @@ pub struct Model<'a> {
   vars: Vec<Var>,
   constrs: Vec<Constr>,
   qconstrs: Vec<QConstr>,
-  sos: Vec<SOS>,
-  callback: Option<Callback>
+  sos: Vec<SOS>
 }
 
 impl<'a> Model<'a> {
@@ -521,8 +527,7 @@ impl<'a> Model<'a> {
       vars: Vec::new(),
       constrs: Vec::new(),
       qconstrs: Vec::new(),
-      sos: Vec::new(),
-      callback: None
+      sos: Vec::new()
     };
     try!(model.populate());
     Ok(model)
@@ -535,10 +540,7 @@ impl<'a> Model<'a> {
       return Err(Error::FromAPI("Failed to create a copy of the model".to_owned(), 20002));
     }
 
-    Model::new(self.env, copied).map(|mut model| {
-      model.callback = self.callback;
-      model
-    })
+    Model::new(self.env, copied)
   }
 
   /// Create an fixed model associated with the model.
@@ -594,6 +596,24 @@ impl<'a> Model<'a> {
   pub fn optimize_async(&mut self) -> Result<()> {
     try!(self.update());
     self.check_apicall(unsafe { ffi::GRBoptimizeasync(self.model) })
+  }
+
+  /// Optimize the model with a callback function
+  pub fn optimize_with_callback<F>(&mut self, mut callback: F) -> Result<()>
+    where F: FnMut(Callback) -> Result<()> + 'static
+  {
+    let usrdata = CallbackData {
+      model: self,
+      callback: &mut callback
+    };
+    try!(self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, callback_wrapper, transmute(&usrdata)) }));
+
+    try!(self.check_apicall(unsafe { ffi::GRBoptimize(self.model) }));
+
+    // clear callback from the model.
+    // Notice: Rust does not have approproate mechanism which treats "null" C-style function
+    // pointer.
+    self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, null_callback_wrapper, null_mut()) })
   }
 
   /// Wait for a optimization called asynchronously.
@@ -1238,22 +1258,6 @@ impl<'a> Model<'a> {
     Ok(())
   }
 
-  /// a
-  pub fn set_callback(&mut self, callback: Callback) -> Result<()> {
-    try!(self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, callback_wrapper, transmute(&self)) }));
-    try!(self.update());
-    self.callback = Some(callback);
-    Ok(())
-  }
-
-  /// a
-  pub fn reset_callback(&mut self) -> Result<()> {
-    try!(self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, callback_wrapper, null_mut()) }));
-    try!(self.update());
-    self.callback = None;
-    Ok(())
-  }
-
   /// Retrieve a single constant matrix coefficient of the model.
   pub fn get_coeff(&self, var: &Var, constr: &Constr) -> Result<f64> {
     let mut value = 0.0;
@@ -1287,8 +1291,6 @@ impl<'a> Model<'a> {
   }
 
   fn populate(&mut self) -> Result<()> {
-    self.callback = None;
-
     let cols = try!(self.get(attr::exports::NumVars)) as usize;
     let rows = try!(self.get(attr::exports::NumConstrs)) as usize;
     let numqconstrs = try!(self.get(attr::exports::NumQConstrs)) as usize;

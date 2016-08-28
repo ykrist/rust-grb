@@ -3,8 +3,6 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-use super::super::ffi;
-
 /// Defines the name of parameters
 pub mod exports {
   pub use ffi::{IntParam, DoubleParam, StringParam};
@@ -16,6 +14,7 @@ pub mod exports {
 }
 use self::exports::*;
 
+use ffi;
 use std::ffi::CString;
 use util;
 

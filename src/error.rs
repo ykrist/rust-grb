@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-use super::ffi;
+use ffi;
 use std;
 
 /// The error type for operations in Gurobi Rust API

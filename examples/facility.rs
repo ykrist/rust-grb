@@ -27,33 +27,25 @@ fn main() {
   let env = Env::new("facility.log").unwrap();
   let mut model = env.new_model("facility").unwrap();
 
-  let mut coeff = Vec::with_capacity(fixed_costs.len() + fixed_costs.len() * demand.len());
-
   // plant open decision variables.
   // open[p] == 1 means that plant p is open.
-  let mut open = Vec::with_capacity(fixed_costs.len());
-  for (p, &cost) in fixed_costs.iter().enumerate() {
-    open.push(model.add_var(&format!("Open{}", p), Binary).unwrap());
-    coeff.push(cost);
-  }
-  let open = open;
+  let open: Vec<Var> =
+    (0..(fixed_costs.len())).map(|p| model.add_var(&format!("Open{}", p), Binary).unwrap()).collect();
 
   // transportation decision variables.
   // how much transport from a plant p to a warehouse w
-  let mut transport = Vec::with_capacity(trans_costs.len());
-  for (w, costs) in trans_costs.iter().enumerate() {
-    transport.push(Vec::with_capacity(costs.len()));
-    for (p, &cost) in costs.iter().enumerate() {
-      transport.last_mut()
-        .unwrap()
-        .push(model.add_var(&format!("Trans{}.{}", p, w), Continuous(0.0, INFINITY)).unwrap());
-      coeff.push(cost);
-    }
-  }
-  let transport = transport;
+  let transport: Vec<Vec<_>> = trans_costs.iter()
+    .enumerate()
+    .map(|(w, costs)| {
+      (0..(costs.len()))
+        .map(|p| model.add_var(&format!("Trans{}.{}", p, w), Continuous(0.0, INFINITY)).unwrap())
+        .collect()
+    })
+    .collect();
 
-  let expr = Zip::new((open.iter().chain(transport.iter().flatten()), coeff))
-    .fold(LinExpr::new(), |expr, (x, c)| expr + c * x);
+  let expr = Zip::new((open.iter().chain(transport.iter().flatten()),
+                       fixed_costs.iter().chain(trans_costs.iter().flatten())))
+    .fold(LinExpr::new(), |expr, (x, &c)| expr + c * x);
   model.set_objective(expr, Minimize).unwrap();
   model.update().unwrap();
 

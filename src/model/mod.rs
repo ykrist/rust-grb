@@ -74,8 +74,8 @@ pub enum ModelSense {
 impl Into<i32> for ModelSense {
   fn into(self) -> i32 {
     match self {
-      ModelSense::Minimize => -1,
-      ModelSense::Maximize => 1,
+      ModelSense::Minimize => 1,
+      ModelSense::Maximize => -1,
     }
   }
 }

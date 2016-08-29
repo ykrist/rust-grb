@@ -9,13 +9,13 @@ pub mod callback;
 use ffi;
 use itertools::{Itertools, Zip};
 
+use std::cell::Cell;
 use std::ffi::CString;
 use std::iter;
-use std::ptr::{null, null_mut};
-use std::ops::{Add, Sub, Mul};
 use std::mem::transmute;
+use std::ops::{Add, Sub, Mul};
+use std::ptr::{null, null_mut};
 use std::rc::Rc;
-use std::cell::Cell;
 use std::slice::Iter;
 
 use self::callback::{Callback, New};
@@ -522,6 +522,7 @@ extern "C" fn null_callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi:
 /// Gurobi model object associated with certain environment.
 pub struct Model {
   model: *mut ffi::GRBmodel,
+  env: Env,
   vars: Vec<Var>,
   constrs: Vec<Constr>,
   qconstrs: Vec<QConstr>,
@@ -530,9 +531,10 @@ pub struct Model {
 
 impl Model {
   /// create an empty model which associated with certain environment.
-  pub fn new(model: *mut ffi::GRBmodel) -> Result<Model> {
+  pub fn new(env: Env, model: *mut ffi::GRBmodel) -> Result<Model> {
     let mut model = Model {
       model: model,
+      env: env,
       vars: Vec::new(),
       constrs: Vec::new(),
       qconstrs: Vec::new(),
@@ -549,7 +551,7 @@ impl Model {
       return Err(Error::FromAPI("Failed to create a copy of the model".to_owned(), 20002));
     }
 
-    Model::new(copied)
+    Model::new(self.env.clone(), copied)
   }
 
   /// Create an fixed model associated with the model.
@@ -562,7 +564,7 @@ impl Model {
     if fixed.is_null() {
       return Err(Error::FromAPI("failed to create fixed model".to_owned(), 20002));
     }
-    Model::new(fixed)
+    Model::new(self.env.clone(), fixed)
   }
 
   /// Create an relaxation of the model (undocumented).
@@ -571,7 +573,7 @@ impl Model {
     if relaxed.is_null() {
       return Err(Error::FromAPI("failed to create relaxed model".to_owned(), 20002));
     }
-    Model::new(relaxed)
+    Model::new(self.env.clone(), relaxed)
   }
 
   /// Perform presolve on the model.
@@ -580,7 +582,7 @@ impl Model {
     if presolved.is_null() {
       return Err(Error::FromAPI("failed to create presolved model".to_owned(), 20002));
     }
-    Model::new(presolved)
+    Model::new(self.env.clone(), presolved)
   }
 
   /// Create a feasibility model (undocumented).
@@ -589,7 +591,7 @@ impl Model {
     if feasibility.is_null() {
       return Err(Error::FromAPI("failed to create feasibility model".to_owned(), 20002));
     }
-    Model::new(feasibility)
+    Model::new(self.env.clone(), feasibility)
   }
 
   /// Apply all modification of the model to process

@@ -9,14 +9,28 @@ use ffi;
 
 use std::ffi::CString;
 use std::ptr::{null, null_mut};
+use std::rc::Rc;
+
 use error::{Error, Result};
 use model::Model;
 use util;
 
-/// Gurobi environment object
-pub struct Env {
-  env: *mut ffi::GRBenv
+/// internal data for Env.
+struct EnvRep {
+  ptr: *mut ffi::GRBenv
 }
+
+impl Drop for EnvRep {
+  fn drop(&mut self) {
+    unsafe { ffi::GRBfreeenv(self.ptr) };
+    self.ptr = null_mut();
+  }
+}
+
+
+/// Gurobi environment object
+#[derive(Clone)]
+pub struct Env(Rc<EnvRep>);
 
 impl Env {
   /// Create an environment with log file
@@ -27,11 +41,11 @@ impl Env {
     if error != 0 {
       return Err(Error::FromAPI(get_error_msg(env), error));
     }
-    Ok(Env { env: env })
+    Ok(Env::from_raw(env))
   }
 
   /// Create a client environment on a computer server with log file
-  pub fn client(logfilename: &str, computeserver: &str, port: i32, password: &str, priority: i32, timeout: f64)
+  pub fn new_client(logfilename: &str, computeserver: &str, port: i32, password: &str, priority: i32, timeout: f64)
                 -> Result<Env> {
     let mut env = null_mut();
     let logfilename = try!(CString::new(logfilename));
@@ -49,7 +63,7 @@ impl Env {
     if error != 0 {
       return Err(Error::FromAPI(get_error_msg(env), error));
     }
-    Ok(Env { env: env })
+    Ok(Env::from_raw(env))
   }
 
   /// Create an empty model object associted with the environment
@@ -57,7 +71,7 @@ impl Env {
     let modelname = try!(CString::new(modelname));
     let mut model = null_mut();
     try!(self.check_apicall(unsafe {
-      ffi::GRBnewmodel(self.env,
+      ffi::GRBnewmodel(self.0.ptr,
                        &mut model,
                        modelname.as_ptr(),
                        0,
@@ -67,49 +81,51 @@ impl Env {
                        null(),
                        null())
     }));
-    Model::new(model)
+    Model::new(self.clone(), model)
   }
 
   /// Read a model from a file
   pub fn read_model(&self, filename: &str) -> Result<Model> {
     let filename = try!(CString::new(filename));
     let mut model = null_mut();
-    try!(self.check_apicall(unsafe { ffi::GRBreadmodel(self.env, filename.as_ptr(), &mut model) }));
-    Model::new(model)
+    try!(self.check_apicall(unsafe { ffi::GRBreadmodel(self.0.ptr, filename.as_ptr(), &mut model) }));
+    Model::new(self.clone(), model)
   }
-
 
   /// Query the value of a parameter
   pub fn get<P: param::ParamBase>(&self, param: P) -> Result<P::Out> {
     use util::AsRawPtr;
     let mut value: P::Buf = util::Init::init();
-    try!(self.check_apicall(unsafe { P::get_param(self.env, param.into().as_ptr(), value.as_rawptr()) }));
+    try!(self.check_apicall(unsafe { P::get_param(self.0.ptr, param.into().as_ptr(), value.as_rawptr()) }));
 
     Ok(util::Into::into(value))
   }
 
   /// Set the value of a parameter
   pub fn set<P: param::ParamBase>(&mut self, param: P, value: P::Out) -> Result<()> {
-    self.check_apicall(unsafe { P::set_param(self.env, param.into().as_ptr(), util::FromRaw::from(value)) })
+    self.check_apicall(unsafe {
+      P::set_param(self.0.ptr,
+                   param.into().as_ptr(),
+                   util::FromRaw::from(value))
+    })
   }
 
   /// Import a set of parameter values from a file
   pub fn read_params(&mut self, filename: &str) -> Result<()> {
     let filename = try!(CString::new(filename));
-    self.check_apicall(unsafe { ffi::GRBreadparams(self.env, filename.as_ptr()) })
+    self.check_apicall(unsafe { ffi::GRBreadparams(self.0.ptr, filename.as_ptr()) })
   }
 
   /// Write the set of parameter values to a file
   pub fn write_params(&self, filename: &str) -> Result<()> {
     let filename = try!(CString::new(filename));
-    self.check_apicall(unsafe { ffi::GRBwriteparams(self.env, filename.as_ptr()) })
+    self.check_apicall(unsafe { ffi::GRBwriteparams(self.0.ptr, filename.as_ptr()) })
   }
 
   /// Insert a message into log file.
   ///
   /// When **message** cannot convert to raw C string, a panic is occurred.
-  pub fn message(&self, message: &str) { unsafe { ffi::GRBmsg(self.env, CString::new(message).unwrap().as_ptr()) }; }
-
+  pub fn message(&self, message: &str) { unsafe { ffi::GRBmsg(self.0.ptr, CString::new(message).unwrap().as_ptr()) }; }
 
   fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
     if error != 0 {
@@ -119,11 +135,12 @@ impl Env {
   }
 }
 
-impl Drop for Env {
-  fn drop(&mut self) {
-    unsafe { ffi::GRBfreeenv(self.env) };
-    self.env = null_mut();
-  }
+pub trait FromRaw {
+  fn from_raw(env: *mut ffi::GRBenv) -> Self;
+}
+
+impl FromRaw for Env {
+  fn from_raw(ptr: *mut ffi::GRBenv) -> Env { Env(Rc::new(EnvRep { ptr: ptr })) }
 }
 
 
@@ -132,15 +149,7 @@ pub trait ErrorFromAPI {
 }
 
 impl ErrorFromAPI for Env {
-  fn error_from_api(&self, error: ffi::c_int) -> Error { Error::FromAPI(get_error_msg(self.env), error) }
-}
-
-pub trait FromRaw {
-  fn from_raw(env: *mut ffi::GRBenv) -> Self;
-}
-
-impl FromRaw for Env {
-  fn from_raw(env: *mut ffi::GRBenv) -> Env { Env { env: env } }
+  fn error_from_api(&self, error: ffi::c_int) -> Error { Error::FromAPI(get_error_msg(self.0.ptr), error) }
 }
 
 

@@ -19,7 +19,7 @@ use std::cell::Cell;
 use std::slice::Iter;
 
 use self::callback::{Callback, New};
-use env::{Env, FromRaw, ErrorFromAPI};
+use env::{Env, FromRaw};
 use error::{Error, Result};
 use util;
 
@@ -484,7 +484,7 @@ impl<'a> Add<&'a Var> for LinExpr {
 
 
 struct CallbackData<'a> {
-  model: &'a Model<'a>,
+  model: &'a Model,
   callback: &'a mut FnMut(Callback) -> Result<()>
 }
 
@@ -520,21 +520,19 @@ extern "C" fn null_callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi:
 
 
 /// Gurobi model object associated with certain environment.
-pub struct Model<'a> {
+pub struct Model {
   model: *mut ffi::GRBmodel,
-  env: &'a Env,
   vars: Vec<Var>,
   constrs: Vec<Constr>,
   qconstrs: Vec<QConstr>,
   sos: Vec<SOS>
 }
 
-impl<'a> Model<'a> {
+impl Model {
   /// create an empty model which associated with certain environment.
-  pub fn new(env: &'a Env, model: *mut ffi::GRBmodel) -> Result<Model> {
+  pub fn new(model: *mut ffi::GRBmodel) -> Result<Model> {
     let mut model = Model {
       model: model,
-      env: env,
       vars: Vec::new(),
       constrs: Vec::new(),
       qconstrs: Vec::new(),
@@ -551,7 +549,7 @@ impl<'a> Model<'a> {
       return Err(Error::FromAPI("Failed to create a copy of the model".to_owned(), 20002));
     }
 
-    Model::new(self.env, copied)
+    Model::new(copied)
   }
 
   /// Create an fixed model associated with the model.
@@ -564,7 +562,7 @@ impl<'a> Model<'a> {
     if fixed.is_null() {
       return Err(Error::FromAPI("failed to create fixed model".to_owned(), 20002));
     }
-    Model::new(self.env, fixed)
+    Model::new(fixed)
   }
 
   /// Create an relaxation of the model (undocumented).
@@ -573,7 +571,7 @@ impl<'a> Model<'a> {
     if relaxed.is_null() {
       return Err(Error::FromAPI("failed to create relaxed model".to_owned(), 20002));
     }
-    Model::new(self.env, relaxed)
+    Model::new(relaxed)
   }
 
   /// Perform presolve on the model.
@@ -582,7 +580,7 @@ impl<'a> Model<'a> {
     if presolved.is_null() {
       return Err(Error::FromAPI("failed to create presolved model".to_owned(), 20002));
     }
-    Model::new(self.env, presolved)
+    Model::new(presolved)
   }
 
   /// Create a feasibility model (undocumented).
@@ -591,7 +589,7 @@ impl<'a> Model<'a> {
     if feasibility.is_null() {
       return Err(Error::FromAPI("failed to create feasibility model".to_owned(), 20002));
     }
-    Model::new(self.env, feasibility)
+    Model::new(feasibility)
   }
 
   /// Apply all modification of the model to process
@@ -680,7 +678,12 @@ impl<'a> Model<'a> {
   /// Insert a message into log file.
   ///
   /// When **message** cannot convert to raw C string, a panic is occurred.
-  pub fn message(&self, message: &str) { self.env.message(message); }
+  pub fn message(&self, message: &str) {
+    unsafe {
+      ffi::GRBmsg(ffi::GRBgetenv(self.model),
+                  CString::new(message).unwrap().as_ptr())
+    };
+  }
 
   /// Import optimization data of the model from a file.
   pub fn read(&mut self, filename: &str) -> Result<()> {
@@ -1335,14 +1338,15 @@ impl<'a> Model<'a> {
 
   fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
     if error != 0 {
-      return Err(self.env.error_from_api(error));
+      let message = unsafe { util::from_c_str(ffi::GRBgeterrormsg(ffi::GRBgetenv(self.model))) };
+      return Err(Error::FromAPI(message, error));
     }
     Ok(())
   }
 }
 
 
-impl<'a> Drop for Model<'a> {
+impl Drop for Model {
   fn drop(&mut self) {
     unsafe { ffi::GRBfreemodel(self.model) };
     self.model = null_mut();

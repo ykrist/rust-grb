@@ -67,7 +67,7 @@ impl Env {
                        null(),
                        null())
     }));
-    Model::new(self, model)
+    Model::new(model)
   }
 
   /// Read a model from a file
@@ -75,7 +75,7 @@ impl Env {
     let filename = try!(CString::new(filename));
     let mut model = null_mut();
     try!(self.check_apicall(unsafe { ffi::GRBreadmodel(self.env, filename.as_ptr(), &mut model) }));
-    Model::new(self, model)
+    Model::new(model)
   }
 
 

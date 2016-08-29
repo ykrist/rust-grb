@@ -202,16 +202,16 @@ impl Into<i32> for Where {
 pub struct Callback<'a> {
   cbdata: *mut ffi::c_void,
   where_: Where,
-  model: &'a Model<'a>
+  model: &'a Model
 }
 
 
 pub trait New<'a> {
-  fn new(cbdata: *mut ffi::c_void, where_: i32, model: &'a Model<'a>) -> Result<Callback<'a>>;
+  fn new(cbdata: *mut ffi::c_void, where_: i32, model: &'a Model) -> Result<Callback<'a>>;
 }
 
 impl<'a> New<'a> for Callback<'a> {
-  fn new(cbdata: *mut ffi::c_void, where_: i32, model: &'a Model<'a>) -> Result<Callback<'a>> {
+  fn new(cbdata: *mut ffi::c_void, where_: i32, model: &'a Model) -> Result<Callback<'a>> {
     let mut callback = Callback {
       cbdata: cbdata,
       where_: Where::Polling,
@@ -256,7 +256,7 @@ impl<'a> New<'a> for Callback<'a> {
           objbst: try!(callback.get_double(MIPSOL, MIPSOL_OBJBST)),
           objbnd: try!(callback.get_double(MIPSOL, MIPSOL_OBJBND)),
           nodcnt: try!(callback.get_double(MIPSOL, MIPSOL_NODCNT)),
-          solcnt: try!(callback.get_double(MIPSOL, MIPSOL_SOLCNT)),
+          solcnt: try!(callback.get_double(MIPSOL, MIPSOL_SOLCNT))
         }
       }
       MIPNODE => {
@@ -265,7 +265,7 @@ impl<'a> New<'a> for Callback<'a> {
           objbst: try!(callback.get_double(MIPNODE, MIPNODE_OBJBST)),
           objbnd: try!(callback.get_double(MIPNODE, MIPNODE_OBJBND)),
           nodcnt: try!(callback.get_double(MIPNODE, MIPNODE_NODCNT)),
-          solcnt: try!(callback.get_int(MIPNODE, MIPNODE_SOLCNT)),
+          solcnt: try!(callback.get_int(MIPNODE, MIPNODE_SOLCNT))
         }
       }
       MESSAGE => Where::Message(try!(callback.get_string(MESSAGE, MSG_STRING)).trim().to_owned()),
@@ -274,9 +274,9 @@ impl<'a> New<'a> for Callback<'a> {
           itrcnt: try!(callback.get_int(BARRIER, BARRIER_ITRCNT)),
           primobj: try!(callback.get_double(BARRIER, BARRIER_PRIMOBJ)),
           dualobj: try!(callback.get_double(BARRIER, BARRIER_DUALOBJ)),
-          priminf:try!(callback.get_double(BARRIER, BARRIER_PRIMINF)),
+          priminf: try!(callback.get_double(BARRIER, BARRIER_PRIMINF)),
           dualinf: try!(callback.get_double(BARRIER, BARRIER_DUALINF)),
-          compl: try!(callback.get_double(BARRIER, BARRIER_COMPL)),
+          compl: try!(callback.get_double(BARRIER, BARRIER_COMPL))
         }
       }
       _ => panic!("Invalid callback location. {}", where_)
@@ -383,6 +383,6 @@ impl<'a> Callback<'a> {
 
 
 impl<'a> Deref for Callback<'a> {
-  type Target = Model<'a>;
-  fn deref(&self) -> &Model<'a> { self.model }
+  type Target = Model;
+  fn deref(&self) -> &Model { self.model }
 }

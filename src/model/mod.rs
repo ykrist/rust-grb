@@ -167,7 +167,7 @@ pub trait Proxy: ProxyBase {
   }
 
   /// Set the value of attribute.
-  fn set<A: attr::AttrArrayBase>(&mut self, model: &mut Model, attr: A, val: A::Out) -> Result<()> {
+  fn set<A: attr::AttrArrayBase>(&self, model: &mut Model, attr: A, val: A::Out) -> Result<()> {
     model.set_element(attr, self.index(), val)
   }
 }
@@ -221,6 +221,17 @@ impl ProxyBase for SOS {
 
 impl Proxy for SOS {}
 
+macro_rules! impl_eq {
+  ($($t:ty)*) => { $(
+    impl PartialEq for $t {
+      fn eq(&self, other: &$t) -> bool {
+        self.0.as_ref() as *const Cell<i32> == other.0.as_ref() as *const Cell<i32>
+      }
+    }
+    impl Eq for $t {}
+  )* }
+}
+impl_eq! { Var }
 
 
 /// Linear expression of variables

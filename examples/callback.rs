@@ -5,6 +5,8 @@
 
 extern crate gurobi;
 use gurobi::*;
+use std::io::{BufWriter, Write};
+use std::fs::OpenOptions;
 
 fn main() {
   let mut env = Env::new("callback.log").unwrap();
@@ -17,6 +19,9 @@ fn main() {
     let mut lastiter = -INFINITY;
     let mut lastnode = -INFINITY;
     let vars: Vec<_> = model.get_vars().cloned().collect();
+
+    let file = OpenOptions::new().write(true).create(true).open("cb.log").unwrap();
+    let mut writer = BufWriter::new(file);
 
     move |ctx: Callback| {
       use gurobi::Where::*;
@@ -112,7 +117,8 @@ fn main() {
 
         // Printing a log message
         Message(message) => {
-          println!("@Message: {}", message);
+          writer.write_all(message.as_bytes()).unwrap();
+          writer.write_all(&[b'\n']).unwrap();
         }
       }
 

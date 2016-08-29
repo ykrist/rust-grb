@@ -522,6 +522,7 @@ extern "C" fn null_callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi:
 /// Gurobi model object associated with certain environment.
 pub struct Model {
   model: *mut ffi::GRBmodel,
+  env: Env,
   vars: Vec<Var>,
   constrs: Vec<Constr>,
   qconstrs: Vec<QConstr>,
@@ -531,8 +532,15 @@ pub struct Model {
 impl Model {
   /// create an empty model which associated with certain environment.
   pub fn new(model: *mut ffi::GRBmodel) -> Result<Model> {
+    let env = unsafe { ffi::GRBgetenv(model) };
+    if env.is_null() {
+      return Err(Error::FromAPI("Failed to retrieve GRBenv from given model".to_owned(), 2002));
+    }
+    let env = Env::from_raw(env);
+
     let mut model = Model {
       model: model,
+      env: env,
       vars: Vec::new(),
       constrs: Vec::new(),
       qconstrs: Vec::new(),
@@ -591,6 +599,10 @@ impl Model {
     }
     Model::new(feasibility)
   }
+
+  pub fn get_env(&self) -> &Env { &self.env }
+
+  pub fn get_env_mut(&mut self) -> &mut Env { &mut self.env }
 
   /// Apply all modification of the model to process
   pub fn update(&mut self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBupdatemodel(self.model) }) }
@@ -679,10 +691,7 @@ impl Model {
   ///
   /// When **message** cannot convert to raw C string, a panic is occurred.
   pub fn message(&self, message: &str) {
-    unsafe {
-      ffi::GRBmsg(ffi::GRBgetenv(self.model),
-                  CString::new(message).unwrap().as_ptr())
-    };
+    self.env.message(message);
   }
 
   /// Import optimization data of the model from a file.
@@ -1338,8 +1347,8 @@ impl Model {
 
   fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
     if error != 0 {
-      let message = unsafe { util::from_c_str(ffi::GRBgeterrormsg(ffi::GRBgetenv(self.model))) };
-      return Err(Error::FromAPI(message, error));
+      use env::ErrorFromAPI;
+      return Err(self.env.error_from_api(error));
     }
     Ok(())
   }
@@ -1350,6 +1359,8 @@ impl Drop for Model {
   fn drop(&mut self) {
     unsafe { ffi::GRBfreemodel(self.model) };
     self.model = null_mut();
+    use env::ForceDrop;
+    self.env.force_drop();
   }
 }
 

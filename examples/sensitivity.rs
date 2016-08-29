@@ -9,8 +9,8 @@ use std::env::args;
 use std::mem::transmute;
 
 fn main() {
-  let mut env = Env::new("").unwrap();
-  env.set(param::LogToConsole, 0).unwrap();
+  let env = Env::new("").unwrap();
+
   let mut model = env.read_model(args().nth(1).as_ref().unwrap()).unwrap();
   assert!(model.get(attr::IsMIP).unwrap() != 0, "Model is not a MIP");
 
@@ -26,7 +26,7 @@ fn main() {
   let orig_sol: Vec<_> = model.get_vars().map(|v| v.get(&model, attr::X).unwrap()).collect();
 
   // disable solver output for subsequent solvers.
-  // env.set(param::OutputFlag, 0).unwrap();
+  model.get_env_mut().set(param::OutputFlag, 0).unwrap();
 
   // iterate through unfixed, binary variables in model
   let vars: Vec<_> = model.get_vars().cloned().collect();

@@ -52,7 +52,7 @@ impl Env {
     Ok(Env { env: env })
   }
 
-  /// Create an empty model object associted with the environment
+  /// Create an empty Gurobi model from the environment
   pub fn new_model(&self, modelname: &str) -> Result<Model> {
     let modelname = try!(CString::new(modelname));
     let mut model = null_mut();
@@ -121,9 +121,20 @@ impl Env {
 
 impl Drop for Env {
   fn drop(&mut self) {
-    unsafe { ffi::GRBfreeenv(self.env) };
-    self.env = null_mut();
+    if !self.env.is_null() {
+      unsafe { ffi::GRBfreeenv(self.env) };
+      self.env = null_mut();
+    }
   }
+}
+
+// avoid to call drop()
+pub trait ForceDrop {
+  fn force_drop(&mut self);
+}
+
+impl ForceDrop for Env {
+  fn force_drop(&mut self) { self.env = null_mut(); }
 }
 
 

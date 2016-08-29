@@ -6,7 +6,6 @@
 extern crate gurobi;
 use gurobi::*;
 use std::env::args;
-use std::mem::transmute;
 
 fn main() {
   let env = Env::new("").unwrap();
@@ -31,10 +30,7 @@ fn main() {
   // iterate through unfixed, binary variables in model
   let vars: Vec<_> = model.get_vars().cloned().collect();
   for (v, &orig_x) in vars.iter().zip(orig_sol.iter()) {
-    let lb = v.get(&model, attr::LB).unwrap();
-    let ub = v.get(&model, attr::UB).unwrap();
-    let vtype = v.get(&model, attr::VType).unwrap();
-    let vtype = unsafe { transmute::<_, u8>(vtype) } as char;
+    let (vtype, lb, ub) = v.get_type(&model).unwrap();
 
     if lb == 0.0 && ub == 1.0 && (vtype == 'B' || vtype == 'I') {
       let vname = v.get(&model, attr::VarName).unwrap();

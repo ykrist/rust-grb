@@ -178,6 +178,16 @@ pub trait Proxy: ProxyBase {
 #[derive(Clone)]
 pub struct Var(Rc<Cell<i32>>);
 
+impl Var {
+  pub fn get_type(&self, model: &Model) -> Result<(char, f64, f64)> {
+    let lb = try!(self.get(&model, attr::exports::LB));
+    let ub = try!(self.get(&model, attr::exports::UB));
+    let vtype = try!(self.get(&model, attr::exports::VType));
+    let vtype = unsafe { transmute::<_, u8>(vtype) } as char;
+    Ok((vtype, lb, ub))
+  }
+}
+
 /// Proxy object of a linear constraint
 #[derive(Clone)]
 pub struct Constr(Rc<Cell<i32>>);

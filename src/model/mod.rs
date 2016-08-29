@@ -9,13 +9,14 @@ pub mod callback;
 use ffi;
 use itertools::{Itertools, Zip};
 
+use std::cell::Cell;
 use std::ffi::CString;
 use std::iter;
-use std::ptr::{null, null_mut};
-use std::ops::{Add, Sub, Mul};
 use std::mem::transmute;
+use std::ops::{Add, Sub, Mul};
+use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::ptr::{null, null_mut};
 use std::rc::Rc;
-use std::cell::Cell;
 use std::slice::Iter;
 
 use self::attr::{Attr, AttrArray};
@@ -163,9 +164,7 @@ pub trait ProxyBase {
 /// Provides methods to query/modify attributes associated with certain element.
 pub trait Proxy: ProxyBase {
   /// Query the value of attribute.
-  fn get<A: AttrArray>(&self, model: &Model, attr: A) -> Result<A::Out> {
-    model.get_element(attr, self.index())
-  }
+  fn get<A: AttrArray>(&self, model: &Model, attr: A) -> Result<A::Out> { model.get_element(attr, self.index()) }
 
   /// Set the value of attribute.
   fn set<A: AttrArray>(&self, model: &mut Model, attr: A, val: A::Out) -> Result<()> {
@@ -504,21 +503,20 @@ extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_vo
                                usrdata: *mut ffi::c_void)
                                -> ffi::c_int {
 
-  let mut usrdata: &mut CallbackData = unsafe { transmute(usrdata) };
+  let mut usrdata = unsafe { transmute::<_, &mut CallbackData>(usrdata) };
+  let (callback, model) = (&mut usrdata.callback, &usrdata.model);
 
-  let callback: &mut FnMut(Callback) -> Result<()> = usrdata.callback;
-
-  let context = Callback::new(cbdata, loc.into(), &usrdata.model);
-  if context.is_err() {
-    println!("failed to create context: {:?}", context.err().unwrap());
-    return -1;
-  }
-  let context = context.unwrap();
-
-  let ret = callback(context);
-  match ret {
-    Ok(_) => 0,
-    Err(_) => -1,
+  match Callback::new(cbdata, loc.into(), model) {
+    Err(err) => {
+      println!("failed to create context: {:?}", err);
+      -3
+    }
+    Ok(context) => {
+      match catch_unwind(AssertUnwindSafe(|| if callback(context).is_ok() { 0 } else { -1 })) {
+        Ok(ret) => ret,
+        Err(e) => -3000,
+      }
+    }
   }
 }
 

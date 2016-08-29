@@ -19,7 +19,7 @@ use util;
 use error::Result;
 
 /// provides function to query/set the value of scalar attribute.
-pub trait AttrBase: Into<CString> {
+pub trait Attr: Into<CString> {
   type Out;
   type Buf: util::Init + util::Into<Self::Out> + util::AsRawPtr<Self::RawGet>;
   type RawGet;
@@ -30,7 +30,7 @@ pub trait AttrBase: Into<CString> {
   unsafe fn set_attr(model: *mut ffi::GRBmodel, attrname: ffi::c_str, value: Self::RawSet) -> ffi::c_int;
 }
 
-impl AttrBase for IntAttr {
+impl Attr for IntAttr {
   type Out = i32;
   type Buf = i32;
   type RawGet = *mut ffi::c_int;
@@ -45,7 +45,7 @@ impl AttrBase for IntAttr {
   }
 }
 
-impl AttrBase for DoubleAttr {
+impl Attr for DoubleAttr {
   type Out = f64;
   type Buf = f64;
   type RawGet = *mut ffi::c_double;
@@ -60,7 +60,7 @@ impl AttrBase for DoubleAttr {
   }
 }
 
-impl AttrBase for StringAttr {
+impl Attr for StringAttr {
   type Out = String;
   type Buf = ffi::c_str;
   type RawGet = *mut ffi::c_str;
@@ -76,7 +76,7 @@ impl AttrBase for StringAttr {
 }
 
 
-pub trait AttrArrayBase: Into<CString> {
+pub trait AttrArray: Into<CString> {
   type Out: Clone;
   type Buf: Clone + util::Init + util::Into<Self::Out> + util::AsRawPtr<Self::RawGet>;
   type RawGet;
@@ -103,7 +103,7 @@ pub trait AttrArrayBase: Into<CString> {
 }
 
 
-impl AttrArrayBase for IntAttr {
+impl AttrArray for IntAttr {
   type Out = i32;
   type Buf = i32;
   type RawGet = *mut ffi::c_int;
@@ -133,7 +133,7 @@ impl AttrArrayBase for IntAttr {
   }
 }
 
-impl AttrArrayBase for DoubleAttr {
+impl AttrArray for DoubleAttr {
   type Out = f64;
   type Buf = f64;
   type RawGet = *mut ffi::c_double;
@@ -164,7 +164,7 @@ impl AttrArrayBase for DoubleAttr {
   }
 }
 
-impl AttrArrayBase for CharAttr {
+impl AttrArray for CharAttr {
   type Out = i8;
   type Buf = i8;
   type RawGet = *mut ffi::c_char;
@@ -194,7 +194,7 @@ impl AttrArrayBase for CharAttr {
   }
 }
 
-impl AttrArrayBase for StringAttr {
+impl AttrArray for StringAttr {
   type Out = String;
   type Buf = ffi::c_str;
   type RawGet = *mut ffi::c_str;

@@ -9,8 +9,10 @@ use ffi;
 
 use std::ffi::CString;
 use std::ptr::{null, null_mut};
+
 use error::{Error, Result};
 use model::Model;
+use self::param::Param;
 use util;
 
 /// Gurobi environment object
@@ -87,7 +89,7 @@ impl Env {
 
 
   /// Query the value of a parameter
-  pub fn get<P: param::ParamBase>(&self, param: P) -> Result<P::Out> {
+  pub fn get<P: Param>(&self, param: P) -> Result<P::Out> {
     use util::AsRawPtr;
     let mut value: P::Buf = util::Init::init();
     try!(self.check_apicall(unsafe { P::get_param(self.env, param.into().as_ptr(), value.as_rawptr()) }));
@@ -96,7 +98,7 @@ impl Env {
   }
 
   /// Set the value of a parameter
-  pub fn set<P: param::ParamBase>(&mut self, param: P, value: P::Out) -> Result<()> {
+  pub fn set<P: Param>(&mut self, param: P, value: P::Out) -> Result<()> {
     self.check_apicall(unsafe { P::set_param(self.env, param.into().as_ptr(), util::FromRaw::from(value)) })
   }
 

@@ -18,6 +18,7 @@ use std::rc::Rc;
 use std::cell::Cell;
 use std::slice::Iter;
 
+use self::attr::{Attr, AttrArray};
 use self::callback::{Callback, New};
 use env::{Env, FromRaw};
 use error::{Error, Result};
@@ -162,12 +163,12 @@ pub trait ProxyBase {
 /// Provides methods to query/modify attributes associated with certain element.
 pub trait Proxy: ProxyBase {
   /// Query the value of attribute.
-  fn get<A: attr::AttrArrayBase>(&self, model: &Model, attr: A) -> Result<A::Out> {
+  fn get<A: AttrArray>(&self, model: &Model, attr: A) -> Result<A::Out> {
     model.get_element(attr, self.index())
   }
 
   /// Set the value of attribute.
-  fn set<A: attr::AttrArrayBase>(&self, model: &mut Model, attr: A, val: A::Out) -> Result<()> {
+  fn set<A: AttrArray>(&self, model: &mut Model, attr: A, val: A::Out) -> Result<()> {
     model.set_element(attr, self.index(), val)
   }
 }
@@ -601,8 +602,10 @@ impl Model {
     Model::new(feasibility)
   }
 
+  /// Get immutable reference of an environment object associated with the model.
   pub fn get_env(&self) -> &Env { &self.env }
 
+  /// Get mutable reference of an environment object associated with the model.
   pub fn get_env_mut(&mut self) -> &mut Env { &mut self.env }
 
   /// Apply all modification of the model to process
@@ -997,7 +1000,7 @@ impl Model {
   }
 
   /// Query the value of attributes which associated with variable/constraints.
-  pub fn get<A: attr::AttrBase>(&self, attr: A) -> Result<A::Out> {
+  pub fn get<A: Attr>(&self, attr: A) -> Result<A::Out> {
     let mut value: A::Buf = util::Init::init();
 
     try!(self.check_apicall(unsafe {
@@ -1009,13 +1012,13 @@ impl Model {
   }
 
   /// Set the value of attributes which associated with variable/constraints.
-  pub fn set<A: attr::AttrBase>(&mut self, attr: A, value: A::Out) -> Result<()> {
+  pub fn set<A: Attr>(&mut self, attr: A, value: A::Out) -> Result<()> {
     try!(self.check_apicall(unsafe { A::set_attr(self.model, attr.into().as_ptr(), util::From::from(value)) }));
     self.update()
   }
 
 
-  fn get_element<A: attr::AttrArrayBase>(&self, attr: A, element: i32) -> Result<A::Out> {
+  fn get_element<A: AttrArray>(&self, attr: A, element: i32) -> Result<A::Out> {
     let mut value: A::Buf = util::Init::init();
 
     try!(self.check_apicall(unsafe {
@@ -1026,7 +1029,7 @@ impl Model {
     Ok(util::Into::into(value))
   }
 
-  fn set_element<A: attr::AttrArrayBase>(&mut self, attr: A, element: i32, value: A::Out) -> Result<()> {
+  fn set_element<A: AttrArray>(&mut self, attr: A, element: i32, value: A::Out) -> Result<()> {
     try!(self.check_apicall(unsafe {
       A::set_attrelement(self.model,
                          attr.into().as_ptr(),
@@ -1037,12 +1040,12 @@ impl Model {
   }
 
   /// Query the value of attributes which associated with variable/constraints.
-  pub fn get_values<A: attr::AttrArrayBase, P: Proxy>(&self, attr: A, item: &[P]) -> Result<Vec<A::Out>> {
+  pub fn get_values<A: AttrArray, P: Proxy>(&self, attr: A, item: &[P]) -> Result<Vec<A::Out>> {
     self.get_list(attr,
                   item.iter().map(|e| e.index()).collect_vec().as_slice())
   }
 
-  fn get_list<A: attr::AttrArrayBase>(&self, attr: A, ind: &[i32]) -> Result<Vec<A::Out>> {
+  fn get_list<A: AttrArray>(&self, attr: A, ind: &[i32]) -> Result<Vec<A::Out>> {
     let mut values: Vec<_> = iter::repeat(util::Init::init()).take(ind.len()).collect();
 
     try!(self.check_apicall(unsafe {
@@ -1058,14 +1061,14 @@ impl Model {
 
 
   /// Set the value of attributes which associated with variable/constraints.
-  pub fn set_values<A: attr::AttrArrayBase, P: Proxy>(&mut self, attr: A, item: &[P], val: &[A::Out]) -> Result<()> {
+  pub fn set_values<A: AttrArray, P: Proxy>(&mut self, attr: A, item: &[P], val: &[A::Out]) -> Result<()> {
     try!(self.set_list(attr,
                        item.iter().map(|e| e.index()).collect_vec().as_slice(),
                        val));
     self.update()
   }
 
-  fn set_list<A: attr::AttrArrayBase>(&mut self, attr: A, ind: &[i32], values: &[A::Out]) -> Result<()> {
+  fn set_list<A: AttrArray>(&mut self, attr: A, ind: &[i32], values: &[A::Out]) -> Result<()> {
     if ind.len() != values.len() {
       return Err(Error::InconsitentDims);
     }

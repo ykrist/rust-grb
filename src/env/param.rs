@@ -19,7 +19,7 @@ use std::ffi::CString;
 use util;
 
 
-pub trait ParamBase: Sized + Into<CString> {
+pub trait Param: Sized + Into<CString> {
   type Out;
   type Buf: util::Init + util::Into<Self::Out> + util::AsRawPtr<Self::RawFrom>;
   type RawFrom;
@@ -34,7 +34,7 @@ pub trait ParamBase: Sized + Into<CString> {
 
 
 
-impl ParamBase for IntParam {
+impl Param for IntParam {
   type Out = i32;
   type Buf = ffi::c_int;
   type RawFrom = *mut ffi::c_int;
@@ -49,7 +49,7 @@ impl ParamBase for IntParam {
   }
 }
 
-impl ParamBase for DoubleParam {
+impl Param for DoubleParam {
   type Out = f64;
   type Buf = ffi::c_double;
   type RawFrom = *mut ffi::c_double;
@@ -64,7 +64,7 @@ impl ParamBase for DoubleParam {
   }
 }
 
-impl ParamBase for StringParam {
+impl Param for StringParam {
   type Out = String;
   type Buf = Vec<ffi::c_char>;
   type RawFrom = *mut ffi::c_char;

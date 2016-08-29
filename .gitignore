@@ -5,6 +5,7 @@ Cargo.lock
 *.lp
 *.sol
 *.ilp
+*.prm
 gh-pages/
 doc/
 doc/.lock

@@ -644,13 +644,11 @@ impl<'a> Model<'a> {
   /// Perform an automated search for parameter settings that improve performance on the model.
   /// See also references [on official
   /// manual](https://www.gurobi.com/documentation/6.5/refman/parameter_tuning_tool.html#sec:Tuning).
-  #[deprecated]
   pub fn tune(&self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBtunemodel(self.model) }) }
 
   /// Prepare to retrieve the results of `tune()`.
   /// See also references [on official
   /// manual](https://www.gurobi.com/documentation/6.5/refman/parameter_tuning_tool.html#sec:Tuning).
-  #[deprecated]
   pub fn get_tune_result(&self, n: i32) -> Result<()> {
     self.check_apicall(unsafe { ffi::GRBgettuneresult(self.model, n) })
   }

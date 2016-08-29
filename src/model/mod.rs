@@ -674,6 +674,7 @@ impl<'a> Model<'a> {
   }
 
   /// Discard all concurrent environments for the model.
+  #[deprecated]
   pub fn discard_concurrent_envs(&self) { unsafe { ffi::GRBdiscardconcurrentenvs(self.model) } }
 
   /// Insert a message into log file.

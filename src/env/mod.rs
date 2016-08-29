@@ -15,7 +15,8 @@ use util;
 
 /// Gurobi environment object
 pub struct Env {
-  env: *mut ffi::GRBenv
+  env: *mut ffi::GRBenv,
+  require_drop: bool
 }
 
 impl Env {
@@ -27,12 +28,15 @@ impl Env {
     if error != 0 {
       return Err(Error::FromAPI(get_error_msg(env), error));
     }
-    Ok(Env { env: env })
+    Ok(Env {
+      env: env,
+      require_drop: true
+    })
   }
 
   /// Create a client environment on a computer server with log file
-  pub fn client(logfilename: &str, computeserver: &str, port: i32, password: &str, priority: i32, timeout: f64)
-                -> Result<Env> {
+  pub fn new_client(logfilename: &str, computeserver: &str, port: i32, password: &str, priority: i32, timeout: f64)
+                    -> Result<Env> {
     let mut env = null_mut();
     let logfilename = try!(CString::new(logfilename));
     let computeserver = try!(CString::new(computeserver));
@@ -49,7 +53,10 @@ impl Env {
     if error != 0 {
       return Err(Error::FromAPI(get_error_msg(env), error));
     }
-    Ok(Env { env: env })
+    Ok(Env {
+      env: env,
+      require_drop: true
+    })
   }
 
   /// Create an empty Gurobi model from the environment
@@ -121,20 +128,11 @@ impl Env {
 
 impl Drop for Env {
   fn drop(&mut self) {
-    if !self.env.is_null() {
+    if self.require_drop {
       unsafe { ffi::GRBfreeenv(self.env) };
       self.env = null_mut();
     }
   }
-}
-
-// avoid to call drop()
-pub trait ForceDrop {
-  fn force_drop(&mut self);
-}
-
-impl ForceDrop for Env {
-  fn force_drop(&mut self) { self.env = null_mut(); }
 }
 
 
@@ -151,7 +149,12 @@ pub trait FromRaw {
 }
 
 impl FromRaw for Env {
-  fn from_raw(env: *mut ffi::GRBenv) -> Env { Env { env: env } }
+  fn from_raw(env: *mut ffi::GRBenv) -> Env {
+    Env {
+      env: env,
+      require_drop: false
+    }
+  }
 }
 
 

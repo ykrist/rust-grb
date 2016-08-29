@@ -534,7 +534,8 @@ impl Model {
   pub fn new(model: *mut ffi::GRBmodel) -> Result<Model> {
     let env = unsafe { ffi::GRBgetenv(model) };
     if env.is_null() {
-      return Err(Error::FromAPI("Failed to retrieve GRBenv from given model".to_owned(), 2002));
+      return Err(Error::FromAPI("Failed to retrieve GRBenv from given model".to_owned(),
+                                2002));
     }
     let env = Env::from_raw(env);
 
@@ -690,9 +691,7 @@ impl Model {
   /// Insert a message into log file.
   ///
   /// When **message** cannot convert to raw C string, a panic is occurred.
-  pub fn message(&self, message: &str) {
-    self.env.message(message);
-  }
+  pub fn message(&self, message: &str) { self.env.message(message); }
 
   /// Import optimization data of the model from a file.
   pub fn read(&mut self, filename: &str) -> Result<()> {
@@ -1359,8 +1358,6 @@ impl Drop for Model {
   fn drop(&mut self) {
     unsafe { ffi::GRBfreemodel(self.model) };
     self.model = null_mut();
-    use env::ForceDrop;
-    self.env.force_drop();
   }
 }
 

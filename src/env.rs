@@ -3,8 +3,6 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-pub mod param;
-
 use ffi;
 
 use std::ffi::CString;
@@ -12,7 +10,7 @@ use std::ptr::null_mut;
 
 use error::{Error, Result};
 use model::Model;
-use self::param::Param;
+use parameter::Param;
 use util;
 
 /// Gurobi environment object

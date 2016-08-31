@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-use super::attr;
+use attr;
 use super::{Var, Model};
 use error::Result;
 use itertools::*;
@@ -52,7 +52,7 @@ impl LinExpr {
 
   /// Get actual value of the expression.
   pub fn get_value(&self, model: &Model) -> Result<f64> {
-    let vars = try!(model.get_values(attr::exports::X, self.vars.as_slice()));
+    let vars = try!(model.get_values(attr::X, self.vars.as_slice()));
 
     Ok(Zip::new((vars, self.coeff.iter())).fold(0.0, |acc, (ind, val)| acc + ind * val) + self.offset)
   }
@@ -119,9 +119,9 @@ impl QuadExpr {
 
   /// Get actual value of the expression.
   pub fn get_value(&self, model: &Model) -> Result<f64> {
-    let lind = try!(model.get_values(attr::exports::X, self.lind.as_slice()));
-    let qrow = try!(model.get_values(attr::exports::X, self.qrow.as_slice()));
-    let qcol = try!(model.get_values(attr::exports::X, self.qcol.as_slice()));
+    let lind = try!(model.get_values(attr::X, self.lind.as_slice()));
+    let qrow = try!(model.get_values(attr::X, self.qrow.as_slice()));
+    let qcol = try!(model.get_values(attr::X, self.qcol.as_slice()));
 
     Ok(Zip::new((lind, self.lval.iter())).fold(0.0, |acc, (ind, val)| acc + ind * val) +
        Zip::new((qrow, qcol, self.qval.iter())).fold(0.0, |acc, (row, col, val)| acc + row * col * val) +

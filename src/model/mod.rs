@@ -3,7 +3,6 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-pub mod attr;
 pub mod callback;
 pub mod expr;
 
@@ -20,7 +19,8 @@ use std::ptr::{null, null_mut};
 use std::rc::Rc;
 use std::slice::Iter;
 
-use self::attr::{Attr, AttrArray};
+use attr;
+use attribute::{Attr, AttrArray};
 use self::callback::{Callback, New};
 use self::expr::{LinExpr, QuadExpr};
 use env::{Env, EnvAPI};
@@ -191,9 +191,9 @@ pub struct Var(Proxy);
 
 impl Var {
   pub fn get_type(&self, model: &Model) -> Result<(char, f64, f64)> {
-    let lb = try!(self.get(&model, attr::exports::LB));
-    let ub = try!(self.get(&model, attr::exports::UB));
-    let vtype = try!(self.get(&model, attr::exports::VType));
+    let lb = try!(self.get(&model, attr::LB));
+    let ub = try!(self.get(&model, attr::UB));
+    let vtype = try!(self.get(&model, attr::VType));
     let vtype = unsafe { transmute::<_, u8>(vtype) } as char;
     Ok((vtype, lb, ub))
   }
@@ -779,9 +779,9 @@ impl Model {
     try!(self.del_qpterms());
     try!(self.add_qpterms(qrow.as_slice(), qcol.as_slice(), qval.as_slice()));
 
-    try!(self.set_list(attr::exports::Obj, lind.as_slice(), lval.as_slice()));
+    try!(self.set_list(attr::Obj, lind.as_slice(), lval.as_slice()));
 
-    self.set(attr::exports::ModelSense, sense.into())
+    self.set(attr::ModelSense, sense.into())
   }
 
   /// Query the value of attributes which associated with variable/constraints.
@@ -938,9 +938,9 @@ impl Model {
     }));
     try!(self.update());
 
-    let cols = try!(self.get(attr::exports::NumVars)) as usize;
-    let rows = try!(self.get(attr::exports::NumConstrs)) as usize;
-    let qrows = try!(self.get(attr::exports::NumQConstrs)) as usize;
+    let cols = try!(self.get(attr::NumVars)) as usize;
+    let rows = try!(self.get(attr::NumConstrs)) as usize;
+    let qrows = try!(self.get(attr::NumQConstrs)) as usize;
 
     let xcols = self.vars.len();
     let xrows = self.constrs.len();
@@ -969,7 +969,7 @@ impl Model {
   }
 
   /// Retrieve the status of the model.
-  pub fn status(&self) -> Result<Status> { self.get(attr::exports::Status).map(|val| val.into()) }
+  pub fn status(&self) -> Result<Status> { self.get(attr::Status).map(|val| val.into()) }
 
   /// Retrieve an iterator of the variables in the model.
   pub fn get_vars(&self) -> Iter<Var> { self.vars.iter() }
@@ -1104,10 +1104,10 @@ impl Model {
   }
 
   fn populate(&mut self) -> Result<()> {
-    let cols = try!(self.get(attr::exports::NumVars)) as usize;
-    let rows = try!(self.get(attr::exports::NumConstrs)) as usize;
-    let numqconstrs = try!(self.get(attr::exports::NumQConstrs)) as usize;
-    let numsos = try!(self.get(attr::exports::NumSOS)) as usize;
+    let cols = try!(self.get(attr::NumVars)) as usize;
+    let rows = try!(self.get(attr::NumConstrs)) as usize;
+    let numqconstrs = try!(self.get(attr::NumQConstrs)) as usize;
+    let numsos = try!(self.get(attr::NumSOS)) as usize;
 
     self.vars = (0..cols).map(|idx| Var::new(idx as i32)).collect_vec();
     self.constrs = (0..rows).map(|idx| Constr::new(idx as i32)).collect_vec();

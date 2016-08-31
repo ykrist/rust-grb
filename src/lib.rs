@@ -74,6 +74,12 @@ mod error;
 mod model;
 mod util;
 
+#[path = "param.rs"]
+mod parameter;
+
+#[path = "attr.rs"]
+mod attribute;
+
 // re-exports
 pub use error::{Error, Result};
 
@@ -89,8 +95,8 @@ pub use model::SOSType::*;
 pub use model::RelaxType::*;
 pub use model::expr::{LinExpr, QuadExpr};
 
-pub use model::attr::exports as attr;
-pub use env::param::exports as param;
+pub use attribute::exports as attr;
+pub use parameter::exports as param;
 
 
 /// Large number used in C API

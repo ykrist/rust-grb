@@ -59,10 +59,10 @@
 //!   model.optimize().unwrap();
 //!   assert_eq!(model.status().unwrap(), Status::Optimal);
 //!
-//!   assert_eq!(model.get(attr::ObjVal).unwrap() , 0.0);
+//!   assert_eq!(model.get(attr::ObjVal).unwrap() , 1.0);
 //!
 //!   let val = model.get_values(attr::X, &[x, y, z]).unwrap();
-//!   assert_eq!(val, [0.0, -10.0, -5.0]);
+//!   assert_eq!(val, [1.0, -10.0, -5.5]);
 //! }
 //! ```
 

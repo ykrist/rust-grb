@@ -13,7 +13,7 @@ use std::cell::Cell;
 use std::ffi::CString;
 use std::iter;
 use std::mem::transmute;
-use std::ops::{Add, Sub, Mul};
+use std::ops::{Add, Sub, Mul, Deref, DerefMut};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr::{null, null_mut};
 use std::rc::Rc;
@@ -66,41 +66,31 @@ impl Into<ffi::c_char> for ConstrSense {
 
 
 /// Sense of new objective function
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub enum ModelSense {
-  Minimize,
-  Maximize
+  Minimize = 1,
+  Maximize = -1
 }
 
 impl Into<i32> for ModelSense {
-  fn into(self) -> i32 {
-    match self {
-      ModelSense::Minimize => 1,
-      ModelSense::Maximize => -1,
-    }
-  }
+  fn into(self) -> i32 { (unsafe { transmute::<_, i8>(self) }) as i32 }
 }
 
 
 /// Type of new SOS constraint
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub enum SOSType {
-  SOSType1,
-  SOSType2
+  SOSType1 = 1,
+  SOSType2 = 2
 }
 
 impl Into<i32> for SOSType {
-  fn into(self) -> i32 {
-    match self {
-      SOSType::SOSType1 => 1,
-      SOSType::SOSType2 => 2,
-    }
-  }
+  fn into(self) -> i32 { (unsafe { transmute::<_, i8>(self) }) as i32 }
 }
 
 
 /// Status of a model
-#[derive(Debug,PartialEq)]
+#[derive(Debug,Copy,Clone,PartialEq)]
 pub enum Status {
   Loaded = 1,
   Optimal,
@@ -128,54 +118,75 @@ impl From<i32> for Status {
 }
 
 /// Type of cost function at feasibility relaxation
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub enum RelaxType {
   /// The weighted magnitude of bounds and constraint violations
   /// (`penalty(s_i) = w_i s_i`)
-  Linear,
+  Linear = 0,
 
   /// The weighted square of magnitude of bounds and constraint violations
   /// (`penalty(s_i) = w_i s_i^2`)
-  Quadratic,
+  Quadratic = 1,
 
   /// The weighted count of bounds and constraint violations
   /// (`penalty(s_i) = w_i * [s_i > 0]`)
-  Cardinality
+  Cardinality = 2
 }
 
 impl Into<i32> for RelaxType {
-  fn into(self) -> i32 {
-    match self {
-      RelaxType::Linear => 0,
-      RelaxType::Quadratic => 1,
-      RelaxType::Cardinality => 2,
-    }
+  fn into(self) -> i32 { (unsafe { transmute::<_, i8>(self) }) as i32 }
+}
+
+
+/// Provides methods to query/modify attributes associated with certain element.
+#[derive(Clone)]
+pub struct Proxy(Rc<Cell<i32>>);
+
+impl Proxy {
+  fn new(idx: i32) -> Proxy { Proxy(Rc::new(Cell::new(idx))) }
+  fn index(&self) -> i32 { self.0.get() }
+  fn set_index(&mut self, value: i32) { self.0.set(value) }
+
+  /// Query the value of attribute.
+  pub fn get<A: AttrArray>(&self, model: &Model, attr: A) -> Result<A::Out> { model.get_element(attr, self.index()) }
+
+  /// Set the value of attribute.
+  pub fn set<A: AttrArray>(&self, model: &mut Model, attr: A, val: A::Out) -> Result<()> {
+    model.set_element(attr, self.index(), val)
   }
 }
 
-
-
-pub trait ProxyBase {
-  fn new(i32) -> Self;
-  fn index(&self) -> i32;
-  fn set_index(&mut self, value: i32);
+impl PartialEq for Proxy {
+  fn eq(&self, other: &Proxy) -> bool { self.0.as_ref() as *const Cell<i32> == other.0.as_ref() as *const Cell<i32> }
 }
 
-/// Provides methods to query/modify attributes associated with certain element.
-pub trait Proxy: ProxyBase {
-  /// Query the value of attribute.
-  fn get<A: AttrArray>(&self, model: &Model, attr: A) -> Result<A::Out> { model.get_element(attr, self.index()) }
 
-  /// Set the value of attribute.
-  fn set<A: AttrArray>(&self, model: &mut Model, attr: A, val: A::Out) -> Result<()> {
-    model.set_element(attr, self.index(), val)
+macro_rules! impl_traits_for_proxy {
+  ($t:ty) => {
+    impl $t {
+      fn new(idx: i32) -> $t { Proxy::new(idx).into() }
+    }
+    impl Deref for $t {
+      type Target = Proxy;
+      fn deref(&self) -> &Proxy { &self.0 }
+    }
+    impl DerefMut for $t {
+      fn deref_mut(&mut self) -> &mut Proxy { &mut self.0 }
+    }
+    impl PartialEq for $t {
+      fn eq(&self, other:&$t) -> bool { self.0.eq(&other.0) }
+    }
   }
 }
 
 
 /// Proxy object of a variables
 #[derive(Clone)]
-pub struct Var(Rc<Cell<i32>>);
+pub struct Var(Proxy);
+impl From<Proxy> for Var {
+  fn from(rep: Proxy) -> Var { Var(rep) }
+}
+impl_traits_for_proxy!(Var);
 
 impl Var {
   pub fn get_type(&self, model: &Model) -> Result<(char, f64, f64)> {
@@ -189,59 +200,27 @@ impl Var {
 
 /// Proxy object of a linear constraint
 #[derive(Clone)]
-pub struct Constr(Rc<Cell<i32>>);
+pub struct Constr(Proxy);
+impl From<Proxy> for Constr {
+  fn from(rep: Proxy) -> Constr { Constr(rep) }
+}
+impl_traits_for_proxy!(Constr);
 
 /// Proxy object of a quadratic constraint
 #[derive(Clone)]
-pub struct QConstr(Rc<Cell<i32>>);
+pub struct QConstr(Proxy);
+impl From<Proxy> for QConstr {
+  fn from(rep: Proxy) -> QConstr { QConstr(rep) }
+}
+impl_traits_for_proxy!(QConstr);
 
 /// Proxy object of a Special Order Set (SOS) constraint
 #[derive(Clone)]
-pub struct SOS(Rc<Cell<i32>>);
-
-impl ProxyBase for Var {
-  fn new(idx: i32) -> Var { Var(Rc::new(Cell::new(idx))) }
-  fn index(&self) -> i32 { self.0.get() }
-  fn set_index(&mut self, value: i32) { self.0.set(value) }
+pub struct SOS(Proxy);
+impl From<Proxy> for SOS {
+  fn from(rep: Proxy) -> SOS { SOS(rep) }
 }
-
-impl Proxy for Var {}
-
-impl ProxyBase for Constr {
-  fn new(idx: i32) -> Constr { Constr(Rc::new(Cell::new(idx))) }
-  fn index(&self) -> i32 { self.0.get() }
-  fn set_index(&mut self, value: i32) { self.0.set(value) }
-}
-
-impl Proxy for Constr {}
-
-impl ProxyBase for QConstr {
-  fn new(idx: i32) -> QConstr { QConstr(Rc::new(Cell::new(idx))) }
-  fn index(&self) -> i32 { self.0.get() }
-  fn set_index(&mut self, value: i32) { self.0.set(value) }
-}
-
-impl Proxy for QConstr {}
-
-impl ProxyBase for SOS {
-  fn new(idx: i32) -> SOS { SOS(Rc::new(Cell::new(idx))) }
-  fn index(&self) -> i32 { self.0.get() }
-  fn set_index(&mut self, value: i32) { self.0.set(value) }
-}
-
-impl Proxy for SOS {}
-
-macro_rules! impl_eq {
-  ($($t:ty)*) => { $(
-    impl PartialEq for $t {
-      fn eq(&self, other: &$t) -> bool {
-        self.0.as_ref() as *const Cell<i32> == other.0.as_ref() as *const Cell<i32>
-      }
-    }
-    impl Eq for $t {}
-  )* }
-}
-impl_eq! { Var }
+impl_traits_for_proxy!(SOS);
 
 
 /// Linear expression of variables
@@ -1048,7 +1027,9 @@ impl Model {
   }
 
   /// Query the value of attributes which associated with variable/constraints.
-  pub fn get_values<A: AttrArray, P: Proxy>(&self, attr: A, item: &[P]) -> Result<Vec<A::Out>> {
+  pub fn get_values<A: AttrArray, P>(&self, attr: A, item: &[P]) -> Result<Vec<A::Out>>
+    where P: Deref<Target = Proxy>
+  {
     self.get_list(attr,
                   item.iter().map(|e| e.index()).collect_vec().as_slice())
   }
@@ -1069,7 +1050,9 @@ impl Model {
 
 
   /// Set the value of attributes which associated with variable/constraints.
-  pub fn set_values<A: AttrArray, P: Proxy>(&mut self, attr: A, item: &[P], val: &[A::Out]) -> Result<()> {
+  pub fn set_values<A: AttrArray, P>(&mut self, attr: A, item: &[P], val: &[A::Out]) -> Result<()>
+    where P: Deref<Target = Proxy>
+  {
     try!(self.set_list(attr,
                        item.iter().map(|e| e.index()).collect_vec().as_slice(),
                        val));

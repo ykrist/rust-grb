@@ -12,7 +12,7 @@ use std::ops::Deref;
 use std::ptr::null;
 
 use error::{Error, Result};
-use model::{Model, Var, LinExpr, ConstrSense, ProxyBase};
+use model::{Model, Var, LinExpr, ConstrSense};
 use util;
 
 // Location where the callback called.

@@ -8,7 +8,7 @@ use super::{Var, Model};
 use error::Result;
 use itertools::*;
 
-use std::ops::{Add, Sub, Mul};
+use std::ops::{Add, Sub, Mul, Neg};
 
 /// Linear expression of variables
 ///
@@ -55,23 +55,6 @@ impl LinExpr {
     let vars = try!(model.get_values(attr::exports::X, self.vars.as_slice()));
 
     Ok(Zip::new((vars, self.coeff.iter())).fold(0.0, |acc, (ind, val)| acc + ind * val) + self.offset)
-  }
-}
-
-impl<'a> Into<QuadExpr> for &'a Var {
-  fn into(self) -> QuadExpr { QuadExpr::new().add_term(1.0, self.clone()) }
-}
-
-impl Into<QuadExpr> for LinExpr {
-  fn into(self) -> QuadExpr {
-    QuadExpr {
-      lind: self.vars,
-      lval: self.coeff,
-      offset: self.offset,
-      qrow: Vec::new(),
-      qcol: Vec::new(),
-      qval: Vec::new()
-    }
   }
 }
 
@@ -146,46 +129,166 @@ impl QuadExpr {
   }
 }
 
+// Conversion into QuadExpr
 
+impl Into<QuadExpr> for Var {
+  fn into(self) -> QuadExpr { QuadExpr::new().add_term(1.0, self) }
+}
+
+impl<'a> Into<QuadExpr> for &'a Var {
+  fn into(self) -> QuadExpr { QuadExpr::new().add_term(1.0, self.clone()) }
+}
+
+impl Into<QuadExpr> for LinExpr {
+  fn into(self) -> QuadExpr {
+    QuadExpr {
+      lind: self.vars,
+      lval: self.coeff,
+      offset: self.offset,
+      qrow: Vec::new(),
+      qcol: Vec::new(),
+      qval: Vec::new()
+    }
+  }
+}
+
+
+/// /////// Operator definition.
+
+
+// Var + Var  => LinExpr
+impl Add for Var {
+  type Output = LinExpr;
+  fn add(self, rhs: Var) -> LinExpr { LinExpr::new().add_term(1.0, self).add_term(1.0, rhs) }
+}
+impl<'a> Add<&'a Var> for Var {
+  type Output = LinExpr;
+  fn add(self, rhs: &Var) -> LinExpr { LinExpr::new().add_term(1.0, self).add_term(1.0, rhs.clone()) }
+}
+impl<'a> Add<Var> for &'a Var {
+  type Output = LinExpr;
+  fn add(self, rhs: Var) -> LinExpr { LinExpr::new().add_term(1.0, self.clone()).add_term(1.0, rhs) }
+}
+impl<'a, 'b> Add<&'b Var> for &'a Var {
+  type Output = LinExpr;
+  fn add(self, rhs: &Var) -> LinExpr { LinExpr::new().add_term(1.0, self.clone()).add_term(1.0, rhs.clone()) }
+}
+
+
+/// / Var - Var  => LinExpr
+impl Sub for Var {
+  type Output = LinExpr;
+  fn sub(self, rhs: Var) -> LinExpr { LinExpr::new().add_term(1.0, self).add_term(-1.0, rhs) }
+}
+impl<'a> Sub<&'a Var> for Var {
+  type Output = LinExpr;
+  fn sub(self, rhs: &Var) -> LinExpr { LinExpr::new().add_term(1.0, self).add_term(-1.0, rhs.clone()) }
+}
+impl<'a> Sub<Var> for &'a Var {
+  type Output = LinExpr;
+  fn sub(self, rhs: Var) -> LinExpr { LinExpr::new().add_term(1.0, self.clone()).add_term(-1.0, rhs) }
+}
+impl<'a, 'b> Sub<&'b Var> for &'a Var {
+  type Output = LinExpr;
+  fn sub(self, rhs: &Var) -> LinExpr { LinExpr::new().add_term(1.0, self.clone()).add_term(-1.0, rhs.clone()) }
+}
+
+
+// -Var  => LinExpr
+impl Neg for Var {
+  type Output = LinExpr;
+  fn neg(self) -> LinExpr { LinExpr::new().add_term(-1.0, self) }
+}
+impl<'a> Neg for &'a Var {
+  type Output = LinExpr;
+  fn neg(self) -> LinExpr { LinExpr::new().add_term(-1.0, self.clone()) }
+}
+
+
+
+// Var * f64  => LinExpr
 impl Mul<f64> for Var {
   type Output = LinExpr;
   fn mul(self, rhs: f64) -> Self::Output { LinExpr::new().add_term(rhs, self) }
 }
-
+impl<'a> Mul<f64> for &'a Var {
+  type Output = LinExpr;
+  fn mul(self, rhs: f64) -> Self::Output { LinExpr::new().add_term(rhs, self.clone()) }
+}
+impl Mul<Var> for f64 {
+  type Output = LinExpr;
+  fn mul(self, rhs: Var) -> Self::Output { LinExpr::new().add_term(self, rhs) }
+}
 impl<'a> Mul<&'a Var> for f64 {
   type Output = LinExpr;
   fn mul(self, rhs: &'a Var) -> Self::Output { LinExpr::new().add_term(self, rhs.clone()) }
 }
 
 
-impl<'a> Mul for &'a Var {
+// Var * Var => QuadExpr
+impl Mul for Var {
   type Output = QuadExpr;
-  fn mul(self, rhs: &'a Var) -> Self::Output { QuadExpr::new().add_qterm(1.0, self.clone(), rhs.clone()) }
+  fn mul(self, rhs: Var) -> Self::Output { QuadExpr::new().add_qterm(1.0, self, rhs) }
+}
+impl<'a> Mul<&'a Var> for Var {
+  type Output = QuadExpr;
+  fn mul(self, rhs: &Var) -> Self::Output { QuadExpr::new().add_qterm(1.0, self, rhs.clone()) }
+}
+impl<'a> Mul<Var> for &'a Var {
+  type Output = QuadExpr;
+  fn mul(self, rhs: Var) -> Self::Output { QuadExpr::new().add_qterm(1.0, self.clone(), rhs) }
+}
+impl<'a, 'b> Mul<&'b Var> for &'a Var {
+  type Output = QuadExpr;
+  fn mul(self, rhs: &Var) -> Self::Output { QuadExpr::new().add_qterm(1.0, self.clone(), rhs.clone()) }
 }
 
-impl Mul<f64> for QuadExpr {
-  type Output = QuadExpr;
-  fn mul(mut self, rhs: f64) -> Self::Output {
-    for i in 0..(self.lval.len()) {
-      self.lval[i] *= rhs;
-    }
-    for j in 0..(self.qval.len()) {
-      self.qval[j] *= rhs;
-    }
-    self.offset *= rhs;
-    self
-  }
+
+// LinExpr + Var  ==> LinExpr
+impl Add<LinExpr> for Var {
+  type Output = LinExpr;
+  fn add(self, rhs: LinExpr) -> LinExpr { rhs.add_term(1.0, self) }
+}
+impl<'a> Add<LinExpr> for &'a Var {
+  type Output = LinExpr;
+  fn add(self, rhs: LinExpr) -> LinExpr { rhs.add_term(1.0, self.clone()) }
+}
+impl Add<Var> for LinExpr {
+  type Output = LinExpr;
+  fn add(self, rhs: Var) -> LinExpr { self.add_term(1.0, rhs) }
+}
+impl<'a> Add<&'a Var> for LinExpr {
+  type Output = LinExpr;
+  fn add(self, rhs: &'a Var) -> LinExpr { self.add_term(1.0, rhs.clone()) }
 }
 
 
+// LinExpr + f64 => LinExpr
 impl Add<f64> for LinExpr {
   type Output = LinExpr;
   fn add(self, rhs: f64) -> Self::Output { self.add_constant(rhs) }
 }
+impl Add<LinExpr> for f64 {
+  type Output = LinExpr;
+  fn add(self, rhs: LinExpr) -> Self::Output { rhs.add_constant(self) }
+}
 
+
+// LinExpr - f64  => LinExpr
 impl Sub<f64> for LinExpr {
   type Output = LinExpr;
   fn sub(self, rhs: f64) -> Self::Output { self.add_constant(-rhs) }
+}
+
+// f64 - LinExpr  => LinExpr
+impl Sub<LinExpr> for f64 {
+  type Output = LinExpr;
+  fn sub(self, mut rhs: LinExpr) -> Self::Output {
+    for c in rhs.coeff.iter_mut() {
+      *c *= -1.0;
+    }
+    rhs.add_constant(-self)
+  }
 }
 
 
@@ -208,6 +311,23 @@ impl Sub for LinExpr {
     self
   }
 }
+
+
+
+impl Mul<f64> for QuadExpr {
+  type Output = QuadExpr;
+  fn mul(mut self, rhs: f64) -> Self::Output {
+    for i in 0..(self.lval.len()) {
+      self.lval[i] *= rhs;
+    }
+    for j in 0..(self.qval.len()) {
+      self.qval[j] *= rhs;
+    }
+    self.offset *= rhs;
+    self
+  }
+}
+
 
 
 impl Add<LinExpr> for QuadExpr {
@@ -254,24 +374,4 @@ impl Sub for QuadExpr {
     self.offset -= rhs.offset;
     self
   }
-}
-
-impl<'a> Add for &'a Var {
-  type Output = LinExpr;
-  fn add(self, rhs: &Var) -> LinExpr { LinExpr::new().add_term(1.0, self.clone()).add_term(1.0, rhs.clone()) }
-}
-
-impl<'a> Sub for &'a Var {
-  type Output = LinExpr;
-  fn sub(self, rhs: &Var) -> LinExpr { LinExpr::new().add_term(1.0, self.clone()).add_term(-1.0, rhs.clone()) }
-}
-
-impl<'a> Add<LinExpr> for &'a Var {
-  type Output = LinExpr;
-  fn add(self, rhs: LinExpr) -> LinExpr { rhs.add_term(1.0, self.clone()) }
-}
-
-impl<'a> Add<&'a Var> for LinExpr {
-  type Output = LinExpr;
-  fn add(self, rhs: &'a Var) -> LinExpr { self.add_term(1.0, rhs.clone()) }
 }

@@ -12,7 +12,8 @@ use std::ops::Deref;
 use std::ptr::null;
 
 use error::{Error, Result};
-use model::{Model, Var, LinExpr, ConstrSense};
+use model::{Model, Var, ConstrSense};
+use model::expr::LinExpr;
 use util;
 
 // Location where the callback called.
@@ -329,25 +330,27 @@ impl<'a> Callback<'a> {
 
   /// Add a new cutting plane to the MIP model.
   pub fn add_cut(&self, lhs: LinExpr, sense: ConstrSense, rhs: f64) -> Result<()> {
+    let (vars, coeff, offset) = lhs.into();
     self.check_apicall(unsafe {
       ffi::GRBcbcut(self.cbdata,
-                    lhs.coeff.len() as ffi::c_int,
-                    lhs.vars.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
-                    lhs.coeff.as_ptr(),
+                    coeff.len() as ffi::c_int,
+                    vars.as_ptr(),
+                    coeff.as_ptr(),
                     sense.into(),
-                    rhs - lhs.offset)
+                    rhs - offset)
     })
   }
 
   /// Add a new lazy constraint to the MIP model.
   pub fn add_lazy(&self, lhs: LinExpr, sense: ConstrSense, rhs: f64) -> Result<()> {
+    let (vars, coeff, offset) = lhs.into();
     self.check_apicall(unsafe {
       ffi::GRBcblazy(self.cbdata,
-                     lhs.coeff.len() as ffi::c_int,
-                     lhs.vars.into_iter().map(|e| e.index()).collect_vec().as_ptr(),
-                     lhs.coeff.as_ptr(),
+                     coeff.len() as ffi::c_int,
+                     vars.as_ptr(),
+                     coeff.as_ptr(),
                      sense.into(),
-                     rhs - lhs.offset)
+                     rhs - offset)
     })
   }
 

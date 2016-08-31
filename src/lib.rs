@@ -79,7 +79,7 @@ pub use error::{Error, Result};
 
 pub use env::Env;
 
-pub use model::{Model, Var, Constr, QConstr, SOS, LinExpr, QuadExpr, Proxy};
+pub use model::{Model, Var, Constr, QConstr, SOS, Proxy};
 pub use model::{VarType, ConstrSense, ModelSense, SOSType, Status, RelaxType};
 pub use model::callback::{Callback, Where};
 pub use model::VarType::*;
@@ -87,6 +87,7 @@ pub use model::ConstrSense::*;
 pub use model::ModelSense::*;
 pub use model::SOSType::*;
 pub use model::RelaxType::*;
+pub use model::expr::{LinExpr, QuadExpr};
 
 pub use model::attr::exports as attr;
 pub use env::param::exports as param;

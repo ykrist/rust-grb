@@ -8,7 +8,7 @@ pub mod param;
 use ffi;
 
 use std::ffi::CString;
-use std::ptr::{null_mut};
+use std::ptr::null_mut;
 
 use error::{Error, Result};
 use model::Model;
@@ -63,15 +63,11 @@ impl Env {
 
   /// Create an empty Gurobi model from the environment
   #[deprecated]
-  pub fn new_model(&self, modelname: &str) -> Result<Model> {
-    Model::new(modelname, self)
-  }
+  pub fn new_model(&self, modelname: &str) -> Result<Model> { Model::new(modelname, self) }
 
   /// Read a model from a file
   #[deprecated]
-  pub fn read_model(&self, filename: &str) -> Result<Model> {
-    Model::read_from(filename, self)
-  }
+  pub fn read_model(&self, filename: &str) -> Result<Model> { Model::read_from(filename, self) }
 
   /// Query the value of a parameter
   pub fn get<P: Param>(&self, param: P) -> Result<P::Out> {

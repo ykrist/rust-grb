@@ -162,31 +162,30 @@ impl PartialEq for Proxy {
 
 
 macro_rules! impl_traits_for_proxy {
-  ($t:ty) => {
+  {$($t:ident)*} => { $(
     impl $t {
-      fn new(idx: i32) -> $t { Proxy::new(idx).into() }
+      fn new(idx: i32) -> $t { $t(Proxy::new(idx)) }
     }
+
     impl Deref for $t {
       type Target = Proxy;
       fn deref(&self) -> &Proxy { &self.0 }
     }
+
     impl DerefMut for $t {
       fn deref_mut(&mut self) -> &mut Proxy { &mut self.0 }
     }
+
     impl PartialEq for $t {
       fn eq(&self, other:&$t) -> bool { self.0.eq(&other.0) }
     }
-  }
+  )* }
 }
 
 
 /// Proxy object of a variables
 #[derive(Clone)]
 pub struct Var(Proxy);
-impl From<Proxy> for Var {
-  fn from(rep: Proxy) -> Var { Var(rep) }
-}
-impl_traits_for_proxy!(Var);
 
 impl Var {
   pub fn get_type(&self, model: &Model) -> Result<(char, f64, f64)> {
@@ -201,26 +200,16 @@ impl Var {
 /// Proxy object of a linear constraint
 #[derive(Clone)]
 pub struct Constr(Proxy);
-impl From<Proxy> for Constr {
-  fn from(rep: Proxy) -> Constr { Constr(rep) }
-}
-impl_traits_for_proxy!(Constr);
 
 /// Proxy object of a quadratic constraint
 #[derive(Clone)]
 pub struct QConstr(Proxy);
-impl From<Proxy> for QConstr {
-  fn from(rep: Proxy) -> QConstr { QConstr(rep) }
-}
-impl_traits_for_proxy!(QConstr);
 
 /// Proxy object of a Special Order Set (SOS) constraint
 #[derive(Clone)]
 pub struct SOS(Proxy);
-impl From<Proxy> for SOS {
-  fn from(rep: Proxy) -> SOS { SOS(rep) }
-}
-impl_traits_for_proxy!(SOS);
+
+impl_traits_for_proxy! { Var Constr QConstr SOS }
 
 
 /// Linear expression of variables

@@ -8,7 +8,7 @@ pub mod param;
 use ffi;
 
 use std::ffi::CString;
-use std::ptr::{null, null_mut};
+use std::ptr::{null_mut};
 
 use error::{Error, Result};
 use model::Model;
@@ -62,31 +62,16 @@ impl Env {
   }
 
   /// Create an empty Gurobi model from the environment
+  #[deprecated]
   pub fn new_model(&self, modelname: &str) -> Result<Model> {
-    let modelname = try!(CString::new(modelname));
-    let mut model = null_mut();
-    try!(self.check_apicall(unsafe {
-      ffi::GRBnewmodel(self.env,
-                       &mut model,
-                       modelname.as_ptr(),
-                       0,
-                       null(),
-                       null(),
-                       null(),
-                       null(),
-                       null())
-    }));
-    Model::new(model)
+    Model::new(modelname, self)
   }
 
   /// Read a model from a file
+  #[deprecated]
   pub fn read_model(&self, filename: &str) -> Result<Model> {
-    let filename = try!(CString::new(filename));
-    let mut model = null_mut();
-    try!(self.check_apicall(unsafe { ffi::GRBreadmodel(self.env, filename.as_ptr(), &mut model) }));
-    Model::new(model)
+    Model::read_from(filename, self)
   }
-
 
   /// Query the value of a parameter
   pub fn get<P: Param>(&self, param: P) -> Result<P::Out> {
@@ -118,7 +103,15 @@ impl Env {
   ///
   /// When **message** cannot convert to raw C string, a panic is occurred.
   pub fn message(&self, message: &str) { unsafe { ffi::GRBmsg(self.env, CString::new(message).unwrap().as_ptr()) }; }
+}
 
+pub trait EnvAPI {
+  fn get_ptr(&self) -> *mut ffi::GRBenv;
+  fn check_apicall(&self, error: ffi::c_int) -> Result<()>;
+}
+
+impl EnvAPI for Env {
+  fn get_ptr(&self) -> *mut ffi::GRBenv { self.env }
 
   fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
     if error != 0 {

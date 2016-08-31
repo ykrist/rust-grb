@@ -21,7 +21,7 @@ use std::slice::Iter;
 
 use self::attr::{Attr, AttrArray};
 use self::callback::{Callback, New};
-use env::{Env, FromRaw};
+use env::{Env, EnvAPI};
 use error::{Error, Result};
 use util;
 
@@ -517,9 +517,15 @@ pub struct Model {
   sos: Vec<SOS>
 }
 
-impl Model {
+pub trait FromRaw {
   /// create an empty model which associated with certain environment.
-  pub fn new(model: *mut ffi::GRBmodel) -> Result<Model> {
+  fn from_raw(model: *mut ffi::GRBmodel) -> Result<Model>;
+}
+
+impl FromRaw for Model {
+  /// create an empty model which associated with certain environment.
+  fn from_raw(model: *mut ffi::GRBmodel) -> Result<Model> {
+    use env::FromRaw;
     let env = unsafe { ffi::GRBgetenv(model) };
     if env.is_null() {
       return Err(Error::FromAPI("Failed to retrieve GRBenv from given model".to_owned(),
@@ -538,6 +544,54 @@ impl Model {
     try!(model.populate());
     Ok(model)
   }
+}
+
+impl Model {
+  /// Create an empty Gurobi model from the environment.
+  ///
+  /// Note that all of the parameters in given environment will copy by Gurobi API
+  /// and a new environment associated with the model will create.
+  /// If you want to query/modify the value of parameters, use `get_env()`.
+  ///
+  /// # Arguments
+  /// * __modelname__ : Name of the model
+  /// * __env__ : An environment object.
+  ///
+  /// # Example
+  /// ```
+  /// use gurobi::*;
+  ///
+  /// let mut env = gurobi::Env::new("").unwrap();
+  /// env.set(param::OutputFlag, 0).unwrap();
+  /// env.set(param::Heuristics, 0.5).unwrap();
+  /// // ...
+  ///
+  /// let model = Model::new("model1", &env).unwrap();
+  /// ```
+  pub fn new(modelname: &str, env: &Env) -> Result<Model> {
+    let modelname = try!(CString::new(modelname));
+    let mut model = null_mut();
+    try!(env.check_apicall(unsafe {
+      ffi::GRBnewmodel(env.get_ptr(),
+                       &mut model,
+                       modelname.as_ptr(),
+                       0,
+                       null(),
+                       null(),
+                       null(),
+                       null(),
+                       null())
+    }));
+    Self::from_raw(model)
+  }
+
+  /// Read a model from a file
+  pub fn read_from(filename: &str, env: &Env) -> Result<Model> {
+    let filename = try!(CString::new(filename));
+    let mut model = null_mut();
+    try!(env.check_apicall(unsafe { ffi::GRBreadmodel(env.get_ptr(), filename.as_ptr(), &mut model) }));
+    Self::from_raw(model)
+  }
 
   /// create a copy of the model
   pub fn copy(&self) -> Result<Model> {
@@ -546,7 +600,7 @@ impl Model {
       return Err(Error::FromAPI("Failed to create a copy of the model".to_owned(), 20002));
     }
 
-    Model::new(copied)
+    Model::from_raw(copied)
   }
 
   /// Create an fixed model associated with the model.
@@ -559,7 +613,7 @@ impl Model {
     if fixed.is_null() {
       return Err(Error::FromAPI("failed to create fixed model".to_owned(), 20002));
     }
-    Model::new(fixed)
+    Model::from_raw(fixed)
   }
 
   /// Create an relaxation of the model (undocumented).
@@ -568,7 +622,7 @@ impl Model {
     if relaxed.is_null() {
       return Err(Error::FromAPI("failed to create relaxed model".to_owned(), 20002));
     }
-    Model::new(relaxed)
+    Model::from_raw(relaxed)
   }
 
   /// Perform presolve on the model.
@@ -577,7 +631,7 @@ impl Model {
     if presolved.is_null() {
       return Err(Error::FromAPI("failed to create presolved model".to_owned(), 20002));
     }
-    Model::new(presolved)
+    Model::from_raw(presolved)
   }
 
   /// Create a feasibility model (undocumented).
@@ -586,7 +640,7 @@ impl Model {
     if feasibility.is_null() {
       return Err(Error::FromAPI("failed to create feasibility model".to_owned(), 20002));
     }
-    Model::new(feasibility)
+    Model::from_raw(feasibility)
   }
 
   /// Get immutable reference of an environment object associated with the model.
@@ -667,6 +721,8 @@ impl Model {
   /// ```
   #[deprecated]
   pub fn get_concurrent_env(&self, num: i32) -> Result<Env> {
+    use env::FromRaw;
+
     let env = unsafe { ffi::GRBgetconcurrentenv(self.model, num) };
     if env.is_null() {
       return Err(Error::FromAPI("Cannot get a concurrent environment.".to_owned(), 20003));

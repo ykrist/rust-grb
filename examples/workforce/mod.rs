@@ -35,14 +35,14 @@ pub fn make_model(env: &Env) -> Result<Model> {
      vec![ 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
    ];
 
-  let mut model = try!(env.new_model("assignment"));
+  let mut model = try!(Model::new("assignment", &env));
 
   let mut x = Vec::new();
   for (worker, availability) in Zip::new((workers.iter(), availability.iter())) {
     let mut xshift = Vec::new();
     for (shift, &availability) in Zip::new((shifts.iter(), availability.iter())) {
       let vname = format!("{}.{}", worker, shift);
-      let v = try!(model.add_var(vname.as_str(), Continuous(-INFINITY, availability as f64)));
+      let v = try!(model.add_var(vname.as_str(), Continuous, 0.0, -INFINITY, availability as f64));
       xshift.push(v);
     }
     x.push(xshift);

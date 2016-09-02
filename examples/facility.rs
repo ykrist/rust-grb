@@ -25,12 +25,12 @@ fn main() {
                          vec![2200f64, 2600.0, 3100.0, 3700.0, 3200.0]];
 
   let env = Env::new("facility.log").unwrap();
-  let mut model = env.new_model("facility").unwrap();
+  let mut model = Model::new("facility", &env).unwrap();
 
   // plant open decision variables.
   // open[p] == 1 means that plant p is open.
   let open: Vec<Var> =
-    (0..(fixed_costs.len())).map(|p| model.add_var(&format!("Open{}", p), Binary).unwrap()).collect();
+    (0..(fixed_costs.len())).map(|p| model.add_var(&format!("Open{}", p), Binary, 0.0, 0.0, 1.0).unwrap()).collect();
 
   // transportation decision variables.
   // how much transport from a plant p to a warehouse w
@@ -38,7 +38,7 @@ fn main() {
     .enumerate()
     .map(|(w, costs)| {
       (0..(costs.len()))
-        .map(|p| model.add_var(&format!("Trans{}.{}", p, w), Continuous(0.0, INFINITY)).unwrap())
+        .map(|p| model.add_var(&format!("Trans{}.{}", p, w), Continuous, 0.0, 0.0, INFINITY).unwrap())
         .collect()
     })
     .collect();

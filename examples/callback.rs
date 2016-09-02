@@ -13,7 +13,7 @@ fn main() {
   env.set(param::OutputFlag, 0).unwrap();
   env.set(param::Heuristics, 0.0).unwrap();
 
-  let mut model = env.read_model(&std::env::args().nth(1).unwrap()).unwrap();
+  let mut model = Model::read_from(&std::env::args().nth(1).unwrap(), &env).unwrap();
 
   let callback = {
     let mut lastiter = -INFINITY;

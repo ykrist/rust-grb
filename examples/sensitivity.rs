@@ -10,7 +10,7 @@ use std::env::args;
 fn main() {
   let env = Env::new("").unwrap();
 
-  let mut model = env.read_model(args().nth(1).as_ref().unwrap()).unwrap();
+  let mut model = Model::read_from(args().nth(1).as_ref().unwrap(), &env).unwrap();
   assert!(model.get(attr::IsMIP).unwrap() != 0, "Model is not a MIP");
 
   model.optimize().unwrap();

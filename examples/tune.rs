@@ -12,7 +12,7 @@ fn main() {
   // set the number of improved parameter sets.
   env.set(param::TuneResults, 1).unwrap();
 
-  let mut model = env.read_model(args().nth(1).as_ref().unwrap()).unwrap();
+  let mut model = Model::read_from(args().nth(1).as_ref().unwrap(), &env).unwrap();
 
   model.tune().unwrap();
 

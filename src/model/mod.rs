@@ -32,17 +32,16 @@ use util;
 #[derive(Debug,Clone,Copy)]
 pub enum VarType {
   Binary,
-  Continuous(f64, f64),
-  Integer(f64, f64)
+  Continuous,
+  Integer
 }
 
-impl Into<(ffi::c_char, f64, f64)> for VarType {
-  fn into(self) -> (ffi::c_char, f64, f64) {
-    use self::VarType::*;
+impl Into<ffi::c_char> for VarType {
+  fn into(self) -> ffi::c_char {
     match self {
-      Binary => ('B' as ffi::c_char, 0.0, 1.0),
-      Continuous(lb, ub) => ('C' as ffi::c_char, lb, ub),
-      Integer(lb, ub) => ('I' as ffi::c_char, lb as ffi::c_double, ub as ffi::c_double),
+      VarType::Binary => 'B' as ffi::c_char,
+      VarType::Continuous => 'C' as ffi::c_char,
+      VarType::Integer => 'I' as ffi::c_char,
     }
   }
 }
@@ -414,7 +413,7 @@ impl Model {
   /// Get mutable reference of an environment object associated with the model.
   pub fn get_env_mut(&mut self) -> &mut Env { &mut self.env }
 
- 
+
   fn remove_items<P: DerefMut<Target = Proxy> + Clone>(vec: &Vec<P>) -> (Vec<P>, Vec<i32>) {
     let (added, removed): (Vec<_>, _) = vec.iter().cloned().partition(|v| v.index() >= -1);
 
@@ -588,22 +587,17 @@ impl Model {
 
 
   /// add a decision variable to the model.
-  pub fn add_var(&mut self, name: &str, vtype: VarType) -> Result<Var> {
-    // extract parameters
-    let (vtype, lb, ub) = vtype.into();
-    println!("{:?}", (vtype, lb, ub));
-
+  pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64, lb: f64, ub: f64) -> Result<Var> {
     let name = try!(CString::new(name));
-
     try!(self.check_apicall(unsafe {
       ffi::GRBaddvar(self.model,
                      0,
                      null(),
                      null(),
-                     0.0,
+                     obj,
                      lb,
                      ub,
-                     vtype,
+                     vtype.into(),
                      name.as_ptr())
     }));
 
@@ -618,28 +612,33 @@ impl Model {
   }
 
   /// add decision variables to the model.
-  pub fn add_vars(&mut self, names: &[&str], vtypes: &[VarType]) -> Result<Vec<Var>> {
+  pub fn add_vars(&mut self, names: &[&str], vtypes: &[VarType], objs: &[f64], lbs: &[f64], ubs: &[f64])
+                  -> Result<Vec<Var>> {
     if names.len() != vtypes.len() {
       return Err(Error::InconsitentDims);
     }
 
-    let mut _vtypes = Vec::with_capacity(vtypes.len());
-    let mut _names = Vec::with_capacity(vtypes.len());
-    let mut lbs = Vec::with_capacity(vtypes.len());
-    let mut ubs = Vec::with_capacity(vtypes.len());
-    for (&name, &vtype) in Zip::new((names, vtypes)) {
-      let (vtype, lb, ub) = vtype.into();
-      let name = try!(CString::new(name));
-      _vtypes.push(vtype);
-      _names.push(name.as_ptr());
-      lbs.push(lb);
-      ubs.push(ub);
-    }
-    let objs = vec![0.0; vtypes.len()];
+    let names = {
+      let mut buf = Vec::with_capacity(names.len());
+      for &name in names.into_iter() {
+        let name = try!(CString::new(name));
+        buf.push(name.as_ptr());
+      }
+      buf
+    };
+
+    let vtypes = {
+      let mut buf = Vec::with_capacity(vtypes.len());
+      for &vtype in vtypes.into_iter() {
+        let vtype = vtype.into();
+        buf.push(vtype);
+      }
+      buf
+    };
 
     try!(self.check_apicall(unsafe {
       ffi::GRBaddvars(self.model,
-                      _names.len() as ffi::c_int,
+                      names.len() as ffi::c_int,
                       0,
                       null(),
                       null(),
@@ -647,14 +646,14 @@ impl Model {
                       objs.as_ptr(),
                       lbs.as_ptr(),
                       ubs.as_ptr(),
-                      _vtypes.as_ptr(),
-                      _names.as_ptr())
+                      vtypes.as_ptr(),
+                      names.as_ptr())
     }));
 
     let mode = try!(self.get_update_mode());
 
     let xcols = self.vars.len();
-    let cols = self.vars.len() + _names.len();
+    let cols = self.vars.len() + names.len();
 
     for col_no in xcols..cols {
       self.vars.push(Var::new(if mode != 0 { col_no as i32 } else { -1 }));
@@ -1232,8 +1231,8 @@ fn removing_variable_should_be_successed() {
   env.set(param::OutputFlag, 0).unwrap();
   let mut model = env.new_model("hoge").unwrap();
 
-  let x = model.add_var("x", Binary).unwrap();
-  let y = model.add_var("y", Binary).unwrap();
+  let x = model.add_var("x", Binary, 0.0, 0.0, 1.0).unwrap();
+  let y = model.add_var("y", Binary, 0.0, 0.0, 1.0).unwrap();
   assert_eq!(x.index(), -1);
   assert_eq!(y.index(), -1);
 
@@ -1241,7 +1240,7 @@ fn removing_variable_should_be_successed() {
   assert_eq!(x.index(), 0);
   assert_eq!(y.index(), 1);
 
-  let z = model.add_var("z", Binary).unwrap();
+  let z = model.add_var("z", Binary, 0.0, 0.0, 1.0).unwrap();
   assert_eq!(x.index(), 0);
   assert_eq!(y.index(), 1);
   assert_eq!(z.index(), -1);

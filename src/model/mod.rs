@@ -414,98 +414,60 @@ impl Model {
   /// Get mutable reference of an environment object associated with the model.
   pub fn get_env_mut(&mut self) -> &mut Env { &mut self.env }
 
+ 
+  fn remove_items<P: DerefMut<Target = Proxy> + Clone>(vec: &Vec<P>) -> (Vec<P>, Vec<i32>) {
+    let (added, removed): (Vec<_>, _) = vec.iter().cloned().partition(|v| v.index() >= -1);
+
+    let mut buf = Vec::with_capacity(removed.len());
+    for mut elem in removed.into_iter() {
+      if elem.index() < -2 {
+        buf.push(-3 - elem.index())
+      }
+      elem.set_index(-2);
+    }
+
+    (added, buf)
+  }
+
+  fn rearrange<P: DerefMut<Target = Proxy>>(mut vec: Vec<P>) -> Vec<P> {
+    for (i, mut elem) in vec.iter_mut().enumerate() {
+      elem.set_index(i as i32);
+    }
+    vec
+  }
+
   /// Apply all modification of the model to process
   pub fn update(&mut self) -> Result<()> {
-    // make a partition of active/removed proxies
+    let (vars, delind) = Self::remove_items(&self.vars);
+    if delind.len() > 0 {
+      try!(self.check_apicall(unsafe { ffi::GRBdelvars(self.model, delind.len() as ffi::c_int, delind.as_ptr()) }));
+    }
 
-    let vars = {
-      let (vars, col_removed): (Vec<_>, _) = self.vars.iter().cloned().partition(|v| v.index() >= -1);
-      let mut buf = Vec::new();
-      for mut col in col_removed.into_iter() {
-        if col.index() < -2 {
-          buf.push(-3 - col.index())
-        }
-        col.set_index(-2);
-      }
-      try!(self.check_apicall(unsafe { ffi::GRBdelvars(self.model, buf.len() as ffi::c_int, buf.as_ptr()) }));
-      vars
-    };
+    let (constrs, delind) = Self::remove_items(&self.constrs);
+    if delind.len() > 0 {
+      try!(self.check_apicall(unsafe { ffi::GRBdelconstrs(self.model, delind.len() as ffi::c_int, delind.as_ptr()) }));
+    }
 
-    let constrs = {
-      let (constrs, row_removed): (Vec<_>, _) = self.constrs.iter().cloned().partition(|c| c.index() >= -1);
-      let mut buf = Vec::new();
-      for mut row in row_removed.into_iter() {
-        if row.index() < -2 {
-          buf.push(-3 - row.index())
-        }
-        row.set_index(-2);
-      }
-      try!(self.check_apicall(unsafe { ffi::GRBdelconstrs(self.model, buf.len() as ffi::c_int, buf.as_ptr()) }));
-      constrs
-    };
+    let (qconstrs, delind) = Self::remove_items(&self.qconstrs);
+    if delind.len() > 0 {
+      try!(self.check_apicall(unsafe { ffi::GRBdelqconstrs(self.model, delind.len() as ffi::c_int, delind.as_ptr()) }));
+    }
 
-    let qconstrs = {
-      let (qconstrs, qrow_removed): (Vec<_>, _) = self.qconstrs.iter().cloned().partition(|q| q.index() >= -1);
-      let mut buf = Vec::new();
-      for mut qrow in qrow_removed.into_iter() {
-        if qrow.index() < -2 {
-          buf.push(-3 - qrow.index())
-        }
-        qrow.set_index(-2);
-      }
-      try!(self.check_apicall(unsafe { ffi::GRBdelqconstrs(self.model, buf.len() as ffi::c_int, buf.as_ptr()) }));
-      qconstrs
-    };
+    let (sos, delind) = Self::remove_items(&self.sos);
+    if delind.len() > 0 {
+      try!(self.check_apicall(unsafe { ffi::GRBdelsos(self.model, delind.len() as ffi::c_int, delind.as_ptr()) }));
+    }
 
-    let sos = {
-      let (sos, sos_removed): (Vec<_>, _) = self.sos.iter().cloned().partition(|s| s.index() >= -1);
-      let mut buf = Vec::new();
-      for mut sos in sos_removed.into_iter() {
-        if sos.index() < -2 {
-          buf.push(-3 - sos.index())
-        }
-        sos.set_index(-2);
-      }
-      try!(self.check_apicall(unsafe { ffi::GRBdelsos(self.model, buf.len() as ffi::c_int, buf.as_ptr()) }));
-      sos
-    };
-
+    // process all of the modification.
     try!(self.check_apicall(unsafe { ffi::GRBupdatemodel(self.model) }));
 
     // rearrange indices.
-    self.vars = vars.into_iter()
-      .enumerate()
-      .map(|(i, mut v)| {
-        v.set_index(i as i32);
-        v
-      })
-      .collect();
-
-    self.constrs = constrs.into_iter()
-      .enumerate()
-      .map(|(i, mut c)| {
-        c.set_index(i as i32);
-        c
-      })
-      .collect();
-
-    self.qconstrs = qconstrs.into_iter()
-      .enumerate()
-      .map(|(i, mut qc)| {
-        qc.set_index(i as i32);
-        qc
-      })
-      .collect();
-
-    self.sos = sos.into_iter()
-      .enumerate()
-      .map(|(i, mut s)| {
-        s.set_index(i as i32);
-        s
-      })
-      .collect();
-
+    self.vars = Self::rearrange(vars);
+    self.constrs = Self::rearrange(constrs);
+    self.qconstrs = Self::rearrange(qconstrs);
+    self.sos = Self::rearrange(sos);
     self.updatemode = None;
+
     Ok(())
   }
 

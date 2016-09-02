@@ -13,7 +13,7 @@ use std::ops::{Add, Sub, Mul, Neg};
 /// Linear expression of variables
 ///
 /// A linear expression consists of a constant term plus a list of coefficients and variables.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct LinExpr {
   vars: Vec<Var>,
   coeff: Vec<f64>,
@@ -63,7 +63,7 @@ impl LinExpr {
 ///
 /// A quadratic expression consists of a linear expression and a set of
 /// variable-variable-coefficient triples to express the quadratic term.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct QuadExpr {
   lind: Vec<Var>,
   lval: Vec<f64>,

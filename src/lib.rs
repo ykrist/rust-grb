@@ -42,27 +42,36 @@
 //!   let mut model = env.new_model("model1").unwrap();
 //!
 //!   // add decision variables.
-//!   let x = model.add_var("x", Binary).unwrap();
-//!   let y = model.add_var("y", Continuous(-10.0, 10.0)).unwrap();
-//!   let z = model.add_var("z", Continuous(-INFINITY, INFINITY)).unwrap();
+//!   let x1 = model.add_var("x1", Continuous(-INFINITY, INFINITY)).unwrap();
+//!   let x2 = model.add_var("x2", Integer(-INFINITY, INFINITY)).unwrap();
 //!
-//!   // integrate all the variables into the model.
+//!   // integrate all of the variables into the model.
 //!   model.update().unwrap();
 //!
 //!   // add a linear constraint
-//!   model.add_constr("c0", &x - &y + 2.0 * &z, Equal, 0.0).unwrap();
-//!   // ...
+//!   model.add_constr("c0", &x1 + 2.0 * &x2, Greater, -14.0).unwrap();
+//!   model.add_constr("c1", -4.0 * &x1 - 1.0 * &x2, Less, -33.0).unwrap();
+//!   model.add_constr("c2", 2.0 * &x1 + &x2, Less, 20.0).unwrap();
 //!
-//!   model.set_objective(&x, Maximize).unwrap();
+//!   // integrate all of the constraints into the model.
+//!   model.update().unwrap();
+//!
+//!   // set the expression of objective function.
+//!   model.set_objective(8.0 * &x1 + &x2, Minimize).unwrap();
+//!
+//!   assert_eq!(model.get(attr::IsMIP).unwrap(), 1, "Model is not a MIP.");
+//!
+//!   // write constructed model to the file.
+//!   model.write("logfile.lp").unwrap();
 //!
 //!   // optimize the model.
 //!   model.optimize().unwrap();
 //!   assert_eq!(model.status().unwrap(), Status::Optimal);
 //!
-//!   assert_eq!(model.get(attr::ObjVal).unwrap() , 1.0);
+//!   assert_eq!(model.get(attr::ObjVal).unwrap() , 59.0);
 //!
-//!   let val = model.get_values(attr::X, &[x, y, z]).unwrap();
-//!   assert_eq!(val, [1.0, -10.0, -5.5]);
+//!   let val = model.get_values(attr::X, &[x1, x2]).unwrap();
+//!   assert_eq!(val, [6.5, 7.0]);
 //! }
 //! ```
 

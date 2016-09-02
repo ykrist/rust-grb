@@ -38,7 +38,8 @@ fn main() {
         match c {
           Some(c) => {
             let cname = c.get(&model, attr::ConstrName).unwrap();
-            model.remove_constr(c).unwrap();
+            model.remove(c);
+            model.update().unwrap();
             removed.push(cname);
           }
           None => {

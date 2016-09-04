@@ -17,13 +17,30 @@ pub enum Error {
 
   /// Inconsistent argument dimensions
   InconsitentDims,
-
-  /// String conversion error
-  StringConversion
 }
 
 impl From<std::ffi::NulError> for Error {
   fn from(err: std::ffi::NulError) -> Error { Error::NulError(err) }
+}
+
+impl std::fmt::Display for Error {
+  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    match *self {
+      Error::FromAPI(ref message, code) => write!(f, "Error from API: {} ({})", message, code),
+      Error::InconsitentDims => write!(f, "Inconsistent argument dimensions"),
+      Error::NulError(ref err) => write!(f, "NulError: {}", err),
+    }
+  }
+}
+
+impl std::error::Error for Error {
+  fn description(&self) -> &str {
+    match *self {
+      Error::FromAPI(..) => "error from C API",
+      Error::NulError(ref err) => err.description(),
+      Error::InconsitentDims => "Inconsistent argument dimensions",
+    }
+  }
 }
 
 

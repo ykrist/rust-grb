@@ -129,15 +129,15 @@ impl From<i32> for Status {
 #[derive(Debug,Copy,Clone)]
 pub enum RelaxType {
   /// The weighted magnitude of bounds and constraint violations
-  /// (`penalty(s_i) = w_i s_i`)
+  /// ($penalty(s\_i) = w\_i s\_i$)
   Linear = 0,
 
   /// The weighted square of magnitude of bounds and constraint violations
-  /// (`penalty(s_i) = w_i s_i^2`)
+  /// ($penalty(s\_i) = w\_i s\_i\^2$)
   Quadratic = 1,
 
   /// The weighted count of bounds and constraint violations
-  /// (`penalty(s_i) = w_i * [s_i > 0]`)
+  /// ($penalty(s\_i) = w\_i \cdot [s\_i > 0]$)
   Cardinality = 2
 }
 

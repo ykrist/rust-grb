@@ -587,13 +587,31 @@ impl Model {
 
 
   /// add a decision variable to the model.
-  pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64, lb: f64, ub: f64) -> Result<Var> {
+  pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64, lb: f64, ub: f64, colconstrs: &[Constr],
+                 colvals: &[f64])
+                 -> Result<Var> {
+    if colconstrs.len() != colvals.len() {
+      return Err(Error::InconsitentDims);
+    }
+
+    let colconstrs = {
+      let mut buf = Vec::with_capacity(colconstrs.len());
+      for elem in colconstrs.iter() {
+        let idx = elem.index();
+        if idx < 0 {
+          return Err(Error::InconsitentDims);
+        }
+        buf.push(idx);
+      }
+      buf
+    };
+
     let name = try!(CString::new(name));
     try!(self.check_apicall(unsafe {
       ffi::GRBaddvar(self.model,
-                     0,
-                     null(),
-                     null(),
+                     colvals.len() as ffi::c_int,
+                     colconstrs.as_ptr(),
+                     colvals.as_ptr(),
                      obj,
                      lb,
                      ub,
@@ -612,9 +630,11 @@ impl Model {
   }
 
   /// add decision variables to the model.
-  pub fn add_vars(&mut self, names: &[&str], vtypes: &[VarType], objs: &[f64], lbs: &[f64], ubs: &[f64])
+  pub fn add_vars(&mut self, names: &[&str], vtypes: &[VarType], objs: &[f64], lbs: &[f64], ubs: &[f64],
+                  colconstrs: &[&[Constr]], colvals: &[&[f64]])
                   -> Result<Vec<Var>> {
-    if names.len() != vtypes.len() {
+    if names.len() != vtypes.len() || vtypes.len() != objs.len() || objs.len() != lbs.len() ||
+       lbs.len() != ubs.len() || ubs.len() != colconstrs.len() || colconstrs.len() != colvals.len() {
       return Err(Error::InconsitentDims);
     }
 
@@ -636,13 +656,42 @@ impl Model {
       buf
     };
 
+    let (beg, ind, val) = {
+      let len_ind = colconstrs.iter().fold(0usize, |e, &c| e + c.len());
+      let mut buf_beg = Vec::with_capacity(colconstrs.len());
+      let mut buf_ind = Vec::with_capacity(len_ind);
+      let mut buf_val: Vec<f64> = Vec::with_capacity(len_ind);
+
+      let mut beg = 0i32;
+      for (constrs, &vals) in Zip::new((colconstrs, colvals)) {
+        if constrs.len() != vals.len() {
+          return Err(Error::InconsitentDims);
+        }
+
+        buf_beg.push(beg);
+        beg += constrs.len() as i32;
+
+        for c in constrs.iter() {
+          let idx = c.index();
+          if idx < 0 {
+            return Err(Error::InconsitentDims);
+          }
+          buf_ind.push(idx);
+        }
+
+        buf_val.extend(vals);
+      }
+
+      (buf_beg, buf_ind, buf_val)
+    };
+
     try!(self.check_apicall(unsafe {
       ffi::GRBaddvars(self.model,
                       names.len() as ffi::c_int,
-                      0,
-                      null(),
-                      null(),
-                      null(),
+                      beg.len() as ffi::c_int,
+                      beg.as_ptr(),
+                      ind.as_ptr(),
+                      val.as_ptr(),
                       objs.as_ptr(),
                       lbs.as_ptr(),
                       ubs.as_ptr(),
@@ -1229,10 +1278,10 @@ fn removing_variable_should_be_successed() {
   use super::*;
   let mut env = Env::new("").unwrap();
   env.set(param::OutputFlag, 0).unwrap();
-  let mut model = env.new_model("hoge").unwrap();
+  let mut model = Model::new("hoge", &env).unwrap();
 
-  let x = model.add_var("x", Binary, 0.0, 0.0, 1.0).unwrap();
-  let y = model.add_var("y", Binary, 0.0, 0.0, 1.0).unwrap();
+  let x = model.add_var("x", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+  let y = model.add_var("y", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
   assert_eq!(x.index(), -1);
   assert_eq!(y.index(), -1);
 
@@ -1240,7 +1289,7 @@ fn removing_variable_should_be_successed() {
   assert_eq!(x.index(), 0);
   assert_eq!(y.index(), 1);
 
-  let z = model.add_var("z", Binary, 0.0, 0.0, 1.0).unwrap();
+  let z = model.add_var("z", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
   assert_eq!(x.index(), 0);
   assert_eq!(y.index(), 1);
   assert_eq!(z.index(), -1);

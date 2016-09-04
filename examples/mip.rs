@@ -10,9 +10,9 @@ fn main() {
   let env = Env::new("mip.log").unwrap();
   let mut model = Model::new("mip", &env).unwrap();
 
-  let x = model.add_var("x", Binary, 0.0, 0.0, 1.0).unwrap();
-  let y = model.add_var("y", Binary, 0.0, 0.0, 1.0).unwrap();
-  let z = model.add_var("z", Binary, 0.0, 0.0, 1.0).unwrap();
+  let x = model.add_var("x", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+  let y = model.add_var("y", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+  let z = model.add_var("z", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
   model.update().unwrap();
 
   model.set_objective(&x + &y + 2.0 * &z, Maximize).unwrap();

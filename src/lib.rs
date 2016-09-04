@@ -42,8 +42,8 @@
 //!   let mut model = env.new_model("model1").unwrap();
 //!
 //!   // add decision variables.
-//!   let x1 = model.add_var("x1", Continuous, 0.0, -INFINITY, INFINITY).unwrap();
-//!   let x2 = model.add_var("x2", Integer, 0.0, -INFINITY, INFINITY).unwrap();
+//!   let x1 = model.add_var("x1", Continuous, 0.0, -INFINITY, INFINITY, &[], &[]).unwrap();
+//!   let x2 = model.add_var("x2", Integer, 0.0, -INFINITY, INFINITY, &[], &[]).unwrap();
 //!
 //!   // integrate all of the variables into the model.
 //!   model.update().unwrap();

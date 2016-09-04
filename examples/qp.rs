@@ -13,9 +13,9 @@ fn main() {
   let mut model = Model::new("qp", &env).unwrap();
 
   // add & integrate new variables.
-  let x = model.add_var("x", Continuous, 0.0, 0.0, 1.0).unwrap();
-  let y = model.add_var("y", Continuous, 0.0, 0.0, 1.0).unwrap();
-  let z = model.add_var("z", Continuous, 0.0, 0.0, 1.0).unwrap();
+  let x = model.add_var("x", Continuous, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+  let y = model.add_var("y", Continuous, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+  let z = model.add_var("z", Continuous, 0.0, 0.0, 1.0, &[], &[]).unwrap();
   model.update().unwrap();
 
   // set objective funtion:

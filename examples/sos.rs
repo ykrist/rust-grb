@@ -10,9 +10,9 @@ fn main() {
   let env = Env::new("sos.log").unwrap();
   let mut model = Model::new("sos", &env).unwrap();
 
-  let x0 = model.add_var("x0", Continuous, 0.0, 0.0, 1.0).unwrap();
-  let x1 = model.add_var("x1", Continuous, 0.0, 0.0, 1.0).unwrap();
-  let x2 = model.add_var("x2", Continuous, 0.0, 0.0, 2.0).unwrap();
+  let x0 = model.add_var("x0", Continuous, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+  let x1 = model.add_var("x1", Continuous, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+  let x2 = model.add_var("x2", Continuous, 0.0, 0.0, 2.0, &[], &[]).unwrap();
   model.update().unwrap();
 
   model.set_objective(2.0 * &x0 + 1.0 * &x1 + 1.0 * &x2, Minimize).unwrap();

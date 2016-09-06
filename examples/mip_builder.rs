@@ -89,7 +89,7 @@ macro_rules! def_model {
 fn main() {
   let env = Env::new("mip_build.log").unwrap();
 
-  let model = def_model!{
+  let model = def_model! {
     env: env,
     name: "mip_build",    
     vars: {

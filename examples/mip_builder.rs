@@ -24,9 +24,38 @@ macro_rules! add_var {
 }
 
 macro_rules! add_constr {
-  ($model:expr, $name:ident : $lhs:tt <= $rhs:tt) => ($model.add_constr(stringify!($name), $lhs, Less, ($rhs).into()).unwrap());
-  ($model:expr, $name:ident : $lhs:tt == $rhs:tt) => ($model.add_constr(stringify!($name), $lhs, Equal, ($rhs).into()).unwrap());
-  ($model:expr, $name:ident : $lhs:tt >= $rhs:tt) => ($model.add_constr(stringify!($name), $lhs, Greater, ($rhs).into()).unwrap());
+  { $model:expr, $name:ident : $lhs:tt <= $rhs:tt; } => {
+    $model.add_constr(stringify!($name), $lhs, Less, ($rhs).into()).unwrap();
+    $model.update().unwrap();
+  };
+
+  { $model:expr, $name:ident : $lhs:tt == $rhs:tt; } => {
+    $model.add_constr(stringify!($name), $lhs, Equal, ($rhs).into()).unwrap();
+    $model.update().unwrap();
+  };
+
+  { $model:expr, $name:ident : $lhs:tt >= $rhs:tt; } => {
+    $model.add_constr(stringify!($name), $lhs, Greater, ($rhs).into()).unwrap();
+    $model.update().unwrap();
+  };
+
+  ($model:expr, $name:ident : $lhs:tt <= $rhs:tt; $($s:tt)*) => {
+    $model.add_constr(stringify!($name), $lhs, Less, ($rhs).into()).unwrap();
+    add_constr!($model, $($s)*);
+    $model.update().unwrap();
+  };
+
+  ($model:expr, $name:ident : $lhs:tt == $rhs:tt; $($s:tt)*) => {
+    $model.add_constr(stringify!($name), $lhs, Equal, ($rhs).into()).unwrap();
+    add_constr!($model, $($s)*);
+    $model.update().unwrap();
+  };
+
+  ($model:expr, $name:ident : $lhs:tt >= $rhs:tt; $($s:tt)*) => {
+    $model.add_constr(stringify!($name), $lhs, Greater, ($rhs).into()).unwrap();
+    add_constr!($model, $($s)*);
+    $model.update().unwrap();
+  };
 }
 
 fn main() {
@@ -40,8 +69,10 @@ fn main() {
   let t = add_var!(model, t: real[0, 10]);
   model.update().unwrap();
 
-  add_constr!(model, c0: (&x + 2.0 * &y + 3.0 * &z) <= 4);
-  add_constr!(model, c1: (&x + &y) <= 1);
+  add_constr!{model,
+    c0: (&x + 2.0 * &y + 3.0 * &z) <= 4;
+    c1: (&x + &y) <= 1;
+  }
 
   model.set_objective(&x + &y + 2.0 * &z, Maximize).unwrap();
 

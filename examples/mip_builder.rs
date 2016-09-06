@@ -6,21 +6,39 @@
 extern crate gurobi;
 use gurobi::*;
 
-macro_rules! add_var {
-  ($model:expr, $name:ident : binary) => { {
+macro_rules! def_var {
+  ($model:expr, $name:ident : binary) => {
     let $name = $model.add_var(stringify!($name), Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
-    $name
-  } };
+    $model.update().unwrap();
+  };
   
-  ($model:expr, $name:ident : integer [$lb:expr, $ub:expr]) => { {
+  ($model:expr, $name:ident : integer [$lb:expr, $ub:expr]) => {
     let $name = $model.add_var(stringify!($name), Integer, 0.0, ($lb).into(), ($ub).into(), &[], &[]).unwrap();
-    $name
-  } };
+    $model.update().unwrap();
+  };
 
-  ($model:expr, $name:ident : real [$lb:expr, $ub:expr]) => { {
+  ($model:expr, $name:ident : real [$lb:expr, $ub:expr]) => {
     let $name = $model.add_var(stringify!($name), Continuous, 0.0, ($lb).into(), ($ub).into(), &[], &[]).unwrap();
-    $name
-  } };
+    $model.update().unwrap();
+  };
+
+  ($model:expr, $name:ident : binary; $($t:tt)*) => {
+    let $name = $model.add_var(stringify!($name), Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+    def_var!($model, $($t)*);
+    $model.update().unwrap();
+  };
+  
+  ($model:expr, $name:ident : integer [$lb:expr, $ub:expr]; $($t:tt)*) => {
+    let $name = $model.add_var(stringify!($name), Integer, 0.0, ($lb).into(), ($ub).into(), &[], &[]).unwrap();
+    def_var!($model, $($t)*);
+    $model.update().unwrap();
+  };
+
+  ($model:expr, $name:ident : real [$lb:expr, $ub:expr]; $($t:tt)*) => {
+    let $name = $model.add_var(stringify!($name), Continuous, 0.0, ($lb).into(), ($ub).into(), &[], &[]).unwrap();
+    def_var!($model, $($t)*);
+    $model.update().unwrap();
+  };
 }
 
 macro_rules! add_constr {
@@ -62,19 +80,14 @@ fn main() {
   let env = Env::new("mip.log").unwrap();
   let mut model = Model::new("mip", &env).unwrap();
 
-  let x = add_var!(model, x: binary);
-  let y = add_var!(model, y: binary);
-  let z = add_var!(model, z: binary);
-  let s = add_var!(model, s: integer[0, 2]);
-  let t = add_var!(model, t: real[0, 10]);
-  model.update().unwrap();
+  def_var!(model, x:binary; y:binary; z:binary; s:integer[0,2]; t:real[0,10]);
 
-  add_constr!{model,
+  model.set_objective(&x + &y + 2.0 * &z, Maximize).unwrap();
+
+  add_constr! { model,
     c0: (&x + 2.0 * &y + 3.0 * &z) <= 4;
     c1: (&x + &y) <= 1;
   }
-
-  model.set_objective(&x + &y + 2.0 * &z, Maximize).unwrap();
 
   model.update().unwrap();
   model.write("mip.lp").unwrap();

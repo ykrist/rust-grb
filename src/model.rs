@@ -3,7 +3,9 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
+#[path = "callback.rs"]
 pub mod callback;
+#[path = "expr.rs"]
 pub mod expr;
 
 use ffi;

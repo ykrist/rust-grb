@@ -64,6 +64,12 @@ macro_rules! add_constr {
   };
 }
 
+macro_rules! set_objective {
+  ($model:expr, expr: ($($t:tt)*), sense: $sense:ident) => {
+    $model.set_objective($($t)*, $sense).unwrap();
+  }
+}
+
 macro_rules! def_model {
   { env:  $env:ident,
     name: $name:expr,
@@ -79,7 +85,7 @@ macro_rules! def_model {
     add_constr!(model, $($c)*);
     model.update().unwrap();
 
-    model.set_objective($($o)*).unwrap();
+    set_objective!(model, $($o)*);
     model.update().unwrap();
 
     model
@@ -99,7 +105,10 @@ fn main() {
       s: integer[0, 2],
       t: real[0,10]
     },
-    objective: { &x + &y + 2.0 * &z, Maximize },
+    objective: {
+      expr: (&x + &y + 2.0 * &z),
+      sense: Maximize
+    },
     constrs: {
       c0: (&x + 2.0 * &y + 3.0 * &z) <= 4,
       c1: (&x + &y) <= 1,

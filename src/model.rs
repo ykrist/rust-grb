@@ -1080,6 +1080,12 @@ impl Model {
 
   /// Modify the model to create a feasibility relaxation.
   ///
+  /// $$
+  ///   \text{minimize}\quad f(x) + \sum_{i \in IIS} penalty_i(s_i)
+  /// $$
+  /// where $s\_i > 0$ is the slack variable of $i$ -th constraint.
+  ///
+  /// This method will modify the model.
   /// If you don't want to modify the model, copy the model before invoking
   /// this method (see also [`copy()`](#method.copy)).
   ///
@@ -1159,6 +1165,17 @@ impl Model {
   }
 
   /// Set a piecewise-linear objective function of a certain variable in the model.
+  /// 
+  /// \begin{align}
+  ///   f(x) = 
+  ///   \begin{cases}
+  ///     y_1 + \frac{y_2 - y_1}{x_2 - x_1} \\: (x - x_1)         & \text{if $x \leq x_1$}, \\\\
+  ///   \\\\
+  ///     y_i + \frac{y_{i+1} - y_i}{x_{i+1}-x_i} \\: (x - x_i)   & \text{if $x_i \leq x \leq x_{i+1}$}, \\\\
+  ///   \\\\
+  ///     y_n + \frac{y_n - y_{n-1}}{x_n-x_{n-1}} \\: (x - x_n)   & \text{if $x \geq x_n$}.
+  ///   \end{cases}
+  /// \end{align}
   pub fn set_pwl_obj(&mut self, var: &Var, x: &[f64], y: &[f64]) -> Result<()> {
     if x.len() != y.len() {
       return Err(Error::InconsitentDims);

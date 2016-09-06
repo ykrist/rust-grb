@@ -7,5 +7,3 @@ Cargo.lock
 *.ilp
 *.prm
 gh-pages/
-doc/
-doc/.lock

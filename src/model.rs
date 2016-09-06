@@ -1164,18 +1164,29 @@ impl Model {
     Ok((feasobj, self.vars[xcols..].iter(), self.constrs[xrows..].iter(), self.qconstrs[xqrows..].iter()))
   }
 
-  /// Set a piecewise-linear objective function of a certain variable in the model.
+  /// Set a piecewise-linear objective function for the variable.
   /// 
+  /// The piecewise-linear objective function $f(x)$ is defined as follows:
   /// \begin{align}
   ///   f(x) = 
   ///   \begin{cases}
-  ///     y_1 + \frac{y_2 - y_1}{x_2 - x_1} \\: (x - x_1)         & \text{if $x \leq x_1$}, \\\\
+  ///     y_1 + \dfrac{y_2 - y_1}{x_2 - x_1} \\, (x - x_1)         & \text{if $x \leq x_1$}, \\\\
   ///   \\\\
-  ///     y_i + \frac{y_{i+1} - y_i}{x_{i+1}-x_i} \\: (x - x_i)   & \text{if $x_i \leq x \leq x_{i+1}$}, \\\\
+  ///     y_i + \dfrac{y_{i+1} - y_i}{x_{i+1}-x_i} \\, (x - x_i)   & \text{if $x_i \leq x \leq x_{i+1}$}, \\\\
   ///   \\\\
-  ///     y_n + \frac{y_n - y_{n-1}}{x_n-x_{n-1}} \\: (x - x_n)   & \text{if $x \geq x_n$}.
+  ///     y_n + \dfrac{y_n - y_{n-1}}{x_n-x_{n-1}} \\, (x - x_n)   & \text{if $x \geq x_n$},
   ///   \end{cases}
   /// \end{align}
+  /// where $\bm{x} = \\{ x_1, ..., x_n \\}$, $\bm{y} = \\{ y_1, ..., y_n \\}$ is the points.
+  ///
+  /// The attribute `Obj` will be set to 0.
+  /// To delete the piecewise-linear function on the variable, set the value of `Obj` attribute to non-zero.
+  ///
+  /// # Arguments
+  /// * `var` :
+  /// * `x` : $n$-points from domain of the variable. The order of entries should be
+  /// non-decreasing.
+  /// * `y` : $n$-points of objective values at each point $x_i$
   pub fn set_pwl_obj(&mut self, var: &Var, x: &[f64], y: &[f64]) -> Result<()> {
     if x.len() != y.len() {
       return Err(Error::InconsitentDims);

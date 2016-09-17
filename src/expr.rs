@@ -13,7 +13,7 @@ use std::ops::{Add, Sub, Mul, Neg};
 /// Linear expression of variables
 ///
 /// A linear expression consists of a constant term plus a list of coefficients and variables.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct LinExpr {
   vars: Vec<Var>,
   coeff: Vec<f64>,
@@ -30,11 +30,7 @@ impl Into<(Vec<i32>, Vec<f64>, f64)> for LinExpr {
 impl LinExpr {
   /// Create an empty linear expression.
   pub fn new() -> Self {
-    LinExpr {
-      vars: Vec::new(),
-      coeff: Vec::new(),
-      offset: 0.0
-    }
+    LinExpr::default()
   }
 
   /// Add a linear term into the expression.
@@ -63,7 +59,7 @@ impl LinExpr {
 ///
 /// A quadratic expression consists of a linear expression and a set of
 /// variable-variable-coefficient triples to express the quadratic term.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct QuadExpr {
   lind: Vec<Var>,
   lval: Vec<f64>,
@@ -86,14 +82,7 @@ impl Into<(Vec<i32>, Vec<f64>, Vec<i32>, Vec<i32>, Vec<f64>, f64)> for QuadExpr 
 
 impl QuadExpr {
   pub fn new() -> Self {
-    QuadExpr {
-      lind: Vec::new(),
-      lval: Vec::new(),
-      qrow: Vec::new(),
-      qcol: Vec::new(),
-      qval: Vec::new(),
-      offset: 0.0
-    }
+    QuadExpr::default()
   }
 
   /// Add a linear term into the expression.
@@ -153,10 +142,10 @@ impl Into<QuadExpr> for LinExpr {
 }
 
 
-/// /////// Operator definition.
+// /////// Operator definition.
 
 
-// Var + Var  => LinExpr
+/// `Var` + `Var`  => `LinExpr`
 impl Add for Var {
   type Output = LinExpr;
   fn add(self, rhs: Var) -> LinExpr { LinExpr::new().add_term(1.0, self).add_term(1.0, rhs) }
@@ -175,7 +164,7 @@ impl<'a, 'b> Add<&'b Var> for &'a Var {
 }
 
 
-/// / Var - Var  => LinExpr
+/// `Var` - `Var` => `LinExpr`
 impl Sub for Var {
   type Output = LinExpr;
   fn sub(self, rhs: Var) -> LinExpr { LinExpr::new().add_term(1.0, self).add_term(-1.0, rhs) }
@@ -194,7 +183,7 @@ impl<'a, 'b> Sub<&'b Var> for &'a Var {
 }
 
 
-// -Var  => LinExpr
+/// -`Var` => `LinExpr`
 impl Neg for Var {
   type Output = LinExpr;
   fn neg(self) -> LinExpr { LinExpr::new().add_term(-1.0, self) }
@@ -206,7 +195,7 @@ impl<'a> Neg for &'a Var {
 
 
 
-// Var * f64  => LinExpr
+/// `Var` * `f64` => `LinExpr`
 impl Mul<f64> for Var {
   type Output = LinExpr;
   fn mul(self, rhs: f64) -> Self::Output { LinExpr::new().add_term(rhs, self) }
@@ -225,7 +214,7 @@ impl<'a> Mul<&'a Var> for f64 {
 }
 
 
-// Var * Var => QuadExpr
+/// `Var` * `Var` => `QuadExpr`
 impl Mul for Var {
   type Output = QuadExpr;
   fn mul(self, rhs: Var) -> Self::Output { QuadExpr::new().add_qterm(1.0, self, rhs) }
@@ -244,7 +233,7 @@ impl<'a, 'b> Mul<&'b Var> for &'a Var {
 }
 
 
-// LinExpr + Var  ==> LinExpr
+/// `LinExpr` + `Var` => `LinExpr`
 impl Add<LinExpr> for Var {
   type Output = LinExpr;
   fn add(self, rhs: LinExpr) -> LinExpr { rhs.add_term(1.0, self) }
@@ -263,7 +252,7 @@ impl<'a> Add<&'a Var> for LinExpr {
 }
 
 
-// LinExpr + f64 => LinExpr
+/// `LinExpr` + `f64` => `LinExpr`
 impl Add<f64> for LinExpr {
   type Output = LinExpr;
   fn add(self, rhs: f64) -> Self::Output { self.add_constant(rhs) }
@@ -274,13 +263,13 @@ impl Add<LinExpr> for f64 {
 }
 
 
-// LinExpr - f64  => LinExpr
+/// `LinExpr` - `f64` => `LinExpr`
 impl Sub<f64> for LinExpr {
   type Output = LinExpr;
   fn sub(self, rhs: f64) -> Self::Output { self.add_constant(-rhs) }
 }
 
-// f64 - LinExpr  => LinExpr
+/// `f64` - `LinExpr` => `LinExpr`
 impl Sub<LinExpr> for f64 {
   type Output = LinExpr;
   fn sub(self, mut rhs: LinExpr) -> Self::Output {

@@ -416,7 +416,7 @@ impl Model {
   pub fn get_env_mut(&mut self) -> &mut Env { &mut self.env }
 
 
-  fn remove_items<P: DerefMut<Target = Proxy> + Clone>(vec: &Vec<P>) -> (Vec<P>, Vec<i32>) {
+  fn remove_items<P: DerefMut<Target = Proxy> + Clone>(vec: &[P]) -> (Vec<P>, Vec<i32>) {
     let (added, removed): (Vec<_>, _) = vec.iter().cloned().partition(|v| v.index() >= -1);
 
     let mut buf = Vec::with_capacity(removed.len());
@@ -440,22 +440,22 @@ impl Model {
   /// Apply all modification of the model to process
   pub fn update(&mut self) -> Result<()> {
     let (vars, delind) = Self::remove_items(&self.vars);
-    if delind.len() > 0 {
+    if !delind.is_empty() {
       try!(self.check_apicall(unsafe { ffi::GRBdelvars(self.model, delind.len() as ffi::c_int, delind.as_ptr()) }));
     }
 
     let (constrs, delind) = Self::remove_items(&self.constrs);
-    if delind.len() > 0 {
+    if !delind.is_empty() {
       try!(self.check_apicall(unsafe { ffi::GRBdelconstrs(self.model, delind.len() as ffi::c_int, delind.as_ptr()) }));
     }
 
     let (qconstrs, delind) = Self::remove_items(&self.qconstrs);
-    if delind.len() > 0 {
+    if !delind.is_empty() {
       try!(self.check_apicall(unsafe { ffi::GRBdelqconstrs(self.model, delind.len() as ffi::c_int, delind.as_ptr()) }));
     }
 
     let (sos, delind) = Self::remove_items(&self.sos);
-    if delind.len() > 0 {
+    if !delind.is_empty() {
       try!(self.check_apicall(unsafe { ffi::GRBdelsos(self.model, delind.len() as ffi::c_int, delind.as_ptr()) }));
     }
 
@@ -1036,7 +1036,7 @@ impl Model {
                       values.as_mut_ptr())
     }));
 
-    Ok(values.into_iter().map(|s| util::Into::into(s)).collect())
+    Ok(values.into_iter().map(util::Into::into).collect())
   }
 
 
@@ -1116,7 +1116,7 @@ impl Model {
 
     let mut pen_lb = vec![super::INFINITY; self.vars.len()];
     let mut pen_ub = vec![super::INFINITY; self.vars.len()];
-    for (ref v, &lb, &ub) in Zip::new((vars, lbpen, ubpen)) {
+    for (v, &lb, &ub) in Zip::new((vars, lbpen, ubpen)) {
       let idx = v.index();
       if idx >= self.vars.len() as i32 {
         return Err(Error::InconsitentDims);
@@ -1126,7 +1126,7 @@ impl Model {
     }
 
     let mut pen_rhs = vec![super::INFINITY; self.constrs.len()];
-    for (ref c, &rhs) in Zip::new((constrs, rhspen)) {
+    for (c, &rhs) in Zip::new((constrs, rhspen)) {
       let idx = c.index();
       if idx >= self.constrs.len() as i32 {
         return Err(Error::InconsitentDims);
@@ -1137,7 +1137,7 @@ impl Model {
 
     let minrelax = if minrelax { 1 } else { 0 };
 
-    let mut feasobj = 0f64;
+    let feasobj = 0f64;
     try!(self.check_apicall(unsafe {
       ffi::GRBfeasrelax(self.model,
                         relaxtype.into(),
@@ -1145,7 +1145,7 @@ impl Model {
                         pen_lb.as_ptr(),
                         pen_ub.as_ptr(),
                         pen_rhs.as_ptr(),
-                        &mut feasobj)
+                        &feasobj)
     }));
     try!(self.update());
 

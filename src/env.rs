@@ -96,6 +96,7 @@ impl Env {
   /// Insert a message into log file.
   ///
   /// When **message** cannot convert to raw C string, a panic is occurred.
+  #[allow(temporary_cstring_as_ptr)]
   pub fn message(&self, message: &str) { unsafe { ffi::GRBmsg(self.env, CString::new(message).unwrap().as_ptr()) }; }
 }
 

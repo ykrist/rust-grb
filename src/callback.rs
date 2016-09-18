@@ -10,6 +10,7 @@ use itertools::{Itertools, Zip};
 use std::mem::transmute;
 use std::ops::Deref;
 use std::ptr::null;
+use std::os::raw;
 
 use error::{Error, Result};
 use model::{Model, Var, ConstrSense};
@@ -321,9 +322,8 @@ impl<'a> Callback<'a> {
 
   /// Retrieve the elapsed solver runtime [sec].
   pub fn get_runtime(&self) -> Result<f64> {
-    match self.get_where() {
-      Where::Polling => return Err(Error::FromAPI("bad call in callback".to_owned(), 40001)),
-      _ => ()
+    if let Where::Polling = self.get_where()  {
+      return Err(Error::FromAPI("bad call in callback".to_owned(), 40001));
     }
     self.get_double(self.get_where().into(), RUNTIME)
   }
@@ -357,12 +357,12 @@ impl<'a> Callback<'a> {
 
   fn get_int(&self, where_: i32, what: i32) -> Result<i32> {
     let mut buf = 0;
-    self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what, transmute(&mut buf)) }).and(Ok(buf.into()))
+    self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what, &mut buf as *mut i32 as *mut raw::c_void) }).and(Ok(buf.into()))
   }
 
   fn get_double(&self, where_: i32, what: i32) -> Result<f64> {
     let mut buf = 0.0;
-    self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what, transmute(&mut buf)) }).and(Ok(buf.into()))
+    self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what, &mut buf as *mut f64 as *mut raw::c_void) }).and(Ok(buf.into()))
   }
 
   fn get_double_array(&self, where_: i32, what: i32) -> Result<Vec<f64>> {
@@ -372,7 +372,7 @@ impl<'a> Callback<'a> {
 
   fn get_string(&self, where_: i32, what: i32) -> Result<String> {
     let mut buf = null();
-    self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what, transmute(&mut buf)) })
+    self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what,  &mut buf as *mut *const i8 as *mut raw::c_void) })
       .and(Ok(unsafe { util::from_c_str(buf) }))
   }
 

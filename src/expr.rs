@@ -8,7 +8,8 @@ use super::{Var, Model};
 use error::Result;
 use itertools::*;
 
-use std::ops::{Add, Sub, Mul, Neg};
+use std::ops::{Add, Sub, Mul, Neg, AddAssign};
+use std::iter::Sum;
 
 /// Linear expression of variables
 ///
@@ -18,6 +19,12 @@ pub struct LinExpr {
   vars: Vec<Var>,
   coeff: Vec<f64>,
   offset: f64
+}
+
+impl From<Var> for LinExpr {
+    fn from(var : Var) -> LinExpr {
+        LinExpr::new() + var
+    }
 }
 
 impl Into<(Vec<i32>, Vec<f64>, f64)> for LinExpr {
@@ -181,6 +188,10 @@ impl<'a, 'b> Sub<&'b Var> for &'a Var {
   type Output = LinExpr;
   fn sub(self, rhs: &Var) -> LinExpr { LinExpr::new().add_term(1.0, self.clone()).add_term(-1.0, rhs.clone()) }
 }
+impl Sub<LinExpr> for Var {
+  type Output = LinExpr;
+  fn sub(self, expr: LinExpr) -> LinExpr { expr + (-self) }
+}
 
 
 /// -`Var` => `LinExpr`
@@ -284,11 +295,24 @@ impl Sub<LinExpr> for f64 {
 impl Add for LinExpr {
   type Output = LinExpr;
   fn add(mut self, rhs: LinExpr) -> Self::Output {
-    self.vars.extend(rhs.vars);
-    self.coeff.extend(rhs.coeff);
-    self.offset += rhs.offset;
+    self += rhs;
     self
   }
+}
+
+impl AddAssign for LinExpr {
+    fn add_assign(&mut self, rhs: LinExpr) {
+        self.vars.extend(rhs.vars);
+        self.coeff.extend(rhs.coeff);
+        self.offset += rhs.offset;
+    }
+}
+
+impl AddAssign<Var> for LinExpr {
+    fn add_assign(&mut self, rhs: Var) {
+        let expr : LinExpr = rhs.into();
+        *self += expr;
+    }
 }
 
 impl Sub for LinExpr {
@@ -301,7 +325,23 @@ impl Sub for LinExpr {
   }
 }
 
+impl Mul<f64> for LinExpr {
+  type Output = LinExpr;
+  fn mul(mut self, rhs: f64) -> Self::Output {
+    for coeff in &mut self.coeff {
+      *coeff *= rhs;
+    }
+    self.offset *= rhs;
+    self
+  }
+}
 
+impl Mul<LinExpr> for f64 {
+  type Output = LinExpr;
+  fn mul(self, rhs: LinExpr) -> Self::Output {
+      rhs * self
+  }
+}
 
 impl Mul<f64> for QuadExpr {
   type Output = QuadExpr;
@@ -317,6 +357,11 @@ impl Mul<f64> for QuadExpr {
   }
 }
 
+impl Sum for LinExpr {
+    fn sum<I: Iterator<Item=LinExpr>>(iter: I) -> LinExpr {
+        iter.fold(LinExpr::new(), |acc, expr| acc + expr)
+    }
+}
 
 
 impl Add<LinExpr> for QuadExpr {

@@ -21,9 +21,15 @@ pub struct LinExpr {
   offset: f64
 }
 
+impl<'a> From<&'a Var> for LinExpr {
+    fn from(var : &Var) -> LinExpr {
+        LinExpr::new() + var
+    }
+}
+
 impl From<Var> for LinExpr {
     fn from(var : Var) -> LinExpr {
-        LinExpr::new() + var
+        LinExpr::from(&var)
     }
 }
 

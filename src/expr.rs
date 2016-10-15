@@ -293,7 +293,7 @@ impl Sub<LinExpr> for f64 {
     for c in rhs.coeff.iter_mut() {
       *c *= -1.0;
     }
-    rhs.add_constant(-self)
+    rhs.add_constant(self)
   }
 }
 

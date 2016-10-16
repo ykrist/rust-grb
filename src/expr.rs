@@ -8,7 +8,7 @@ use super::{Var, Model};
 use error::Result;
 use itertools::*;
 
-use std::ops::{Add, Sub, Mul, Neg, AddAssign};
+use std::ops::{Add, Sub, Mul, Neg, AddAssign, Div};
 use std::iter::Sum;
 
 /// Linear expression of variables
@@ -196,7 +196,7 @@ impl<'a, 'b> Sub<&'b Var> for &'a Var {
 }
 impl Sub<LinExpr> for Var {
   type Output = LinExpr;
-  fn sub(self, expr: LinExpr) -> LinExpr { expr + (-self) }
+  fn sub(self, expr: LinExpr) -> LinExpr {  self + (-expr) }
 }
 
 
@@ -306,6 +306,17 @@ impl Add for LinExpr {
   }
 }
 
+impl Neg for LinExpr {
+  type Output = LinExpr;
+  fn neg(mut self) -> LinExpr {
+      for coeff in &mut self.coeff {
+        *coeff = -*coeff;
+      }
+      self.offset = -self.offset;
+      self
+  }
+}
+
 impl AddAssign for LinExpr {
     fn add_assign(&mut self, rhs: LinExpr) {
         self.vars.extend(rhs.vars);
@@ -338,6 +349,17 @@ impl Mul<f64> for LinExpr {
       *coeff *= rhs;
     }
     self.offset *= rhs;
+    self
+  }
+}
+
+impl Div<f64> for LinExpr {
+  type Output = LinExpr;
+  fn div(mut self, rhs: f64) -> Self::Output {
+    for coeff in &mut self.coeff {
+      *coeff /= rhs;
+    }
+    self.offset /= rhs;
     self
   }
 }

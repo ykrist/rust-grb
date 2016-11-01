@@ -175,7 +175,14 @@ impl<'a, 'b> Add<&'b Var> for &'a Var {
   type Output = LinExpr;
   fn add(self, rhs: &Var) -> LinExpr { LinExpr::new().add_term(1.0, self.clone()).add_term(1.0, rhs.clone()) }
 }
-
+impl Add<f64> for Var {
+  type Output = LinExpr;
+  fn add(self, rhs: f64) -> LinExpr { LinExpr::new() + self + rhs }
+}
+impl<'a> Add<f64> for &'a Var {
+  type Output = LinExpr;
+  fn add(self, rhs: f64) -> LinExpr { LinExpr::new() + self.clone() + rhs }
+}
 
 /// `Var` - `Var` => `LinExpr`
 impl Sub for Var {
@@ -197,6 +204,18 @@ impl<'a, 'b> Sub<&'b Var> for &'a Var {
 impl Sub<LinExpr> for Var {
   type Output = LinExpr;
   fn sub(self, expr: LinExpr) -> LinExpr {  self + (-expr) }
+}
+impl<'a> Sub<LinExpr> for &'a Var {
+  type Output = LinExpr;
+  fn sub(self, expr: LinExpr) -> LinExpr {  self.clone() + (-expr) }
+}
+impl Sub<Var> for f64 {
+  type Output = LinExpr;
+  fn sub(self, rhs: Var) -> LinExpr { LinExpr::new() + self + (-rhs) }
+}
+impl<'a> Sub<&'a Var> for f64 {
+  type Output = LinExpr;
+  fn sub(self, rhs: &Var) -> LinExpr { LinExpr::new() + self + (-rhs.clone()) }
 }
 
 

@@ -338,9 +338,15 @@ impl Neg for LinExpr {
 
 impl AddAssign for LinExpr {
     fn add_assign(&mut self, rhs: LinExpr) {
-        self.vars.extend(rhs.vars);
-        self.coeff.extend(rhs.coeff);
-        self.offset += rhs.offset;
+      for (var, &coeff) in rhs.vars.into_iter().zip(rhs.coeff.iter()) {
+        if let Some(idx) = self.vars.iter().position(|v| *v == var) {
+          self.coeff[idx] += coeff;
+        } else {
+          self.vars.push(var);
+          self.coeff.push(coeff);
+        }
+      }
+      self.offset += rhs.offset;
     }
 }
 
@@ -354,10 +360,7 @@ impl AddAssign<Var> for LinExpr {
 impl Sub for LinExpr {
   type Output = LinExpr;
   fn sub(mut self, rhs: LinExpr) -> Self::Output {
-    self.vars.extend(rhs.vars);
-    self.coeff.extend(rhs.coeff.into_iter().map(|c| -c));
-    self.offset -= rhs.offset;
-    self
+    self + (-rhs)
   }
 }
 

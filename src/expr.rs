@@ -315,10 +315,7 @@ impl Sub<f64> for LinExpr {
 impl Sub<LinExpr> for f64 {
   type Output = LinExpr;
   fn sub(self, mut rhs: LinExpr) -> Self::Output {
-    for c in rhs.coeff.iter_mut() {
-      *c *= -1.0;
-    }
-    rhs.add_constant(self)
+    self + (-rhs)
   }
 }
 

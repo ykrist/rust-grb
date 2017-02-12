@@ -33,6 +33,12 @@ impl From<Var> for LinExpr {
     }
 }
 
+impl From<f64> for LinExpr {
+  fn from(offset : f64) -> LinExpr {
+    LinExpr::new() + offset
+  }
+}
+
 impl Into<(Vec<i32>, Vec<f64>, f64)> for LinExpr {
   fn into(self) -> (Vec<i32>, Vec<f64>, f64) {
     (self.vars.into_iter().map(|e| e.index()).collect(), self.coeff, self.offset)
@@ -359,7 +365,7 @@ impl AddAssign<Var> for LinExpr {
 
 impl Sub for LinExpr {
   type Output = LinExpr;
-  fn sub(mut self, rhs: LinExpr) -> Self::Output {
+  fn sub(self, rhs: LinExpr) -> Self::Output {
     self + (-rhs)
   }
 }

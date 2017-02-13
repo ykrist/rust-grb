@@ -8,7 +8,8 @@ use super::{Var, Model};
 use error::Result;
 use itertools::*;
 
-use std::ops::{Add, Sub, Mul, Neg};
+use std::ops::{Add, Sub, Mul, Neg, AddAssign, Div};
+use std::iter::Sum;
 
 /// Linear expression of variables
 ///
@@ -18,6 +19,24 @@ pub struct LinExpr {
   vars: Vec<Var>,
   coeff: Vec<f64>,
   offset: f64
+}
+
+impl<'a> From<&'a Var> for LinExpr {
+    fn from(var : &Var) -> LinExpr {
+        LinExpr::new() + var
+    }
+}
+
+impl From<Var> for LinExpr {
+    fn from(var : Var) -> LinExpr {
+        LinExpr::from(&var)
+    }
+}
+
+impl From<f64> for LinExpr {
+  fn from(offset : f64) -> LinExpr {
+    LinExpr::new() + offset
+  }
 }
 
 impl Into<(Vec<i32>, Vec<f64>, f64)> for LinExpr {
@@ -162,7 +181,14 @@ impl<'a, 'b> Add<&'b Var> for &'a Var {
   type Output = LinExpr;
   fn add(self, rhs: &Var) -> LinExpr { LinExpr::new().add_term(1.0, self.clone()).add_term(1.0, rhs.clone()) }
 }
-
+impl Add<f64> for Var {
+  type Output = LinExpr;
+  fn add(self, rhs: f64) -> LinExpr { LinExpr::new() + self + rhs }
+}
+impl<'a> Add<f64> for &'a Var {
+  type Output = LinExpr;
+  fn add(self, rhs: f64) -> LinExpr { LinExpr::new() + self.clone() + rhs }
+}
 
 /// `Var` - `Var` => `LinExpr`
 impl Sub for Var {
@@ -180,6 +206,22 @@ impl<'a> Sub<Var> for &'a Var {
 impl<'a, 'b> Sub<&'b Var> for &'a Var {
   type Output = LinExpr;
   fn sub(self, rhs: &Var) -> LinExpr { LinExpr::new().add_term(1.0, self.clone()).add_term(-1.0, rhs.clone()) }
+}
+impl Sub<LinExpr> for Var {
+  type Output = LinExpr;
+  fn sub(self, expr: LinExpr) -> LinExpr {  self + (-expr) }
+}
+impl<'a> Sub<LinExpr> for &'a Var {
+  type Output = LinExpr;
+  fn sub(self, expr: LinExpr) -> LinExpr {  self.clone() + (-expr) }
+}
+impl Sub<Var> for f64 {
+  type Output = LinExpr;
+  fn sub(self, rhs: Var) -> LinExpr { LinExpr::new() + self + (-rhs) }
+}
+impl<'a> Sub<&'a Var> for f64 {
+  type Output = LinExpr;
+  fn sub(self, rhs: &Var) -> LinExpr { LinExpr::new() + self + (-rhs.clone()) }
 }
 
 
@@ -273,10 +315,7 @@ impl Sub<f64> for LinExpr {
 impl Sub<LinExpr> for f64 {
   type Output = LinExpr;
   fn sub(self, mut rhs: LinExpr) -> Self::Output {
-    for c in rhs.coeff.iter_mut() {
-      *c *= -1.0;
-    }
-    rhs.add_constant(-self)
+    self + (-rhs)
   }
 }
 
@@ -284,24 +323,78 @@ impl Sub<LinExpr> for f64 {
 impl Add for LinExpr {
   type Output = LinExpr;
   fn add(mut self, rhs: LinExpr) -> Self::Output {
-    self.vars.extend(rhs.vars);
-    self.coeff.extend(rhs.coeff);
-    self.offset += rhs.offset;
+    self += rhs;
     self
   }
+}
+
+impl Neg for LinExpr {
+  type Output = LinExpr;
+  fn neg(mut self) -> LinExpr {
+      for coeff in &mut self.coeff {
+        *coeff = -*coeff;
+      }
+      self.offset = -self.offset;
+      self
+  }
+}
+
+impl AddAssign for LinExpr {
+    fn add_assign(&mut self, rhs: LinExpr) {
+      for (var, &coeff) in rhs.vars.into_iter().zip(rhs.coeff.iter()) {
+        if let Some(idx) = self.vars.iter().position(|v| *v == var) {
+          self.coeff[idx] += coeff;
+        } else {
+          self.vars.push(var);
+          self.coeff.push(coeff);
+        }
+      }
+      self.offset += rhs.offset;
+    }
+}
+
+impl AddAssign<Var> for LinExpr {
+    fn add_assign(&mut self, rhs: Var) {
+        let expr : LinExpr = rhs.into();
+        *self += expr;
+    }
 }
 
 impl Sub for LinExpr {
   type Output = LinExpr;
-  fn sub(mut self, rhs: LinExpr) -> Self::Output {
-    self.vars.extend(rhs.vars);
-    self.coeff.extend(rhs.coeff.into_iter().map(|c| -c));
-    self.offset -= rhs.offset;
+  fn sub(self, rhs: LinExpr) -> Self::Output {
+    self + (-rhs)
+  }
+}
+
+impl Mul<f64> for LinExpr {
+  type Output = LinExpr;
+  fn mul(mut self, rhs: f64) -> Self::Output {
+    for coeff in &mut self.coeff {
+      *coeff *= rhs;
+    }
+    self.offset *= rhs;
     self
   }
 }
 
+impl Div<f64> for LinExpr {
+  type Output = LinExpr;
+  fn div(mut self, rhs: f64) -> Self::Output {
+    for coeff in &mut self.coeff {
+      *coeff /= rhs;
+    }
+    self.offset /= rhs;
+    self
+  }
+}
 
+impl Mul<LinExpr> for f64 {
+  type Output = LinExpr;
+  fn mul(self, rhs: LinExpr) -> Self::Output {
+      rhs * self
+  }
+}
 
 impl Mul<f64> for QuadExpr {
   type Output = QuadExpr;
@@ -317,6 +410,11 @@ impl Mul<f64> for QuadExpr {
   }
 }
 
+impl Sum for LinExpr {
+    fn sum<I: Iterator<Item=LinExpr>>(iter: I) -> LinExpr {
+        iter.fold(LinExpr::new(), |acc, expr| acc + expr)
+    }
+}
 
 
 impl Add<LinExpr> for QuadExpr {

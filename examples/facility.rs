@@ -43,8 +43,8 @@ fn main() {
     })
     .collect();
 
-  let expr = Zip::new((open.iter().chain(transport.iter().flatten()),
-                       fixed_costs.iter().chain(trans_costs.iter().flatten())))
+  let expr = Zip::new((open.iter().chain(Itertools::flatten(transport.iter())),
+                       fixed_costs.iter().chain(Itertools::flatten(trans_costs.iter()))))
     .fold(LinExpr::new(), |expr, (x, &c)| expr + c * x);
   model.set_objective(expr, Minimize).unwrap();
   model.update().unwrap();

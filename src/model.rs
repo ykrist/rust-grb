@@ -740,6 +740,44 @@ impl Model {
     Ok(self.constrs.last().cloned().unwrap())
   }
 
+  pub fn get_constr_by_name(&self, name : &str) -> Result<Constr> {
+
+    let constrname = try!(CString::new(name));
+    let mut value: ffi::c_int  = util::Init::init();
+
+      try!(self.check_apicall(unsafe {
+        use util::AsRawPtr;
+       ffi::GRBgetconstrbyname(self.model, constrname.as_ptr(), value.as_rawptr())
+      }));
+
+      if value == -1 || self.constrs.len() < value as usize {
+        Err(Error::FromAPI("Tried to use a constraint or variable that is not in the model, either because it was removed or because it has not yet been added".to_owned(), 20001))
+      } else {
+        Ok(self.constrs[value as usize].clone())
+      }
+
+
+  }
+
+  pub fn get_var_by_name(&self, name : &str) -> Result<Var> {
+
+    let varname = try!(CString::new(name));
+    let mut value: ffi::c_int  = util::Init::init();
+
+    try!(self.check_apicall(unsafe {
+      use util::AsRawPtr;
+      ffi::GRBgetvarbyname(self.model, varname.as_ptr(), value.as_rawptr())
+    }));
+
+    if value == -1 || self.constrs.len() < value as usize {
+      Err(Error::FromAPI("Tried to use a constraint or variable that is not in the model, either because it was removed or because it has not yet been added".to_owned(), 20001))
+    } else {
+      Ok(self.vars[value as usize].clone())
+    }
+
+
+  }
+
   /// add linear constraints to the model.
   pub fn add_constrs(&mut self, name: &[&str], expr: &[LinExpr], sense: &[ConstrSense], rhs: &[f64])
                      -> Result<Vec<Constr>> {

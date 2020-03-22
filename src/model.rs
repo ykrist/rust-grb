@@ -211,11 +211,15 @@ macro_rules! impl_traits_for_proxy {
 pub struct Var(Proxy);
 
 impl Var {
+  /// Returns the variable type, lower bound and upper bound in that order.
+  ///
+  /// Variable type is 'C' for continuous, 'B' for binary, 'I' for integer,
+  /// 'S' for semi-continuous, or 'N' for semi-integer.
   pub fn get_type(&self, model: &Model) -> Result<(char, f64, f64)> {
-    let lb = try!(self.get(&model, attr::LB));
-    let ub = try!(self.get(&model, attr::UB));
-    let vtype = try!(self.get(&model, attr::VType));
-    let vtype = unsafe { transmute::<_, u8>(vtype) } as char;
+    let lb = self.get(&model, attr::LB)?;
+    let ub = self.get(&model, attr::UB)?;
+    let vtype: i8 = self.get(&model, attr::VType)?;
+    let vtype = vtype as u8 as char;
     Ok((vtype, lb, ub))
   }
 }

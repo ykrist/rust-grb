@@ -225,15 +225,15 @@ impl Var {
 }
 
 /// Proxy object of a linear constraint
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct Constr(Proxy);
 
 /// Proxy object of a quadratic constraint
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct QConstr(Proxy);
 
 /// Proxy object of a Special Order Set (SOS) constraint
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct SOS(Proxy);
 
 impl_traits_for_proxy! { Var Constr QConstr SOS }

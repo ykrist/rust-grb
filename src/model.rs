@@ -225,15 +225,15 @@ impl Var {
 }
 
 /// Proxy object of a linear constraint
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct Constr(Proxy);
 
 /// Proxy object of a quadratic constraint
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct QConstr(Proxy);
 
 /// Proxy object of a Special Order Set (SOS) constraint
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct SOS(Proxy);
 
 impl_traits_for_proxy! { Var Constr QConstr SOS }
@@ -1234,7 +1234,7 @@ impl Model {
 
   /// Change a single constant matrix coefficient of the model.
   pub fn set_coeff(&mut self, var: &Var, constr: &Constr, value: f64) -> Result<()> {
-    try!(self.check_apicall(unsafe { ffi::GRBchgcoeffs(self.model, 1, &var.index(), &constr.index(), &value) }));
+    try!(self.check_apicall(unsafe { ffi::GRBchgcoeffs(self.model, 1, &constr.index(), &var.index(), &value) }));
     self.update()
   }
 
@@ -1250,8 +1250,8 @@ impl Model {
     try!(self.check_apicall(unsafe {
       ffi::GRBchgcoeffs(self.model,
                         vars.len() as ffi::c_int,
-                        vars.as_ptr(),
                         constrs.as_ptr(),
+                        vars.as_ptr(),
                         values.as_ptr())
     }));
     self.update()

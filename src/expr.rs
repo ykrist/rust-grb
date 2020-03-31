@@ -60,9 +60,10 @@ impl LinExpr {
   }
 
   /// Add linear terms into the expression.
-  pub fn add_terms(mut self, coeffs: Vec<f64>, vars: Vec<Var>) -> Self {
-    self.coeff.extend(coeffs);
-    self.vars.extend(vars);
+  pub fn add_terms(mut self, coeffs: &[f64], vars: &[Var]) -> Self {
+    assert_eq!(coeffs.len(), vars.len());
+    self.coeff.extend_from_slice(coeffs);
+    self.vars.extend_from_slice(vars);
     self
   }
 

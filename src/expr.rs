@@ -59,6 +59,13 @@ impl LinExpr {
     self
   }
 
+  /// Add linear terms into the expression.
+  pub fn add_terms(mut self, coeffs: Vec<f64>, vars: Vec<Var>) -> Self {
+    self.coeff.extend(coeffs);
+    self.vars.extend(vars);
+    self
+  }
+
   /// Add a constant into the expression.
   pub fn add_constant(mut self, constant: f64) -> Self {
     self.offset += constant;

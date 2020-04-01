@@ -59,7 +59,7 @@ impl LinExpr {
     self
   }
 
-  /// Add linear terms into the expression.
+  /// Add linear terms into the expression. Panics if the lengths do not match.
   pub fn add_terms(mut self, coeffs: &[f64], vars: &[Var]) -> Self {
     assert_eq!(coeffs.len(), vars.len());
     self.coeff.extend_from_slice(coeffs);

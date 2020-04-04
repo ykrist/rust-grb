@@ -1,12 +1,13 @@
 [package]
 name = "gurobi"
-version = "0.3.3"
-authors = ["Yusuke Sasaki <y_sasaki@nuem.nagoya-u.ac.jp>"]
+version = "0.3.4"
+authors = ["Yusuke Sasaki <y_sasaki@nuem.nagoya-u.ac.jp>", "Alice Ryhl <alice@ryhl.io>"]
 description = "An unofficial Rust API for Gurobi optimizer"
+categories = ["algorithms", "api-bindings", "mathematics", "science"]
+keywords = ["optimization", "linear", "integer"]
 license = "MIT"
-homepage = "https://github.com/ys-nuem/rust-gurobi"
-repository = "https://github.com/ys-nuem/rust-gurobi.git"
-documentation = "https://ys-nuem.github.io/rust-gurobi/index.html"
+repository = "https://github.com/ubnt-intrepid/rust-gurobi"
+documentation = "https://docs.rs/gurobi/0.3.4/gurobi/"
 
 [dependencies]
 itertools = "0.4.18"

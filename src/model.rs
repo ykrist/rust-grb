@@ -161,7 +161,7 @@ pub struct Proxy(Rc<Cell<i32>>);
 
 impl Proxy {
   fn new(idx: i32) -> Proxy { Proxy(Rc::new(Cell::new(idx))) }
-  fn index(&self) -> i32 { self.0.get() }
+  pub fn index(&self) -> i32 { self.0.get() }
   fn set_index(&mut self, value: i32) { self.0.set(value) }
 
   /// Query the value of attribute.

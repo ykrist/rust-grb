@@ -75,10 +75,8 @@
 //! }
 //! ```
 
-#![cfg_attr(feature="clippy", feature(plugin))]
-#![cfg_attr(feature="clippy", plugin(clippy))]
-#![allow(extend_from_slice)]
-#![allow(explicit_iter_loop)]
+#![allow(clippy::extend_from_slice)]
+#![allow(clippy::explicit_iter_loop)]
 
 extern crate gurobi_sys as ffi;
 extern crate itertools;

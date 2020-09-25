@@ -249,8 +249,8 @@ struct CallbackData<'a> {
   callback: &'a mut FnMut(Callback) -> Result<()>
 }
 
-#[allow(unused_variables)]
-#[allow(transmute_ptr_to_ref)] // Clippy gives a false positive here.
+#[allow(clippy::unused_variables)]
+#[allow(clippy::transmute_ptr_to_ref)] // Clippy gives a false positive here.
 extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_void, loc: ffi::c_int,
                                usrdata: *mut ffi::c_void)
                                -> ffi::c_int {
@@ -272,7 +272,7 @@ extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_vo
   }
 }
 
-#[allow(unused_variables)]
+#[allow(clippy::unused_variables)]
 extern "C" fn null_callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_void, loc: ffi::c_int,
                                     usrdata: *mut ffi::c_void)
                                     -> ffi::c_int {
@@ -509,7 +509,7 @@ impl Model {
   }
 
   /// Optimize the model with a callback function
-  #[allow(useless_transmute)] // Clippy gives a false positive here.
+  #[allow(clippy::useless_transmute)] // Clippy gives a false positive here.
   pub fn optimize_with_callback<F>(&mut self, mut callback: F) -> Result<()>
     where F: FnMut(Callback) -> Result<()> + 'static
   {

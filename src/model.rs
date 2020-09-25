@@ -35,7 +35,9 @@ use util;
 pub enum VarType {
   Binary,
   Continuous,
-  Integer
+  Integer,
+  SemiCont,
+  SemiInt,
 }
 
 impl Into<ffi::c_char> for VarType {
@@ -44,6 +46,8 @@ impl Into<ffi::c_char> for VarType {
       VarType::Binary => 'B' as ffi::c_char,
       VarType::Continuous => 'C' as ffi::c_char,
       VarType::Integer => 'I' as ffi::c_char,
+      VarType::SemiCont => 'S' as ffi::c_char,
+      VarType::SemiInt => 'N' as ffi::c_char,
     }
   }
 }

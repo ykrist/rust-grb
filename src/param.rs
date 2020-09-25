@@ -25,10 +25,7 @@ pub trait Param: Sized + Into<CString> {
   type RawFrom;
   type RawTo: util::FromRaw<Self::Out>;
 
-  #[inline(always)]
   unsafe fn get_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: Self::RawFrom) -> ffi::c_int;
-
-  #[inline(always)]
   unsafe fn set_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: Self::RawTo) -> ffi::c_int;
 }
 
@@ -40,10 +37,12 @@ impl Param for IntParam {
   type RawFrom = *mut ffi::c_int;
   type RawTo = ffi::c_int;
 
+  #[inline]
   unsafe fn get_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: *mut ffi::c_int) -> ffi::c_int {
     ffi::GRBgetintparam(env, paramname, value)
   }
 
+  #[inline]
   unsafe fn set_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: ffi::c_int) -> ffi::c_int {
     ffi::GRBsetintparam(env, paramname, value)
   }
@@ -55,10 +54,12 @@ impl Param for DoubleParam {
   type RawFrom = *mut ffi::c_double;
   type RawTo = ffi::c_double;
 
+  #[inline]
   unsafe fn get_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: *mut ffi::c_double) -> ffi::c_int {
     ffi::GRBgetdblparam(env, paramname, value)
   }
 
+  #[inline]
   unsafe fn set_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: ffi::c_double) -> ffi::c_int {
     ffi::GRBsetdblparam(env, paramname, value)
   }
@@ -70,10 +71,12 @@ impl Param for StringParam {
   type RawFrom = *mut ffi::c_char;
   type RawTo = *const ffi::c_char;
 
+  #[inline]
   unsafe fn get_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: *mut ffi::c_char) -> ffi::c_int {
     ffi::GRBgetstrparam(env, paramname, value)
   }
 
+  #[inline]
   unsafe fn set_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: *const ffi::c_char) -> ffi::c_int {
     ffi::GRBsetstrparam(env, paramname, value)
   }

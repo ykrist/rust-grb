@@ -322,7 +322,7 @@ impl Sub<f64> for LinExpr {
 /// `f64` - `LinExpr` => `LinExpr`
 impl Sub<LinExpr> for f64 {
   type Output = LinExpr;
-  fn sub(self, mut rhs: LinExpr) -> Self::Output {
+  fn sub(self, rhs: LinExpr) -> Self::Output {
     self + (-rhs)
   }
 }

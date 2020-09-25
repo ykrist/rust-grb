@@ -125,7 +125,7 @@ pub enum Status {
 impl From<i32> for Status {
   fn from(val: i32) -> Status {
     match val {
-      1...14 => unsafe { transmute(val as i8) },
+      1..=14 => unsafe { transmute(val as i8) },
       _ => panic!("cannot convert to Status: {}", val)
     }
   }
@@ -246,16 +246,16 @@ impl_traits_for_proxy! { Var Constr QConstr SOS }
 
 struct CallbackData<'a> {
   model: &'a Model,
-  callback: &'a mut FnMut(Callback) -> Result<()>
+  callback: &'a mut dyn FnMut(Callback) -> Result<()>
 }
 
 #[allow(clippy::unused_variables)]
 #[allow(clippy::transmute_ptr_to_ref)] // Clippy gives a false positive here.
-extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_void, loc: ffi::c_int,
+extern "C" fn callback_wrapper(_model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_void, loc: ffi::c_int,
                                usrdata: *mut ffi::c_void)
                                -> ffi::c_int {
 
-  let mut usrdata = unsafe { transmute::<_, &mut CallbackData>(usrdata) };
+  let usrdata = unsafe { transmute::<_, &mut CallbackData>(usrdata) };
   let (callback, model) = (&mut usrdata.callback, &usrdata.model);
 
   match Callback::new(cbdata, loc.into(), model) {
@@ -266,15 +266,15 @@ extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_vo
     Ok(context) => {
       match catch_unwind(AssertUnwindSafe(|| if callback(context).is_ok() { 0 } else { -1 })) {
         Ok(ret) => ret,
-        Err(e) => -3000,
+        Err(_e) => -3000,
       }
     }
   }
 }
 
 #[allow(clippy::unused_variables)]
-extern "C" fn null_callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_void, loc: ffi::c_int,
-                                    usrdata: *mut ffi::c_void)
+extern "C" fn null_callback_wrapper(_model: *mut ffi::GRBmodel, _cbdata: *mut ffi::c_void, _loc: ffi::c_int,
+                                    _usrdata: *mut ffi::c_void)
                                     -> ffi::c_int {
   0
 }
@@ -440,7 +440,7 @@ impl Model {
   }
 
   fn rearrange<P: DerefMut<Target = Proxy>>(mut vec: Vec<P>) -> Vec<P> {
-    for (i, mut elem) in vec.iter_mut().enumerate() {
+    for (i, elem) in vec.iter_mut().enumerate() {
       elem.set_index(i as i32);
     }
     vec

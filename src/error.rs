@@ -16,7 +16,7 @@ pub enum Error {
   NulError(std::ffi::NulError),
 
   /// Inconsistent argument dimensions
-  InconsitentDims,
+  InconsistentDims,
 }
 
 impl From<std::ffi::NulError> for Error {
@@ -27,7 +27,7 @@ impl std::fmt::Display for Error {
   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
     match *self {
       Error::FromAPI(ref message, code) => write!(f, "Error from API: {} ({})", message, code),
-      Error::InconsitentDims => write!(f, "Inconsistent argument dimensions"),
+      Error::InconsistentDims => write!(f, "Inconsistent argument dimensions"),
       Error::NulError(ref err) => write!(f, "NulError: {}", err),
     }
   }
@@ -38,7 +38,7 @@ impl std::error::Error for Error {
     match *self {
       Error::FromAPI(..) => "error from C API",
       Error::NulError(ref err) => err.description(),
-      Error::InconsitentDims => "Inconsistent argument dimensions",
+      Error::InconsistentDims => "Inconsistent argument dimensions",
     }
   }
 }

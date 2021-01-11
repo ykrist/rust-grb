@@ -87,7 +87,7 @@ fn main() {
         // Found a new MIP incumbent
         MIPSol { solcnt, obj, nodcnt, .. } => {
           println!("@MIPSol: ");
-          let x = try!(ctx.get_solution(vars.as_slice()));
+          let x = ctx.get_solution(vars.as_slice())?;
           println!("**** New solution at node {}, obj {}, sol {}, x[0] = {} ****",
                    nodcnt,
                    obj,
@@ -99,9 +99,9 @@ fn main() {
         MIPNode { .. } => {
           println!("@MIPNode");
           println!("**** NEW NODE! ****");
-          let x = try!(ctx.get_node_rel(vars.as_slice()));
+          let x = ctx.get_node_rel(vars.as_slice())?;
           println!("  relaxed solution = {:?}", x);
-          try!(ctx.set_solution(vars.as_slice(), x.as_slice()));
+          ctx.set_solution(vars.as_slice(), x.as_slice())?;
         }
 
         // Currently in barrier

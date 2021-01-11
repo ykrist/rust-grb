@@ -35,30 +35,30 @@ pub fn make_model(env: &Env) -> Result<Model> {
      vec![ 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
    ];
 
-  let mut model = try!(Model::new("assignment", &env));
+  let mut model = Model::new("assignment", &env)?;
 
   let mut x = Vec::new();
   for (worker, availability) in Zip::new((workers.iter(), availability.iter())) {
     let mut xshift = Vec::new();
     for (shift, &availability) in Zip::new((shifts.iter(), availability.iter())) {
       let vname = format!("{}.{}", worker, shift);
-      let v = try!(model.add_var(vname.as_str(), Continuous, 0.0, -INFINITY, availability as f64, &[], &[]));
+      let v = model.add_var(vname.as_str(), Continuous, 0.0, -INFINITY, availability as f64, &[], &[])?;
       xshift.push(v);
     }
     x.push(xshift);
   }
-  try!(model.update());
+  model.update()?;
 
   let objterm = pays.iter().map(|pay| repeat(pay).take(shifts.len()));
   let objexpr = Zip::new((Itertools::flatten(x.iter()), Itertools::flatten(objterm)))
                   .fold(LinExpr::new(), |expr, (x, &c)| expr + c * x);
-  try!(model.set_objective(objexpr, Minimize));
+  model.set_objective(objexpr, Minimize)?;
 
   for (s, (shift, &requirement)) in shifts.iter().zip(shift_requirements.iter()).enumerate() {
-    try!(model.add_constr(format!("c.{}", shift).as_str(),
+    model.add_constr(format!("c.{}", shift).as_str(),
                           x.iter().map(|ref x| &x[s]).fold(LinExpr::new(), |expr, x| expr + x),
                           Equal,
-                          requirement));
+                          requirement)?;
   }
 
   Ok(model)

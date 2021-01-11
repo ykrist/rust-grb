@@ -23,7 +23,7 @@ impl Env {
   /// Create an environment with log file
   pub fn new(logfilename: &str) -> Result<Env> {
     let mut env = null_mut();
-    let logfilename = try!(CString::new(logfilename));
+    let logfilename = CString::new(logfilename)?;
     let error = unsafe { ffi::GRBloadenv(&mut env, logfilename.as_ptr()) };
     if error != 0 {
       return Err(Error::FromAPI(get_error_msg(env), error));
@@ -38,9 +38,9 @@ impl Env {
   pub fn new_client(logfilename: &str, computeserver: &str, port: i32, password: &str, priority: i32, timeout: f64)
                     -> Result<Env> {
     let mut env = null_mut();
-    let logfilename = try!(CString::new(logfilename));
-    let computeserver = try!(CString::new(computeserver));
-    let password = try!(CString::new(password));
+    let logfilename = CString::new(logfilename)?;
+    let computeserver = CString::new(computeserver)?;
+    let password = CString::new(password)?;
     let error = unsafe {
       ffi::GRBloadclientenv(&mut env,
                             logfilename.as_ptr(),
@@ -71,7 +71,7 @@ impl Env {
   pub fn get<P: Param>(&self, param: P) -> Result<P::Out> {
     use util::AsRawPtr;
     let mut value: P::Buf = util::Init::init();
-    try!(self.check_apicall(unsafe { P::get_param(self.env, param.into().as_ptr(), value.as_rawptr()) }));
+    self.check_apicall(unsafe { P::get_param(self.env, param.into().as_ptr(), value.as_rawptr()) })?;
 
     Ok(util::Into::into(value))
   }
@@ -83,13 +83,13 @@ impl Env {
 
   /// Import a set of parameter values from a file
   pub fn read_params(&mut self, filename: &str) -> Result<()> {
-    let filename = try!(CString::new(filename));
+    let filename = CString::new(filename)?;
     self.check_apicall(unsafe { ffi::GRBreadparams(self.env, filename.as_ptr()) })
   }
 
   /// Write the set of parameter values to a file
   pub fn write_params(&self, filename: &str) -> Result<()> {
-    let filename = try!(CString::new(filename));
+    let filename = CString::new(filename)?;
     self.check_apicall(unsafe { ffi::GRBwriteparams(self.env, filename.as_ptr()) })
   }
 

@@ -7,3 +7,4 @@ Cargo.lock
 *.ilp
 *.prm
 gh-pages/
+.idea/

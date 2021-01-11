@@ -312,7 +312,7 @@ impl FromRaw for Model {
       qconstrs: Vec::new(),
       sos: Vec::new()
     };
-    try!(model.populate());
+    model.populate()?;
     Ok(model)
   }
 }
@@ -340,9 +340,9 @@ impl Model {
   /// let model = Model::new("model1", &env).unwrap();
   /// ```
   pub fn new(modelname: &str, env: &Env) -> Result<Model> {
-    let modelname = try!(CString::new(modelname));
+    let modelname = CString::new(modelname)?;
     let mut model = null_mut();
-    try!(env.check_apicall(unsafe {
+    env.check_apicall(unsafe {
       ffi::GRBnewmodel(env.get_ptr(),
                        &mut model,
                        modelname.as_ptr(),
@@ -352,15 +352,15 @@ impl Model {
                        null(),
                        null(),
                        null())
-    }));
+    })?;
     Self::from_raw(model)
   }
 
   /// Read a model from a file
   pub fn read_from(filename: &str, env: &Env) -> Result<Model> {
-    let filename = try!(CString::new(filename));
+    let filename = CString::new(filename)?;
     let mut model = null_mut();
-    try!(env.check_apicall(unsafe { ffi::GRBreadmodel(env.get_ptr(), filename.as_ptr(), &mut model) }));
+    env.check_apicall(unsafe { ffi::GRBreadmodel(env.get_ptr(), filename.as_ptr(), &mut model) })?;
     Self::from_raw(model)
   }
 
@@ -446,26 +446,26 @@ impl Model {
   pub fn update(&mut self) -> Result<()> {
     let (vars, delind) = Self::remove_items(&self.vars);
     if !delind.is_empty() {
-      try!(self.check_apicall(unsafe { ffi::GRBdelvars(self.model, delind.len() as ffi::c_int, delind.as_ptr()) }));
+      self.check_apicall(unsafe { ffi::GRBdelvars(self.model, delind.len() as ffi::c_int, delind.as_ptr()) })?;
     }
 
     let (constrs, delind) = Self::remove_items(&self.constrs);
     if !delind.is_empty() {
-      try!(self.check_apicall(unsafe { ffi::GRBdelconstrs(self.model, delind.len() as ffi::c_int, delind.as_ptr()) }));
+      self.check_apicall(unsafe { ffi::GRBdelconstrs(self.model, delind.len() as ffi::c_int, delind.as_ptr()) })?;
     }
 
     let (qconstrs, delind) = Self::remove_items(&self.qconstrs);
     if !delind.is_empty() {
-      try!(self.check_apicall(unsafe { ffi::GRBdelqconstrs(self.model, delind.len() as ffi::c_int, delind.as_ptr()) }));
+      self.check_apicall(unsafe { ffi::GRBdelqconstrs(self.model, delind.len() as ffi::c_int, delind.as_ptr()) })?;
     }
 
     let (sos, delind) = Self::remove_items(&self.sos);
     if !delind.is_empty() {
-      try!(self.check_apicall(unsafe { ffi::GRBdelsos(self.model, delind.len() as ffi::c_int, delind.as_ptr()) }));
+      self.check_apicall(unsafe { ffi::GRBdelsos(self.model, delind.len() as ffi::c_int, delind.as_ptr()) })?;
     }
 
     // process all of the modification.
-    try!(self.check_apicall(unsafe { ffi::GRBupdatemodel(self.model) }));
+    self.check_apicall(unsafe { ffi::GRBupdatemodel(self.model) })?;
 
     // rearrange indices.
     self.vars = Self::rearrange(vars);
@@ -485,7 +485,7 @@ impl Model {
       Some(mode) => Ok(mode),
       None => {
         use param;
-        let mode = try!(self.env.get(param::UpdateMode));
+        let mode = self.env.get(param::UpdateMode)?;
         self.updatemode = Some(mode);
         Ok(mode)
       }
@@ -494,13 +494,13 @@ impl Model {
 
   /// Optimize the model synchronously
   pub fn optimize(&mut self) -> Result<()> {
-    try!(self.update());
+    self.update()?;
     self.check_apicall(unsafe { ffi::GRBoptimize(self.model) })
   }
 
   /// Optimize the model asynchronously
   pub fn optimize_async(&mut self) -> Result<()> {
-    try!(self.update());
+    self.update()?;
     self.check_apicall(unsafe { ffi::GRBoptimizeasync(self.model) })
   }
 
@@ -509,14 +509,14 @@ impl Model {
   pub fn optimize_with_callback<F>(&mut self, mut callback: F) -> Result<()>
     where F: FnMut(Callback) -> Result<()> + 'static
   {
-    try!(self.update());
+    self.update()?;
     let usrdata = CallbackData {
       model: self,
       callback: &mut callback
     };
-    try!(self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, callback_wrapper, transmute(&usrdata)) }));
+    self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, callback_wrapper, transmute(&usrdata)) })?;
 
-    try!(self.check_apicall(unsafe { ffi::GRBoptimize(self.model) }));
+    self.check_apicall(unsafe { ffi::GRBoptimize(self.model) })?;
 
     // clear callback from the model.
     // Notice: Rust does not have approproate mechanism which treats "null" C-style function
@@ -583,13 +583,13 @@ impl Model {
 
   /// Import optimization data of the model from a file.
   pub fn read(&mut self, filename: &str) -> Result<()> {
-    let filename = try!(CString::new(filename));
+    let filename = CString::new(filename)?;
     self.check_apicall(unsafe { ffi::GRBread(self.model, filename.as_ptr()) })
   }
 
   /// Export optimization data of the model to a file.
   pub fn write(&self, filename: &str) -> Result<()> {
-    let filename = try!(CString::new(filename));
+    let filename = CString::new(filename)?;
     self.check_apicall(unsafe { ffi::GRBwrite(self.model, filename.as_ptr()) })
   }
 
@@ -614,8 +614,8 @@ impl Model {
       buf
     };
 
-    let name = try!(CString::new(name));
-    try!(self.check_apicall(unsafe {
+    let name = CString::new(name)?;
+    self.check_apicall(unsafe {
       ffi::GRBaddvar(self.model,
                      colvals.len() as ffi::c_int,
                      colconstrs.as_ptr(),
@@ -625,9 +625,9 @@ impl Model {
                      ub,
                      vtype.into(),
                      name.as_ptr())
-    }));
+    })?;
 
-    let col_no = if try!(self.get_update_mode()) != 0 {
+    let col_no = if self.get_update_mode()? != 0 {
       self.vars.len() as i32
     } else {
       -1
@@ -649,7 +649,7 @@ impl Model {
     let names = {
       let mut buf = Vec::with_capacity(names.len());
       for &name in names.into_iter() {
-        let name = try!(CString::new(name));
+        let name = CString::new(name)?;
         buf.push(name.as_ptr());
       }
       buf
@@ -693,7 +693,7 @@ impl Model {
       (buf_beg, buf_ind, buf_val)
     };
 
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       ffi::GRBaddvars(self.model,
                       names.len() as ffi::c_int,
                       beg.len() as ffi::c_int,
@@ -705,9 +705,9 @@ impl Model {
                       ubs.as_ptr(),
                       vtypes.as_ptr(),
                       names.as_ptr())
-    }));
+    })?;
 
-    let mode = try!(self.get_update_mode());
+    let mode = self.get_update_mode()?;
 
     let xcols = self.vars.len();
     let cols = self.vars.len() + names.len();
@@ -722,9 +722,9 @@ impl Model {
 
   /// add a linear constraint to the model.
   pub fn add_constr(&mut self, name: &str, expr: LinExpr, sense: ConstrSense, rhs: f64) -> Result<Constr> {
-    let constrname = try!(CString::new(name));
+    let constrname = CString::new(name)?;
     let (vars, coeff, offset) = expr.into();
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       ffi::GRBaddconstr(self.model,
                         coeff.len() as ffi::c_int,
                         vars.as_ptr(),
@@ -732,9 +732,9 @@ impl Model {
                         sense.into(),
                         rhs - offset,
                         constrname.as_ptr())
-    }));
+    })?;
 
-    let row_no = if try!(self.get_update_mode()) != 0 {
+    let row_no = if self.get_update_mode()? != 0 {
       self.constrs.len() as i32
     } else {
       -1
@@ -749,7 +749,7 @@ impl Model {
                      -> Result<Vec<Constr>> {
     let mut constrnames = Vec::with_capacity(name.len());
     for &s in name.iter() {
-      let name = try!(CString::new(s));
+      let name = CString::new(s)?;
       constrnames.push(name.as_ptr());
     }
 
@@ -771,7 +771,7 @@ impl Model {
       val.extend(&expr.1);
     }
 
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       ffi::GRBaddconstrs(self.model,
                          constrnames.len() as ffi::c_int,
                          beg.len() as ffi::c_int,
@@ -781,9 +781,9 @@ impl Model {
                          sense.as_ptr(),
                          rhs.as_ptr(),
                          constrnames.as_ptr())
-    }));
+    })?;
 
-    let mode = try!(self.get_update_mode());
+    let mode = self.get_update_mode()?;
 
     let xrows = self.constrs.len();
     let rows = self.constrs.len() + constrnames.len();
@@ -804,9 +804,9 @@ impl Model {
   /// * An decision variable associated with the model. It has lower/upper bound constraints.
   /// * An linear equality constraint associated with the model.
   pub fn add_range(&mut self, name: &str, expr: LinExpr, lb: f64, ub: f64) -> Result<(Var, Constr)> {
-    let constrname = try!(CString::new(name));
+    let constrname = CString::new(name)?;
     let (vars, coeff, offset) = expr.into();
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       ffi::GRBaddrangeconstr(self.model,
                              coeff.len() as ffi::c_int,
                              vars.as_ptr(),
@@ -814,9 +814,9 @@ impl Model {
                              lb - offset,
                              ub - offset,
                              constrname.as_ptr())
-    }));
+    })?;
 
-    let mode = try!(self.get_update_mode());
+    let mode = self.get_update_mode()?;
 
     let col_no = if mode != 0 {
       self.vars.len() as i32
@@ -841,7 +841,7 @@ impl Model {
 
     let mut constrnames = Vec::with_capacity(names.len());
     for &s in names.iter() {
-      let name = try!(CString::new(s));
+      let name = CString::new(s)?;
       constrnames.push(name.as_ptr());
     }
 
@@ -863,7 +863,7 @@ impl Model {
       val.extend(&expr.1);
     }
 
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       ffi::GRBaddrangeconstrs(self.model,
                               constrnames.len() as ffi::c_int,
                               beg.len() as ffi::c_int,
@@ -873,9 +873,9 @@ impl Model {
                               lhs.as_ptr(),
                               rhs.as_ptr(),
                               constrnames.as_ptr())
-    }));
+    })?;
 
-    let mode = try!(self.get_update_mode());
+    let mode = self.get_update_mode()?;
 
     let xcols = self.vars.len();
     let cols = self.vars.len() + names.len();
@@ -894,9 +894,9 @@ impl Model {
 
   /// add a quadratic constraint to the model.
   pub fn add_qconstr(&mut self, constrname: &str, expr: QuadExpr, sense: ConstrSense, rhs: f64) -> Result<QConstr> {
-    let constrname = try!(CString::new(constrname));
+    let constrname = CString::new(constrname)?;
     let (lind, lval, qrow, qcol, qval, offset) = expr.into();
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       ffi::GRBaddqconstr(self.model,
                          lval.len() as ffi::c_int,
                          lind.as_ptr(),
@@ -908,9 +908,9 @@ impl Model {
                          sense.into(),
                          rhs - offset,
                          constrname.as_ptr())
-    }));
+    })?;
 
-    let qrow_no = if try!(self.get_update_mode()) != 0 {
+    let qrow_no = if self.get_update_mode()? != 0 {
       self.qconstrs.len() as i32
     } else {
       -1
@@ -929,7 +929,7 @@ impl Model {
     let vars = vars.iter().map(|v| v.index()).collect_vec();
     let beg = 0;
 
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       ffi::GRBaddsos(self.model,
                      1,
                      vars.len() as ffi::c_int,
@@ -937,9 +937,9 @@ impl Model {
                      &beg,
                      vars.as_ptr(),
                      weights.as_ptr())
-    }));
+    })?;
 
-    let sos_no = if try!(self.get_update_mode()) != 0 {
+    let sos_no = if self.get_update_mode()? != 0 {
       self.sos.len() as i32
     } else {
       -1
@@ -956,10 +956,10 @@ impl Model {
                                 50000));
     }
     let (lind, lval, qrow, qcol, qval, _) = Into::<QuadExpr>::into(expr).into();
-    try!(self.del_qpterms());
-    try!(self.add_qpterms(qrow.as_slice(), qcol.as_slice(), qval.as_slice()));
+    self.del_qpterms()?;
+    self.add_qpterms(qrow.as_slice(), qcol.as_slice(), qval.as_slice())?;
 
-    try!(self.set_list(attr::Obj, lind.as_slice(), lval.as_slice()));
+    self.set_list(attr::Obj, lind.as_slice(), lval.as_slice())?;
 
     self.set(attr::ModelSense, sense.into())
   }
@@ -968,17 +968,17 @@ impl Model {
   pub fn get<A: Attr>(&self, attr: A) -> Result<A::Out> {
     let mut value: A::Buf = util::Init::init();
 
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       use util::AsRawPtr;
       A::get_attr(self.model, attr.into().as_ptr(), value.as_rawptr())
-    }));
+    })?;
 
     Ok(util::Into::into(value))
   }
 
   /// Set the value of attributes which associated with variable/constraints.
   pub fn set<A: Attr>(&mut self, attr: A, value: A::Out) -> Result<()> {
-    try!(self.check_apicall(unsafe { A::set_attr(self.model, attr.into().as_ptr(), util::From::from(value)) }));
+    self.check_apicall(unsafe { A::set_attr(self.model, attr.into().as_ptr(), util::From::from(value)) })?;
     self.update()
   }
 
@@ -990,10 +990,10 @@ impl Model {
 
     let mut value: A::Buf = util::Init::init();
 
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       use util::AsRawPtr;
       A::get_attrelement(self.model, attr.into().as_ptr(), element, value.as_rawptr())
-    }));
+    })?;
 
     Ok(util::Into::into(value))
   }
@@ -1003,12 +1003,12 @@ impl Model {
       return Err(Error::InconsitentDims);
     }
 
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       A::set_attrelement(self.model,
                          attr.into().as_ptr(),
                          element,
                          util::From::from(value))
-    }));
+    })?;
     self.update()
   }
 
@@ -1034,13 +1034,13 @@ impl Model {
       buf
     };
 
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       A::get_attrlist(self.model,
                       attr.into().as_ptr(),
                       ind.len() as ffi::c_int,
                       ind.as_ptr(),
                       values.as_mut_ptr())
-    }));
+    })?;
 
     Ok(values.into_iter().map(util::Into::into).collect())
   }
@@ -1050,9 +1050,9 @@ impl Model {
   pub fn set_values<A: AttrArray, P>(&mut self, attr: A, item: &[P], val: &[A::Out]) -> Result<()>
     where P: Deref<Target = Proxy>
   {
-    try!(self.set_list(attr,
+    self.set_list(attr,
                        item.iter().map(|e| e.index()).collect_vec().as_slice(),
-                       val));
+                       val)?;
     self.update()
   }
 
@@ -1071,7 +1071,7 @@ impl Model {
       }
       buf
     };
-    let values = try!(A::to_rawsets(values));
+    let values = A::to_rawsets(values)?;
 
     assert_eq!(ind.len(), values.len());
 
@@ -1144,7 +1144,7 @@ impl Model {
     let minrelax = if minrelax { 1 } else { 0 };
 
     let feasobj = 0f64;
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       ffi::GRBfeasrelax(self.model,
                         relaxtype.into(),
                         minrelax,
@@ -1152,12 +1152,12 @@ impl Model {
                         pen_ub.as_ptr(),
                         pen_rhs.as_ptr(),
                         &feasobj)
-    }));
-    try!(self.update());
+    })?;
+    self.update()?;
 
-    let cols = try!(self.get(attr::NumVars)) as usize;
-    let rows = try!(self.get(attr::NumConstrs)) as usize;
-    let qrows = try!(self.get(attr::NumQConstrs)) as usize;
+    let cols = self.get(attr::NumVars)? as usize;
+    let rows = self.get(attr::NumConstrs)? as usize;
+    let qrows = self.get(attr::NumQConstrs)? as usize;
 
     let xcols = self.vars.len();
     let xrows = self.constrs.len();
@@ -1197,13 +1197,13 @@ impl Model {
     if x.len() != y.len() {
       return Err(Error::InconsitentDims);
     }
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       ffi::GRBsetpwlobj(self.model,
                         var.index(),
                         x.len() as ffi::c_int,
                         x.as_ptr(),
                         y.as_ptr())
-    }));
+    })?;
     self.update()
   }
 
@@ -1228,13 +1228,13 @@ impl Model {
   /// Retrieve a single constant matrix coefficient of the model.
   pub fn get_coeff(&self, var: &Var, constr: &Constr) -> Result<f64> {
     let mut value = 0.0;
-    try!(self.check_apicall(unsafe { ffi::GRBgetcoeff(self.model, var.index(), constr.index(), &mut value) }));
+    self.check_apicall(unsafe { ffi::GRBgetcoeff(self.model, var.index(), constr.index(), &mut value) })?;
     Ok(value)
   }
 
   /// Change a single constant matrix coefficient of the model.
   pub fn set_coeff(&mut self, var: &Var, constr: &Constr, value: f64) -> Result<()> {
-    try!(self.check_apicall(unsafe { ffi::GRBchgcoeffs(self.model, 1, &constr.index(), &var.index(), &value) }));
+    self.check_apicall(unsafe { ffi::GRBchgcoeffs(self.model, 1, &constr.index(), &var.index(), &value) })?;
     self.update()
   }
 
@@ -1247,21 +1247,21 @@ impl Model {
     let vars = vars.iter().map(|v| v.index()).collect_vec();
     let constrs = constrs.iter().map(|c| c.index()).collect_vec();
 
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       ffi::GRBchgcoeffs(self.model,
                         vars.len() as ffi::c_int,
                         constrs.as_ptr(),
                         vars.as_ptr(),
                         values.as_ptr())
-    }));
+    })?;
     self.update()
   }
 
   fn populate(&mut self) -> Result<()> {
-    let cols = try!(self.get(attr::NumVars)) as usize;
-    let rows = try!(self.get(attr::NumConstrs)) as usize;
-    let numqconstrs = try!(self.get(attr::NumQConstrs)) as usize;
-    let numsos = try!(self.get(attr::NumSOS)) as usize;
+    let cols = self.get(attr::NumVars)? as usize;
+    let rows = self.get(attr::NumConstrs)? as usize;
+    let numqconstrs = self.get(attr::NumQConstrs)? as usize;
+    let numsos = self.get(attr::NumSOS)? as usize;
 
     self.vars = (0..cols).map(|idx| Var::new(idx as i32)).collect_vec();
     self.constrs = (0..rows).map(|idx| Constr::new(idx as i32)).collect_vec();
@@ -1276,19 +1276,19 @@ impl Model {
 
   // add quadratic terms of objective function.
   fn add_qpterms(&mut self, qrow: &[i32], qcol: &[i32], qval: &[f64]) -> Result<()> {
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       ffi::GRBaddqpterms(self.model,
                          qrow.len() as ffi::c_int,
                          qrow.as_ptr(),
                          qcol.as_ptr(),
                          qval.as_ptr())
-    }));
+    })?;
     self.update()
   }
 
   // remove quadratic terms of objective function.
   fn del_qpterms(&mut self) -> Result<()> {
-    try!(self.check_apicall(unsafe { ffi::GRBdelq(self.model) }));
+    self.check_apicall(unsafe { ffi::GRBdelq(self.model) })?;
     self.update()
   }
 

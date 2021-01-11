@@ -45,11 +45,6 @@ impl Into<(Vec<i32>, Vec<f64>, f64)> for LinExpr {
   }
 }
 
-impl Into<(Vec<Var>, Vec<f64>, f64)> for LinExpr {
-  fn into(self) -> (Vec<Var>, Vec<f64>, f64) {
-    (self.vars, self.coeff, self.offset)
-  }
-}
 
 impl LinExpr {
   /// Create an empty linear expression.
@@ -84,6 +79,8 @@ impl LinExpr {
 
     Ok(Zip::new((vars, self.coeff.iter())).fold(0.0, |acc, (ind, val)| acc + ind * val) + self.offset)
   }
+
+  pub fn into_parts(self) -> (Vec<Var>, Vec<f64>, f64) { (self.vars, self.coeff, self.offset) }
 }
 
 

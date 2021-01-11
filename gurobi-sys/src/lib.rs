@@ -615,7 +615,7 @@ extern "C" {
                    lazysense: c_char, lazyrhs: c_double)
                    -> c_int;
 
-  pub fn GRBcbsolution(cbdata: *mut c_void, solution: *const c_double) -> c_int;
+  pub fn GRBcbsolution(cbdata: *mut c_void, solution: *const c_double, obj_ptr: *mut c_double) -> c_int;
 
   pub fn GRBterminate(model: *mut GRBmodel);
 }

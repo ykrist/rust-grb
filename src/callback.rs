@@ -4,7 +4,7 @@
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
 
-use ffi;
+use ::{ffi, INFINITY};
 use itertools::{Itertools, Zip};
 
 use std::mem::transmute;
@@ -16,6 +16,7 @@ use error::{Error, Result};
 use model::{Model, Var, ConstrSense};
 use model::expr::LinExpr;
 use util;
+use ffi::c_double;
 
 // Location where the callback called.
 const POLLING: i32 = 0;
@@ -316,8 +317,8 @@ impl<'a> Callback<'a> {
       let i = v.index() as usize;
       buf[i] = sol;
     }
-
-    self.check_apicall(unsafe { ffi::GRBcbsolution(self.cbdata, buf.as_ptr()) })
+    let mut obj = INFINITY as c_double;
+    self.check_apicall(unsafe { ffi::GRBcbsolution(self.cbdata, buf.as_ptr(), &mut obj as *mut c_double) })
   }
 
   /// Retrieve the elapsed solver runtime [sec].

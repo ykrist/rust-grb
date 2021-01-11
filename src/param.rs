@@ -25,10 +25,8 @@ pub trait Param: Sized + Into<CString> {
   type RawFrom;
   type RawTo: util::FromRaw<Self::Out>;
 
-  #[inline(always)]
   unsafe fn get_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: Self::RawFrom) -> ffi::c_int;
 
-  #[inline(always)]
   unsafe fn set_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: Self::RawTo) -> ffi::c_int;
 }
 

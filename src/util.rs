@@ -7,7 +7,6 @@ use super::ffi;
 use std::ffi::{CStr, CString};
 use std::ptr::null;
 
-#[allow(temporary_cstring_as_ptr)]
 pub unsafe fn from_c_str(s: *const ffi::c_char) -> String { CStr::from_ptr(s).to_string_lossy().into_owned() }
 
 
@@ -29,8 +28,10 @@ impl From<f64> for ffi::c_double {
 }
 
 impl From<String> for ffi::c_str {
-  #[allow(temporary_cstring_as_ptr)]
-  fn from(val: String) -> ffi::c_str { CString::new(val.as_str()).unwrap().as_ptr() }
+  fn from(val: String) -> ffi::c_str {
+    let s = CString::new(val.as_str()).unwrap();
+    s.as_ptr()
+  }
 }
 
 
@@ -82,7 +83,7 @@ impl Into<i8> for ffi::c_char {
 }
 
 impl Into<String> for ffi::c_str {
-  fn into(self) -> String { unsafe { from_c_str(self).to_owned() } }
+  fn into(self) -> String { unsafe { from_c_str(self) } }
 }
 
 
@@ -114,7 +115,7 @@ impl AsRawPtr<*mut ffi::c_char> for Vec<ffi::c_char> {
 
 ///
 pub trait FromRaw<T> {
-  fn from(T) -> Self;
+  fn from(val: T) -> Self;
 }
 
 impl FromRaw<i32> for ffi::c_int {
@@ -126,13 +127,14 @@ impl FromRaw<f64> for ffi::c_double {
 }
 
 impl FromRaw<String> for ffi::c_str {
-  #[allow(temporary_cstring_as_ptr)]
-  fn from(val: String) -> *const ffi::c_char { CString::new(val.as_str()).unwrap().as_ptr() }
+  fn from(val: String) -> ffi::c_str {
+    let s = CString::new(val.as_str()).unwrap();
+    s.as_ptr()
+  }
 }
 
 
 #[test]
-#[allow(temporary_cstring_as_ptr)]
 fn conversion_must_success() {
   let s1 = "mip1.log";
   let s2 = unsafe { from_c_str(CString::new(s1).unwrap().as_ptr()) };

@@ -202,7 +202,7 @@ impl AttrArray for StringAttr {
 
   fn to_rawsets(values: &[String]) -> Result<Vec<ffi::c_str>> {
     let mut buf = Vec::with_capacity(values.len());
-    for value in values.into_iter() {
+    for value in values.iter() {
       let value = CString::new(value.as_str())?;
       buf.push(value.as_ptr())
     }

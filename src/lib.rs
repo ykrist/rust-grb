@@ -15,7 +15,8 @@
 //!   [here](http://www.gurobi.com/downloads/licenses/license-center).
 //!
 //! * Make sure that the environment variable `GUROBI_HOME` is set to the installation path of Gurobi
-//!   (like `C:\gurobi652\win64`, `/opt/gurobi652/linux64`).
+//!   (like `C:\gurobi652\win64`, `/opt/gurobi652/linux64`).  If using the Conda package from the Gurobi
+//!   channel, set `GUROBI_HOME=${CONDA_PREFIX}`.
 //!
 //! * On Windows, the toolchain should be MSVC ABI (it also requires Visual Studio or
 //!   Visual C++ Build Tools).
@@ -77,8 +78,6 @@
 
 #![cfg_attr(feature="clippy", feature(plugin))]
 #![cfg_attr(feature="clippy", plugin(clippy))]
-#![allow(extend_from_slice)]
-#![allow(explicit_iter_loop)]
 
 extern crate gurobi_sys as ffi;
 extern crate itertools;

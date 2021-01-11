@@ -6,6 +6,7 @@
 extern crate gurobi;
 use gurobi::*;
 
+#[allow(clippy::many_single_char_names)]
 fn main() {
   let env = Env::new("piecewise.log").unwrap();
   let mut model = Model::new("piecewise", &env).unwrap();

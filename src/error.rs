@@ -33,10 +33,12 @@ impl std::fmt::Display for Error {
   }
 }
 
+// TODO fix deprecation
 impl std::error::Error for Error {
   fn description(&self) -> &str {
     match *self {
       Error::FromAPI(..) => "error from C API",
+      #[allow(deprecated)]
       Error::NulError(ref err) => err.description(),
       Error::InconsitentDims => "Inconsistent argument dimensions",
     }

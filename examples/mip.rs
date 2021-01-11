@@ -31,9 +31,9 @@ fn main() {
   let numvars = model.get(attr::NumVars).unwrap() as usize;
   assert_eq!(numvars, 3);
 
-  assert_eq!(x.get(&model, attr::X).unwrap(), 0.0);
-  assert_eq!(y.get(&model, attr::X).unwrap(), 1.0);
-  assert_eq!(z.get(&model, attr::X).unwrap(), 0.0);
+  assert_eq!(x.get(&model, attr::X).unwrap().round() as isize, 0);
+  assert_eq!(y.get(&model, attr::X).unwrap().round() as isize, 1);
+  assert_eq!(z.get(&model, attr::X).unwrap().round() as isize, 0);
 
   model.write("mip.lp").unwrap();
   model.write("mip.sol").unwrap();

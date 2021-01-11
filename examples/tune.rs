@@ -5,7 +5,6 @@
 
 extern crate gurobi;
 use gurobi::*;
-use std::env::args;
 
 mod example_utils;
 use example_utils::*;

@@ -68,13 +68,13 @@ fn main() {
   println!("Initial guesss:");
   let max_fixed = fixed_costs.iter().cloned().fold(-1. / 0., f64::max);
   for (p, (open, &cost)) in Zip::new((&open, &fixed_costs)).enumerate() {
-    if cost == max_fixed {
+    if (cost - max_fixed).abs() < 1e-4 {
       open.set(&mut model, attr::Start, 0.0).unwrap();
       println!("Closing plant {}", p);
       break;
     }
   }
-  println!("");
+  println!();
 
   // use barrier to solve root relaxation.
   model.get_env_mut().set(param::Method, 2).unwrap();
@@ -87,7 +87,7 @@ fn main() {
   println!("SOLUTION:");
   for (p, open) in open.iter().enumerate() {
     let x = open.get(&model, attr::X).unwrap();
-    if x == 1.0 {
+    if x > 0.9 {
       println!("Plant {} is open", p);
       for (w, trans) in transport.iter().enumerate() {
         let t = trans[p].get(&model, attr::X).unwrap();

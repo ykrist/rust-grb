@@ -121,7 +121,7 @@ pub enum Status {
 impl From<i32> for Status {
   fn from(val: i32) -> Status {
     match val {
-      1...14 => unsafe { transmute(val as i8) },
+      1..=14 => unsafe { transmute(val as i8) },
       _ => panic!("cannot convert to Status: {}", val)
     }
   }
@@ -242,18 +242,18 @@ impl_traits_for_proxy! { Var Constr QConstr SOS }
 
 struct CallbackData<'a> {
   model: &'a Model,
-  callback: &'a mut FnMut(Callback) -> Result<()>
+  callback: &'a mut dyn FnMut(Callback) -> Result<()>
 }
 
 #[allow(unused_variables)]
-#[allow(transmute_ptr_to_ref)] // Clippy gives a false positive here.
 extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_void, loc: ffi::c_int,
                                usrdata: *mut ffi::c_void)
                                -> ffi::c_int {
 
-  let mut usrdata = unsafe { transmute::<_, &mut CallbackData>(usrdata) };
+  let usrdata = unsafe { &mut *(usrdata as *mut CallbackData) };
   let (callback, model) = (&mut usrdata.callback, &usrdata.model);
 
+  #[allow(clippy::useless_conversion)]
   match Callback::new(cbdata, loc.into(), model) {
     Err(err) => {
       println!("failed to create context: {:?}", err);
@@ -304,8 +304,8 @@ impl FromRaw for Model {
     let env = Env::from_raw(env);
 
     let mut model = Model {
-      model: model,
-      env: env,
+      model,
+      env,
       updatemode: None,
       vars: Vec::new(),
       constrs: Vec::new(),
@@ -436,7 +436,7 @@ impl Model {
   }
 
   fn rearrange<P: DerefMut<Target = Proxy>>(mut vec: Vec<P>) -> Vec<P> {
-    for (i, mut elem) in vec.iter_mut().enumerate() {
+    for (i, elem) in vec.iter_mut().enumerate() {
       elem.set_index(i as i32);
     }
     vec
@@ -505,7 +505,6 @@ impl Model {
   }
 
   /// Optimize the model with a callback function
-  #[allow(useless_transmute)] // Clippy gives a false positive here.
   pub fn optimize_with_callback<F>(&mut self, mut callback: F) -> Result<()>
     where F: FnMut(Callback) -> Result<()> + 'static
   {
@@ -648,7 +647,7 @@ impl Model {
 
     let names = {
       let mut buf = Vec::with_capacity(names.len());
-      for &name in names.into_iter() {
+      for &name in names.iter() {
         let name = CString::new(name)?;
         buf.push(name.as_ptr());
       }
@@ -657,7 +656,7 @@ impl Model {
 
     let vtypes = {
       let mut buf = Vec::with_capacity(vtypes.len());
-      for &vtype in vtypes.into_iter() {
+      for &vtype in vtypes.iter() {
         let vtype = vtype.into();
         buf.push(vtype);
       }
@@ -753,7 +752,7 @@ impl Model {
       constrnames.push(name.as_ptr());
     }
 
-    let expr: Vec<(_, _, _)> = expr.into_iter().cloned().map(|e| e.into()).collect_vec();
+    let expr: Vec<(_, _, _)> = expr.iter().cloned().map(|e| e.into()).collect_vec();
 
     let sense = sense.iter().map(|&s| s.into()).collect_vec();
     let rhs = Zip::new((rhs, &expr)).map(|(rhs, expr)| rhs - expr.2).collect_vec();
@@ -845,7 +844,7 @@ impl Model {
       constrnames.push(name.as_ptr());
     }
 
-    let expr: Vec<(_, _, _)> = expr.into_iter().cloned().map(|e| e.into()).collect_vec();
+    let expr: Vec<(_, _, _)> = expr.iter().cloned().map(|e| e.into()).collect_vec();
 
     let lhs = Zip::new((lb, &expr)).map(|(lb, expr)| lb - expr.2).collect_vec();
     let rhs = Zip::new((ub, &expr)).map(|(ub, expr)| ub - expr.2).collect_vec();
@@ -951,7 +950,7 @@ impl Model {
 
   /// Set the objective function of the model.
   pub fn set_objective<Expr: Into<QuadExpr>>(&mut self, expr: Expr, sense: ModelSense) -> Result<()> {
-    if !self.updatemode.is_none() {
+    if self.updatemode.is_some() {
       return Err(Error::FromAPI("The objective function cannot be set before any pending modifies existed".to_owned(),
                                 50000));
     }
@@ -1109,6 +1108,7 @@ impl Model {
   /// ## Returns
   /// * The objective value for the relaxation performed (if `minrelax` is `true`).
   /// * Slack variables for relaxation and linear/quadratic constraints related to theirs.
+  #[allow(clippy::type_complexity)]
   pub fn feas_relax(&mut self, relaxtype: RelaxType, minrelax: bool, vars: &[Var], lbpen: &[f64], ubpen: &[f64],
                     constrs: &[Constr], rhspen: &[f64])
                     -> Result<(f64, Iter<Var>, Iter<Constr>, Iter<QConstr>)> {

@@ -5,7 +5,6 @@
 
 extern crate gurobi;
 use gurobi::*;
-use std::env::args;
 
 mod example_utils;
 use example_utils::*;
@@ -35,7 +34,7 @@ fn main() {
   for (v, &orig_x) in vars.iter().zip(orig_sol.iter()) {
     let (vtype, lb, ub) = v.get_type(&model).unwrap();
 
-    if lb == 0.0 && ub == 1.0 && (vtype == 'B' || vtype == 'I') {
+    if (lb - 0.0).abs() < 1e-6 && (ub - 1.0).abs() < 1e-6 && (vtype == 'B' || vtype == 'I') {
       let vname = v.get(&model, attr::VarName).unwrap();
 
       // set variable to 1 - x, where x is its value in optimal solution

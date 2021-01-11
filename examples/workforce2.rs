@@ -32,7 +32,7 @@ fn main() {
           let iis_constrs: Vec<_> =
             model.get_constrs().filter(|c| c.get(&model, attr::IISConstr).unwrap() != 0).collect();
           println!("number of IIS constrs = {}", iis_constrs.len());
-          iis_constrs.into_iter().nth(0).cloned()
+          iis_constrs.into_iter().next().cloned()
         };
 
         match c {

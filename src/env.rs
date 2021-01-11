@@ -29,7 +29,7 @@ impl Env {
       return Err(Error::FromAPI(get_error_msg(env), error));
     }
     Ok(Env {
-      env: env,
+      env,
       require_drop: true
     })
   }
@@ -54,7 +54,7 @@ impl Env {
       return Err(Error::FromAPI(get_error_msg(env), error));
     }
     Ok(Env {
-      env: env,
+      env,
       require_drop: true
     })
   }
@@ -96,8 +96,10 @@ impl Env {
   /// Insert a message into log file.
   ///
   /// When **message** cannot convert to raw C string, a panic is occurred.
-  #[allow(temporary_cstring_as_ptr)]
-  pub fn message(&self, message: &str) { unsafe { ffi::GRBmsg(self.env, CString::new(message).unwrap().as_ptr()) }; }
+  pub fn message(&self, message: &str) {
+    let msg = CString::new(message).unwrap();
+    unsafe { ffi::GRBmsg(self.env, msg.as_ptr()) };
+  }
 }
 
 pub trait EnvAPI {
@@ -141,7 +143,7 @@ pub trait FromRaw {
 impl FromRaw for Env {
   fn from_raw(env: *mut ffi::GRBenv) -> Env {
     Env {
-      env: env,
+      env,
       require_drop: false
     }
   }

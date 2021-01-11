@@ -7,7 +7,6 @@
 use ::{ffi, INFINITY};
 use itertools::{Itertools, Zip};
 
-use std::mem::transmute;
 use std::ops::Deref;
 use std::ptr::null;
 use std::os::raw;
@@ -16,7 +15,6 @@ use error::{Error, Result};
 use model::{Model, Var, ConstrSense};
 use model::expr::LinExpr;
 use util;
-use ffi::c_double;
 
 // Location where the callback called.
 const POLLING: i32 = 0;
@@ -210,15 +208,16 @@ pub struct Callback<'a> {
 
 
 pub trait New<'a> {
+  #[allow(clippy::new_ret_no_self)]
   fn new(cbdata: *mut ffi::c_void, where_: i32, model: &'a Model) -> Result<Callback<'a>>;
 }
 
 impl<'a> New<'a> for Callback<'a> {
   fn new(cbdata: *mut ffi::c_void, where_: i32, model: &'a Model) -> Result<Callback<'a>> {
     let mut callback = Callback {
-      cbdata: cbdata,
+      cbdata,
       where_: Where::Polling,
-      model: model
+      model
     };
 
     let where_ = match where_ {
@@ -312,13 +311,13 @@ impl<'a> Callback<'a> {
       return Err(Error::InconsitentDims);
     }
 
-    let mut buf = vec![0.0; self.model.vars.len()];
+    let mut buf = vec![0.0f64; self.model.vars.len()];
     for (v, &sol) in Zip::new((vars.iter(), solution.iter())) {
       let i = v.index() as usize;
       buf[i] = sol;
     }
-    let mut obj = INFINITY as c_double;
-    self.check_apicall(unsafe { ffi::GRBcbsolution(self.cbdata, buf.as_ptr(), &mut obj as *mut c_double) })
+    let mut obj = INFINITY as raw::c_double;
+    self.check_apicall(unsafe { ffi::GRBcbsolution(self.cbdata, buf.as_ptr(), &mut obj as *mut raw::c_double) })
   }
 
   /// Retrieve the elapsed solver runtime [sec].
@@ -357,18 +356,18 @@ impl<'a> Callback<'a> {
 
 
   fn get_int(&self, where_: i32, what: i32) -> Result<i32> {
-    let mut buf = 0;
-    self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what, &mut buf as *mut i32 as *mut raw::c_void) }).and(Ok(buf.into()))
+    let mut buf = 0i32;
+    self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what, &mut buf as *mut i32 as *mut raw::c_void) }).and(Ok(buf))
   }
 
   fn get_double(&self, where_: i32, what: i32) -> Result<f64> {
-    let mut buf = 0.0;
-    self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what, &mut buf as *mut f64 as *mut raw::c_void) }).and(Ok(buf.into()))
+    let mut buf = 0.0f64;
+    self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what, &mut buf as *mut f64 as *mut raw::c_void) }).and(Ok(buf))
   }
 
   fn get_double_array(&self, where_: i32, what: i32) -> Result<Vec<f64>> {
     let mut buf = vec![0.0; self.model.vars.len()];
-    self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what, transmute(buf.as_mut_ptr())) }).and(Ok(buf))
+    self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what, buf.as_mut_ptr() as *mut  raw::c_void) }).and(Ok(buf))
   }
 
   fn get_string(&self, where_: i32, what: i32) -> Result<String> {

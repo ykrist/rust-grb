@@ -15,7 +15,7 @@ fn main() {
   let z = model.add_var("z", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
   model.update().unwrap();
 
-  model.set_objective(&x + &y + 2.0 * &z, Maximize).unwrap();
+  model.set_objective(&x + &y + 2.0 * &z, Minimize).unwrap();
 
   model.add_constr("c0", &x + 2.0 * &y + 3.0 * &z, Less, 4.0).unwrap();
 
@@ -27,8 +27,7 @@ fn main() {
   assert_eq!(status, 2);
 
   let objval = model.get(attr::ObjVal).unwrap();
-  assert!((objval - 1.0).abs() < 1e-12);
-
+  assert_eq!(objval.round() as isize, 1);
   let numvars = model.get(attr::NumVars).unwrap() as usize;
   assert_eq!(numvars, 3);
 

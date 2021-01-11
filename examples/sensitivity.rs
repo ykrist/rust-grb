@@ -7,10 +7,13 @@ extern crate gurobi;
 use gurobi::*;
 use std::env::args;
 
+mod example_utils;
+use example_utils::*;
+
 fn main() {
   let env = Env::new("").unwrap();
 
-  let mut model = Model::read_from(args().nth(1).as_ref().unwrap(), &env).unwrap();
+  let mut model = load_model_file_from_clarg(&env);
   assert!(model.get(attr::IsMIP).unwrap() != 0, "Model is not a MIP");
 
   model.optimize().unwrap();

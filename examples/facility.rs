@@ -46,8 +46,10 @@ fn main() {
   let expr = Zip::new((open.iter().chain(Itertools::flatten(transport.iter())),
                        fixed_costs.iter().chain(Itertools::flatten(trans_costs.iter()))))
     .fold(LinExpr::new(), |expr, (x, &c)| expr + c * x);
-  model.set_objective(expr, Minimize).unwrap();
+
   model.update().unwrap();
+  model.set_objective(expr, Minimize).unwrap();
+
 
   for (p, (&capacity, open)) in Zip::new((&capacity, &open)).enumerate() {
     let lhs = transport.iter().map(|t| &t[p]).fold(LinExpr::new(), |expr, t| expr + t);

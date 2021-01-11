@@ -4,16 +4,21 @@
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
 extern crate gurobi;
+
 use gurobi::*;
 use std::io::{BufWriter, Write};
 use std::fs::OpenOptions;
+
+mod example_utils;
+
+use example_utils::*;
 
 fn main() {
   let mut env = Env::new("callback.log").unwrap();
   env.set(param::OutputFlag, 0).unwrap();
   env.set(param::Heuristics, 0.0).unwrap();
 
-  let mut model = Model::read_from(&std::env::args().nth(1).unwrap(), &env).unwrap();
+  let mut model = load_model_file_from_clarg(&env);
 
   let callback = {
     let mut lastiter = -INFINITY;

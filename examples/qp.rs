@@ -21,7 +21,7 @@ fn main() {
   // set objective funtion:
   //   f(x,y,z) = x*x + x*y + y*y + y*z + z*z + 2*x
   model.set_objective(&x * &x + &x * &y + &y * &y + &y * &z + &z * &z + 2.0 * &x,
-                   Maximize)
+                   Minimize)
     .unwrap();
 
   // add linear constraints

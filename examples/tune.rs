@@ -7,12 +7,15 @@ extern crate gurobi;
 use gurobi::*;
 use std::env::args;
 
+mod example_utils;
+use example_utils::*;
+
 fn main() {
   let mut env = Env::new("tune.log").unwrap();
   // set the number of improved parameter sets.
   env.set(param::TuneResults, 1).unwrap();
 
-  let mut model = Model::read_from(args().nth(1).as_ref().unwrap(), &env).unwrap();
+  let mut model = load_model_file_from_clarg(&env);
 
   model.tune().unwrap();
 

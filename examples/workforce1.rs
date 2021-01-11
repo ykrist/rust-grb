@@ -4,9 +4,11 @@
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
 extern crate gurobi;
+
 use gurobi::*;
 
 mod workforce;
+
 use workforce::make_model;
 
 fn main() {

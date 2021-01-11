@@ -8,6 +8,7 @@ keywords = ["optimization", "linear", "integer"]
 license = "MIT"
 repository = "https://github.com/ubnt-intrepid/rust-gurobi"
 documentation = "https://docs.rs/gurobi/0.3.4/gurobi/"
+autoexamples= false
 
 [dependencies]
 itertools = "0.4.18"
@@ -16,3 +17,52 @@ clippy = {version = "0.0.*", optional = true}
 [dependencies.gurobi-sys]
 path = "./gurobi-sys"
 version = "0.3.0"
+
+[[example]]
+name="callback"
+path="examples/callback.rs"
+
+[[example]]
+name="facility"
+path="examples/facility.rs"
+
+[[example]]
+name="mip"
+path="examples/mip.rs"
+
+[[example]]
+name="piecewise"
+path="examples/piecewise.rs"
+
+[[example]]
+name="qcp"
+path="examples/qcp.rs"
+
+[[example]]
+name="qp"
+path="examples/qp.rs"
+
+[[example]]
+name="sensitivity"
+path="examples/sensitivity.rs"
+
+[[example]]
+name="sos"
+path="examples/sos.rs"
+
+[[example]]
+name="tune"
+path="examples/tune.rs"
+
+[[example]]
+name="workforce1"
+path="examples/workforce1.rs"
+
+[[example]]
+name="workforce2"
+path="examples/workforce2.rs"
+
+[[example]]
+name="workforce3"
+path="examples/workforce3.rs"
+

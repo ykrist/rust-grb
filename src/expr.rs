@@ -9,7 +9,7 @@ use error::Result;
 use itertools::*;
 
 use std::ops::{Add, Sub, Mul, Neg, AddAssign, Div};
-use std::iter::Sum;
+use std::iter::{Sum};
 
 /// Linear expression of variables
 ///
@@ -73,6 +73,9 @@ impl LinExpr {
     self
   }
 
+  /// Get the constant offset
+  pub fn get_offset(&self) -> f64 { self.offset }
+
   /// Get actual value of the expression.
   pub fn get_value(&self, model: &Model) -> Result<f64> {
     let vars = model.get_values(attr::X, self.vars.as_slice())?;
@@ -80,7 +83,13 @@ impl LinExpr {
     Ok(Zip::new((vars, self.coeff.iter())).fold(0.0, |acc, (ind, val)| acc + ind * val) + self.offset)
   }
 
+  /// Decompose into variables, their coefficients and the offset, respectively.
   pub fn into_parts(self) -> (Vec<Var>, Vec<f64>, f64) { (self.vars, self.coeff, self.offset) }
+
+  /// Returns an iterator over the terms excluding the offset (item type is `(&Var, &f64)`)
+  pub fn iter_terms<'a>(&'a self) -> std::iter::Zip<std::slice::Iter<'a, Var>, std::slice::Iter<'a,   f64>> {
+    (&self.vars).iter().zip((&self.coeff).iter())
+  }
 }
 
 

@@ -320,9 +320,9 @@ impl FromRaw for Model {
 impl Model {
   /// Create an empty Gurobi model from the environment.
   ///
-  /// Note that all of the parameters in given environment will copy by Gurobi API
-  /// and a new environment associated with the model will create.
-  /// If you want to query/modify the value of parameters, use `get_env()`.
+  /// Note that the given environment will be copied by the Gurobi API
+  /// and a new environment associated with the model will be created.
+  /// If you want to query/modify the value of parameters, use `get_env()`/`get_env_mut()`.
   ///
   /// # Arguments
   /// * __modelname__ : Name of the model
@@ -335,9 +335,16 @@ impl Model {
   /// let mut env = gurobi::Env::new("").unwrap();
   /// env.set(param::OutputFlag, 0).unwrap();
   /// env.set(param::Heuristics, 0.5).unwrap();
+  /// let env = env;
   /// // ...
   ///
-  /// let model = Model::new("model1", &env).unwrap();
+  /// let mut model = Model::new("model1", &env).unwrap();
+  /// assert_eq!(model.get_env().get(param::OutputFlag).unwrap(), 0);
+  ///
+  /// model.get_env_mut().set(param::OutputFlag, 1).unwrap();
+  /// // ...
+  /// assert_eq!(model.get_env().get(param::OutputFlag).unwrap(), 1);
+  /// assert_eq!(env.get(param::OutputFlag).unwrap(), 0); // original env is copied
   /// ```
   pub fn new(modelname: &str, env: &Env) -> Result<Model> {
     let modelname = CString::new(modelname)?;
@@ -1310,14 +1317,16 @@ impl Drop for Model {
 }
 
 #[test]
-fn removing_variable_should_be_successed() {
+fn removing_variable_lazy_update() {
   use super::*;
   let mut env = Env::new("").unwrap();
   env.set(param::OutputFlag, 0).unwrap();
-  let mut model = Model::new("hoge", &env).unwrap();
+  env.set(param::UpdateMode, 0).unwrap();
 
+  let mut model = Model::new("hoge", &env).unwrap();
   let x = model.add_var("x", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
   let y = model.add_var("y", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+
   assert_eq!(x.index(), -1);
   assert_eq!(y.index(), -1);
 
@@ -1329,6 +1338,47 @@ fn removing_variable_should_be_successed() {
   assert_eq!(x.index(), 0);
   assert_eq!(y.index(), 1);
   assert_eq!(z.index(), -1);
+
+  model.update().unwrap();
+  assert_eq!(x.index(), 0);
+  assert_eq!(y.index(), 1);
+  assert_eq!(z.index(), 2);
+
+  model.remove(y.clone());
+  assert_eq!(x.index(), 0);
+  assert_eq!(y.index(), -4);
+  assert_eq!(z.index(), 2);
+
+  model.update().unwrap();
+  assert_eq!(x.index(), 0);
+  assert_eq!(y.index(), -2);
+  assert_eq!(z.index(), 1);
+  assert_eq!(model.get(attr::NumVars).unwrap(), 2);
+}
+
+
+#[test]
+fn removing_variable_eager_update() {
+  use super::*;
+  let mut env = Env::new("").unwrap();
+  env.set(param::OutputFlag, 0).unwrap();
+  assert_eq!(env.get(param::UpdateMode).unwrap(), 1);
+
+  let mut model = Model::new("hoge", &env).unwrap();
+  let x = model.add_var("x", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+  let y = model.add_var("y", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+
+  assert_eq!(x.index(), 0);
+  assert_eq!(y.index(), 1);
+
+  model.update().unwrap();
+  assert_eq!(x.index(), 0);
+  assert_eq!(y.index(), 1);
+
+  let z = model.add_var("z", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+  assert_eq!(x.index(), 0);
+  assert_eq!(y.index(), 1);
+  assert_eq!(z.index(), 2);
 
   model.update().unwrap();
   assert_eq!(x.index(), 0);

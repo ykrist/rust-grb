@@ -137,6 +137,7 @@ impl FromRaw<String> for ffi::c_str {
 #[test]
 fn conversion_must_success() {
   let s1 = "mip1.log";
-  let s2 = unsafe { from_c_str(CString::new(s1).unwrap().as_ptr()) };
+  let cs = CString::new(s1).unwrap();
+  let s2 = unsafe { from_c_str(cs.as_ptr()) };
   assert!(s1 == s2);
 }

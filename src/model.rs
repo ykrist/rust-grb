@@ -35,7 +35,9 @@ use util;
 pub enum VarType {
   Binary,
   Continuous,
-  Integer
+  Integer,
+  SemiCont,
+  SemiInt,
 }
 
 impl Into<ffi::c_char> for VarType {
@@ -44,6 +46,8 @@ impl Into<ffi::c_char> for VarType {
       VarType::Binary => 'B' as ffi::c_char,
       VarType::Continuous => 'C' as ffi::c_char,
       VarType::Integer => 'I' as ffi::c_char,
+      VarType::SemiCont => 'S' as ffi::c_char,
+      VarType::SemiInt => 'N' as ffi::c_char,
     }
   }
 }
@@ -262,15 +266,14 @@ extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_vo
     Ok(context) => {
       match catch_unwind(AssertUnwindSafe(|| if callback(context).is_ok() { 0 } else { -1 })) {
         Ok(ret) => ret,
-        Err(e) => -3000,
+        Err(_e) => -3000,
       }
     }
   }
 }
 
-#[allow(unused_variables)]
-extern "C" fn null_callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_void, loc: ffi::c_int,
-                                    usrdata: *mut ffi::c_void)
+extern "C" fn null_callback_wrapper(_model: *mut ffi::GRBmodel, _cbdata: *mut ffi::c_void, _loc: ffi::c_int,
+                                    _usrdata: *mut ffi::c_void)
                                     -> ffi::c_int {
   0
 }
@@ -605,7 +608,7 @@ impl Model {
                  colvals: &[f64])
                  -> Result<Var> {
     if colconstrs.len() != colvals.len() {
-      return Err(Error::InconsitentDims);
+      return Err(Error::InconsistentDims);
     }
 
     let colconstrs = {
@@ -613,7 +616,7 @@ impl Model {
       for elem in colconstrs.iter() {
         let idx = elem.index();
         if idx < 0 {
-          return Err(Error::InconsitentDims);
+          return Err(Error::InconsistentDims);
         }
         buf.push(idx);
       }
@@ -649,7 +652,7 @@ impl Model {
                   -> Result<Vec<Var>> {
     if names.len() != vtypes.len() || vtypes.len() != objs.len() || objs.len() != lbs.len() ||
        lbs.len() != ubs.len() || ubs.len() != colconstrs.len() || colconstrs.len() != colvals.len() {
-      return Err(Error::InconsitentDims);
+      return Err(Error::InconsistentDims);
     }
 
     let names = {
@@ -679,7 +682,7 @@ impl Model {
       let mut beg = 0i32;
       for (constrs, &vals) in Zip::new((colconstrs, colvals)) {
         if constrs.len() != vals.len() {
-          return Err(Error::InconsitentDims);
+          return Err(Error::InconsistentDims);
         }
 
         buf_beg.push(beg);
@@ -688,7 +691,7 @@ impl Model {
         for c in constrs.iter() {
           let idx = c.index();
           if idx < 0 {
-            return Err(Error::InconsitentDims);
+            return Err(Error::InconsistentDims);
           }
           buf_ind.push(idx);
         }
@@ -929,7 +932,7 @@ impl Model {
   /// add Special Order Set (SOS) constraint to the model.
   pub fn add_sos(&mut self, vars: &[Var], weights: &[f64], sostype: SOSType) -> Result<SOS> {
     if vars.len() != weights.len() {
-      return Err(Error::InconsitentDims);
+      return Err(Error::InconsistentDims);
     }
 
     let vars = vars.iter().map(|v| v.index()).collect_vec();
@@ -991,7 +994,7 @@ impl Model {
 
   fn get_element<A: AttrArray>(&self, attr: A, element: i32) -> Result<A::Out> {
     if element < 0 {
-      return Err(Error::InconsitentDims);
+      return Err(Error::InconsistentDims);
     }
 
     let mut value: A::Buf = util::Init::init();
@@ -1006,7 +1009,7 @@ impl Model {
 
   fn set_element<A: AttrArray>(&mut self, attr: A, element: i32, value: A::Out) -> Result<()> {
     if element < 0 {
-      return Err(Error::InconsitentDims);
+      return Err(Error::InconsistentDims);
     }
 
     self.check_apicall(unsafe {
@@ -1033,7 +1036,7 @@ impl Model {
       let mut buf = Vec::with_capacity(ind.len());
       for &i in ind {
         if i < 0 {
-          return Err(Error::InconsitentDims);
+          return Err(Error::InconsistentDims);
         }
         buf.push(i);
       }
@@ -1064,14 +1067,14 @@ impl Model {
 
   fn set_list<A: AttrArray>(&mut self, attr: A, ind: &[i32], values: &[A::Out]) -> Result<()> {
     if ind.len() != values.len() {
-      return Err(Error::InconsitentDims);
+      return Err(Error::InconsistentDims);
     }
 
     let ind = {
       let mut buf = Vec::with_capacity(ind.len());
       for &i in ind {
         if i < 0 {
-          return Err(Error::InconsitentDims);
+          return Err(Error::InconsistentDims);
         }
         buf.push(i);
       }
@@ -1120,11 +1123,11 @@ impl Model {
                     constrs: &[Constr], rhspen: &[f64])
                     -> Result<(f64, Iter<Var>, Iter<Constr>, Iter<QConstr>)> {
     if vars.len() != lbpen.len() || vars.len() != ubpen.len() {
-      return Err(Error::InconsitentDims);
+      return Err(Error::InconsistentDims);
     }
 
     if constrs.len() != rhspen.len() {
-      return Err(Error::InconsitentDims);
+      return Err(Error::InconsistentDims);
     }
 
     let mut pen_lb = vec![super::INFINITY; self.vars.len()];
@@ -1132,7 +1135,7 @@ impl Model {
     for (v, &lb, &ub) in Zip::new((vars, lbpen, ubpen)) {
       let idx = v.index();
       if idx >= self.vars.len() as i32 {
-        return Err(Error::InconsitentDims);
+        return Err(Error::InconsistentDims);
       }
       pen_lb[idx as usize] = lb;
       pen_ub[idx as usize] = ub;
@@ -1142,7 +1145,7 @@ impl Model {
     for (c, &rhs) in Zip::new((constrs, rhspen)) {
       let idx = c.index();
       if idx >= self.constrs.len() as i32 {
-        return Err(Error::InconsitentDims);
+        return Err(Error::InconsistentDims);
       }
 
       pen_rhs[idx as usize] = rhs;
@@ -1202,7 +1205,7 @@ impl Model {
   /// * `y` : $n$-points of objective values at each point $x_i$
   pub fn set_pwl_obj(&mut self, var: &Var, x: &[f64], y: &[f64]) -> Result<()> {
     if x.len() != y.len() {
-      return Err(Error::InconsitentDims);
+      return Err(Error::InconsistentDims);
     }
     self.check_apicall(unsafe {
       ffi::GRBsetpwlobj(self.model,
@@ -1248,7 +1251,7 @@ impl Model {
   /// Change a set of constant matrix coefficients of the model.
   pub fn set_coeffs(&mut self, vars: &[&Var], constrs: &[&Constr], values: &[f64]) -> Result<()> {
     if vars.len() != values.len() || constrs.len() != values.len() {
-      return Err(Error::InconsitentDims);
+      return Err(Error::InconsistentDims);
     }
 
     let vars = vars.iter().map(|v| v.index()).collect_vec();

@@ -308,7 +308,7 @@ impl<'a> Callback<'a> {
   /// Provide a new feasible solution for a MIP model.
   pub fn set_solution(&self, vars: &[Var], solution: &[f64]) -> Result<()> {
     if vars.len() != solution.len() || vars.len() < self.model.vars.len() {
-      return Err(Error::InconsitentDims);
+      return Err(Error::InconsistentDims);
     }
 
     let mut buf = vec![0.0f64; self.model.vars.len()];

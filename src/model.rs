@@ -755,13 +755,13 @@ impl Model {
 
   pub fn get_constr_by_name(&self, name : &str) -> Result<Constr> {
 
-    let constrname = try!(CString::new(name));
+    let constrname = CString::new(name)?;
     let mut value: ffi::c_int  = util::Init::init();
 
-      try!(self.check_apicall(unsafe {
+      self.check_apicall(unsafe {
         use util::AsRawPtr;
        ffi::GRBgetconstrbyname(self.model, constrname.as_ptr(), value.as_rawptr())
-      }));
+      })?;
 
       if value == -1 || self.constrs.len() < value as usize {
         Err(Error::FromAPI("Tried to use a constraint or variable that is not in the model, either because it was removed or because it has not yet been added".to_owned(), 20001))
@@ -774,13 +774,13 @@ impl Model {
 
   pub fn get_var_by_name(&self, name : &str) -> Result<Var> {
 
-    let varname = try!(CString::new(name));
+    let varname = CString::new(name)?;
     let mut value: ffi::c_int  = util::Init::init();
 
-    try!(self.check_apicall(unsafe {
+    self.check_apicall(unsafe {
       use util::AsRawPtr;
       ffi::GRBgetvarbyname(self.model, varname.as_ptr(), value.as_rawptr())
-    }));
+    })?;
 
     if value == -1 || self.constrs.len() < value as usize {
       Err(Error::FromAPI("Tried to use a constraint or variable that is not in the model, either because it was removed or because it has not yet been added".to_owned(), 20001))

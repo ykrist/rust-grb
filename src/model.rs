@@ -28,6 +28,7 @@ use self::expr::{LinExpr, QuadExpr};
 use env::{Env, EnvAPI};
 use error::{Error, Result};
 use util;
+use itertools::size_hint::add_scalar;
 
 
 /// Type for new variable
@@ -151,7 +152,8 @@ impl Into<i32> for RelaxType {
   fn into(self) -> i32 { (unsafe { transmute::<_, i8>(self) }) as i32 }
 }
 
-
+// #[derive(Debug, Clone)]
+// enum
 /// Provides methods to query/modify attributes associated with certain element.
 #[derive(Debug, Clone)]
 pub struct Proxy(Rc<Cell<i32>>);
@@ -643,6 +645,7 @@ impl Model {
     };
 
     self.vars.push(Var::new(col_no));
+    println!("{:?}", &self.vars);
     Ok(self.vars.last().cloned().unwrap())
   }
 
@@ -1270,8 +1273,10 @@ impl Model {
   /// Retrieve an iterator of the special order set (SOS) constraints in the model.
   pub fn get_sos(&self) -> Iter<SOS> { self.sos.iter() }
 
+  // FIXME, bug - the item should update according to self.updatemode
   /// Remove a variable from the model.
   pub fn remove<P: DerefMut<Target = Proxy>>(&mut self, mut item: P) { item.remove() }
+
 
   /// Retrieve a single constant matrix coefficient of the model.
   pub fn get_coeff(&self, var: &Var, constr: &Constr) -> Result<f64> {
@@ -1394,7 +1399,16 @@ fn removing_variable_lazy_update() {
   assert_eq!(x.index(), 0);
   assert_eq!(y.index(), -2);
   assert_eq!(z.index(), 1);
-  assert_eq!(model.get(attr::NumVars).unwrap(), 2);
+
+  let w = model.add_var("w", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+  assert_eq!(x.index(), 0);
+  assert_eq!(y.index(), -2);
+  assert_eq!(z.index(), 1);
+  assert_eq!(w.index(), -1);
+
+  model.update().unwrap();
+
+  assert_eq!(model.get(attr::NumVars).unwrap(), 3);
 }
 
 
@@ -1421,19 +1435,65 @@ fn removing_variable_eager_update() {
   assert_eq!(y.index(), 1);
   assert_eq!(z.index(), 2);
 
-  model.update().unwrap();
+  model.remove(y.clone());
+  assert_eq!(x.index(), 0);
+  assert_eq!(y.index(), -3 - 1);
+  assert_eq!(z.index(), 2);
+
+  let w = model.add_var("w", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+  assert_eq!(x.index(), 0);
+  assert_eq!(y.index(), -3 - 1);
+  assert_eq!(z.index(), 2);
+  assert_eq!(w.index(), 3);
+
+  assert_eq!(model.get(attr::NumVars).unwrap(), 2);
+
+  // model.update().unwrap();
+  // assert_eq!(model.get(attr::NumVars).unwrap(), 3);
+  // assert_eq!(x.index(), 0);
+  // assert_eq!(y.index(), -4);
+  // assert_eq!(z.index(), 1);
+  // assert_eq!(w.index(), 2);
+
+  // assert_eq!(w.get(&model, attr::VarName).unwrap(), "w");
+}
+
+#[test]
+fn remove_and_add_variable_eager_update() {
+  use super::*;
+  let mut env = Env::new("").unwrap();
+  env.set(param::OutputFlag, 0).unwrap();
+  assert_eq!(env.get(param::UpdateMode).unwrap(), 1);
+
+  let mut model = Model::new("bug", &env).unwrap();
+  let x = model.add_var("x", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+  let y = model.add_var("y", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+
   assert_eq!(x.index(), 0);
   assert_eq!(y.index(), 1);
-  assert_eq!(z.index(), 2);
+
+  assert_eq!(x.index(), 0);
+  assert_eq!(y.index(), 1);
 
   model.remove(y.clone());
   assert_eq!(x.index(), 0);
-  assert_eq!(y.index(), -4);
-  assert_eq!(z.index(), 2);
+  assert_eq!(y.index(), -3 - 1); // BUG: should update to -2 immediately
 
   model.update().unwrap();
   assert_eq!(x.index(), 0);
   assert_eq!(y.index(), -2);
+
+  let z = model.add_var("z", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+  assert_eq!(x.index(), 0);
+  assert_eq!(y.index(), -2);
   assert_eq!(z.index(), 1);
+
+  assert_eq!(model.get(attr::NumVars).unwrap(), 1);
+  model.update(); // BUG: this should be unnessary - looks like add_var should Gurobi's model.update() when
   assert_eq!(model.get(attr::NumVars).unwrap(), 2);
+
+  assert_eq!(Var::new(0).get(&model, attr::VarName).unwrap(), "x");
+  assert_eq!(Var::new(1).get(&model, attr::VarName).unwrap(), "z");
+  assert_eq!(z.get(&model, attr::VarName).unwrap(), "z");
+  assert_eq!(x.get(&model, attr::VarName).unwrap(), "x");
 }

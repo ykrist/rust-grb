@@ -11,6 +11,7 @@ use itertools::*;
 use std::ops::{Add, Sub, Mul, Neg, AddAssign, Div};
 use std::iter::{Sum};
 
+
 /// Linear expression of variables
 ///
 /// A linear expression consists of a constant term plus a list of coefficients and variables.
@@ -36,12 +37,6 @@ impl From<Var> for LinExpr {
 impl From<f64> for LinExpr {
   fn from(offset: f64) -> LinExpr {
     LinExpr::new() + offset
-  }
-}
-
-impl Into<(Vec<i32>, Vec<f64>, f64)> for LinExpr {
-  fn into(self) -> (Vec<i32>, Vec<f64>, f64) {
-    (self.vars.into_iter().map(|e| e.index()).collect(), self.coeff, self.offset)
   }
 }
 
@@ -99,24 +94,10 @@ impl LinExpr {
 /// variable-variable-coefficient triples to express the quadratic term.
 #[derive(Debug, Clone, Default)]
 pub struct QuadExpr {
-  lind: Vec<Var>,
-  lval: Vec<f64>,
+  linexpr : LinExpr,
   qrow: Vec<Var>,
   qcol: Vec<Var>,
   qval: Vec<f64>,
-  offset: f64,
-}
-
-#[allow(clippy::type_complexity)]
-impl Into<(Vec<i32>, Vec<f64>, Vec<i32>, Vec<i32>, Vec<f64>, f64)> for QuadExpr {
-  fn into(self) -> (Vec<i32>, Vec<f64>, Vec<i32>, Vec<i32>, Vec<f64>, f64) {
-    (self.lind.into_iter().map(|e| e.index()).collect(),
-     self.lval,
-     self.qrow.into_iter().map(|e| e.index()).collect(),
-     self.qcol.into_iter().map(|e| e.index()).collect(),
-     self.qval,
-     self.offset)
-  }
 }
 
 impl QuadExpr {
@@ -124,10 +105,14 @@ impl QuadExpr {
     QuadExpr::default()
   }
 
+  #[allow(clippy::type_complexity)]
+  pub fn into_parts(self) -> (Vec<Var>, Vec<Var>, Vec<f64>, Vec<Var>, Vec<f64>, f64) {
+    let (lvars, lcoeff, offset) = self.linexpr.into_parts();
+    (self.qrow, self.qcol, self.qval, lvars, lcoeff, offset)
+  }
   /// Add a linear term into the expression.
   pub fn add_term(mut self, coeff: f64, var: Var) -> Self {
-    self.lind.push(var);
-    self.lval.push(coeff);
+    self.linexpr = self.linexpr.add_term(coeff, var);
     self
   }
 
@@ -140,20 +125,20 @@ impl QuadExpr {
   }
 
   /// Add a constant into the expression.
+  /// FIXME this should take &mut self and possibly return &mut self
   pub fn add_constant(mut self, constant: f64) -> Self {
-    self.offset += constant;
+    self.linexpr = self.linexpr.add_constant(constant);
     self
   }
 
   /// Get actual value of the expression.
   pub fn get_value(&self, model: &Model) -> Result<f64> {
-    let lind = model.get_values(attr::X, self.lind.as_slice())?;
-    let qrow = model.get_values(attr::X, self.qrow.as_slice())?;
-    let qcol = model.get_values(attr::X, self.qcol.as_slice())?;
+    let qrow = model.get_values(attr::X, &self.qrow)?;
+    let qcol = model.get_values(attr::X, &self.qcol)?;
 
-    Ok(Zip::new((lind, self.lval.iter())).fold(0.0, |acc, (ind, val)| acc + ind * val) +
-      Zip::new((qrow, qcol, self.qval.iter())).fold(0.0, |acc, (row, col, val)| acc + row * col * val) +
-      self.offset)
+    let val = self.linexpr.get_value(model)? +
+      Zip::new((qrow.iter(), qcol.iter(), self.qval.iter())).fold(0.0, |acc, (&x, &y, &a)| acc + a * x * y);
+    Ok(val)
   }
 }
 
@@ -170,9 +155,7 @@ impl<'a> Into<QuadExpr> for &'a Var {
 impl Into<QuadExpr> for LinExpr {
   fn into(self) -> QuadExpr {
     QuadExpr {
-      lind: self.vars,
-      lval: self.coeff,
-      offset: self.offset,
+      linexpr: self,
       qrow: Vec::new(),
       qcol: Vec::new(),
       qval: Vec::new(),
@@ -441,13 +424,8 @@ impl Mul<LinExpr> for f64 {
 impl Mul<f64> for QuadExpr {
   type Output = QuadExpr;
   fn mul(mut self, rhs: f64) -> Self::Output {
-    for i in 0..(self.lval.len()) {
-      self.lval[i] *= rhs;
-    }
-    for j in 0..(self.qval.len()) {
-      self.qval[j] *= rhs;
-    }
-    self.offset *= rhs;
+    self.linexpr = self.linexpr * rhs;
+    self.qval.iter_mut().for_each(|c| *c *= rhs);
     self
   }
 }
@@ -461,46 +439,42 @@ impl Sum for LinExpr {
 
 impl Add<LinExpr> for QuadExpr {
   type Output = QuadExpr;
+  #[allow(clippy::assign_op_pattern)]
   fn add(mut self, rhs: LinExpr) -> Self::Output {
-    self.lind.extend(rhs.vars);
-    self.lval.extend(rhs.coeff);
-    self.offset += rhs.offset;
+    self.linexpr = self.linexpr + rhs;
     self
   }
 }
 
 impl Sub<LinExpr> for QuadExpr {
   type Output = QuadExpr;
+  #[allow(clippy::assign_op_pattern)]
   fn sub(mut self, rhs: LinExpr) -> Self::Output {
-    self.lind.extend(rhs.vars);
-    self.lval.extend(rhs.coeff.into_iter().map(|c| -c));
-    self.offset -= rhs.offset;
+    self.linexpr = self.linexpr - rhs;
     self
   }
 }
 
 impl Add for QuadExpr {
   type Output = QuadExpr;
+  #[allow(clippy::assign_op_pattern)]
   fn add(mut self, rhs: QuadExpr) -> QuadExpr {
-    self.lind.extend(rhs.lind);
-    self.lval.extend(rhs.lval);
+    self.linexpr = self.linexpr + rhs.linexpr;
     self.qrow.extend(rhs.qrow);
     self.qcol.extend(rhs.qcol);
     self.qval.extend(rhs.qval);
-    self.offset += rhs.offset;
     self
   }
 }
 
 impl Sub for QuadExpr {
   type Output = QuadExpr;
+  #[allow(clippy::assign_op_pattern)]
   fn sub(mut self, rhs: QuadExpr) -> QuadExpr {
-    self.lind.extend(rhs.lind);
-    self.lval.extend(rhs.lval.into_iter().map(|c| -c));
+    self.linexpr = self.linexpr - rhs.linexpr;
     self.qrow.extend(rhs.qrow);
     self.qcol.extend(rhs.qcol);
     self.qval.extend(rhs.qval.into_iter().map(|c| -c));
-    self.offset -= rhs.offset;
     self
   }
 }

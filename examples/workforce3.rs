@@ -34,7 +34,7 @@ fn main() {
                       &constrs[..],
                       RepeatN::new(1.0, constrs.len()).collect_vec().as_slice())
           .unwrap();
-        svars.cloned().collect_vec()
+        svars
       };
       model.optimize().unwrap();
 

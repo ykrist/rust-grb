@@ -4,10 +4,10 @@
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
 use ffi;
-use std;
+// use std;
 
 /// The error type for operations in Gurobi Rust API
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Error {
   /// An exception returned from Gurobi C API
   FromAPI(String, ffi::c_int),
@@ -17,7 +17,12 @@ pub enum Error {
 
   /// Inconsistent argument dimensions
   InconsistentDims,
+
+  /// Query/modifying a removed variable or constraint
+  ModelObjectRemoved,
+  ModelObjectPending
 }
+
 
 impl From<std::ffi::NulError> for Error {
   fn from(err: std::ffi::NulError) -> Error { Error::NulError(err) }
@@ -28,22 +33,14 @@ impl std::fmt::Display for Error {
     match *self {
       Error::FromAPI(ref message, code) => write!(f, "Error from API: {} ({})", message, code),
       Error::InconsistentDims => write!(f, "Inconsistent argument dimensions"),
-      Error::NulError(ref err) => write!(f, "NulError: {}", err),
+      Error::NulError(ref err) =>  f.write_fmt(format_args!("NulError: {}", err)),
+      Error::ModelObjectRemoved => f.write_str("Variable or constraint has been removed from the model"),
+      Error::ModelObjectPending => f.write_str("Variable or constraint is awaiting model update"),
     }
   }
 }
 
-// TODO fix deprecation
-impl std::error::Error for Error {
-  fn description(&self) -> &str {
-    match *self {
-      Error::FromAPI(..) => "error from C API",
-      #[allow(deprecated)]
-      Error::NulError(ref err) => err.description(),
-      Error::InconsistentDims => "Inconsistent argument dimensions",
-    }
-  }
-}
+impl std::error::Error for Error {}
 
 
 /// A specialized

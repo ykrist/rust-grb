@@ -81,6 +81,7 @@
 
 extern crate gurobi_sys as ffi;
 extern crate itertools;
+extern crate core;
 
 mod env;
 mod error;
@@ -98,7 +99,7 @@ pub use error::{Error, Result};
 
 pub use env::Env;
 
-pub use model::{Model, Var, Constr, QConstr, SOS, Proxy};
+pub use model::{Model, Var, Constr, QConstr, SOS};
 pub use model::{VarType, ConstrSense, ModelSense, SOSType, Status, RelaxType};
 pub use model::callback::{Callback, Where};
 pub use model::VarType::*;

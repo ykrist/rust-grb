@@ -16,10 +16,11 @@ use std::cell::Cell;
 use std::ffi::CString;
 use std::iter;
 use std::mem::transmute;
-use std::ops::{Deref, DerefMut};
+use std::ops::{Deref};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr::{null, null_mut};
 use std::rc::Rc;
+use std::hash::{Hash, Hasher};
 use std::slice::Iter;
 
 use attr;
@@ -148,7 +149,7 @@ impl Into<i32> for RelaxType {
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub(crate) enum ProxyState {
+pub(crate) enum IndexState {
   Added(u32),
   PendingRemove(u32),
   PendingAdd,
@@ -159,7 +160,11 @@ pub(crate) enum ProxyState {
 /// Provides methods to query/modify attributes associated with certain element.
 /// Is only public because of Deref impls
 #[derive(Debug, Clone)]
-pub struct Proxy(Rc<Cell<ProxyState>>);
+pub struct Proxy {
+  index_state: Rc<Cell<IndexState>>,
+  id: u32,
+  model_id: u32,
+}
 
 // MEMO:
 // 0,1,2,...,INTMAX   : active
@@ -169,43 +174,43 @@ pub struct Proxy(Rc<Cell<ProxyState>>);
 //  * -3 - index  => indices
 
 impl Proxy {
-  fn new(inner: ProxyState) -> Proxy { Proxy(Rc::new(Cell::new(inner))) }
+  fn new(idx: IndexState, id: u32, model_id: u32) -> Proxy {
+    Proxy {
+      index_state: Rc::new(Cell::new(idx)),
+      id,
+      model_id,
+    }
+  }
 
   pub fn index(&self) -> Result<u32> {
-    match self.0.get() {
-      ProxyState::Added(idx) => Ok(idx),
-      ProxyState::Removed | ProxyState::PendingRemove(_) => Err(Error::ModelObjectRemoved),
-      ProxyState::PendingAdd => Err(Error::ModelObjectPending),
+    match self.index_state.get() {
+      IndexState::Added(idx) => Ok(idx),
+      IndexState::Removed | IndexState::PendingRemove(_) => Err(Error::ModelObjectRemoved),
+      IndexState::PendingAdd => Err(Error::ModelObjectPending),
     }
   }
 
   /// Query the value of attribute.
   pub fn get<A: AttrArray>(&self, model: &Model, attr: A) -> Result<A::Out> {
-    model.get_element(attr, self.index()? as i32)
+    model.get_attr_element(attr, &self)
   }
 
   /// Set the value of attribute.
   pub fn set<A: AttrArray>(&self, model: &mut Model, attr: A, val: A::Out) -> Result<()> {
-    model.set_element(attr, self.index()? as i32, val)
+    model.set_attr_element(attr, &self, val)
   }
-
-  //
-  // // Remove from the model.
-  // pub fn remove(&mut self) {
-  //   let orig = self.index();
-  //   self.set_index(-3 - orig);
-  // }
 }
 
-impl PartialEq for Proxy {
-  fn eq(&self, other: &Proxy) -> bool { self.0.get() == other.0.get() }
-}
 
 
 macro_rules! impl_traits_for_proxy {
-  {$($t:ident)*} => { $(
+  ($t:ident) => {
     impl $t {
-      fn new(inner: ProxyState) -> $t { $t(Proxy::new(inner)) }
+      fn new(inner: IndexState, model: &Model) -> $t {
+        let id = <IdFactory as NextId<$t, u32>>::next_id(&model.next_id);
+        let proxy = Proxy::new(inner, id, model.id);
+        $t(proxy)
+      }
     }
 
     impl Deref for $t {
@@ -213,22 +218,29 @@ macro_rules! impl_traits_for_proxy {
       fn deref(&self) -> &Proxy { &self.0 }
     }
 
-    impl DerefMut for $t {
-      fn deref_mut(&mut self) -> &mut Proxy { &mut self.0 }
-    }
-
     impl PartialEq for $t {
-      fn eq(&self, other:&$t) -> bool { self.0.eq(&other.0) }
+      fn eq(&self, other:&$t) -> bool { self.0.id == other.0.id && self.0.model_id == other.0.model_id }
     }
-  )* }
-}
 
+    impl Eq for $t {}
+
+    impl Hash for $t {
+     fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.model_id.hash(state);
+      }
+    }
+  }
+}
 
 /// Proxy object of a variables
 #[derive(Debug, Clone)]
 pub struct Var(Proxy);
 
 impl Var {
+  // fn new(inner: IndexState, model: &Model) -> Self {
+  //   Var(Proxy::new(inner, model.next_id.next_var_id(), model_id))
+  // }
   /// Returns the variable type, lower bound and upper bound in that order.
   ///
   /// Variable type is 'C' for continuous, 'B' for binary, 'I' for integer,
@@ -241,22 +253,22 @@ impl Var {
     Ok((vtype, lb, ub))
   }
 }
+impl_traits_for_proxy!(Var);
 
 /// Proxy object of a linear constraint
 #[derive(Clone, Debug)]
 pub struct Constr(Proxy);
+impl_traits_for_proxy!(Constr);
 
 /// Proxy object of a quadratic constraint
 #[derive(Clone, Debug)]
 pub struct QConstr(Proxy);
+impl_traits_for_proxy!(QConstr);
 
 /// Proxy object of a Special Order Set (SOS) constraint
 #[derive(Clone, Debug)]
 pub struct SOS(Proxy);
-
-impl_traits_for_proxy! { Var Constr QConstr SOS }
-
-
+impl_traits_for_proxy!(SOS);
 
 struct CallbackData<'a> {
   model: &'a Model,
@@ -291,20 +303,56 @@ extern "C" fn null_callback_wrapper(_model: *mut ffi::GRBmodel, _cbdata: *mut ff
   0
 }
 
-#[inline]
-fn get_indices(items: &[impl Deref<Target=Proxy>]) -> Result<Vec<i32>> {
-  items.iter().map(|p| p.index().map(|idx| idx as i32)).collect()
+
+
+use std::sync::atomic::{Ordering, AtomicU32};
+
+struct IdFactory {
+  next_var: AtomicU32,
+  next_constr: AtomicU32,
+  next_qconstr: AtomicU32,
+  next_sos: AtomicU32,
 }
 
-#[inline]
-fn get_indices_ref<T: Deref<Target=Proxy>>(items: &[&T]) -> Result<Vec<i32>> {
-  items.iter().map(|p| p.index().map(|idx| idx as i32)).collect()
+
+trait NextId<T, I> {
+  fn next_id(&self) -> I;
 }
+
+impl IdFactory {
+  pub fn new() -> Self {
+    IdFactory {
+      next_var: AtomicU32::new(0),
+      next_constr: AtomicU32::new(0),
+      next_qconstr: AtomicU32::new(0),
+      next_sos: AtomicU32::new(0),
+    }
+  }
+
+}
+
+macro_rules! impl_next_id {
+    ($t:ty, $attr:ident) => {
+      impl NextId<$t, u32> for IdFactory {
+        fn next_id(&self) -> u32 {
+          self.$attr.fetch_add(1, Ordering::Relaxed)
+        }
+      }
+    }
+}
+
+impl_next_id!(Var, next_var);
+impl_next_id!(Constr, next_constr);
+impl_next_id!(QConstr, next_qconstr);
+impl_next_id!(SOS, next_sos);
+
 
 
 /// Gurobi model object associated with certain environment.
 pub struct Model {
   model: *mut ffi::GRBmodel,
+  id: u32,
+  next_id: IdFactory,
   env: Env,
   vars: Vec<Var>,
   constrs: Vec<Constr>,
@@ -312,43 +360,14 @@ pub struct Model {
   sos: Vec<SOS>,
 }
 
-pub trait FromRaw {
-  /// create an empty model which associated with certain environment.
-  fn from_raw(model: *mut ffi::GRBmodel) -> Result<Model>;
-}
-
-impl FromRaw for Model {
-  /// create an empty model which associated with certain environment.
-  fn from_raw(model: *mut ffi::GRBmodel) -> Result<Model> {
-    use env::FromRaw;
-    let env = unsafe { ffi::GRBgetenv(model) };
-    if env.is_null() {
-      return Err(Error::FromAPI("Failed to retrieve GRBenv from given model".to_owned(),
-                                2002));
-    }
-    let env = Env::from_raw(env);
-
-    let mut model = Model {
-      model,
-      env,
-      vars: Vec::new(),
-      constrs: Vec::new(),
-      qconstrs: Vec::new(),
-      sos: Vec::new(),
-    };
-    model.populate()?;
-    Ok(model)
-  }
-}
-
 
 macro_rules! model_create_proxy_impl {
     ($p_ty:ty, $attr:ident, $method_name:ident, $batch_method_name:ident) => {
       fn $method_name(&mut self) -> Result<$p_ty> {
         if self.update_mode_lazy()? {
-          Ok(<$p_ty>::new(ProxyState::PendingAdd))
+          Ok(<$p_ty>::new(IndexState::PendingAdd, &self))
         } else {
-          let obj = <$p_ty>::new(ProxyState::Added(self.$attr.len() as u32));
+          let obj = <$p_ty>::new(IndexState::Added(self.$attr.len() as u32), &self);
           self.update()?;
           Ok(obj)
         }
@@ -356,13 +375,13 @@ macro_rules! model_create_proxy_impl {
 
       fn $batch_method_name(&mut self, num: u32) -> Result<Vec<$p_ty>> {
         if self.update_mode_lazy()? {
-          Ok(vec![<$p_ty>::new(ProxyState::PendingAdd); num as usize])
+          Ok(vec![<$p_ty>::new(IndexState::PendingAdd, &self); num as usize])
         } else {
           if num == 0 {
             Ok(Vec::new())
           } else {
             let start_idx = self.$attr.len() as u32;
-            let objs = (start_idx..start_idx+num).map(|idx| <$p_ty>::new(ProxyState::Added(idx))).collect();
+            let objs = (start_idx..start_idx+num).map(|idx| <$p_ty>::new(IndexState::Added(idx), &self)).collect();
             self.update()?;
             Ok(objs)
           }
@@ -431,6 +450,14 @@ impl Model {
   /// assert_eq!(model.get_env().get(param::OutputFlag).unwrap(), 1);
   /// assert_eq!(env.get(param::OutputFlag).unwrap(), 0); // original env is copied
   /// ```
+
+  fn next_id() -> u32 {
+    static NEXT_ID: AtomicU32 = AtomicU32::new(0);
+    let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
+    eprintln!("New Model id created: {}", id);
+    id
+  }
+
   pub fn new(modelname: &str, env: &Env) -> Result<Model> {
     let modelname = CString::new(modelname)?;
     let mut model = null_mut();
@@ -446,6 +473,30 @@ impl Model {
                        null())
     })?;
     Self::from_raw(model)
+  }
+
+  /// create an empty model which associated with certain environment.
+  fn from_raw(model: *mut ffi::GRBmodel) -> Result<Model> {
+    use env::FromRaw;
+    let env = unsafe { ffi::GRBgetenv(model) };
+    if env.is_null() {
+      return Err(Error::FromAPI("Failed to retrieve GRBenv from given model".to_owned(),
+                                2002));
+    }
+    let env = Env::from_raw(env);
+
+    let mut model = Model {
+      model,
+      id: Model::next_id(),
+      next_id: IdFactory::new(),
+      env,
+      vars: Vec::new(),
+      constrs: Vec::new(),
+      qconstrs: Vec::new(),
+      sos: Vec::new(),
+    };
+    model.populate()?;
+    Ok(model)
   }
 
   /// Read a model from a file
@@ -466,6 +517,23 @@ impl Model {
     Model::from_raw(copied)
   }
 
+  fn get_index(&self, item: & impl Deref<Target=Proxy>) -> Result<i32> {
+    if item.model_id != self.id {
+      Err(Error::ModelObjectMismatch)
+    } else {
+      item.index().map(|idx| idx as i32)
+    }
+  }
+
+  #[inline]
+  fn get_indices(&self, items: &[impl Deref<Target=Proxy>]) -> Result<Vec<i32>> {
+    items.iter().map(|item| self.get_index(item)).collect()
+  }
+
+  #[inline]
+  fn get_indices_ref<T: Deref<Target=Proxy>>(&self, items: &[&T]) -> Result<Vec<i32>> {
+    items.iter().map(|&item| self.get_index(item)).collect()
+  }
 
   model_create_proxy_impl!(Var, vars, create_var_proxy, create_var_proxies);
   model_create_proxy_impl!(Constr, constrs, create_constr_proxy, create_constr_proxies);
@@ -519,20 +587,20 @@ impl Model {
   pub fn get_env_mut(&mut self) -> &mut Env { &mut self.env }
 
 
-  fn update_items<P: DerefMut<Target=Proxy> + Clone>(&self, list: &[P]) -> Result<Vec<P>> {
+  fn update_items<P: Deref<Target=Proxy> + Clone>(&self, list: &[P]) -> Result<Vec<P>> {
     let mut keep = Vec::with_capacity(list.len());
     let mut remove_inds = Vec::new();
 
     for item in list.iter() {
-      match item.deref().0.get() {
-        ProxyState::Added(_) | ProxyState::PendingAdd => {
-          item.0.set(ProxyState::Added(keep.len() as u32));
+      match item.deref().index_state.get() {
+        IndexState::Added(_) | IndexState::PendingAdd => {
+          item.index_state.set(IndexState::Added(keep.len() as u32));
           keep.push(item.clone())
         }
-        ProxyState::PendingRemove(idx) => {
+        IndexState::PendingRemove(idx) => {
           remove_inds.push(idx as i32)
         }
-        ProxyState::Removed => unreachable!()
+        IndexState::Removed => unreachable!()
       }
     }
 
@@ -781,7 +849,7 @@ impl Model {
   pub fn add_constr(&mut self, name: &str, expr: LinExpr, sense: ConstrSense, rhs: f64) -> Result<Constr> {
     let constrname = CString::new(name)?;
     let (vars, coeff, offset) = expr.into_parts();
-    let vinds = get_indices(&vars)?;
+    let vinds = self.get_indices(&vars)?;
     self.check_apicall(unsafe {
       ffi::GRBaddconstr(self.model,
                         coeff.len() as ffi::c_int,
@@ -798,9 +866,8 @@ impl Model {
   }
 
 
-
   /// add linear constraints to the model.
-  pub fn add_constrs(&mut self, names: Vec<&str>, lhs: Vec<LinExpr>, sense: Vec<ConstrSense>, mut rhs: Vec<f64>)  -> Result<Vec<Constr>> {
+  pub fn add_constrs(&mut self, names: Vec<&str>, lhs: Vec<LinExpr>, sense: Vec<ConstrSense>, mut rhs: Vec<f64>) -> Result<Vec<Constr>> {
     if !(names.len() == lhs.len() && lhs.len() == sense.len() && sense.len() == rhs.len()) {
       return Err(Error::InconsistentDims);
     }
@@ -837,7 +904,7 @@ impl Model {
   pub fn add_range(&mut self, name: &str, expr: LinExpr, lb: f64, ub: f64) -> Result<(Var, Constr)> {
     let constrname = CString::new(name)?;
     let (vars, coeff, offset) = expr.into_parts();
-    let inds = get_indices(&vars)?;
+    let inds = self.get_indices(&vars)?;
     self.check_apicall(unsafe {
       ffi::GRBaddrangeconstr(self.model,
                              coeff.len() as ffi::c_int,
@@ -859,7 +926,6 @@ impl Model {
   /// Add range constraints to the model.
   pub fn add_ranges(&mut self, names: Vec<&str>, expr: Vec<LinExpr>, mut lb: Vec<f64>, mut ub: Vec<f64>)
                     -> Result<(Vec<Var>, Vec<Constr>)> {
-
     let constrnames = convert_to_cstring_ptrs(&names)?;
     ub.iter_mut().zip(expr.iter()).for_each(|(x, e)| *x -= e.get_offset());
     lb.iter_mut().zip(expr.iter()).for_each(|(x, e)| *x -= e.get_offset());
@@ -882,7 +948,7 @@ impl Model {
     let cons = self.create_constr_proxies(ncons)?;
     self.vars.extend_from_slice(&vars);
     self.constrs.extend_from_slice(&cons);
-    Ok((vars,cons))
+    Ok((vars, cons))
   }
 
   /// add a quadratic constraint to the model.
@@ -892,11 +958,11 @@ impl Model {
     self.check_apicall(unsafe {
       ffi::GRBaddqconstr(self.model,
                          lval.len() as ffi::c_int,
-                         get_indices(&lvar)?.as_ptr(),
+                         self.get_indices(&lvar)?.as_ptr(),
                          lval.as_ptr(),
                          qval.len() as ffi::c_int,
-                         get_indices(&qrow)?.as_ptr(),
-                         get_indices(&qcol)?.as_ptr(),
+                         self.get_indices(&qrow)?.as_ptr(),
+                         self.get_indices(&qcol)?.as_ptr(),
                          qval.as_ptr(),
                          sense.into(),
                          rhs - offset,
@@ -941,11 +1007,10 @@ impl Model {
     // }
     let (qrow, qcol, qval, lvar, lval, _) = expr.into().into_parts();
     self.del_qpterms()?;
-    self.add_qpterms(&get_indices(&qrow)?, &get_indices(&qcol)?, &qval)?;
-    self.set_list(attr::Obj, &get_indices(&lvar)?, lval.as_slice())?;
+    self.add_qpterms(&self.get_indices(&qrow)?, &self.get_indices(&qcol)?, &qval)?;
+    self.set_list(attr::Obj, &self.get_indices(&lvar)?, lval.as_slice())?;
     self.set(attr::ModelSense, sense.into())
   }
-
 
 
   pub fn get_constr_by_name(&self, name: &str) -> Result<Constr> {
@@ -1002,30 +1067,24 @@ impl Model {
   }
 
 
-  fn get_element<A: AttrArray>(&self, attr: A, element: i32) -> Result<A::Out> {
-    if element < 0 {
-      return Err(Error::InconsistentDims);
-    }
-
+  fn get_attr_element<A: AttrArray>(&self, attr: A, element: &Proxy) -> Result<A::Out> {
+    let index = self.get_index(&element)?;
     let mut value: A::Buf = util::Init::init();
 
     self.check_apicall(unsafe {
       use util::AsRawPtr;
-      A::get_attrelement(self.model, attr.into().as_ptr(), element, value.as_rawptr())
+      A::get_attrelement(self.model, attr.into().as_ptr(), index, value.as_rawptr())
     })?;
 
     Ok(util::Into::into(value))
   }
 
-  fn set_element<A: AttrArray>(&mut self, attr: A, element: i32, value: A::Out) -> Result<()> {
-    if element < 0 {
-      return Err(Error::InconsistentDims);
-    }
-
+  fn set_attr_element<A: AttrArray>(&mut self, attr: A, element: &Proxy, value: A::Out) -> Result<()> {
+    let index = self.get_index(&element)?;
     self.check_apicall(unsafe {
       A::set_attrelement(self.model,
                          attr.into().as_ptr(),
-                         element,
+                         index,
                          util::From::from(value))
     })?;
     self.update()
@@ -1035,7 +1094,7 @@ impl Model {
   pub fn get_values<A: AttrArray, P>(&self, attr: A, item: &[P]) -> Result<Vec<A::Out>>
     where P: Deref<Target=Proxy>
   {
-    self.get_list(attr, &get_indices(item)?)
+    self.get_list(attr, &self.get_indices(item)?)
   }
 
   fn get_list<A: AttrArray>(&self, attr: A, ind: &[i32]) -> Result<Vec<A::Out>> {
@@ -1068,7 +1127,7 @@ impl Model {
   pub fn set_values<A: AttrArray, P>(&mut self, attr: A, item: &[P], val: &[A::Out]) -> Result<()>
     where P: Deref<Target=Proxy>
   {
-    self.set_list(attr, &get_indices(item)?, val)?;
+    self.set_list(attr, &self.get_indices(item)?, val)?;
     self.update() // TODO: why is this here?
   }
 
@@ -1275,11 +1334,11 @@ impl Model {
 
   // FIXME, bug - the item should update according to self.updatemode
   /// Remove a variable from the model.
-  pub fn remove<P: DerefMut<Target=Proxy>>(&mut self, item: P) -> Result<()> {
+  pub fn remove<P: Deref<Target=Proxy>>(&mut self, item: P) -> Result<()> {
     let item: &Proxy = item.deref();
-    item.0.set(match item.0.get() {
-      ProxyState::PendingRemove(_) | ProxyState::Removed | ProxyState::PendingAdd => todo!(),
-      ProxyState::Added(idx) => ProxyState::PendingRemove(idx)
+    item.index_state.set(match item.index_state.get() {
+      IndexState::PendingRemove(_) | IndexState::Removed | IndexState::PendingAdd => todo!(),
+      IndexState::Added(idx) => IndexState::PendingRemove(idx)
     });
     if !self.update_mode_lazy()? {
       self.update()?;
@@ -1307,8 +1366,8 @@ impl Model {
       return Err(Error::InconsistentDims);
     }
 
-    let vars = get_indices_ref(&vars)?;
-    let constrs = get_indices_ref(&constrs)?;
+    let vars = self.get_indices_ref(&vars)?;
+    let constrs = self.get_indices_ref(&constrs)?;
 
     self.check_apicall(unsafe {
       ffi::GRBchgcoeffs(self.model,
@@ -1375,7 +1434,7 @@ impl Drop for Model {
 #[cfg(test)]
 mod tests {
   use super::super::*;
-  use model::ProxyState;
+  use super::IndexState;
 
   #[test]
   fn modelsense_conversion() {
@@ -1383,6 +1442,25 @@ mod tests {
     assert_eq!(Into::<i32>::into(ModelSense::Minimize), 1i32);
     assert_eq!(Into::<i32>::into(ModelSense::Maximize), -1i32);
   }
+
+  #[test]
+  fn model_id_factory() {
+    let mut env = Env::new("").unwrap();
+    env.set(param::OutputFlag, 0).unwrap();
+
+    let mut m1 = Model::new("test1", &env).unwrap();
+    let mut m2 = Model::new("test2", &env).unwrap();
+
+    let x1 = m1.add_var("x1", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+    let x2 = m2.add_var("x2", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+    assert_ne!(m1.id, m2.id);
+
+    assert_eq!(x1.model_id, m1.id);
+    assert_eq!(x1.id, 0);
+    assert_eq!(x2.model_id, m2.id);
+    assert_eq!(x2.id, 0);
+  }
+
 
   #[test]
   fn remove_and_add_variable_eager_update() {
@@ -1396,31 +1474,22 @@ mod tests {
     assert_eq!(model.get(attr::NumVars).unwrap(), 2);
     assert_eq!(x.index().unwrap(), 0);
     assert_eq!(y.index().unwrap(), 1);
-    assert_eq!(Var::new(ProxyState::Added(0)).get(&model, attr::VarName).unwrap(), "x");
-    assert_eq!(Var::new(ProxyState::Added(1)).get(&model, attr::VarName).unwrap(), "y");
 
     model.update().unwrap(); // should be no effect
     assert_eq!(x.index().unwrap(), 0);
     assert_eq!(y.index().unwrap(), 1);
-    assert_eq!(Var::new(ProxyState::Added(0)).get(&model, attr::VarName).unwrap(), "x");
-    assert_eq!(Var::new(ProxyState::Added(1)).get(&model, attr::VarName).unwrap(), "y");
 
     let z = model.add_var("z", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
     assert_eq!(model.get(attr::NumVars).unwrap(), 3);
     assert_eq!(x.index().unwrap(), 0);
     assert_eq!(y.index().unwrap(), 1);
     assert_eq!(z.index().unwrap(), 2);
-    assert_eq!(Var::new(ProxyState::Added(0)).get(&model, attr::VarName).unwrap(), "x");
-    assert_eq!(Var::new(ProxyState::Added(1)).get(&model, attr::VarName).unwrap(), "y");
-    assert_eq!(Var::new(ProxyState::Added(2)).get(&model, attr::VarName).unwrap(), "z");
 
     model.remove(y.clone()).unwrap();
     assert_eq!(model.get(attr::NumVars).unwrap(), 2);
     assert_eq!(x.index().unwrap(), 0);
     assert_eq!(y.index(), Err(Error::ModelObjectRemoved)); // No longer available
     assert_eq!(z.index().unwrap(), 1);
-    assert_eq!(Var::new(ProxyState::Added(0)).get(&model, attr::VarName).unwrap(), "x");
-    assert_eq!(Var::new(ProxyState::Added(1)).get(&model, attr::VarName).unwrap(), "z");
 
     let w = model.add_var("w", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
     assert_eq!(model.get(attr::NumVars).unwrap(), 3);
@@ -1428,10 +1497,6 @@ mod tests {
     assert_eq!(y.index(), Err(Error::ModelObjectRemoved)); // No longer available
     assert_eq!(z.index().unwrap(), 1);
     assert_eq!(w.index().unwrap(), 2);
-    assert_eq!(Var::new(ProxyState::Added(0)).get(&model, attr::VarName).unwrap(), "x");
-    assert_eq!(Var::new(ProxyState::Added(1)).get(&model, attr::VarName).unwrap(), "z");
-    assert_eq!(Var::new(ProxyState::Added(2)).get(&model, attr::VarName).unwrap(), "w");
-
   }
 
   #[test]
@@ -1451,8 +1516,6 @@ mod tests {
     assert_eq!(model.get(attr::NumVars).unwrap(), 2);
     assert_eq!(x.index().unwrap(), 0);
     assert_eq!(y.index().unwrap(), 1);
-    assert_eq!(Var::new(ProxyState::Added(0)).get(&model, attr::VarName).unwrap(), "x");
-    assert_eq!(Var::new(ProxyState::Added(1)).get(&model, attr::VarName).unwrap(), "y");
 
     model.remove(y.clone()).unwrap();
     let z = model.add_var("z", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
@@ -1462,8 +1525,6 @@ mod tests {
     assert_eq!(y.index().unwrap_err(), Error::ModelObjectRemoved); // this is updated instantly, but gurobi is only informed later
     assert_eq!(z.index().unwrap_err(), Error::ModelObjectPending);
     assert_eq!(w.index().unwrap_err(), Error::ModelObjectPending);
-    assert_eq!(Var::new(ProxyState::Added(0)).get(&model, attr::VarName).unwrap(), "x");
-    assert_eq!(Var::new(ProxyState::Added(1)).get(&model, attr::VarName).unwrap(), "y"); // still valid from Gurobi's POV
 
     model.update().unwrap();
     assert_eq!(model.get(attr::NumVars).unwrap(), 3);
@@ -1471,8 +1532,35 @@ mod tests {
     assert_eq!(y.index().unwrap_err(), Error::ModelObjectRemoved);
     assert_eq!(z.index().unwrap(), 1);
     assert_eq!(w.index().unwrap(), 2);
-    assert_eq!(Var::new(ProxyState::Added(0)).get(&model, attr::VarName).unwrap(), "x");
-    assert_eq!(Var::new(ProxyState::Added(1)).get(&model, attr::VarName).unwrap(), "z");
-    assert_eq!(Var::new(ProxyState::Added(2)).get(&model, attr::VarName).unwrap(), "w");
+  }
+
+  #[test]
+  fn proxy_size() {
+    use super::Proxy;
+    assert_eq!(std::mem::size_of::<Proxy>(), 16)
+  }
+
+  #[test]
+  fn multiple_models() {
+    let mut env = Env::new("").unwrap();
+    env.set(param::OutputFlag, 0).unwrap();
+    assert_eq!(env.get(param::UpdateMode).unwrap(), 1);
+
+    let mut model1 = Model::new("model1", &env).unwrap();
+    let mut model2 = Model::new("model1", &env).unwrap();
+    let x1 = model1.add_var("x1", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+    let y1 = model1.add_var("y1", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+    let x2 = model2.add_var("x2", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+    let y2 = model2.add_var("y2", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+
+    assert_eq!(x1.get(&model1, attr::VarName).unwrap(), "x1");
+    assert_eq!(y1.get(&model1, attr::VarName).unwrap(), "y1");
+    assert_eq!(x2.get(&model2, attr::VarName).unwrap(), "x2");
+    assert_eq!(y2.get(&model2, attr::VarName).unwrap(), "y2");
+
+    assert!(x1.get(&model2, attr::VarName).is_err());
+    assert!(y1.get(&model2, attr::VarName).is_err());
+    assert!(x2.get(&model1, attr::VarName).is_err());
+    assert!(y2.get(&model1, attr::VarName).is_err());
   }
 }

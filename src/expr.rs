@@ -40,7 +40,10 @@ impl From<f64> for LinExpr {
   }
 }
 
-
+// FIXME : LinExpr and QuadExpr make no attempt to stop duplicate variables being stored,
+//  which is currently a bug, since Model doesn't check for duplicates when adding constraint/objectives
+//  Now that Var implements Hash, we can replace simply wrap a HashMap<Var, f64>.  Will likely use
+//  FnvHashMap due Var Hash impl simply hashing two u32s.
 impl LinExpr {
   /// Create an empty linear expression.
   pub fn new() -> Self {

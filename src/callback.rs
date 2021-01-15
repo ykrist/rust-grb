@@ -5,14 +5,13 @@
 
 
 use ::{ffi, INFINITY};
-use itertools::{Itertools, Zip};
 
 use std::ops::Deref;
 use std::ptr::null;
 use std::os::raw;
 
 use error::{Error, Result};
-use model::{Model, Var, ConstrSense, get_indices};
+use model::{Model, Var, ConstrSense};
 use model::expr::LinExpr;
 use util;
 
@@ -79,6 +78,8 @@ const BARRIER_PRIMINF: i32 = 7004;
 const BARRIER_DUALINF: i32 = 7005;
 const BARRIER_COMPL: i32 = 7006;
 
+// for setting a partial solution in a cllback
+const GRB_UNDEFINED : f64 = 1e101;
 
 /// Location where the callback called
 ///
@@ -304,23 +305,25 @@ impl<'a> Callback<'a> {
 
   /// Retrieve values from the current solution vector.
   pub fn get_solution(&self, vars: &[Var]) -> Result<Vec<f64>> {
-    // note that this MUST be after a call to model.update(), so the indices in model.vars are Added and the unwrap() is ok
-    self.get_double_array(MIPSOL, MIPSOL_SOL).map(|buf| vars.iter().map(|v| buf[v.index().unwrap() as usize]).collect_vec())
+    let inds = self.model.get_indices(vars)?;
+    let buf = self.get_double_array(MIPSOL, MIPSOL_SOL)?;
+    Ok(inds.into_iter().map(|i| buf[i as usize]).collect())
   }
 
   /// Provide a new feasible solution for a MIP model.
-  pub fn set_solution(&self, vars: &[Var], solution: &[f64]) -> Result<()> {
+  pub fn set_solution(&self, vars: &[Var], solution: &[f64]) -> Result<f64> {
     if vars.len() != solution.len() || vars.len() < self.model.vars.len() {
       return Err(Error::InconsistentDims);
     }
 
-    let mut buf = vec![0.0f64; self.model.vars.len()];
-    for (v, &sol) in Zip::new((vars.iter(), solution.iter())) {
-      let i = v.index()? as usize;
-      buf[i] = sol;
+    let inds = self.model.get_indices(vars)?;
+    let mut soln = vec![GRB_UNDEFINED; self.model.vars.len()];
+    for (i, &val) in inds.into_iter().zip(solution.iter()) {
+      soln[i as usize] = val;
     }
     let mut obj = INFINITY as raw::c_double;
-    self.check_apicall(unsafe { ffi::GRBcbsolution(self.cbdata, buf.as_ptr(), &mut obj as *mut raw::c_double) })
+    self.check_apicall(unsafe { ffi::GRBcbsolution(self.cbdata, soln.as_ptr(), &mut obj as *mut raw::c_double) })?;
+    Ok(obj)
   }
 
   /// Retrieve the elapsed solver runtime [sec].
@@ -334,7 +337,7 @@ impl<'a> Callback<'a> {
   /// Add a new cutting plane to the MIP model.
   pub fn add_cut(&self, lhs: LinExpr, sense: ConstrSense, rhs: f64) -> Result<()> {
     let (vars, coeff, offset) = lhs.into_parts();
-    let inds = get_indices(&vars)?;
+    let inds = self.model.get_indices(&vars)?;
     self.check_apicall(unsafe {
       ffi::GRBcbcut(self.cbdata,
                     coeff.len() as ffi::c_int,
@@ -348,7 +351,7 @@ impl<'a> Callback<'a> {
   /// Add a new lazy constraint to the MIP model.
   pub fn add_lazy(&self, lhs: LinExpr, sense: ConstrSense, rhs: f64) -> Result<()> {
     let (vars, coeff, offset) = lhs.into_parts();
-    let inds = get_indices(&vars)?;
+    let inds = self.model.get_indices(&vars)?;
     self.check_apicall(unsafe {
       ffi::GRBcblazy(self.cbdata,
                      coeff.len() as ffi::c_int,

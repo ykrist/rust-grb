@@ -20,7 +20,9 @@ pub enum Error {
 
   /// Query/modifying a removed variable or constraint
   ModelObjectRemoved,
-  ModelObjectPending
+  ModelObjectPending,
+  /// Object comes from a different model
+  ModelObjectMismatch
 }
 
 
@@ -36,6 +38,7 @@ impl std::fmt::Display for Error {
       Error::NulError(ref err) =>  f.write_fmt(format_args!("NulError: {}", err)),
       Error::ModelObjectRemoved => f.write_str("Variable or constraint has been removed from the model"),
       Error::ModelObjectPending => f.write_str("Variable or constraint is awaiting model update"),
+      Error::ModelObjectMismatch => f.write_str("Variable or constraint is part of a different model"),
     }
   }
 }

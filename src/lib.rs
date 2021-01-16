@@ -82,6 +82,7 @@
 extern crate gurobi_sys as ffi;
 extern crate itertools;
 extern crate core;
+extern crate fnv;
 
 mod env;
 mod error;
@@ -107,7 +108,7 @@ pub use model::ConstrSense::*;
 pub use model::ModelSense::*;
 pub use model::SOSType::*;
 pub use model::RelaxType::*;
-pub use model::expr::{LinExpr, QuadExpr};
+pub use model::expr::Expr;
 
 pub use attribute::exports as attr;
 pub use parameter::exports as param;

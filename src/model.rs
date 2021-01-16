@@ -306,6 +306,7 @@ extern "C" fn null_callback_wrapper(_model: *mut ffi::GRBmodel, _cbdata: *mut ff
 
 
 use std::sync::atomic::{Ordering, AtomicU32};
+use model::expr::Expr;
 
 struct IdFactory {
   next_var: AtomicU32,
@@ -392,24 +393,25 @@ macro_rules! model_create_proxy_impl {
 
 /// Helper function to convert LinExpr objects into Compressed Sparse Row (CSR) format
 fn csr_format(expr: Vec<LinExpr>) -> Result<(Vec<i32>, Vec<i32>, Vec<f64>)> {
-  let lhs: Vec<(_, _, _)> = expr.into_iter().map(|e| e.into_parts()).collect();
+  let lhs: Vec<(_, _)> = expr.into_iter().map(|e| e.into_parts()).collect();
 
   let mut constr_index_end = Vec::with_capacity(lhs.len());
   let mut cumulative_nz = 0;
 
-  for (vars, _, _) in lhs.iter() {
-    cumulative_nz += vars.len();
+  for (coeff, _) in lhs.iter() {
+    cumulative_nz += coeff.len();
     constr_index_end.push(cumulative_nz as i32);
   }
 
   let mut variable_indices = Vec::with_capacity(cumulative_nz);
   let mut coeff = Vec::with_capacity(cumulative_nz);
-  for (vars, coeffs, _) in lhs.iter() {
-    for v in vars {
-      variable_indices.push(v.index()? as i32)
-    };
-    coeff.extend_from_slice(coeffs);
+  for (coeffs, _) in lhs {
+    for (x, a) in coeffs {
+      variable_indices.push(x.index()? as i32);
+      coeff.push(a);
+    }
   }
+  // FIXME, bug: should return offsets
   Ok((constr_index_end, variable_indices, coeff))
 }
 
@@ -534,6 +536,7 @@ impl Model {
   fn get_indices_ref<T: Deref<Target=Proxy>>(&self, items: &[&T]) -> Result<Vec<i32>> {
     items.iter().map(|&item| self.get_index(item)).collect()
   }
+
 
   model_create_proxy_impl!(Var, vars, create_var_proxy, create_var_proxies);
   model_create_proxy_impl!(Constr, constrs, create_constr_proxy, create_constr_proxies);
@@ -846,15 +849,16 @@ impl Model {
 
 
   /// add a linear constraint to the model.
-  pub fn add_constr(&mut self, name: &str, expr: LinExpr, sense: ConstrSense, rhs: f64) -> Result<Constr> {
+  pub fn add_constr(&mut self, name: &str, expr: Expr, sense: ConstrSense, rhs: f64) -> Result<Constr> {
+    let expr = expr.into_linexpr()?;
     let constrname = CString::new(name)?;
-    let (vars, coeff, offset) = expr.into_parts();
-    let vinds = self.get_indices(&vars)?;
+    let offset = expr.get_offset();
+    let (vinds, cval) = expr.get_coeff_indices(&self)?;
     self.check_apicall(unsafe {
       ffi::GRBaddconstr(self.model,
-                        coeff.len() as ffi::c_int,
+                        cval.len() as ffi::c_int,
                         vinds.as_ptr(),
-                        coeff.as_ptr(),
+                        cval.as_ptr(),
                         sense.into(),
                         rhs - offset,
                         constrname.as_ptr())
@@ -867,10 +871,12 @@ impl Model {
 
 
   /// add linear constraints to the model.
-  pub fn add_constrs(&mut self, names: Vec<&str>, lhs: Vec<LinExpr>, sense: Vec<ConstrSense>, mut rhs: Vec<f64>) -> Result<Vec<Constr>> {
+  pub fn add_constrs(&mut self, names: Vec<&str>, lhs: Vec<Expr>, sense: Vec<ConstrSense>, mut rhs: Vec<f64>) -> Result<Vec<Constr>> {
     if !(names.len() == lhs.len() && lhs.len() == sense.len() && sense.len() == rhs.len()) {
       return Err(Error::InconsistentDims);
     }
+    let lhs : Result<Vec<LinExpr>>= lhs.into_iter().map(|e| e.into_linexpr()).collect();
+    let lhs = lhs?;
     let sense = sense.iter().map(|&s| s.into()).collect_vec();
     rhs.iter_mut().zip(lhs.iter()).for_each(|(rhs, lhs)| *rhs -= lhs.get_offset());
     let constrnames = convert_to_cstring_ptrs(&names)?;
@@ -903,8 +909,8 @@ impl Model {
   /// * An linear equality constraint associated with the model.
   pub fn add_range(&mut self, name: &str, expr: LinExpr, lb: f64, ub: f64) -> Result<(Var, Constr)> {
     let constrname = CString::new(name)?;
-    let (vars, coeff, offset) = expr.into_parts();
-    let inds = self.get_indices(&vars)?;
+    let offset = expr.get_offset();
+    let (inds, coeff) = expr.get_coeff_indices(&self)?;
     self.check_apicall(unsafe {
       ffi::GRBaddrangeconstr(self.model,
                              coeff.len() as ffi::c_int,
@@ -952,17 +958,19 @@ impl Model {
   }
 
   /// add a quadratic constraint to the model.
-  pub fn add_qconstr(&mut self, constrname: &str, expr: QuadExpr, sense: ConstrSense, rhs: f64) -> Result<QConstr> {
+  pub fn add_qconstr(&mut self, constrname: &str, expr: Expr, sense: ConstrSense, rhs: f64) -> Result<QConstr> {
     let constrname = CString::new(constrname)?;
-    let (qrow, qcol, qval, lvar, lval, offset) = expr.into_parts();
+    let expr = expr.into_quadexpr();
+    let offset = expr.get_offset();
+    let (qrow, qcol, qval, lvar, lval) = expr.get_coeff_indices(&self)?;
     self.check_apicall(unsafe {
       ffi::GRBaddqconstr(self.model,
                          lval.len() as ffi::c_int,
-                         self.get_indices(&lvar)?.as_ptr(),
+                         lvar.as_ptr(),
                          lval.as_ptr(),
                          qval.len() as ffi::c_int,
-                         self.get_indices(&qrow)?.as_ptr(),
-                         self.get_indices(&qcol)?.as_ptr(),
+                         qrow.as_ptr(),
+                         qcol.as_ptr(),
                          qval.as_ptr(),
                          sense.into(),
                          rhs - offset,
@@ -1000,15 +1008,15 @@ impl Model {
   }
 
   /// Set the objective function of the model.
-  pub fn set_objective<Expr: Into<QuadExpr>>(&mut self, expr: Expr, sense: ModelSense) -> Result<()> {
+  pub fn set_objective(&mut self, expr: impl Into<Expr>, sense: ModelSense) -> Result<()> {
     // if self.updatemode.is_some() {
     //   return Err(Error::FromAPI("The objective function cannot be set before any pending modifies existed".to_owned(),
     //                             50000));
     // }
-    let (qrow, qcol, qval, lvar, lval, _) = expr.into().into_parts();
+    let (qrow, qcol, qval, lvar, lval) = expr.into().into_quadexpr().get_coeff_indices(&self)?;
     self.del_qpterms()?;
-    self.add_qpterms(&self.get_indices(&qrow)?, &self.get_indices(&qcol)?, &qval)?;
-    self.set_list(attr::Obj, &self.get_indices(&lvar)?, lval.as_slice())?;
+    self.add_qpterms(&qrow, &qcol, &qval)?;
+    self.set_list(attr::Obj, &lvar, &lval)?;
     self.set(attr::ModelSense, sense.into())
   }
 
@@ -1434,7 +1442,6 @@ impl Drop for Model {
 #[cfg(test)]
 mod tests {
   use super::super::*;
-  use super::IndexState;
 
   #[test]
   fn modelsense_conversion() {

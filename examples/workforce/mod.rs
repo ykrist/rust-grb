@@ -50,13 +50,15 @@ pub fn make_model(env: &Env) -> Result<Model> {
   model.update()?;
 
   let objterm = pays.iter().map(|pay| repeat(pay).take(shifts.len()));
-  let objexpr = Zip::new((Itertools::flatten(x.iter()), Itertools::flatten(objterm)))
-                  .fold(LinExpr::new(), |expr, (x, &c)| expr + c * x);
+  let objexpr : Expr = Zip::new((Itertools::flatten(x.iter()), Itertools::flatten(objterm)))
+      .map(|(x, &c)| c*x)
+      .sum();
+
   model.set_objective(objexpr, Minimize)?;
 
   for (s, (shift, &requirement)) in shifts.iter().zip(shift_requirements.iter()).enumerate() {
     model.add_constr(format!("c.{}", shift).as_str(),
-                          x.iter().map(|ref x| &x[s]).fold(LinExpr::new(), |expr, x| expr + x),
+                          x.iter().map(|ref x| &x[s]).sum(),
                           Equal,
                           requirement)?;
   }

@@ -22,7 +22,8 @@ pub enum Error {
   ModelObjectRemoved,
   ModelObjectPending,
   /// Object comes from a different model
-  ModelObjectMismatch
+  ModelObjectMismatch,
+  AlgebraicError(String),
 }
 
 
@@ -32,13 +33,14 @@ impl From<std::ffi::NulError> for Error {
 
 impl std::fmt::Display for Error {
   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-    match *self {
-      Error::FromAPI(ref message, code) => write!(f, "Error from API: {} ({})", message, code),
+    match self {
+      Error::FromAPI(message, code) => write!(f, "Error from API: {} ({})", message, code),
       Error::InconsistentDims => write!(f, "Inconsistent argument dimensions"),
-      Error::NulError(ref err) =>  f.write_fmt(format_args!("NulError: {}", err)),
+      Error::NulError(err) =>  f.write_fmt(format_args!("NulError: {}", err)),
       Error::ModelObjectRemoved => f.write_str("Variable or constraint has been removed from the model"),
       Error::ModelObjectPending => f.write_str("Variable or constraint is awaiting model update"),
       Error::ModelObjectMismatch => f.write_str("Variable or constraint is part of a different model"),
+      Error::AlgebraicError(s) => f.write_fmt(format_args!("Algebraic error: {}", s)),
     }
   }
 }

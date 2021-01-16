@@ -43,21 +43,22 @@ fn main() {
     })
     .collect();
 
-  let expr = Zip::new((open.iter().chain(Itertools::flatten(transport.iter())),
-                       fixed_costs.iter().chain(Itertools::flatten(trans_costs.iter()))))
-    .fold(LinExpr::new(), |expr, (x, &c)| expr + c * x);
+  let expr: Expr = Zip::new((
+    open.iter().chain(Itertools::flatten(transport.iter())),
+    fixed_costs.iter().chain(Itertools::flatten(trans_costs.iter()))
+  )).map(|(x, &c)| x*c).sum();
 
   model.update().unwrap();
   model.set_objective(expr, Minimize).unwrap();
 
 
   for (p, (&capacity, open)) in Zip::new((&capacity, &open)).enumerate() {
-    let lhs = transport.iter().map(|t| &t[p]).fold(LinExpr::new(), |expr, t| expr + t);
+    let lhs : Expr = transport.iter().map(|t| &t[p]).sum();
     model.add_constr(&format!("Capacity{}", p), lhs - capacity * open, Less, 0.0).unwrap();
   }
 
   for (w, (&demand, transport)) in Zip::new((&demand, &transport)).enumerate() {
-    let lhs = transport.iter().fold(LinExpr::new(), |expr, t| expr + t);
+    let lhs  = transport.iter().sum();
     model.add_constr(&format!("Demand{}", w), lhs, Equal, demand).unwrap();
   }
 

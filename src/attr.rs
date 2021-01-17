@@ -4,8 +4,13 @@
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
 /// Defines the name of attributes
+use gurobi_sys as ffi;
+use std::ffi::CString;
+use crate::util;
+use crate::Result;
+
 pub mod exports {
-  pub use ffi::{IntAttr, DoubleAttr, CharAttr, StringAttr};
+  pub use gurobi_sys::{IntAttr, DoubleAttr, CharAttr, StringAttr};
   pub use self::IntAttr::*;
   pub use self::DoubleAttr::*;
   pub use self::CharAttr::*;
@@ -13,10 +18,6 @@ pub mod exports {
 }
 use self::exports::*;
 
-use ffi;
-use std::ffi::CString;
-use util;
-use error::Result;
 
 /// provides function to query/set the value of scalar attribute.
 pub trait Attr: Into<CString> {

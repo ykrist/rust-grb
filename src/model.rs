@@ -3,15 +3,8 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-#[path = "callback.rs"]
-pub mod callback;
-#[path = "expr.rs"]
-pub mod expr;
-
-use param;
-use ffi;
+use gurobi_sys as ffi;
 use itertools::{Itertools, Zip};
-
 use std::cell::Cell;
 use std::ffi::CString;
 use std::iter;
@@ -22,17 +15,17 @@ use std::ptr::{null, null_mut};
 use std::rc::Rc;
 use std::hash::{Hash, Hasher};
 use std::slice::Iter;
+use std::sync::atomic::{Ordering, AtomicU32};
 
-use attr;
-use attribute::{Attr, AttrArray};
-use self::callback::{Callback, New};
-use self::expr::{LinExpr, QuadExpr};
-use env::{Env, EnvAPI};
-use error::{Error, Result};
-use util;
+use crate::{Error, Result, Env, attribute::{Attr, AttrArray}};
+use crate::param;
+use crate::attr;
+use crate::callback::{Callback, New};
+use crate::expr::{LinExpr, Expr};
+use crate::env::{FromRaw, EnvAPI, ErrorFromAPI};
+use crate::util;
 
 // use util::Into; // FIXME: wat
-
 
 /// Type for new variable
 #[derive(Debug, Clone, Copy)]
@@ -182,6 +175,12 @@ impl Proxy {
     }
   }
 
+  #[inline]
+  pub(crate) fn id(&self) -> u32 {self.id}
+
+  #[inline]
+  pub(crate) fn model_id(&self) -> u32 {self.model_id}
+
   pub fn index(&self) -> Result<u32> {
     match self.index_state.get() {
       IndexState::Added(idx) => Ok(idx),
@@ -304,10 +303,6 @@ extern "C" fn null_callback_wrapper(_model: *mut ffi::GRBmodel, _cbdata: *mut ff
 }
 
 
-
-use std::sync::atomic::{Ordering, AtomicU32};
-use model::expr::Expr;
-
 struct IdFactory {
   next_var: AtomicU32,
   next_constr: AtomicU32,
@@ -355,7 +350,7 @@ pub struct Model {
   id: u32,
   next_id: IdFactory,
   env: Env,
-  vars: Vec<Var>,
+  pub(crate) vars: Vec<Var>,
   constrs: Vec<Constr>,
   qconstrs: Vec<QConstr>,
   sos: Vec<SOS>,
@@ -479,7 +474,6 @@ impl Model {
 
   /// create an empty model which associated with certain environment.
   fn from_raw(model: *mut ffi::GRBmodel) -> Result<Model> {
-    use env::FromRaw;
     let env = unsafe { ffi::GRBgetenv(model) };
     if env.is_null() {
       return Err(Error::FromAPI("Failed to retrieve GRBenv from given model".to_owned(),
@@ -519,7 +513,7 @@ impl Model {
     Model::from_raw(copied)
   }
 
-  fn get_index(&self, item: & impl Deref<Target=Proxy>) -> Result<i32> {
+  pub(crate) fn get_index(&self, item: & impl Deref<Target=Proxy>) -> Result<i32> {
     if item.model_id != self.id {
       Err(Error::ModelObjectMismatch)
     } else {
@@ -528,12 +522,12 @@ impl Model {
   }
 
   #[inline]
-  fn get_indices(&self, items: &[impl Deref<Target=Proxy>]) -> Result<Vec<i32>> {
+  pub(crate) fn get_indices(&self, items: &[impl Deref<Target=Proxy>]) -> Result<Vec<i32>> {
     items.iter().map(|item| self.get_index(item)).collect()
   }
 
   #[inline]
-  fn get_indices_ref<T: Deref<Target=Proxy>>(&self, items: &[&T]) -> Result<Vec<i32>> {
+  pub(crate) fn get_indices_ref<T: Deref<Target=Proxy>>(&self, items: &[&T]) -> Result<Vec<i32>> {
     items.iter().map(|&item| self.get_index(item)).collect()
   }
 
@@ -702,8 +696,6 @@ impl Model {
   /// ```
   #[deprecated]
   pub fn get_concurrent_env(&self, num: i32) -> Result<Env> {
-    use env::FromRaw;
-
     let env = unsafe { ffi::GRBgetconcurrentenv(self.model, num) };
     if env.is_null() {
       return Err(Error::FromAPI("Cannot get a concurrent environment.".to_owned(), 20003));
@@ -1423,7 +1415,6 @@ impl Model {
 
   fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
     if error != 0 {
-      use env::ErrorFromAPI;
       return Err(self.env.error_from_api(error));
     }
     Ok(())

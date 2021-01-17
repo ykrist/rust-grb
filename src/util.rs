@@ -3,16 +3,15 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-use super::ffi;
+use gurobi_sys as ffi;
 use std::ffi::{CStr, CString};
 use std::ptr::null;
 
 pub unsafe fn from_c_str(s: *const ffi::c_char) -> String { CStr::from_ptr(s).to_string_lossy().into_owned() }
 
-
 ///
 pub trait From<T> {
-  fn from(T) -> Self;
+  fn from(val: T) -> Self;
 }
 
 impl From<i32> for ffi::c_int {

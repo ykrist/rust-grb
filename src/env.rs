@@ -3,15 +3,15 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-use ffi;
+use gurobi_sys as ffi;
 
 use std::ffi::CString;
 use std::ptr::null_mut;
 
-use error::{Error, Result};
-use model::Model;
-use parameter::Param;
-use util;
+use crate::error::{Error, Result};
+use crate::model::Model;
+use crate::parameter::Param;
+use crate::util;
 
 /// Gurobi environment object
 pub struct Env {
@@ -174,7 +174,7 @@ fn get_error_msg(env: *mut ffi::GRBenv) -> String { unsafe { util::from_c_str(ff
 
 #[test]
 fn param_accesors_should_be_valid() {
-  use super::param;
+  use super::*;
   let mut env = Env::new("").unwrap();
   env.set(param::IISMethod, 1).unwrap();
   let iis_method = env.get(param::IISMethod).unwrap();

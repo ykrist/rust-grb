@@ -4,13 +4,10 @@
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
 extern crate gurobi;
-
 use gurobi::*;
 use std::io::{BufWriter, Write};
 use std::fs::OpenOptions;
-
 mod example_utils;
-
 use example_utils::*;
 
 fn main() {
@@ -29,7 +26,7 @@ fn main() {
     let mut writer = BufWriter::new(file);
 
     move |ctx: Callback| {
-      use gurobi::Where::*;
+      use Where::*;
       match ctx.get_where() {
         // Periodic polling callback
         Polling => {

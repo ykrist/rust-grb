@@ -4,19 +4,20 @@
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
 /// Defines the name of parameters
+use gurobi_sys as ffi;
+use std::ffi::CString;
+
 pub mod exports {
-  pub use ffi::{IntParam, DoubleParam, StringParam};
+  pub use super::ffi::{IntParam, DoubleParam, StringParam};
 
   // re-exports
   pub use self::IntParam::*;
   pub use self::DoubleParam::*;
   pub use self::StringParam::*;
 }
+use crate::util;
 use self::exports::*;
 
-use ffi;
-use std::ffi::CString;
-use util;
 
 
 pub trait Param: Sized + Into<CString> {

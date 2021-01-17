@@ -4,16 +4,14 @@
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
 
-use ::{ffi, INFINITY};
-
+use gurobi_sys as ffi;
 use std::ops::Deref;
 use std::ptr::null;
 use std::os::raw;
 
-use error::{Error, Result};
-use model::{Model, Var, ConstrSense};
-use model::expr::LinExpr;
-use util;
+use crate::{Error, Result, Model, Var, ConstrSense, INFINITY};
+use crate::expr::LinExpr;
+use crate::util;
 
 // Location where the callback called.
 const POLLING: i32 = 0;
@@ -24,7 +22,6 @@ const MIPSOL: i32 = 4;
 const MIPNODE: i32 = 5;
 const MESSAGE: i32 = 6;
 const BARRIER: i32 = 7;
-
 
 const PRE_COLDEL: i32 = 1000;
 const PRE_ROWDEL: i32 = 1001;
@@ -78,8 +75,8 @@ const BARRIER_PRIMINF: i32 = 7004;
 const BARRIER_DUALINF: i32 = 7005;
 const BARRIER_COMPL: i32 = 7006;
 
-// for setting a partial solution in a cllback
-const GRB_UNDEFINED : f64 = 1e101;
+// used for setting a partial solution in a callback
+const UNDEFINED: f64 = 1e101;
 
 /// Location where the callback called
 ///
@@ -317,7 +314,7 @@ impl<'a> Callback<'a> {
     }
 
     let inds = self.model.get_indices(vars)?;
-    let mut soln = vec![GRB_UNDEFINED; self.model.vars.len()];
+    let mut soln = vec![UNDEFINED; self.model.vars.len()];
     for (i, &val) in inds.into_iter().zip(solution.iter()) {
       soln[i as usize] = val;
     }

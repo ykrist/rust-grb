@@ -3,8 +3,7 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-use ffi;
-// use std;
+use gurobi_sys as ffi;
 
 /// The error type for operations in Gurobi Rust API
 #[derive(Debug, Eq, PartialEq)]

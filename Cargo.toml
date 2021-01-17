@@ -4,6 +4,7 @@ autoexamples = false
 categories = ["algorithms", "api-bindings", "mathematics", "science"]
 description = "An unofficial Rust API for Gurobi optimizer"
 documentation = "https://docs.rs/gurobi/0.3.4/gurobi/"
+edition = "2018"
 keywords = ["optimization", "linear", "integer"]
 license = "MIT"
 name = "gurobi"

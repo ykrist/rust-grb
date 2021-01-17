@@ -3,15 +3,14 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 //
-// use attr;
-use super::{Var, Model};
-use error::{Result, Error};
-use attr;
 use std::ops::{Add, Sub, Mul, Neg};
 use std::iter::{Sum};
 use fnv::FnvHashMap;
 use std::fmt;
 use std::fmt::Write;
+
+use crate::{Var, Model, Result, Error};
+use crate::attr;
 
 
 #[derive(Debug, Clone)]
@@ -184,7 +183,7 @@ impl QuadExpr {
 
   /// Add a quadratic term into the expression.
   pub fn add_qterm(&mut self, coeff: f64, rowvar: Var, colvar: Var) -> &mut Self {
-    if rowvar.id > colvar.id { // we don't bother checking the model_id here, it gets check when this object is passed to the model
+    if rowvar.id() > colvar.id() { // we don't bother checking the model_id here, it gets check when this object is passed to the model
       return self.add_qterm(coeff, colvar, rowvar)
     }
     self.qcoeffs.entry((rowvar, colvar)).and_modify(|c| *c += coeff)

@@ -378,7 +378,7 @@ impl<'a> Callback<'a> {
   fn get_string(&self, where_: i32, what: i32) -> Result<String> {
     let mut buf = null();
     self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what,  &mut buf as *mut *const i8 as *mut raw::c_void) })
-      .and(Ok(unsafe { util::from_c_str(buf) }))
+      .and(Ok(unsafe { util::copy_c_str(buf) }))
   }
 
   fn check_apicall(&self, error: ffi::c_int) -> Result<()> {

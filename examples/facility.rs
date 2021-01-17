@@ -84,7 +84,7 @@ fn main() {
   model.optimize().unwrap();
 
   // print solution.
-  println!("\nTOTAL COSTS: {}", model.get(attr::ObjVal).unwrap());
+  println!("\nTOTAL COSTS: {}", model.get_attr(attr::ObjVal).unwrap());
   println!("SOLUTION:");
   for (p, open) in open.iter().enumerate() {
     let x = open.get(&model, attr::X).unwrap();

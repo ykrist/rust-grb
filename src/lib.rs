@@ -33,14 +33,13 @@
 //! ## Examples
 //!
 //! ```
-//! extern crate gurobi;
 //! use gurobi::*;
 //!
 //! fn main() {
 //!   let env = Env::new("logfile.log").unwrap();
 //!
 //!   // create an empty model which associated with `env`:
-//!   let mut model = env.new_model("model1").unwrap();
+//!   let mut model = Model::new("model1", &env).unwrap();
 //!
 //!   // add decision variables.
 //!   let x1 = model.add_var("x1", Continuous, 0.0, -INFINITY, INFINITY, &[], &[]).unwrap();
@@ -60,7 +59,7 @@
 //!   // set the expression of objective function.
 //!   model.set_objective(8.0 * &x1 + &x2, Minimize).unwrap();
 //!
-//!   assert_eq!(model.get(attr::IsMIP).unwrap(), 1, "Model is not a MIP.");
+//!   assert_eq!(model.get_attr(attr::IsMIP).unwrap(), 1, "Model is not a MIP.");
 //!
 //!   // write constructed model to the file.
 //!   model.write("logfile.lp").unwrap();
@@ -69,9 +68,9 @@
 //!   model.optimize().unwrap();
 //!   assert_eq!(model.status().unwrap(), Status::Optimal);
 //!
-//!   assert_eq!(model.get(attr::ObjVal).unwrap() , 59.0);
+//!   assert_eq!(model.get_attr(attr::ObjVal).unwrap() , 59.0);
 //!
-//!   let val = model.get_values(attr::X, &[x1, x2]).unwrap();
+//!   let val = model.get_obj_attr_batch(attr::X, &[x1, x2]).unwrap();
 //!   assert_eq!(val, [6.5, 7.0]);
 //! }
 //! ```
@@ -85,12 +84,8 @@ mod model;
 mod util;
 mod expr;
 mod callback;
-
-#[path = "param.rs"]
-mod parameter;
-
-#[path = "attr.rs"]
-mod attribute;
+pub mod param;
+pub mod attr;
 
 // re-exports
 pub use env::Env;
@@ -104,8 +99,6 @@ pub use model::ConstrSense::*;
 pub use model::ModelSense::*;
 pub use model::SOSType::*;
 pub use model::RelaxType::*;
-pub use attribute::exports as attr;
-pub use parameter::exports as param;
 
 /// Large number used in C API
 pub const INFINITY: f64 = 1e100;

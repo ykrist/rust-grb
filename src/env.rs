@@ -10,7 +10,7 @@ use std::ptr::null_mut;
 
 use crate::error::{Error, Result};
 use crate::model::Model;
-use crate::parameter::Param;
+use crate::param::Param;
 use crate::util;
 
 /// Gurobi environment object
@@ -20,6 +20,13 @@ pub struct Env {
 }
 
 impl Env {
+  pub(crate) fn from_raw(env: *mut ffi::GRBenv) -> Env {
+    Env {
+      env,
+      require_drop: false // TODO this seems sketchy, should use Rc instead
+    }
+  }
+
   /// Create an environment with log file
   pub fn new(logfilename: &str) -> Result<Env> {
     let mut env = null_mut();
@@ -100,17 +107,14 @@ impl Env {
     let msg = CString::new(message).unwrap();
     unsafe { ffi::GRBmsg(self.env, msg.as_ptr()) };
   }
-}
 
-pub trait EnvAPI {
-  fn get_ptr(&self) -> *mut ffi::GRBenv;
-  fn check_apicall(&self, error: ffi::c_int) -> Result<()>;
-}
+  pub(crate) fn error_from_api(&self, error: ffi::c_int) -> Error {
+    Error::FromAPI(get_error_msg(self.env), error)
+  }
 
-impl EnvAPI for Env {
-  fn get_ptr(&self) -> *mut ffi::GRBenv { self.env }
+  pub(crate) fn get_ptr(&self) -> *mut ffi::GRBenv { self.env }
 
-  fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
+  pub(crate) fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
     if error != 0 {
       return Err(self.error_from_api(error));
     }
@@ -118,39 +122,18 @@ impl EnvAPI for Env {
   }
 }
 
+
 impl Drop for Env {
   fn drop(&mut self) {
     if self.require_drop {
+      debug_assert!(!self.env.is_null());
       unsafe { ffi::GRBfreeenv(self.env) };
       self.env = null_mut();
     }
   }
 }
 
-
-pub trait ErrorFromAPI {
-  fn error_from_api(&self, error: ffi::c_int) -> Error;
-}
-
-impl ErrorFromAPI for Env {
-  fn error_from_api(&self, error: ffi::c_int) -> Error { Error::FromAPI(get_error_msg(self.env), error) }
-}
-
-pub trait FromRaw {
-  fn from_raw(env: *mut ffi::GRBenv) -> Self;
-}
-
-impl FromRaw for Env {
-  fn from_raw(env: *mut ffi::GRBenv) -> Env {
-    Env {
-      env,
-      require_drop: false
-    }
-  }
-}
-
-
-fn get_error_msg(env: *mut ffi::GRBenv) -> String { unsafe { util::from_c_str(ffi::GRBgeterrormsg(env)) } }
+fn get_error_msg(env: *mut ffi::GRBenv) -> String { unsafe { util::copy_c_str(ffi::GRBgeterrormsg(env)) } }
 
 
 // #[test]
@@ -173,10 +156,12 @@ fn get_error_msg(env: *mut ffi::GRBenv) -> String { unsafe { util::from_c_str(ff
 // }
 
 #[test]
-fn param_accesors_should_be_valid() {
+fn param_get_set() {
   use super::*;
   let mut env = Env::new("").unwrap();
   env.set(param::IISMethod, 1).unwrap();
-  let iis_method = env.get(param::IISMethod).unwrap();
-  assert_eq!(iis_method, 1);
+  assert_eq!(env.get(param::IISMethod).unwrap(), 1);
+  env.set(param::IISMethod, 0).unwrap();
+  assert_eq!(env.get(param::IISMethod).unwrap(), 0);
+  assert!(env.set(param::IISMethod, 9999).is_err());
 }

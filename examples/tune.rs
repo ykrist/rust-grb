@@ -18,7 +18,7 @@ fn main() {
 
   model.tune().unwrap();
 
-  let tune_cnt = model.get(attr::TuneResultCount).unwrap();
+  let tune_cnt = model.get_attr(attr::TuneResultCount).unwrap();
   if tune_cnt > 0 {
     model.get_tune_result(0).unwrap();
     model.write("tune.prm").unwrap();

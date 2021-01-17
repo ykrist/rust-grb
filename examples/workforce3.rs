@@ -21,7 +21,7 @@ fn main() {
   match model.status().unwrap() {
     Status::Infeasible => {
       let mut model = model.copy().unwrap();
-      model.set(attr::ModelName, "assignment_relaxed".to_owned()).unwrap();
+      model.set_attr(attr::ModelName, "assignment_relaxed".to_owned()).unwrap();
 
       // do relaxation.
       let constrs = model.get_constrs().cloned().collect_vec();

@@ -127,7 +127,7 @@ impl LinExpr {
   pub fn get_value(&self, model: &Model) -> Result<f64> {
     let coeff = self.coeff.values();
     let vars : Vec<_> = self.coeff.keys().cloned().collect();
-    let vals = model.get_values(attr::X, &vars)?;
+    let vals = model.get_obj_attr_batch(attr::X, &vars)?;
     let total = coeff.zip(vals.into_iter()).map(|(&a, x)| a*x).sum::<f64>() + self.offset;
     Ok(total)
   }
@@ -171,9 +171,8 @@ impl QuadExpr {
   }
 
   #[allow(clippy::type_complexity)]
-  pub fn into_parts(self) -> (FnvHashMap<(Var, Var), f64>, FnvHashMap<Var, f64>, f64) {
-    let (lcoeff, offset) = self.linexpr.into_parts();
-    (self.qcoeffs, lcoeff, offset)
+  pub fn into_parts(self) -> (FnvHashMap<(Var, Var), f64>, LinExpr) {
+    (self.qcoeffs, self.linexpr)
   }
   /// Add a linear term into the expression.
   pub fn add_term(&mut self, coeff: f64, var: Var) -> &mut Self {
@@ -209,8 +208,8 @@ impl QuadExpr {
       rowvars.push(x);
       colvars.push(y);
     }
-    let rowvals = model.get_values(attr::X, &rowvars)?;
-    let colvals = model.get_values(attr::X, &colvars)?;
+    let rowvals = model.get_obj_attr_batch(attr::X, &rowvars)?;
+    let colvals = model.get_obj_attr_batch(attr::X, &colvars)?;
     let total = coeff.zip(rowvals.into_iter())
         .zip(colvals.into_iter())
         .map(|((&a, x), y)| a*x*y).sum::<f64>()  + self.linexpr.get_value(model)?;
@@ -224,8 +223,7 @@ impl QuadExpr {
     self
   }
 
-  pub(crate) fn get_coeff_indices(&self, model: &Model) -> Result<(Vec<i32>, Vec<i32>, Vec<f64>, Vec<i32>, Vec<f64>)> {
-    let (linds, lcoeffs) = self.linexpr.get_coeff_indices(model)?;
+  pub(crate) fn get_qcoeff_indices(&self, model: &Model) -> Result<(Vec<i32>, Vec<i32>, Vec<f64>)> {
     let mut rowinds = Vec::with_capacity(self.qcoeffs.len());
     let mut colinds = Vec::with_capacity(self.qcoeffs.len());
     let mut coeff = Vec::with_capacity(self.qcoeffs.len());
@@ -234,7 +232,7 @@ impl QuadExpr {
       colinds.push(model.get_index(y)?);
       coeff.push(a);
     }
-    Ok((rowinds, colinds, coeff, linds, lcoeffs))
+    Ok((rowinds, colinds, coeff))
   }
 
   pub fn sparsify(&mut self) {
@@ -318,11 +316,11 @@ impl Add for Expr {
         qe.into()
       }
       (Quad(mut e1), Quad(e2)) => {
-        let (qcoeffs, lcoeffs, c) = e2.into_parts();
+        let (qcoeffs, linexpr) = e2.into_parts();
         for ((x,y),a) in qcoeffs {
           e1.add_qterm(a,x,y);
         }
-        e1.linexpr = (Linear(e1.linexpr) + Linear(LinExpr{ coeff: lcoeffs, offset: c})).into_linexpr().unwrap();
+        e1.linexpr = (Linear(e1.linexpr) + Linear(linexpr)).into_linexpr().unwrap();
         e1.into()
       }
       // swap operands
@@ -639,8 +637,7 @@ impl fmt::Debug for Attached<'_, Expr> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use env::Env;
-  use model::VarType::Binary;
+  use crate::{Env, Binary, Model};
 
   macro_rules! make_model_with_vars {
     ($model:ident, $($var:ident),+) => {

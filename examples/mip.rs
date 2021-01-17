@@ -23,12 +23,12 @@ fn main() {
 
   model.optimize().unwrap();
 
-  let status = model.get(attr::Status).unwrap();
+  let status = model.get_attr(attr::Status).unwrap();
   assert_eq!(status, 2);
 
-  let objval = model.get(attr::ObjVal).unwrap();
+  let objval = model.get_attr(attr::ObjVal).unwrap();
   assert_eq!(objval.round() as isize, 1);
-  let numvars = model.get(attr::NumVars).unwrap() as usize;
+  let numvars = model.get_attr(attr::NumVars).unwrap() as usize;
   assert_eq!(numvars, 3);
 
   assert_eq!(x.get(&model, attr::X).unwrap().round() as isize, 0);

@@ -130,12 +130,12 @@ fn main() {
   model.optimize_with_callback(callback).unwrap();
 
   println!("\nOptimization complete");
-  if model.get(attr::SolCount).unwrap() == 0 {
+  if model.get_attr(attr::SolCount).unwrap() == 0 {
     println!("No solution found. optimization status = {:?}",
              model.status());
   } else {
     println!("Solution found. objective = {}",
-             model.get(attr::ObjVal).unwrap());
+             model.get_attr(attr::ObjVal).unwrap());
     for v in model.get_vars() {
       let vname = v.get(&model, attr::VarName).unwrap();
       let value = v.get(&model, attr::X).unwrap();

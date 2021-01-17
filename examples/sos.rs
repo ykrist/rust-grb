@@ -28,7 +28,7 @@ fn main() {
   model.write("sos.lp").unwrap();
   model.write("sos.sol").unwrap();
 
-  let obj = model.get(attr::ObjVal).unwrap();
+  let obj = model.get_attr(attr::ObjVal).unwrap();
   assert_eq!(obj.round() as isize, 3);
   let x0 = x0.get(&model, attr::X).unwrap();
   let x1 = x1.get(&model, attr::X).unwrap();

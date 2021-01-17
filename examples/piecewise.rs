@@ -52,12 +52,12 @@ fn main() {
 fn optimize_and_print_status(model: &mut Model) -> Result<()> {
   model.optimize()?;
 
-  println!("IsMIP = {}", model.get(attr::IsMIP)? != 0);
+  println!("IsMIP = {}", model.get_attr(attr::IsMIP)? != 0);
   for v in model.get_vars() {
     let vname = v.get(&model, attr::VarName)?;
     let x = v.get(&model, attr::X)?;
     println!("{} = {}", vname, x);
   }
-  println!("Obj = {}\n", model.get(attr::ObjVal)?);
+  println!("Obj = {}\n", model.get_attr(attr::ObjVal)?);
   Ok(())
 }

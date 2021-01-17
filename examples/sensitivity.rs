@@ -13,7 +13,7 @@ fn main() {
   let env = Env::new("").unwrap();
 
   let mut model = load_model_file_from_clarg(&env);
-  assert!(model.get(attr::IsMIP).unwrap() != 0, "Model is not a MIP");
+  assert!(model.get_attr(attr::IsMIP).unwrap() != 0, "Model is not a MIP");
 
   model.optimize().unwrap();
 
@@ -23,7 +23,7 @@ fn main() {
           status);
 
   // store the optimal solution.
-  let orig_obj = model.get(attr::ObjVal).unwrap();
+  let orig_obj = model.get_attr(attr::ObjVal).unwrap();
   let orig_sol: Vec<_> = model.get_vars().map(|v| v.get(&model, attr::X).unwrap()).collect();
 
   // disable solver output for subsequent solvers.
@@ -64,7 +64,7 @@ fn main() {
       model.optimize().unwrap();
       match model.status().unwrap() {
         Status::Optimal => {
-          let objval = model.get(attr::ObjVal).unwrap();
+          let objval = model.get_attr(attr::ObjVal).unwrap();
           println!("Objective sensitivity for variable {} is {}",
                    vname,
                    objval - orig_obj);

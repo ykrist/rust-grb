@@ -6,20 +6,14 @@
 /// Defines the name of parameters
 use gurobi_sys as ffi;
 use std::ffi::CString;
-
-pub mod exports {
-  pub use super::ffi::{IntParam, DoubleParam, StringParam};
-
-  // re-exports
-  pub use self::IntParam::*;
-  pub use self::DoubleParam::*;
-  pub use self::StringParam::*;
-}
 use crate::util;
-use self::exports::*;
 
+pub use ffi::{IntParam, DoubleParam, StringParam};
+pub use ffi::IntParam::*;
+pub use ffi::DoubleParam::*;
+pub use ffi::StringParam::*;
 
-
+// TODO simplify associated types
 pub trait Param: Sized + Into<CString> {
   type Out;
   type Buf: util::Init + util::Into<Self::Out> + util::AsRawPtr<Self::RawFrom>;

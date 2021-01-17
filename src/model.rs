@@ -7,7 +7,6 @@ use gurobi_sys as ffi;
 use itertools::{Itertools, Zip};
 use std::cell::Cell;
 use std::ffi::CString;
-use std::iter;
 use std::mem::transmute;
 use std::ops::{Deref};
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -17,15 +16,13 @@ use std::hash::{Hash, Hasher};
 use std::slice::Iter;
 use std::sync::atomic::{Ordering, AtomicU32};
 
-use crate::{Error, Result, Env, attribute::{Attr, AttrArray}};
+use crate::{Error, Result, Env};
 use crate::param;
 use crate::attr;
+use crate::attr::Attr;
 use crate::callback::{Callback, New};
 use crate::expr::{LinExpr, Expr};
-use crate::env::{FromRaw, EnvAPI, ErrorFromAPI};
 use crate::util;
-
-// use util::Into; // FIXME: wat
 
 /// Type for new variable
 #[derive(Debug, Clone, Copy)]
@@ -179,6 +176,7 @@ impl Proxy {
   pub(crate) fn id(&self) -> u32 {self.id}
 
   #[inline]
+  #[allow(dead_code)]
   pub(crate) fn model_id(&self) -> u32 {self.model_id}
 
   pub fn index(&self) -> Result<u32> {
@@ -190,13 +188,13 @@ impl Proxy {
   }
 
   /// Query the value of attribute.
-  pub fn get<A: AttrArray>(&self, model: &Model, attr: A) -> Result<A::Out> {
-    model.get_attr_element(attr, &self)
+  pub fn get<A: Attr>(&self, model: &Model, attr: A) -> Result<A::Value> {
+    model.get_obj_attr(attr, &self)
   }
 
   /// Set the value of attribute.
-  pub fn set<A: AttrArray>(&self, model: &mut Model, attr: A, val: A::Out) -> Result<()> {
-    model.set_attr_element(attr, &self, val)
+  pub fn set<A: Attr>(&self, model: &mut Model, attr: A, val: A::Value) -> Result<()> {
+    model.set_obj_attr(attr, &self, val)
   }
 }
 
@@ -954,7 +952,9 @@ impl Model {
     let constrname = CString::new(constrname)?;
     let expr = expr.into_quadexpr();
     let offset = expr.get_offset();
-    let (qrow, qcol, qval, lvar, lval) = expr.get_coeff_indices(&self)?;
+    let (qrow, qcol, qval) = expr.get_qcoeff_indices(&self)?;
+    let (_, expr) = expr.into_parts();
+    let (lvar, lval) = expr.get_coeff_indices(&self)?;
     self.check_apicall(unsafe {
       ffi::GRBaddqconstr(self.model,
                          lval.len() as ffi::c_int,
@@ -1005,11 +1005,20 @@ impl Model {
     //   return Err(Error::FromAPI("The objective function cannot be set before any pending modifies existed".to_owned(),
     //                             50000));
     // }
-    let (qrow, qcol, qval, lvar, lval) = expr.into().into_quadexpr().get_coeff_indices(&self)?;
+    let expr = expr.into().into_quadexpr();
+    let (qrow, qcol, qval) = expr.get_qcoeff_indices(&self)?;
     self.del_qpterms()?;
     self.add_qpterms(&qrow, &qcol, &qval)?;
-    self.set_list(attr::Obj, &lvar, &lval)?;
-    self.set(attr::ModelSense, sense.into())
+    let (_, expr) = expr.into_parts();
+    let (obj_vals, _) = expr.into_parts();
+    let mut vars = Vec::with_capacity(obj_vals.len());
+    let mut vals = Vec::with_capacity(obj_vals.len());
+    for (var, c) in obj_vals {
+      vars.push(var);
+      vals.push(c);
+    }
+    self.set_obj_attr_batch(attr::Obj, &vars, &vals)?;
+    self.set_attr(attr::ModelSense, sense.into())
   }
 
 
@@ -1047,117 +1056,60 @@ impl Model {
     }
   }
 
-
-  /// Query the value of attributes which associated with variable/constraints.
-  pub fn get<A: Attr>(&self, attr: A) -> Result<A::Out> {
-    let mut value: A::Buf = util::Init::init();
-
-    self.check_apicall(unsafe {
-      use util::AsRawPtr;
-      A::get_attr(self.model, attr.into().as_ptr(), value.as_rawptr())
-    })?;
-
-    Ok(util::Into::into(value))
+  /// Query a Model attribute
+  pub fn get_attr<A: Attr>(&self, attr: A) -> Result<A::Value> {
+    unsafe { attr.get(self.model) }.map_err(|code| self.env.error_from_api(code))
   }
 
-  /// Set the value of attributes which associated with variable/constraints.
-  pub fn set<A: Attr>(&mut self, attr: A, value: A::Out) -> Result<()> {
-    self.check_apicall(unsafe { A::set_attr(self.model, attr.into().as_ptr(), util::From::from(value)) })?;
-    self.update()
-  }
-
-
-  fn get_attr_element<A: AttrArray>(&self, attr: A, element: &Proxy) -> Result<A::Out> {
-    let index = self.get_index(&element)?;
-    let mut value: A::Buf = util::Init::init();
-
-    self.check_apicall(unsafe {
-      use util::AsRawPtr;
-      A::get_attrelement(self.model, attr.into().as_ptr(), index, value.as_rawptr())
-    })?;
-
-    Ok(util::Into::into(value))
-  }
-
-  fn set_attr_element<A: AttrArray>(&mut self, attr: A, element: &Proxy, value: A::Out) -> Result<()> {
-    let index = self.get_index(&element)?;
-    self.check_apicall(unsafe {
-      A::set_attrelement(self.model,
-                         attr.into().as_ptr(),
-                         index,
-                         util::From::from(value))
-    })?;
-    self.update()
-  }
-
-  /// Query the value of attributes which associated with variable/constraints.
-  pub fn get_values<A: AttrArray, P>(&self, attr: A, item: &[P]) -> Result<Vec<A::Out>>
-    where P: Deref<Target=Proxy>
+  /// Query a model object attribute (Constr, Var, etc)
+  pub fn get_obj_attr<A,E>(&self, attr: A, elem: &E) -> Result<A::Value>
+  where
+    A: Attr,
+    E: Deref<Target=Proxy>
   {
-    self.get_list(attr, &self.get_indices(item)?)
+    let index = self.get_index(elem)?;
+    unsafe { attr.get_element(self.model, index) }.map_err(|code| self.env.error_from_api(code))
   }
 
-  fn get_list<A: AttrArray>(&self, attr: A, ind: &[i32]) -> Result<Vec<A::Out>> {
-    let mut values: Vec<_> = iter::repeat(util::Init::init()).take(ind.len()).collect();
-
-    let ind = {
-      let mut buf = Vec::with_capacity(ind.len());
-      for &i in ind {
-        if i < 0 {
-          return Err(Error::InconsistentDims);
-        }
-        buf.push(i);
-      }
-      buf
-    };
-
-    self.check_apicall(unsafe {
-      A::get_attrlist(self.model,
-                      attr.into().as_ptr(),
-                      ind.len() as ffi::c_int,
-                      ind.as_ptr(),
-                      values.as_mut_ptr())
-    })?;
-
-    Ok(values.into_iter().map(util::Into::into).collect())
-  }
-
-
-  /// Set the value of attributes which associated with variable/constraints.
-  pub fn set_values<A: AttrArray, P>(&mut self, attr: A, item: &[P], val: &[A::Out]) -> Result<()>
-    where P: Deref<Target=Proxy>
+  /// Query an attribute of multiple model objectis
+  pub fn get_obj_attr_batch<A,E>(&self, attr: A, elem: &[E]) -> Result<Vec<A::Value>>
+    where
+        A: Attr,
+        E: Deref<Target=Proxy>
   {
-    self.set_list(attr, &self.get_indices(item)?, val)?;
-    self.update() // TODO: why is this here?
+    let index = self.get_indices(elem)?;
+    unsafe { attr.get_elements(self.model, &index) }.map_err(|code| self.env.error_from_api(code))
   }
 
-  fn set_list<A: AttrArray>(&mut self, attr: A, ind: &[i32], values: &[A::Out]) -> Result<()> {
-    if ind.len() != values.len() {
+  /// Set a Model attribute
+  pub fn set_attr<A: Attr>(&self, attr: A, value: A::Value) -> Result<()> {
+    unsafe { attr.set(self.model, value) }.map_err(|code| self.env.error_from_api(code))
+  }
+
+  /// Set an attribute of a Model object (Const, Var, etc)
+  pub fn set_obj_attr<A,E>(&self, attr: A, elem: &E, value: A::Value) -> Result<()>
+    where
+        A: Attr,
+        E: Deref<Target=Proxy>
+  {
+    let index = self.get_index(elem)?;
+    unsafe { attr.set_element(self.model, index, value) }.map_err(|code| self.env.error_from_api(code))
+  }
+
+  /// Set an attribute of multiple Model objects (Const, Var, etc)
+  pub fn set_obj_attr_batch<A,E>(&self, attr: A, elem: &[E], values: &[A::Value]) -> Result<()>
+    where
+        A: Attr,
+        E: Deref<Target=Proxy>
+  {
+    if elem.len() != values.len() {
       return Err(Error::InconsistentDims);
     }
-
-    let ind = {
-      let mut buf = Vec::with_capacity(ind.len());
-      for &i in ind {
-        if i < 0 {
-          return Err(Error::InconsistentDims);
-        }
-        buf.push(i);
-      }
-      buf
-    };
-    let values = A::to_rawsets(values)?;
-
-    assert_eq!(ind.len(), values.len());
-
-    self.check_apicall(unsafe {
-      A::set_attrlist(self.model,
-                      attr.into().as_ptr(),
-                      values.len() as ffi::c_int,
-                      ind.as_ptr(),
-                      values.as_ptr())
-    })
+    let indices = self.get_indices(elem)?;
+    unsafe { attr.set_elements(self.model, &indices, values) }.map_err(|code| self.env.error_from_api(code))
   }
+
+
 
   /// Modify the model to create a feasibility relaxation.
   ///
@@ -1243,8 +1195,7 @@ impl Model {
     })?;
     self.update()?;
 
-
-    let n_vars = self.get(attr::NumConstrs)? as u32;
+    let n_vars = self.get_attr(attr::NumConstrs)? as u32;
     assert!(n_vars >= self.vars.len() as u32);
     let num_new_vars = n_vars - self.vars.len() as u32;
     let new_vars = if num_new_vars > 0 {
@@ -1255,7 +1206,7 @@ impl Model {
       Vec::new()
     };
 
-    let n_cons = self.get(attr::NumConstrs)? as u32;
+    let n_cons = self.get_attr(attr::NumConstrs)? as u32;
     assert!(n_cons >= self.vars.len() as u32);
     let num_new_cons = n_cons - self.vars.len() as u32;
     let new_cons = if num_new_cons > 0 {
@@ -1266,7 +1217,7 @@ impl Model {
       Vec::new()
     };
 
-    let n_qcons = self.get(attr::NumConstrs)? as u32;
+    let n_qcons = self.get_attr(attr::NumConstrs)? as u32;
     assert!(n_qcons >= self.vars.len() as u32);
     let num_new_qcons = n_qcons - self.vars.len() as u32;
     let new_qcons = if num_new_qcons > 0 {
@@ -1318,7 +1269,7 @@ impl Model {
   }
 
   /// Retrieve the status of the model.
-  pub fn status(&self) -> Result<Status> { self.get(attr::Status).map(|val| val.into()) }
+  pub fn status(&self) -> Result<Status> { self.get_attr(attr::Status).map(|val| val.into()) }
 
   /// Retrieve an iterator of the variables in the model.
   pub fn get_vars(&self) -> Iter<Var> { self.vars.iter() }
@@ -1384,10 +1335,10 @@ impl Model {
     assert!(self.constrs.is_empty());
     assert!(self.qconstrs.is_empty());
     assert!(self.sos.is_empty());
-    self.vars = self.create_var_proxies(self.get(attr::NumVars)? as u32)?;
-    self.constrs = self.create_constr_proxies(self.get(attr::NumConstrs)? as u32)?;
-    self.qconstrs = self.create_qconstr_proxies(self.get(attr::NumQConstrs)? as u32)?;
-    self.sos = self.create_sos_proxies(self.get(attr::NumSOS)? as u32)?;
+    self.vars = self.create_var_proxies(self.get_attr(attr::NumVars)? as u32)?;
+    self.constrs = self.create_constr_proxies(self.get_attr(attr::NumConstrs)? as u32)?;
+    self.qconstrs = self.create_qconstr_proxies(self.get_attr(attr::NumQConstrs)? as u32)?;
+    self.sos = self.create_sos_proxies(self.get_attr(attr::NumSOS)? as u32)?;
     Ok(())
   }
 
@@ -1413,7 +1364,7 @@ impl Model {
     self.update()
   }
 
-  fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
+  pub(crate) fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
     if error != 0 {
       return Err(self.env.error_from_api(error));
     }
@@ -1469,7 +1420,7 @@ mod tests {
     let mut model = Model::new("hoge", &env).unwrap();
     let x = model.add_var("x", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
     let y = model.add_var("y", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
-    assert_eq!(model.get(attr::NumVars).unwrap(), 2);
+    assert_eq!(model.get_attr(attr::NumVars).unwrap(), 2);
     assert_eq!(x.index().unwrap(), 0);
     assert_eq!(y.index().unwrap(), 1);
 
@@ -1478,19 +1429,19 @@ mod tests {
     assert_eq!(y.index().unwrap(), 1);
 
     let z = model.add_var("z", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
-    assert_eq!(model.get(attr::NumVars).unwrap(), 3);
+    assert_eq!(model.get_attr(attr::NumVars).unwrap(), 3);
     assert_eq!(x.index().unwrap(), 0);
     assert_eq!(y.index().unwrap(), 1);
     assert_eq!(z.index().unwrap(), 2);
 
     model.remove(y.clone()).unwrap();
-    assert_eq!(model.get(attr::NumVars).unwrap(), 2);
+    assert_eq!(model.get_attr(attr::NumVars).unwrap(), 2);
     assert_eq!(x.index().unwrap(), 0);
     assert_eq!(y.index(), Err(Error::ModelObjectRemoved)); // No longer available
     assert_eq!(z.index().unwrap(), 1);
 
     let w = model.add_var("w", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
-    assert_eq!(model.get(attr::NumVars).unwrap(), 3);
+    assert_eq!(model.get_attr(attr::NumVars).unwrap(), 3);
     assert_eq!(x.index().unwrap(), 0);
     assert_eq!(y.index(), Err(Error::ModelObjectRemoved)); // No longer available
     assert_eq!(z.index().unwrap(), 1);
@@ -1506,26 +1457,26 @@ mod tests {
     let mut model = Model::new("bug", &env).unwrap();
     let x = model.add_var("x", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
     let y = model.add_var("y", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
-    assert_eq!(model.get(attr::NumVars).unwrap(), 0);
+    assert_eq!(model.get_attr(attr::NumVars).unwrap(), 0);
     assert_eq!(x.index().unwrap_err(), Error::ModelObjectPending);
     assert_eq!(y.index().unwrap_err(), Error::ModelObjectPending);
 
     model.update().unwrap();
-    assert_eq!(model.get(attr::NumVars).unwrap(), 2);
+    assert_eq!(model.get_attr(attr::NumVars).unwrap(), 2);
     assert_eq!(x.index().unwrap(), 0);
     assert_eq!(y.index().unwrap(), 1);
 
     model.remove(y.clone()).unwrap();
     let z = model.add_var("z", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
     let w = model.add_var("w", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
-    assert_eq!(model.get(attr::NumVars).unwrap(), 2);
+    assert_eq!(model.get_attr(attr::NumVars).unwrap(), 2);
     assert_eq!(x.index().unwrap(), 0);
     assert_eq!(y.index().unwrap_err(), Error::ModelObjectRemoved); // this is updated instantly, but gurobi is only informed later
     assert_eq!(z.index().unwrap_err(), Error::ModelObjectPending);
     assert_eq!(w.index().unwrap_err(), Error::ModelObjectPending);
 
     model.update().unwrap();
-    assert_eq!(model.get(attr::NumVars).unwrap(), 3);
+    assert_eq!(model.get_attr(attr::NumVars).unwrap(), 3);
     assert_eq!(x.index().unwrap(), 0);
     assert_eq!(y.index().unwrap_err(), Error::ModelObjectRemoved);
     assert_eq!(z.index().unwrap(), 1);

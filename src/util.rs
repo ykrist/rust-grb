@@ -7,7 +7,19 @@ use gurobi_sys as ffi;
 use std::ffi::{CStr, CString};
 use std::ptr::null;
 
-pub unsafe fn from_c_str(s: *const ffi::c_char) -> String { CStr::from_ptr(s).to_string_lossy().into_owned() }
+/// Copy a raw C-string into a String
+///
+/// To quote the Gurobi docs:
+/// Note that all interface routines that return string-valued attributes are returning pointers
+/// into internal Gurobi data structures. The user should copy the contents of the pointer to a
+/// different data structure before the next call to a Gurobi library routine. The user should
+/// also be careful to never modify the data pointed to by the returned character pointer.
+pub(crate) unsafe fn copy_c_str(s: ffi::c_str) -> String {
+  let s = CStr::from_ptr(s).clone(); // clone here is important
+  s.to_string_lossy().into_owned()
+}
+
+// pub unsafe fn copy_c_str(s: *const ffi::c_char) -> String { CStr::from_ptr(s).to_string_lossy().into_owned() }
 
 ///
 pub trait From<T> {
@@ -74,7 +86,7 @@ impl Into<f64> for ffi::c_double {
 }
 
 impl Into<String> for Vec<ffi::c_char> {
-  fn into(self) -> String { unsafe { from_c_str(self.as_ptr()) } }
+  fn into(self) -> String { unsafe { copy_c_str(self.as_ptr()) } }
 }
 
 impl Into<i8> for ffi::c_char {
@@ -82,7 +94,7 @@ impl Into<i8> for ffi::c_char {
 }
 
 impl Into<String> for ffi::c_str {
-  fn into(self) -> String { unsafe { from_c_str(self) } }
+  fn into(self) -> String { unsafe { copy_c_str(self) } }
 }
 
 
@@ -134,9 +146,9 @@ impl FromRaw<String> for ffi::c_str {
 
 
 #[test]
-fn conversion_must_success() {
+fn conversion_must_succeed() {
   let s1 = "mip1.log";
   let cs = CString::new(s1).unwrap();
-  let s2 = unsafe { from_c_str(cs.as_ptr()) };
+  let s2 = unsafe { copy_c_str(cs.as_ptr()) };
   assert!(s1 == s2);
 }

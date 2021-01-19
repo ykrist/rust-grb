@@ -6,74 +6,70 @@
 /// Defines the name of parameters
 use gurobi_sys as ffi;
 use std::ffi::CString;
-use crate::util;
+use std::result::Result as StdResult;
+
+use crate::util::{copy_c_str};
+use crate::constants::{ERROR_INVALID_ARGUMENT, GRB_MAX_STRLEN};
 
 pub use ffi::{IntParam, DoubleParam, StringParam};
 pub use ffi::IntParam::*;
 pub use ffi::DoubleParam::*;
 pub use ffi::StringParam::*;
 
-// TODO simplify associated types
+
+type RawResult<T> = StdResult<T, ffi::c_int>;
+
+fn check_error_code(code: ffi::c_int) -> RawResult<()> {
+  if code == 0 { Ok(()) } else { Err(code) }
+}
+
 pub trait Param: Sized + Into<CString> {
-  type Out;
-  type Buf: util::Init + util::Into<Self::Out> + util::AsRawPtr<Self::RawFrom>;
-  type RawFrom;
-  type RawTo: util::FromRaw<Self::Out>;
+  type Value;
 
-  unsafe fn get_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: Self::RawFrom) -> ffi::c_int;
-
-  unsafe fn set_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: Self::RawTo) -> ffi::c_int;
+  unsafe fn get_param(self, env: *mut ffi::GRBenv) -> RawResult<Self::Value>;
+  unsafe fn set_param(self, env: *mut ffi::GRBenv, value: Self::Value) -> RawResult<()>;
 }
 
+macro_rules! impl_param_copy_ty {
+    ($t:ty, $vt:ty, $init:expr, $get:path, $set:path) => {
+      impl Param for $t {
+        type Value = $vt;
 
+        #[inline]
+        unsafe fn get_param(self, env: *mut ffi::GRBenv) -> RawResult<Self::Value> {
+        let pname: CString = self.into();
+        let mut val = $init;
+        check_error_code($get(env, pname.as_ptr(), &mut val))?;
+        Ok(val)
+        }
 
-impl Param for IntParam {
-  type Out = i32;
-  type Buf = ffi::c_int;
-  type RawFrom = *mut ffi::c_int;
-  type RawTo = ffi::c_int;
-
-  #[inline]
-  unsafe fn get_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: *mut ffi::c_int) -> ffi::c_int {
-    ffi::GRBgetintparam(env, paramname, value)
-  }
-
-  #[inline]
-  unsafe fn set_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: ffi::c_int) -> ffi::c_int {
-    ffi::GRBsetintparam(env, paramname, value)
-  }
+        #[inline]
+        unsafe fn set_param(self, env: *mut ffi::GRBenv, value: Self::Value) -> RawResult<()> {
+        let pname: CString = self.into();
+        check_error_code($set(env, pname.as_ptr(), value))
+        }
+      }
+    };
 }
 
-impl Param for DoubleParam {
-  type Out = f64;
-  type Buf = ffi::c_double;
-  type RawFrom = *mut ffi::c_double;
-  type RawTo = ffi::c_double;
-
-  #[inline]
-  unsafe fn get_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: *mut ffi::c_double) -> ffi::c_int {
-    ffi::GRBgetdblparam(env, paramname, value)
-  }
-
-  #[inline]
-  unsafe fn set_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: ffi::c_double) -> ffi::c_int {
-    ffi::GRBsetdblparam(env, paramname, value)
-  }
-}
+impl_param_copy_ty!(IntParam, i32, i32::MIN, ffi::GRBgetintparam, ffi::GRBsetintparam);
+impl_param_copy_ty!(DoubleParam, f64, f64::NAN, ffi::GRBgetdblparam, ffi::GRBsetdblparam);
 
 impl Param for StringParam {
-  type Out = String;
-  type Buf = Vec<ffi::c_char>;
-  type RawFrom = *mut ffi::c_char;
-  type RawTo = *const ffi::c_char;
+  type Value = String;
 
   #[inline]
-  unsafe fn get_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: *mut ffi::c_char) -> ffi::c_int {
-    ffi::GRBgetstrparam(env, paramname, value)
+  unsafe fn get_param(self, env: *mut ffi::GRBenv) -> RawResult<String> {
+    let pname : CString = self.into();
+    let mut buf = [0i8; GRB_MAX_STRLEN];
+    check_error_code(ffi::GRBgetstrparam(env, pname.as_ptr(), buf.as_mut_ptr()))?;
+    Ok(copy_c_str(buf.as_ptr()))
   }
 
   #[inline]
-  unsafe fn set_param(env: *mut ffi::GRBenv, paramname: ffi::c_str, value: *const ffi::c_char) -> ffi::c_int {
-    ffi::GRBsetstrparam(env, paramname, value)
+  unsafe fn set_param(self, env: *mut ffi::GRBenv, value: Self::Value) -> RawResult<()> {
+    let pname : CString = self.into();
+    let value = CString::new(value).map_err(|_| ERROR_INVALID_ARGUMENT)?;
+    check_error_code(ffi::GRBsetstrparam(env, pname.as_ptr(), value.as_ptr()))
   }
 }

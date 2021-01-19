@@ -19,9 +19,7 @@ pub use ffi::StringAttr::*;
 // Fortunately, the errors encountered either are from converting String to CString, null pointers
 // and trying to access Char attributes on the model (there are none defined), all Char attributes
 // are either Constr or Var attributes.  The Gurobi error codes therefore match up nicely.
-const ERROR_INVALID_ARGUMENT: ffi::c_int = 10003;
-const ERROR_UNKNOWN_ATTR: ffi::c_int = 10004;
-const ERROR_DATA_NOT_AVAILABLE: ffi::c_int = 10005;
+use crate::constants::{ERROR_INVALID_ARGUMENT, ERROR_DATA_NOT_AVAILABLE, ERROR_UNKNOWN_ATTR};
 
 fn check_error_code(code: ffi::c_int) -> StdResult<(), ffi::c_int> {
     if code == 0 { Ok(()) } else { Err(code) }

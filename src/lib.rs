@@ -84,6 +84,7 @@ mod model;
 mod util;
 mod expr;
 mod callback;
+mod constants;
 pub mod param;
 pub mod attr;
 
@@ -101,7 +102,7 @@ pub use model::SOSType::*;
 pub use model::RelaxType::*;
 
 /// Large number used in C API
-pub const INFINITY: f64 = 1e100;
+pub use constants::GRB_INFINITY as INFINITY;
 
 
 /// Returns the version number of Gurobi

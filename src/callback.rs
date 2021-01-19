@@ -12,71 +12,9 @@ use std::os::raw;
 use crate::{Error, Result, Model, Var, ConstrSense, INFINITY};
 use crate::expr::LinExpr;
 use crate::util;
-
-// Location where the callback called.
-const POLLING: i32 = 0;
-const PRESOLVE: i32 = 1;
-const SIMPLEX: i32 = 2;
-const MIP: i32 = 3;
-const MIPSOL: i32 = 4;
-const MIPNODE: i32 = 5;
-const MESSAGE: i32 = 6;
-const BARRIER: i32 = 7;
-
-const PRE_COLDEL: i32 = 1000;
-const PRE_ROWDEL: i32 = 1001;
-const PRE_SENCHG: i32 = 1002;
-const PRE_BNDCHG: i32 = 1003;
-const PRE_COECHG: i32 = 1004;
-
-const SPX_ITRCNT: i32 = 2000;
-const SPX_OBJVAL: i32 = 2001;
-const SPX_PRIMINF: i32 = 2002;
-const SPX_DUALINF: i32 = 2003;
-const SPX_ISPERT: i32 = 2004;
-
-const MIP_OBJBST: i32 = 3000;
-const MIP_OBJBND: i32 = 3001;
-const MIP_NODCNT: i32 = 3002;
-const MIP_SOLCNT: i32 = 3003;
-const MIP_CUTCNT: i32 = 3004;
-const MIP_NODLFT: i32 = 3005;
-const MIP_ITRCNT: i32 = 3006;
-#[allow(dead_code)]
-const MIP_OBJBNDC: i32 = 3007;
-
-const MIPSOL_SOL: i32 = 4001;
-const MIPSOL_OBJ: i32 = 4002;
-const MIPSOL_OBJBST: i32 = 4003;
-const MIPSOL_OBJBND: i32 = 4004;
-const MIPSOL_NODCNT: i32 = 4005;
-const MIPSOL_SOLCNT: i32 = 4006;
-#[allow(dead_code)]
-const MIPSOL_OBJBNDC: i32 = 4007;
-
-const MIPNODE_STATUS: i32 = 5001;
-const MIPNODE_REL: i32 = 5002;
-const MIPNODE_OBJBST: i32 = 5003;
-const MIPNODE_OBJBND: i32 = 5004;
-const MIPNODE_NODCNT: i32 = 5005;
-const MIPNODE_SOLCNT: i32 = 5006;
-#[allow(dead_code)]
-const MIPNODE_BRVAR: i32 = 5007;
-#[allow(dead_code)]
-const MIPNODE_OBJBNDC: i32 = 5008;
-
-const MSG_STRING: i32 = 6001;
-const RUNTIME: i32 = 6002;
-
-const BARRIER_ITRCNT: i32 = 7001;
-const BARRIER_PRIMOBJ: i32 = 7002;
-const BARRIER_DUALOBJ: i32 = 7003;
-const BARRIER_PRIMINF: i32 = 7004;
-const BARRIER_DUALINF: i32 = 7005;
-const BARRIER_COMPL: i32 = 7006;
-
+use crate::constants::callback::*;
 // used for setting a partial solution in a callback
-const UNDEFINED: f64 = 1e101;
+use crate::constants::GRB_UNDEFINED;
 
 /// Location where the callback called
 ///
@@ -314,7 +252,7 @@ impl<'a> Callback<'a> {
     }
 
     let inds = self.model.get_indices(vars)?;
-    let mut soln = vec![UNDEFINED; self.model.vars.len()];
+    let mut soln = vec![GRB_UNDEFINED; self.model.vars.len()];
     for (i, &val) in inds.into_iter().zip(solution.iter()) {
       soln[i as usize] = val;
     }

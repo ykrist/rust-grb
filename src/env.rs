@@ -75,17 +75,13 @@ impl Env {
   pub fn read_model(&self, filename: &str) -> Result<Model> { Model::read_from(filename, self) }
 
   /// Query the value of a parameter
-  pub fn get<P: Param>(&self, param: P) -> Result<P::Out> {
-    use util::AsRawPtr;
-    let mut value: P::Buf = util::Init::init();
-    self.check_apicall(unsafe { P::get_param(self.env, param.into().as_ptr(), value.as_rawptr()) })?;
-
-    Ok(util::Into::into(value))
+  pub fn get<P: Param>(&self, param: P) -> Result<P::Value> {
+    unsafe { param.get_param(self.env) }.map_err(|code| self.error_from_api(code))
   }
 
   /// Set the value of a parameter
-  pub fn set<P: Param>(&mut self, param: P, value: P::Out) -> Result<()> {
-    self.check_apicall(unsafe { P::set_param(self.env, param.into().as_ptr(), util::FromRaw::from(value)) })
+  pub fn set<P: Param>(&mut self, param: P, value: P::Value) -> Result<()> {
+    unsafe { param.set_param(self.env, value) }.map_err(|code| self.error_from_api(code))
   }
 
   /// Import a set of parameter values from a file

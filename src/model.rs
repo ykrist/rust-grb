@@ -699,7 +699,7 @@ impl Model {
                      vtype.into(),
                      name.as_ptr())
     })?;
-
+    // FIXME: BUG if update mode is not lazy, I think I need to all update here.  I should record some Python API calls and check
     Ok(Var::new(self)?)
   }
 

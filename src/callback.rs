@@ -235,7 +235,7 @@ impl<'a> Callback<'a> {
     // memo: only MIPNode && status == Optimal
     // note that this MUST be after a call to model.update(), so the indices in model.vars are Added and the unwrap() is ok
     let vals = self.get_double_array(MIPNODE, MIPNODE_REL)?;
-    vars.iter().map(|v|  Ok(vals[v.index()? as usize])).collect()
+    vars.iter().map(|v|  Ok(vals[self.model.get_index(v)? as usize])).collect()
   }
 
   /// Retrieve values from the current solution vector.

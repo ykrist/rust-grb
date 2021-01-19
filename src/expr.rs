@@ -182,7 +182,7 @@ impl QuadExpr {
 
   /// Add a quadratic term into the expression.
   pub fn add_qterm(&mut self, coeff: f64, rowvar: Var, colvar: Var) -> &mut Self {
-    if rowvar.id() > colvar.id() { // we don't bother checking the model_id here, it gets check when this object is passed to the model
+    if rowvar.id > colvar.id { // we don't bother checking the model_id here, it gets check when this object is passed to the model
       return self.add_qterm(coeff, colvar, rowvar)
     }
     self.qcoeffs.entry((rowvar, colvar)).and_modify(|c| *c += coeff)
@@ -547,7 +547,7 @@ impl fmt::Debug for Attached<'_, LinExpr> {
     }
 
     for (var, &coeff) in self.inner.iter_terms() {
-      let varname = var.get(&self.model, attr::VarName)?;
+      let varname = self.model.get_obj_attr(attr::VarName, var)?;
       let (coeff, positive) = float_fmt_helper(coeff, 1.0);
 
       // write the operator with the previous term
@@ -583,8 +583,8 @@ impl fmt::Debug for Attached<'_, QuadExpr> {
     }
 
     for ((x,y), &coeff) in &self.inner.qcoeffs {
-      let xname = x.get(self.model, attr::VarName)?;
-      let yname = y.get(self.model, attr::VarName)?;
+      let xname = self.model.get_obj_attr(attr::VarName, x)?;
+      let yname = self.model.get_obj_attr(attr::VarName, y)?;
       let (coeff, positive) = float_fmt_helper(coeff, 1.0);
       if is_first_term {
         is_first_term = false;
@@ -610,7 +610,7 @@ impl fmt::Debug for Attached<'_, Expr> {
     match &self.inner {
       Constant(a) => f.write_fmt(format_args!("{}", a)),
       Term(a,x) => {
-        let varname = x.get(self.model, attr::VarName)?;
+        let varname = self.model.get_obj_attr(attr::VarName, x)?;
         if (a-1.0).abs() < f64::EPSILON {
           f.write_fmt(format_args!("{}", varname))
         } else {
@@ -618,8 +618,8 @@ impl fmt::Debug for Attached<'_, Expr> {
         }
       },
       QTerm(a,x, y) => {
-        let xname = x.get(self.model, attr::VarName)?;
-        let yname = y.get(self.model, attr::VarName)?;
+        let xname = self.model.get_obj_attr(attr::VarName, x)?;
+        let yname = self.model.get_obj_attr(attr::VarName, y)?;
         if (a-1.0).abs() < f64::EPSILON {
           f.write_fmt(format_args!("{}*{}", xname, yname))
         } else {

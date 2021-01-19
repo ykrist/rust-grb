@@ -294,6 +294,10 @@ impl_from! { IntAttr CharAttr DoubleAttr StringAttr }
 
 // Environment Creation and Destruction
 extern "C" {
+  pub fn GRBemptyenv(envP: *mut *mut GRBenv) -> c_int;
+
+  pub fn GRBstartenv(envP: *mut GRBenv) -> c_int;
+
   pub fn GRBloadenv(envP: *mut *mut GRBenv, logfilename: c_str) -> c_int;
 
   pub fn GRBloadclientenv(envP: *mut *mut GRBenv, logfilename: c_str, computeserver: c_str, port: c_int,

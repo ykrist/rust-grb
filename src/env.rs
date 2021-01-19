@@ -19,12 +19,41 @@ pub struct Env {
   require_drop: bool
 }
 
+pub struct EmptyEnv {
+  pub(crate) env : Env
+}
+
+impl EmptyEnv {
+  pub fn get<P: Param>(&self, param : P) -> Result<P::Value> {
+    self.env.get(param)
+  }
+
+  pub fn set<P: Param>(&mut self, param : P, value: P::Value) -> Result<()> {
+    self.env.set(param, value)
+  }
+
+  pub fn start(self) -> Result<Env> {
+    self.env.check_apicall(unsafe { ffi::GRBstartenv(self.env.get_ptr()) })?;
+    Ok(self.env)
+  }
+}
+
 impl Env {
   pub(crate) fn from_raw(env: *mut ffi::GRBenv) -> Env {
     Env {
       env,
       require_drop: false // TODO this seems sketchy, should use Rc instead
     }
+  }
+
+  pub fn empty() -> Result<EmptyEnv> {
+    let mut env = null_mut();
+    let err_code = unsafe { ffi::GRBemptyenv(&mut env) };
+    if err_code != 0 {
+      return Err(Error::FromAPI(get_error_msg(env), err_code));
+    }
+    let env = Env { env, require_drop: true };
+    Ok(EmptyEnv{env})
   }
 
   /// Create an environment with log file

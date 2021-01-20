@@ -23,8 +23,16 @@ fn main() {
     model.compute_iis().unwrap();
 
     println!("The following constraint(s) cannot be satisfied:");
-    for c in model.get_constrs().filter(|c| c.get(&model, attr::IISConstr).unwrap() != 0) {
-      println!("  - {}", c.get(&model, attr::ConstrName).unwrap());
+    let constr = model.get_constrs().unwrap();
+    let iis_vals = model.get_obj_attr_batch(attr::IISConstr, constr).unwrap();
+    let iis_constr : Vec<_> = constr.iter().zip(iis_vals.into_iter())
+      .filter_map(|(&c, i)| if i == 1 { Some(c) } else { None })
+      .collect();
+    let iis_names = model.get_obj_attr_batch(attr::ConstrName, &iis_constr).unwrap();
+
+    for name in iis_names {
+      println!(" - {}", name);
     }
+
   }
 }

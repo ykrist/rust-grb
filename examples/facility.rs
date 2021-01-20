@@ -63,14 +63,14 @@ fn main() {
   }
 
   for o in open.iter() {
-    o.set(&mut model, attr::Start, 1.0).unwrap();
+    model.set_obj_attr(attr::Start, o, 1.0).unwrap();
   }
 
   println!("Initial guesss:");
   let max_fixed = fixed_costs.iter().cloned().fold(-1. / 0., f64::max);
   for (p, (open, &cost)) in Zip::new((&open, &fixed_costs)).enumerate() {
     if (cost - max_fixed).abs() < 1e-4 {
-      open.set(&mut model, attr::Start, 0.0).unwrap();
+      model.set_obj_attr(attr::Start, open, 0.0).unwrap();
       println!("Closing plant {}", p);
       break;
     }
@@ -87,11 +87,11 @@ fn main() {
   println!("\nTOTAL COSTS: {}", model.get_attr(attr::ObjVal).unwrap());
   println!("SOLUTION:");
   for (p, open) in open.iter().enumerate() {
-    let x = open.get(&model, attr::X).unwrap();
+    let x = model.get_obj_attr(attr::X, open).unwrap();
     if x > 0.9 {
       println!("Plant {} is open", p);
       for (w, trans) in transport.iter().enumerate() {
-        let t = trans[p].get(&model, attr::X).unwrap();
+        let t = model.get_obj_attr(attr::X, &trans[p]).unwrap();
         if t > 0.0 {
           println!("  Transport {} units to warehouse {}", t, w);
         }

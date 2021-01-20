@@ -272,7 +272,8 @@ impl<'a> Callback<'a> {
   /// Add a new cutting plane to the MIP model.
   pub fn add_cut(&self, lhs: LinExpr, sense: ConstrSense, rhs: f64) -> Result<()> {
     let offset = lhs.get_offset();
-    let (inds, coeff) = lhs.get_coeff_indices(&self.model)?;
+    // note the user can still provide a LinExpr containing vars from a different model, so unwrap() won't work
+    let (inds, coeff) = self.model.get_coeffs_indices_build(&lhs)?;
     self.check_apicall(unsafe {
       ffi::GRBcbcut(self.cbdata,
                     coeff.len() as ffi::c_int,
@@ -286,7 +287,7 @@ impl<'a> Callback<'a> {
   /// Add a new lazy constraint to the MIP model.
   pub fn add_lazy(&self, lhs: LinExpr, sense: ConstrSense, rhs: f64) -> Result<()> {
     let offset = lhs.get_offset();
-    let (inds, coeff) = lhs.get_coeff_indices(&self.model)?;
+    let (inds, coeff) = self.model.get_coeffs_indices_build(&lhs)?;
     self.check_apicall(unsafe {
       ffi::GRBcblazy(self.cbdata,
                      coeff.len() as ffi::c_int,

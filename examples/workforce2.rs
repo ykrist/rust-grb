@@ -29,21 +29,24 @@ fn main() {
         model.compute_iis().unwrap();
 
         let c = {
-          let iis_constrs: Vec<_> =
-            model.get_constrs().filter(|c| c.get(&model, attr::IISConstr).unwrap() != 0).collect();
+          let constr = model.get_constrs().unwrap();
+          let iis = model.get_obj_attr_batch(attr::IISConstr, constr).unwrap();
+
+
+          let iis_constrs: Vec<_> = constr.iter().zip(iis.iter()).filter_map(|(&c, &val)| if val == 1 { Some(c) } else { None }).collect();
           println!("number of IIS constrs = {}", iis_constrs.len());
-          iis_constrs.into_iter().next().cloned()
+          iis_constrs.first().cloned()
         };
 
         match c {
           Some(c) => {
-            let cname = c.get(&model, attr::ConstrName).unwrap();
+            let cname = model.get_obj_attr(attr::ConstrName, &c).unwrap();
             model.remove(c).unwrap();
             model.update().unwrap();
             removed.push(cname);
           }
           None => {
-            println!("There are any IIS constraints in the model.");
+            println!("There aren't any IIS constraints in the model.");
             break;
           }
         }

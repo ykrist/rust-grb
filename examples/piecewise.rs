@@ -3,7 +3,6 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-extern crate gurobi;
 use gurobi::*;
 
 #[allow(clippy::many_single_char_names)]
@@ -18,8 +17,8 @@ fn main() {
   model.update().unwrap();
 
   // Add constraints.
-  model.add_constr("c0", &x + 2.0 * &y + 3.0 * &z, Less, 4.0).unwrap();
-  model.add_constr("c1", &x + &y, Greater, 1.0).unwrap();
+  model.add_constr("c0", x + 2.0 * y + 3.0 * z, Less, 4.0).unwrap();
+  model.add_constr("c1", x + y, Greater, 1.0).unwrap();
 
   // Set `convex` objective function:
   //  minimize f(x) - y + g(z)
@@ -37,7 +36,7 @@ fn main() {
 
   model.set_pwl_obj(&x, pt_u.as_slice(), pt_f.as_slice()).unwrap();
   model.set_pwl_obj(&z, pt_u.as_slice(), pt_g.as_slice()).unwrap();
-  y.set(&mut model, attr::Obj, -1.0).unwrap();
+  model.set_obj_attr(attr::Obj, &y, -1.0).unwrap();
 
   optimize_and_print_status(&mut model).unwrap();
 
@@ -53,9 +52,10 @@ fn optimize_and_print_status(model: &mut Model) -> Result<()> {
   model.optimize()?;
 
   println!("IsMIP = {}", model.get_attr(attr::IsMIP)? != 0);
-  for v in model.get_vars() {
-    let vname = v.get(&model, attr::VarName)?;
-    let x = v.get(&model, attr::X)?;
+  let vars = model.get_vars().unwrap();
+  for v in vars {
+    let vname = model.get_obj_attr(attr::VarName, v)?;
+    let x = model.get_obj_attr(attr::X, v)?;
     println!("{} = {}", vname, x);
   }
   println!("Obj = {}\n", model.get_attr(attr::ObjVal)?);

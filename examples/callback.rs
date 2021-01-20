@@ -20,7 +20,7 @@ fn main() {
   let callback = {
     let mut lastiter = -INFINITY;
     let mut lastnode = -INFINITY;
-    let vars: Vec<_> = model.get_vars().cloned().collect();
+    let vars: Vec<_> = model.get_vars().unwrap().to_vec();
 
     let file = OpenOptions::new().write(true).create(true).open("cb.log").unwrap();
     let mut writer = BufWriter::new(file);
@@ -136,10 +136,10 @@ fn main() {
   } else {
     println!("Solution found. objective = {}",
              model.get_attr(attr::ObjVal).unwrap());
-    for v in model.get_vars() {
-      let vname = v.get(&model, attr::VarName).unwrap();
-      let value = v.get(&model, attr::X).unwrap();
-      if value > 1e-25 {
+    for v in model.get_vars().unwrap() {
+      let vname = model.get_obj_attr(attr::VarName, v).unwrap();
+      let value = model.get_obj_attr(attr::X, v).unwrap();
+      if value > 1e-10 {
         println!("  {}: {}", vname, value);
       }
     }

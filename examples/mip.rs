@@ -31,9 +31,10 @@ fn main() {
   let numvars = model.get_attr(attr::NumVars).unwrap() as usize;
   assert_eq!(numvars, 3);
 
-  assert_eq!(x.get(&model, attr::X).unwrap().round() as isize, 0);
-  assert_eq!(y.get(&model, attr::X).unwrap().round() as isize, 1);
-  assert_eq!(z.get(&model, attr::X).unwrap().round() as isize, 0);
+  let get_value = | var | model.get_obj_attr(attr::X, var).unwrap();
+  assert_eq!(get_value(&x).round() as isize, 0);
+  assert_eq!(get_value(&y).round() as isize, 1);
+  assert_eq!(get_value(&z).round() as isize, 0);
 
   model.write("mip.lp").unwrap();
   model.write("mip.sol").unwrap();

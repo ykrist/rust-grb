@@ -22,6 +22,7 @@ pub enum Error {
   ModelObjectPending,
   /// Object comes from a different model
   ModelObjectMismatch,
+  ModelUpdateNeeded,
   AlgebraicError(String),
 }
 
@@ -38,6 +39,7 @@ impl std::fmt::Display for Error {
       Error::ModelObjectRemoved => f.write_str("Variable or constraint has been removed from the model"),
       Error::ModelObjectPending => f.write_str("Variable or constraint is awaiting model update"),
       Error::ModelObjectMismatch => f.write_str("Variable or constraint is part of a different model"),
+      Error::ModelUpdateNeeded => f.write_str("Variables or constraints have been added/removed.  Call model.update() first."),
       Error::AlgebraicError(s) => f.write_fmt(format_args!("Algebraic error: {}", s)),
     }
   }

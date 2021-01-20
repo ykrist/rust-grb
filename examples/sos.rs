@@ -18,10 +18,10 @@ fn main() {
   model.set_objective(2.0 * &x0 + 1.0 * &x1 + 1.0 * &x2, Maximize).unwrap();
 
   // [x0 = 0] or [x1 = 0]
-  model.add_sos(&[x0.clone(), x1.clone()], &[1.0, 2.0], SOSType1).unwrap();
+  model.add_sos(&[x0, x1], &[1.0, 2.0], SOSType1).unwrap();
 
   // [x0 = 0] or [x2 = 0]
-  model.add_sos(&[x0.clone(), x2.clone()], &[1.0, 2.0], SOSType1).unwrap();
+  model.add_sos(&[x0, x2], &[1.0, 2.0], SOSType1).unwrap();
 
   model.optimize().unwrap();
 
@@ -30,9 +30,10 @@ fn main() {
 
   let obj = model.get_attr(attr::ObjVal).unwrap();
   assert_eq!(obj.round() as isize, 3);
-  let x0 = x0.get(&model, attr::X).unwrap();
-  let x1 = x1.get(&model, attr::X).unwrap();
-  let x2 = x2.get(&model, attr::X).unwrap();
+  let get_value = |var| model.get_obj_attr(attr::X, &var).unwrap();
+  let x0 = get_value(x0);
+  let x1 = get_value(x1);
+  let x2 = get_value(x2);
 
   assert_eq!(x0.round() as isize, 0);
   assert_eq!(x1.round() as isize, 1);

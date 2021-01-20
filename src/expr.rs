@@ -33,6 +33,14 @@ impl Expr {
       Quad(_) => unreachable!()
     }
   }
+
+  pub fn is_linear(&self) -> bool {
+    match self {
+      Expr::Quad(_) | Expr::QTerm(..) => false,
+      _ => true,
+    }
+  }
+
   pub fn into_quadexpr(self) -> QuadExpr {
     use self::Expr::*;
     match self {
@@ -135,6 +143,9 @@ impl LinExpr {
   /// Decompose into variables, their coefficients and the offset, respectively.
   pub fn into_parts(self) -> (FnvHashMap<Var, f64>, f64) { (self.coeff, self.offset) }
 
+  /// number of linear terms in the expression (excluding the constant)
+  pub fn n_terms(&self) -> usize { self.coeff.len() }
+
   /// Returns an iterator over the terms excluding the offset (item type is `(&Var, &f64)`)
   pub fn iter_terms<'a>(&'a self) -> std::collections::hash_map::Iter<'a, Var, f64> {
     self.coeff.iter()
@@ -144,16 +155,6 @@ impl LinExpr {
   pub fn mul_scalar(&mut self, val: f64) -> &mut Self {
     self.coeff.iter_mut().for_each(|(_, a)| *a *= val);
     self
-  }
-
-  pub(crate) fn get_coeff_indices(&self, model: &Model) -> Result<(Vec<i32>, Vec<f64>)> {
-    let mut vinds = Vec::with_capacity(self.coeff.len());
-    let mut coeff = Vec::with_capacity(self.coeff.len());
-    for (x,&a) in &self.coeff {
-      vinds.push(model.get_index(x)?);
-      coeff.push(a);
-    }
-    Ok((vinds, coeff))
   }
 
   pub fn sparsify(&mut self) {
@@ -223,16 +224,20 @@ impl QuadExpr {
     self
   }
 
-  pub(crate) fn get_qcoeff_indices(&self, model: &Model) -> Result<(Vec<i32>, Vec<i32>, Vec<f64>)> {
-    let mut rowinds = Vec::with_capacity(self.qcoeffs.len());
-    let mut colinds = Vec::with_capacity(self.qcoeffs.len());
-    let mut coeff = Vec::with_capacity(self.qcoeffs.len());
-    for ((x,y),&a) in &self.qcoeffs {
-      rowinds.push(model.get_index(x)?);
-      colinds.push(model.get_index(y)?);
-      coeff.push(a);
-    }
-    Ok((rowinds, colinds, coeff))
+  /// number of linear terms in the expression (excluding the constant)
+  pub fn n_terms(&self) -> usize { self.linexpr.n_terms() }
+
+  /// Returns an iterator over the terms excluding the offset (item type is `(&Var, &f64)`)
+  pub fn iter_terms<'a>(&'a self) -> std::collections::hash_map::Iter<'a, Var, f64> {
+    self.linexpr.iter_terms()
+  }
+
+  /// number of quadtratic terms in the expression
+  pub fn n_qterms(&self) -> usize { self.qcoeffs.len() }
+
+  /// Returns an iterator over the terms excluding the offset (item type is `(&Var, &f64)`)
+  pub fn iter_qterms<'a>(&'a self) -> std::collections::hash_map::Iter<'a, (Var, Var), f64> {
+    self.qcoeffs.iter()
   }
 
   pub fn sparsify(&mut self) {

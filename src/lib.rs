@@ -85,6 +85,7 @@ mod util;
 mod expr;
 mod callback;
 mod constants;
+mod model_object;
 pub mod param;
 pub mod attr;
 
@@ -92,8 +93,9 @@ pub mod attr;
 pub use env::Env;
 pub use expr::{Expr, LinExpr, QuadExpr, AttachModel};
 pub use error::{Error, Result};
-pub use model::{Model, Var, Constr, QConstr, SOS};
+pub use model::Model;
 pub use model::{VarType, ConstrSense, ModelSense, SOSType, Status, RelaxType};
+pub use model_object::*;
 pub use callback::{Callback, Where};
 pub use model::VarType::*;
 pub use model::ConstrSense::*;

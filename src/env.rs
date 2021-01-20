@@ -28,8 +28,9 @@ impl EmptyEnv {
     self.env.get(param)
   }
 
-  pub fn set<P: Param>(&mut self, param : P, value: P::Value) -> Result<()> {
-    self.env.set(param, value)
+  pub fn set<P: Param>(&mut self, param : P, value: P::Value) -> Result<&mut Self> {
+    self.env.set(param, value)?;
+    Ok(self)
   }
 
   pub fn start(self) -> Result<Env> {

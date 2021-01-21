@@ -271,6 +271,11 @@ impl Model {
     Self::from_raw(model)
   }
 
+  pub fn with_default_env(name: &str) -> Result<Model> {
+    let env = Env::new("gurobi.log")?;
+    Model::new(name, &env)
+  }
+
   /// create an empty model which associated with certain environment.
   fn from_raw(model: *mut ffi::GRBmodel) -> Result<Model> {
     let env = unsafe { ffi::GRBgetenv(model) };
@@ -502,7 +507,7 @@ impl Model {
   pub fn get_tune_result(&self, n: i32) -> Result<()> {
     self.check_apicall(unsafe { ffi::GRBgettuneresult(self.model, n) })
   }
-  
+
   /// Insert a message into log file.
   ///
   /// When **message** cannot convert to raw C string, a panic is occurred.
@@ -541,7 +546,6 @@ impl Model {
                      vtype.into(),
                      name.as_ptr())
     })?;
-    // FIXME: BUG if update mode is not lazy, I think I need to all update here.  I should record some Python API calls and check
     Ok(self.vars.add_new(self.update_mode_lazy()?))
   }
 
@@ -790,16 +794,52 @@ impl Model {
     self.set_attr(attr::ModelSense, sense.into())
   }
 
-  // TODO need to make sure the index manager is contiguous before indexing.  may need to call model.update()
-  // pub fn get_constr_by_name(&self, name: &str) -> Result<Constr> {
-  //   // let n = CString::new(name)?;
-  //   todo!()
-  // }
-  //
-  // pub fn get_var_by_name(&self, name: &str) -> Result<Var> {
-  //   // let n = CString::new(name)?;
-  //   todo!()
-  // }
+  /// Get a constraint by name.  Returns either a constraint if one was found, or `None` if none were found.
+  /// If multiple constraints match, the method returns an arbitary one.
+  ///
+  /// # Errors
+  /// Returns an error if the model requires an update,  the `name` cannot be converted to a C-string or a Gurobi error occurs.
+  ///
+  /// # Usage
+  /// ```
+  /// use gurobi::*;
+  /// let mut m = Model::with_default_env("model").unwrap();
+  /// let x = add_binvar!(m).unwrap();
+  /// let y = add_binvar!(m).unwrap();
+  /// let c = m.add_constr("constraint", x + y, Equal, 1.0).unwrap();
+  /// assert_eq!(m.get_constr_by_name("constraint").unwrap_err(), Error::ModelUpdateNeeded);
+  /// m.update().unwrap();
+  /// assert_eq!(m.get_constr_by_name("constraint").unwrap(), Some(c));
+  /// assert_eq!(m.get_constr_by_name("foo").unwrap(), None);
+  /// ```
+
+  pub fn get_constr_by_name(&self, name: &str) -> Result<Option<Constr>> {
+    if self.constrs.model_update_needed() { return Err(Error::ModelUpdateNeeded) }
+    let n = CString::new(name)?;
+    let mut idx = i32::min_value();
+    self.check_apicall(unsafe { ffi::GRBgetconstrbyname(self.model, n.as_ptr(), &mut idx)})?;
+    if idx < 0 {
+      Ok(None)
+    } else {
+      Ok(Some(self.constrs.objects()[idx as usize])) // should only panic if there's a bug in IdxManager
+    }
+  }
+
+  /// Get a variable object by name.  See [`Model.get_constr_by_name`] for details
+  ///
+  /// [`Model.get_constr_by_name`]: struct.Model.html#methods.get_constr_by_name
+  pub fn get_var_by_name(&self, name: &str) -> Result<Option<Var>> {
+    if self.vars.model_update_needed() { return Err(Error::ModelUpdateNeeded) }
+    let n = CString::new(name)?;
+    let mut idx = i32::min_value();
+    self.check_apicall(unsafe { ffi::GRBgetvarbyname(self.model, n.as_ptr(), &mut idx)})?;
+    if idx < 0 {
+      Ok(None)
+    } else {
+      Ok(Some(self.vars.objects()[idx as usize])) // should only panic if there's a bug in IdxManager
+    }
+  }
+
 
   /// Query a Model attribute
   pub fn get_attr<A: Attr>(&self, attr: A) -> Result<A::Value> {
@@ -1188,8 +1228,8 @@ macro_rules! add_var {
 /// ```
 #[macro_export]
 macro_rules! add_binvar {
-    ($model:ident, $($field:tt=$value:expr),*) => {
-      add_var!($model, Binary, $($field=$value),*, bounds=0..1)
+    ($model:ident $(,$field:tt=$value:expr)*) => {
+      add_var!($model, Binary $(,$field=$value)* , bounds=0..1)
     };
 }
 

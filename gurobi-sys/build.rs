@@ -1,29 +1,51 @@
 use std::env;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 
-fn gurobi_home() -> String {
-  let var = env::var("GUROBI_HOME").expect("failed to retrieve the value of GUROBI_HOME");
-  if !Path::new(&var).exists() {
-    panic!("GUROBI_HOME is invalid path");
+fn try_gurobi_home() -> Result<PathBuf, String> {
+  let path = env::var("GUROBI_HOME")
+    .map_err(|_| "failed to retrieve the value of GUROBI_HOME".to_string())?;
+  Ok(PathBuf::from(path))
+}
+
+fn try_conda_env() -> Result<PathBuf, String> {
+  let path = env::var("CONDA_PREFIX")
+    .map_err(|_| "failed to retrieve the value of CONDA_PREFIX".to_string())?;
+  Ok(PathBuf::from(path))
+}
+
+
+fn locate_gurobi() -> PathBuf {
+  for f in &[try_gurobi_home, try_conda_env] {
+    match f()  {
+      Ok(path) => {
+        if !path.exists() {
+          eprintln!("path {:?} doesn't exist, ignoring", path.into_os_string());
+          continue;
+        }
+        let path = path.canonicalize().unwrap();
+        eprintln!("found Gurobi home: {:?}", &path);
+        return path;
+      }
+      Err(e) => {
+        eprintln!("{}", e);
+      }
+    }
   }
-  var
+  panic!("Unable to find Gurobi installation, try setting GUROBI_HOME")
 }
 
-fn append_path(addpath: PathBuf) {
-  let path = env::var_os("PATH").expect("failed to retrieve the value of PATH");
-  let mut paths: Vec<_> = env::split_paths(&path).collect();
-
-  paths.push(addpath);
-
-  let new_path = env::join_paths(paths).unwrap();
-  env::set_var("PATH", &new_path);
+fn get_gurobi_cl(gurobi_home: &PathBuf) -> PathBuf {
+  let mut gurobi_cl = gurobi_home.clone();
+  gurobi_cl.push("bin");
+  gurobi_cl.push("gurobi_cl");
+  gurobi_cl
 }
 
-fn get_version_triple() -> (i32, i32, i32) {
-  append_path(PathBuf::from(gurobi_home()).join("bin"));
+fn get_version_triple(gurobi_home: &PathBuf) -> (i32, i32, i32) {
+  let gurobi_cl = get_gurobi_cl(gurobi_home);
 
-  let output = Command::new("gurobi_cl").arg("--version").output().expect("failed to execute gurobi_cl");
+  let output = Command::new(&gurobi_cl).arg("--version").output().expect(&format!("failed to execute {:?}", &gurobi_cl) );
   let verno: Vec<_> = String::from_utf8_lossy(&output.stdout)
     .into_owned()
     .split_whitespace()
@@ -32,17 +54,15 @@ fn get_version_triple() -> (i32, i32, i32) {
     .split(".")
     .map(|s| s.parse().expect("failed to parse version tuple"))
     .collect();
-
   (verno[0], verno[1], verno[2])
 }
 
 fn main() {
-  let gurobi_home = gurobi_home();
-  let libpath: PathBuf = PathBuf::from(gurobi_home).join("lib");
+  let gurobi_home = locate_gurobi();
+  let (major, minor, _) = get_version_triple(&gurobi_home);
+  let libpath: PathBuf = gurobi_home.join("lib");
 
-  let (major, minor, _) = get_version_triple();
   let libname = format!("gurobi{}{}", major, minor);
-
   println!("cargo:rustc-link-search=native={}", libpath.display());
   println!("cargo:rustc-link-lib={}", libname);
 }

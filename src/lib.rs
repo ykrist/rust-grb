@@ -89,7 +89,7 @@ pub mod attr;
 
 // re-exports
 pub use env::Env;
-pub use expr::{Expr, LinExpr, QuadExpr, AttachModel};
+pub use expr::{Expr, LinExpr, QuadExpr, AttachModel, GurobiSum};
 pub use error::{Error, Result};
 pub use model::Model;
 pub use model::{VarType, ConstrSense, ModelSense, SOSType, Status, RelaxType};

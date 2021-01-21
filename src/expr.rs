@@ -498,6 +498,18 @@ impl<A: Into<Expr>> Sum<A> for Expr {
   }
 }
 
+/// Convenience trait for summing over iterators to produce a concrete type.
+/// Analogous to `collect_vec` from the `itertools` crate.
+pub trait GurobiSum {
+  fn grb_sum(self) -> Expr;
+}
+
+impl<T,I> GurobiSum for I where
+    T: Into<Expr>,
+    I: Iterator<Item=T>
+{
+  fn grb_sum(self) -> Expr { self.sum() }
+}
 
 pub struct Attached<'a, T> {
   inner: &'a T,

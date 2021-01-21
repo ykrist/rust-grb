@@ -10,12 +10,11 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr::{null, null_mut};
 use std::sync::atomic::{Ordering, AtomicU32};
 
-use crate::{Error, Result, Env, QuadExpr};
+use crate::{Error, Result, Env, QuadExpr, LinExpr, Expr};
 use crate::param;
 use crate::attr;
 use crate::attr::Attr;
 use crate::callback::Callback;
-use crate::expr::{LinExpr, Expr};
 use crate::model_object::*;
 
 /// Type for new variable
@@ -622,18 +621,22 @@ impl Model {
 
 
   /// add a linear constraint to the model.
-  pub fn add_constr(&mut self, name: &str, expr: Expr, sense: ConstrSense, rhs: f64) -> Result<Constr> {
-    let expr = expr.into_linexpr()?;
+  pub fn add_constr<Lhs, Rhs>(&mut self, name: &str, lhs: Lhs, sense: ConstrSense, rhs: Rhs) -> Result<Constr> where
+    Lhs: Into<Expr>,
+    Rhs: Into<Expr>,
+  {
+
+    let expr = (lhs.into() - rhs.into()).into_linexpr()?;
     let constrname = CString::new(name)?;
-    let offset = expr.get_offset();
     let (vinds, cval) = self.get_coeffs_indices_build(&expr)?;
+
     self.check_apicall(unsafe {
       ffi::GRBaddconstr(self.model,
                         cval.len() as ffi::c_int,
                         vinds.as_ptr(),
                         cval.as_ptr(),
                         sense.into(),
-                        rhs - offset,
+                        -expr.get_offset(),
                         constrname.as_ptr())
     })?;
 

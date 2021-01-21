@@ -39,22 +39,22 @@ fn main() {
     })
     .collect();
 
-  let expr: Expr = open.iter().chain(trans_vars.iter().flat_map(|tr| tr.iter()))
+  let expr = open.iter().chain(trans_vars.iter().flat_map(|tr| tr.iter()))
     .zip(fixed_costs.iter().chain(trans_costs.iter().flat_map(|c| c.iter())))
     .map(|(x, &c)| x*c)
-    .sum();
+    .grb_sum();
 
   model.update().unwrap();
   model.set_objective(expr, Minimize).unwrap();
 
 
   for (p, (&capacity, open)) in capacity.iter().zip(&open).enumerate() {
-    let lhs : Expr = trans_vars.iter().map(|t| &t[p]).sum();
+    let lhs = trans_vars.iter().map(|t| &t[p]).grb_sum();
     model.add_constr(&format!("Capacity{}", p), lhs - capacity * open, Less, 0.0).unwrap();
   }
 
   for (w, (&demand, tvars)) in demand.iter().zip(&trans_vars).enumerate() {
-    model.add_constr(&format!("Demand{}", w), tvars.iter().sum(), Equal, demand).unwrap();
+    model.add_constr(&format!("Demand{}", w), tvars.iter().grb_sum(), Equal, demand).unwrap();
   }
 
   for o in open.iter() {

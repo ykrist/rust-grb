@@ -47,7 +47,7 @@ pub fn make_model(env: &Env) -> Result<Model> {
 
   for (s, (shift, &requirement)) in shifts.iter().zip(shift_requirements.iter()).enumerate() {
     model.add_constr(format!("c.{}", shift).as_str(),
-                          x.iter().map(|ref x| &x[s]).sum(),
+                          x.iter().map(|ref x| &x[s]).grb_sum(),
                           Equal,
                           requirement)?;
   }

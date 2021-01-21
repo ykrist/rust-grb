@@ -139,23 +139,20 @@ impl Into<i32> for Where {
 pub struct Callback<'a> {
   cbdata: *mut ffi::c_void,
   where_: Where,
-  model: &'a Model
+  model: &'a Model,
+  nvars : usize,
 }
 
 
-pub trait New<'a> {
-  #[allow(clippy::new_ret_no_self)]
-  fn new(cbdata: *mut ffi::c_void, where_: i32, model: &'a Model) -> Result<Callback<'a>>;
-}
-
-impl<'a> New<'a> for Callback<'a> {
-  fn new(cbdata: *mut ffi::c_void, where_: i32, model: &'a Model) -> Result<Callback<'a>> {
+impl<'a> Callback<'a> {
+  pub(crate) fn new(cbdata: *mut ffi::c_void, where_: i32, model: &'a Model) -> Result<Self> {
+    let nvars = model.get_attr(crate::attr::NumVars)? as usize;
     let mut callback = Callback {
       cbdata,
       where_: Where::Polling,
-      model
+      model,
+      nvars,
     };
-
     let where_ = match where_ {
       POLLING => Where::Polling,
       PRESOLVE => {
@@ -223,10 +220,7 @@ impl<'a> New<'a> for Callback<'a> {
     callback.where_ = where_;
     Ok(callback)
   }
-}
 
-
-impl<'a> Callback<'a> {
   /// Retrieve the location where the callback called.
   pub fn get_where(&self) -> Where { self.where_.clone() }
 
@@ -234,25 +228,25 @@ impl<'a> Callback<'a> {
   pub fn get_node_rel(&self, vars: &[Var]) -> Result<Vec<f64>> {
     // memo: only MIPNode && status == Optimal
     // note that this MUST be after a call to model.update(), so the indices in model.vars are Added and the unwrap() is ok
-    let vals = self.get_double_array(MIPNODE, MIPNODE_REL)?;
+    let vals = self.get_double_array_vars(MIPNODE, MIPNODE_REL)?;
     vars.iter().map(|v|  Ok(vals[self.model.get_index(v)? as usize])).collect()
   }
 
   /// Retrieve values from the current solution vector.
   pub fn get_solution(&self, vars: &[Var]) -> Result<Vec<f64>> {
     let inds = self.model.get_indices(vars)?;
-    let buf = self.get_double_array(MIPSOL, MIPSOL_SOL)?;
+    let buf = self.get_double_array_vars(MIPSOL, MIPSOL_SOL)?;
     Ok(inds.into_iter().map(|i| buf[i as usize]).collect())
   }
 
-  /// Provide a new feasible solution for a MIP model.
+  /// Provide a new feasible solution for a MIP model.  Not all variables need to be given.
   pub fn set_solution(&self, vars: &[Var], solution: &[f64]) -> Result<f64> {
-    if vars.len() != solution.len() || vars.len() < self.model.vars.len() {
+    if vars.len() != solution.len() {
       return Err(Error::InconsistentDims);
     }
 
     let inds = self.model.get_indices(vars)?;
-    let mut soln = vec![GRB_UNDEFINED; self.model.vars.len()];
+    let mut soln = vec![GRB_UNDEFINED; self.model.get_attr(crate::attr::NumVars)? as usize];
     for (i, &val) in inds.into_iter().zip(solution.iter()) {
       soln[i as usize] = val;
     }
@@ -309,8 +303,9 @@ impl<'a> Callback<'a> {
     self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what, &mut buf as *mut f64 as *mut raw::c_void) }).and(Ok(buf))
   }
 
-  fn get_double_array(&self, where_: i32, what: i32) -> Result<Vec<f64>> {
-    let mut buf = vec![0.0; self.model.vars.len()];
+  fn get_double_array_vars(&self, where_: i32, what: i32) -> Result<Vec<f64>> {
+    // let self.model.vars
+    let mut buf = vec![0.0; self.nvars];
     self.check_apicall(unsafe { ffi::GRBcbget(self.cbdata, where_, what, buf.as_mut_ptr() as *mut  raw::c_void) }).and(Ok(buf))
   }
 

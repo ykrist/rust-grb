@@ -14,7 +14,7 @@ use crate::{Error, Result, Env, QuadExpr};
 use crate::param;
 use crate::attr;
 use crate::attr::Attr;
-use crate::callback::{Callback, New};
+use crate::callback::Callback;
 use crate::expr::{LinExpr, Expr};
 use crate::model_object::*;
 
@@ -249,9 +249,7 @@ impl Model {
 
   fn next_id() -> u32 {
     static NEXT_ID: AtomicU32 = AtomicU32::new(0);
-    let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
-    eprintln!("New Model id created: {}", id);
-    id
+    NEXT_ID.fetch_add(1, Ordering::Relaxed)
   }
 
   pub fn new(modelname: &str, env: &Env) -> Result<Model> {
@@ -285,6 +283,8 @@ impl Model {
     }
     let env = Env::from_raw(env);
     let id=Model::next_id();
+
+
     let mut model = Model {
       model,
       id,
@@ -294,7 +294,17 @@ impl Model {
       qconstrs: IdxManager::new(id),
       sos: IdxManager::new(id),
     };
-    model.populate()?;
+
+    let nvars = model.get_attr(attr::NumVars)?;
+    let nconstr = model.get_attr(attr::NumConstrs)?;
+    let nqconstr = model.get_attr(attr::NumQConstrs)?;
+    let sos = model.get_attr(attr::NumSOS)?;
+
+    model.vars = IdxManager::new_with_existing_obj(id, nvars as usize);
+    model.constrs = IdxManager::new_with_existing_obj(id, nconstr as usize);
+    model.qconstrs = IdxManager::new_with_existing_obj(id, nqconstr as usize);
+    model.sos = IdxManager::new_with_existing_obj(id, sos as usize);
+
     Ok(model)
   }
 
@@ -925,7 +935,7 @@ impl Model {
   pub fn feas_relax(&mut self, relaxtype: RelaxType, minrelax: bool, vars: &[Var], lbpen: &[f64], ubpen: &[f64],
                     constrs: &[Constr], rhspen: &[f64])
                     -> Result<(f64, Vec<Var>, Vec<Constr>, Vec<QConstr>)> {
-    self.update()?;
+
     if vars.len() != lbpen.len() || vars.len() != ubpen.len() {
       return Err(Error::InconsistentDims);
     }
@@ -934,18 +944,20 @@ impl Model {
       return Err(Error::InconsistentDims);
     }
 
+    self.update()?;
+    let n_old_vars = self.get_attr(attr::NumVars)? as usize;
+    let n_old_constr = self.get_attr(attr::NumConstrs)? as usize;
+    let n_old_qconstr = self.get_attr(attr::NumQConstrs)? as usize;
+
 
     let (pen_lb, pen_ub) = if vars.is_empty() {
-      // Gurobi API docs allow for this optimisation
+      // Gurobi API spec allows for this optimisation
       (std::ptr::null(), std::ptr::null())
     } else {
-      let mut pen_lb = vec![super::INFINITY; self.vars.len()];
-      let mut pen_ub = vec![super::INFINITY; self.vars.len()];
+      let mut pen_lb = vec![super::INFINITY; n_old_vars];
+      let mut pen_ub = vec![super::INFINITY; n_old_vars];
       for (v, (&lb, &ub)) in vars.iter().zip(lbpen.iter().zip(ubpen)) {
         let idx = self.get_index(v)? as usize;
-        if idx >= self.vars.len() {
-          return Err(Error::InconsistentDims); // FIXME is this needed?
-        }
         pen_lb[idx] = lb;
         pen_ub[idx] = ub;
       }
@@ -955,13 +967,9 @@ impl Model {
     let pen_rhs = if constrs.is_empty() {
       std::ptr::null()
     } else {
-      let mut pen_rhs = vec![super::INFINITY; self.constrs.len()];
+      let mut pen_rhs = vec![super::INFINITY; n_old_constr];
       for (c, &rhs) in constrs.iter().zip(rhspen) {
         let idx = self.get_index(c)? as usize;
-        if idx >= self.constrs.len() {
-          return Err(Error::InconsistentDims);
-        }
-
         pen_rhs[idx] = rhs;
       }
       pen_rhs.as_ptr()
@@ -984,19 +992,16 @@ impl Model {
     let lazy = self.update_mode_lazy()?;
 
     let n_vars = self.get_attr(attr::NumVars)? as usize;
-    assert!(n_vars >= self.vars.len());
-    let num_new_vars = n_vars - self.vars.len();
-    let new_vars = vec![self.vars.add_new(lazy); num_new_vars];
+    assert!(n_vars >= n_old_vars);
+    let new_vars = (0..n_vars-n_old_vars).map(|_| self.vars.add_new(lazy)).collect();
 
     let n_cons = self.get_attr(attr::NumConstrs)? as usize;
-    assert!(n_cons >= self.constrs.len());
-    let num_new_cons = n_cons - self.constrs.len();
-    let new_cons = vec![self.constrs.add_new(lazy); num_new_cons];
+    assert!(n_cons >= n_old_constr);
+    let new_cons = (0..n_cons-n_old_constr).map(|_| self.constrs.add_new(lazy)).collect();
 
     let n_qcons = self.get_attr(attr::NumQConstrs)? as usize;
-    assert!(n_qcons >= self.qconstrs.len());
-    let num_new_qcons = n_qcons - self.qconstrs.len();
-    let new_qcons = vec![self.qconstrs.add_new(lazy); num_new_qcons];
+    assert!(n_qcons >= n_old_qconstr);
+    let new_qcons = (0..n_cons-n_old_constr).map(|_| self.qconstrs.add_new(lazy)).collect();
 
     // FIXME: are SOS added here? are QConstr ever added?
 
@@ -1096,28 +1101,6 @@ impl Model {
                         values.as_ptr())
     })
   }
-
-  fn populate(&mut self) -> Result<()> {
-    assert!(self.vars.is_empty());
-    assert!(self.constrs.is_empty());
-    assert!(self.qconstrs.is_empty());
-    assert!(self.sos.is_empty());
-    let update_lazy = self.update_mode_lazy()?;
-    for _ in 0..self.get_attr(attr::NumVars)? {
-      self.vars.add_new(update_lazy);
-    }
-    for _ in 0..self.get_attr(attr::NumConstrs)? {
-      self.constrs.add_new(update_lazy);
-    }
-    for _ in 0..self.get_attr(attr::NumQConstrs)? {
-      self.qconstrs.add_new(update_lazy);
-    }
-    for _ in 0..self.get_attr(attr::NumSOS)? {
-      self.sos.add_new(update_lazy);
-    }
-    Ok(())
-  }
-
 
   // add quadratic terms of objective function.
   fn add_qpterms(&mut self, qrow: &[i32], qcol: &[i32], qval: &[f64]) -> Result<()> {

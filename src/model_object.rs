@@ -1,5 +1,6 @@
 use std::hash::Hash;
 use fnv::FnvHashMap;
+use std::fmt::Debug;
 
 use gurobi_sys as ffi;
 use crate::Model;
@@ -18,7 +19,6 @@ mod private_traits {
 }
 
 use private_traits::ModelObjectPrivate;
-use std::fmt::Debug;
 
 pub trait ModelObject: ModelObjectPrivate + Debug {
   fn id(&self) -> u32;
@@ -65,7 +65,7 @@ create_model_obj_ty!(Constr, constrs, ffi::GRBdelconstrs);
 create_model_obj_ty!(QConstr, qconstrs, ffi::GRBdelqconstrs);
 create_model_obj_ty!(SOS, sos, ffi::GRBdelsos);
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum IdxState {
   Present(i32),
   // has been processed with a call to update()
@@ -101,6 +101,17 @@ pub struct IdxManager<T: Hash + Eq> {
 
 
 impl<T: ModelObject> IdxManager<T> {
+  pub(crate) fn new_with_existing_obj(model_id: u32, nobj: usize) -> IdxManager<T> {
+    let mut im = IdxManager::new(model_id);
+    for id in 0..nobj  {
+      let v = T::from_raw(id as u32, model_id);
+      im.order.push(v);
+      im.lookup.insert(v, IdxState::Present(id as i32));
+    }
+    im.next_id = nobj as u32;
+    im
+  }
+
   pub(crate) fn new(model_id: u32) -> IdxManager<T> {
     let order = Vec::new();
     let lookup = FnvHashMap::default();
@@ -160,10 +171,12 @@ impl<T: ModelObject> IdxManager<T> {
     }
     self.update_model = true;
     self.mark_update_action(UpdateAction::Rebuild);
+    debug_assert_eq!(self.lookup.len(), self.order.len());
     Ok(())
   }
 
   pub fn add_new(&mut self, update_lazy: bool) -> T {
+    debug_assert_eq!(self.lookup.len(), self.order.len());
     let o = T::from_raw(self.next_id, self.model_id);
     self.next_id += 1;
     self.mark_update_action(UpdateAction::Fix);
@@ -173,12 +186,31 @@ impl<T: ModelObject> IdxManager<T> {
       IdxState::Build(self.lookup.len() as i32)
     };
     self.update_model = true;
+    #[cfg(debug_assertions)]
+      { // can't do vec![self.add_new(_); 100], since this just clones a bunch of shit
+        if let Some(other) = self.order.last() {
+          let s = self.lookup[other];
+          if s != IdxState::Pending { assert_ne!(s, state); }
+        }
+      }
     self.lookup.insert(o, state);
     self.order.push(o);
     o
   }
 
+  // debug helper
+  #[cfg(debug_assertions)]
+  #[allow(dead_code)]
+  fn print_vars(&self) {
+    println!("----------------------------------------------------");
+    for o in &self.order {
+      print!("{:?} ", self.lookup[o]);
+    }
+    println!();
+  }
+
   pub(crate) fn update(&mut self) {
+    debug_assert_eq!(self.lookup.len(), self.order.len());
     use std::collections::hash_map::Entry;
 
     match self.update_action {
@@ -191,14 +223,14 @@ impl<T: ModelObject> IdxManager<T> {
           match *state {
             IdxState::Removed(_) => unreachable!(),
             IdxState::Pending => {
-              *state = IdxState::Present(k)
+              *state = IdxState::Present(k);
             }
             IdxState::Build(idx) => {
               debug_assert_eq!(idx, k);
-              *state = IdxState::Present(k)
+              *state = IdxState::Present(k);
             }
             IdxState::Present(_) => break
-          }
+          };
           k -= 1;
         }
       }
@@ -235,10 +267,92 @@ impl<T: ModelObject> IdxManager<T> {
     self.update_action = UpdateAction::Noop;
   }
 
-  pub fn is_empty(&self) -> bool { self.lookup.is_empty() }
+}
 
-  pub fn len(&self) -> usize {
-    assert!(self.update_action != UpdateAction::Rebuild);
-    self.lookup.len()
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use proptest::prelude::*;
+
+  #[derive(Debug, Copy, Clone, Eq, PartialEq)]
+  enum Action {
+    SwitchUpdateMode,
+    AddVar(u8),
+    RemoveVar(u8),
   }
+
+  fn action_strat(num: usize) -> impl Strategy<Value=Vec<Action>> {
+    let s = prop_oneof![
+      Just(Action::SwitchUpdateMode),
+      any::<u8>().prop_map(Action::AddVar),
+      any::<u8>().prop_map(Action::RemoveVar),
+    ];
+    proptest::collection::vec(s, ..num)
+  }
+
+  fn state_machine(actions: Vec<Action>)  {
+      let mut update_mode_lazy = true;
+      let mut vars : Vec<Option<Var>> = vec![None; u8::MAX as usize + 1];
+      let mut idx_manager = IdxManager::new(0);
+      println!("{}", "-".repeat(80));
+      for a in actions {
+        println!("{:?}", a);
+        match a {
+          Action::SwitchUpdateMode => {
+            update_mode_lazy = !update_mode_lazy;
+            if !update_mode_lazy {
+              idx_manager.update(); // purge old pending states
+            }
+            dbg!(update_mode_lazy);
+          },
+          Action::AddVar(i) => {
+            let i = i as usize;
+            let v = vars[i];
+            dbg!(v);
+            match v {
+              Some(v) => {
+                if !update_mode_lazy {
+                  idx_manager.get_index_build(&v).unwrap();
+                }
+              },
+              None => {
+                vars[i] = Some(idx_manager.add_new(update_mode_lazy));
+              }
+            }
+          }
+          Action::RemoveVar(i) => {
+            let i = i as usize;
+            let v = vars[i];
+            dbg!(v);
+            match v {
+              Some(v) => {
+                match idx_manager.remove(v, update_mode_lazy) {
+                  Ok(()) => vars[i] = None,
+                  Err(e) => assert_eq!(e, Error::ModelObjectPending)
+                }
+
+              },
+              None => {}
+            }
+          }
+        }
+      }
+
+  }
+
+  proptest! {
+    #[test]
+    fn fuzz(actions in action_strat(100)) {
+      state_machine(actions);
+    }
+  }
+
+  #[test]
+  fn regressions() {
+    use Action::*;
+    state_machine(vec![AddVar(4), SwitchUpdateMode, AddVar(4)]);
+    state_machine(vec![AddVar(0), AddVar(1), AddVar(2), RemoveVar(1), SwitchUpdateMode, AddVar(1)]);
+  }
+
+
 }

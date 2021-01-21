@@ -1,3 +1,4 @@
+#![allow(clippy::many_single_char_names)]
 // Copyright (c) 2016 Yusuke Sasaki
 //
 // This software is released under the MIT License.
@@ -35,10 +36,7 @@ impl Expr {
   }
 
   pub fn is_linear(&self) -> bool {
-    match self {
-      Expr::Quad(_) | Expr::QTerm(..) => false,
-      _ => true,
-    }
+    !matches!(self, Expr::QTerm(..) | Expr::Quad(_))
   }
 
   pub fn into_quadexpr(self) -> QuadExpr {
@@ -147,7 +145,7 @@ impl LinExpr {
   pub fn n_terms(&self) -> usize { self.coeff.len() }
 
   /// Returns an iterator over the terms excluding the offset (item type is `(&Var, &f64)`)
-  pub fn iter_terms<'a>(&'a self) -> std::collections::hash_map::Iter<'a, Var, f64> {
+  pub fn iter_terms(&self) -> std::collections::hash_map::Iter<Var, f64> {
     self.coeff.iter()
   }
 
@@ -228,7 +226,7 @@ impl QuadExpr {
   pub fn n_terms(&self) -> usize { self.linexpr.n_terms() }
 
   /// Returns an iterator over the terms excluding the offset (item type is `(&Var, &f64)`)
-  pub fn iter_terms<'a>(&'a self) -> std::collections::hash_map::Iter<'a, Var, f64> {
+  pub fn iter_terms(&self) -> std::collections::hash_map::Iter<Var, f64> {
     self.linexpr.iter_terms()
   }
 
@@ -236,9 +234,7 @@ impl QuadExpr {
   pub fn n_qterms(&self) -> usize { self.qcoeffs.len() }
 
   /// Returns an iterator over the terms excluding the offset (item type is `(&Var, &f64)`)
-  pub fn iter_qterms<'a>(&'a self) -> std::collections::hash_map::Iter<'a, (Var, Var), f64> {
-    self.qcoeffs.iter()
-  }
+  pub fn iter_qterms(&self) -> std::collections::hash_map::Iter<(Var, Var), f64> { self.qcoeffs.iter() }
 
   pub fn sparsify(&mut self) {
     self.linexpr.sparsify();
@@ -366,19 +362,19 @@ impl Sub for Var {
 
 impl Add for &Var {
   type Output = Expr;
-  fn add(self, rhs: &Var) -> Expr { self.clone() + rhs.clone() }
+  fn add(self, rhs: &Var) -> Expr { *self + *rhs }
 }
 
 
 impl Mul for &Var {
   type Output = Expr;
-  fn mul(self, rhs: &Var) -> Expr { self.clone() * rhs.clone() }
+  fn mul(self, rhs: &Var) -> Expr { *self *  *rhs }
 }
 
 
 impl Sub for &Var {
   type Output = Expr;
-  fn sub(self, rhs: &Var) -> Expr {self.clone() - rhs.clone()}
+  fn sub(self, rhs: &Var) -> Expr { *self - *rhs }
 }
 
 
@@ -472,7 +468,7 @@ impl Neg for Var {
 
 impl Neg for &Var {
   type Output = Expr;
-  fn neg(self) -> Expr { -self.clone() }
+  fn neg(self) -> Expr { - *self }
 }
 
 impl Neg for Expr {
@@ -520,7 +516,7 @@ impl AttachModel for Expr {}
 
 fn float_fmt_helper(x: f64, ignore_val: f64) -> (Option<f64>, bool) {
   let positive = x > -f64::EPSILON;
-  if (x-ignore_val) < f64::EPSILON {
+  if (x-ignore_val).abs() < f64::EPSILON {
     (None, positive)
   } else if positive {
     (Some(x), positive)

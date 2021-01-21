@@ -7,6 +7,7 @@ use crate::{Error, Result};
 
 mod private_traits {
   use super::*;
+
   pub trait ModelObjectPrivate: Sized + Hash + Eq + Copy {
     fn from_raw(id: u32, model_id: u32) -> Self;
     fn idx_manager_mut(model: &mut Model) -> &mut IdxManager<Self>;
@@ -66,16 +67,20 @@ create_model_obj_ty!(SOS, sos, ffi::GRBdelsos);
 
 #[derive(Debug, Clone, Copy)]
 enum IdxState {
-  Present(i32), // has been processed with a call to update()
-  Build(i32), // has an index and can be used for building, and setting but not querying attributes
-  Pending, // hasn't got an index yet, cannot be used for building, setting, or querying attributes
-  Removed(i32) // object has been removed, but can still be used to build and set attributes.
+  Present(i32),
+  // has been processed with a call to update()
+  Build(i32),
+  // has an index and can be used for building, and setting but not querying attributes
+  Pending,
+  // hasn't got an index yet, cannot be used for building, setting, or querying attributes
+  Removed(i32), // object has been removed, but can still be used to build and set attributes.
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 enum UpdateAction {
   Noop = 0,
-  Fix = 1, // Sweep from the back of the ordering, mapping Build(idx) to Present(idx)
+  Fix = 1,
+  // Sweep from the back of the ordering, mapping Build(idx) to Present(idx)
   Rebuild = 2, // Rebuild the whole lookup
 }
 
@@ -99,10 +104,10 @@ impl<T: ModelObject> IdxManager<T> {
   pub(crate) fn new(model_id: u32) -> IdxManager<T> {
     let order = Vec::new();
     let lookup = FnvHashMap::default();
-    IdxManager {order, lookup, model_id, next_id: 0, update_action: UpdateAction::Noop, update_model: false}
+    IdxManager { order, lookup, model_id, next_id: 0, update_action: UpdateAction::Noop, update_model: false }
   }
 
-  fn mark_update_action(&mut self, a : UpdateAction) {
+  fn mark_update_action(&mut self, a: UpdateAction) {
     if a > self.update_action {
       self.update_action = a
     }
@@ -115,13 +120,10 @@ impl<T: ModelObject> IdxManager<T> {
         IdxState::Pending | IdxState::Build(_) => Err(Error::ModelObjectPending),
         IdxState::Present(idx) => Ok(idx)
       }
-    }
-    else {
-      if o.model_id() == self.model_id {
-        Err(Error::ModelObjectRemoved)
-      } else {
-        Err(Error::ModelObjectMismatch)
-      }
+    } else if o.model_id() == self.model_id {
+      Err(Error::ModelObjectRemoved)
+    } else {
+      Err(Error::ModelObjectMismatch)
     }
   }
 
@@ -131,33 +133,29 @@ impl<T: ModelObject> IdxManager<T> {
         IdxState::Pending => Err(Error::ModelObjectPending),
         IdxState::Present(idx) | IdxState::Build(idx) | IdxState::Removed(idx) => Ok(idx)
       }
-    }
-
-    else {
-      if o.model_id() == self.model_id {
-        Err(Error::ModelObjectRemoved)
-      } else {
-        Err(Error::ModelObjectMismatch)
-      }
+    } else if o.model_id() == self.model_id {
+      Err(Error::ModelObjectRemoved)
+    } else {
+      Err(Error::ModelObjectMismatch)
     }
   }
 
   pub(crate) fn model_update_needed(&self) -> bool { self.update_model }
 
-  pub(crate) fn objects<'a>(&'a self) -> &'a [T] {
+  pub(crate) fn objects(&self) -> &[T] {
     assert!(!self.update_model);
     self.order.as_slice()
   }
 
   pub(crate) fn remove(&mut self, o: T, _update_lazy: bool) -> Result<()> {
     if o.model_id() != self.model_id {
-      return Err(Error::ModelObjectMismatch)
+      return Err(Error::ModelObjectMismatch);
     }
 
-    let state =  self.lookup.get_mut(&o).ok_or(Error::ModelObjectRemoved)?;
+    let state = self.lookup.get_mut(&o).ok_or(Error::ModelObjectRemoved)?;
     match *state {
       IdxState::Build(_) | IdxState::Pending => return Err(Error::ModelObjectPending),
-      IdxState::Present(idx) => {*state = IdxState::Removed(idx) },
+      IdxState::Present(idx) => { *state = IdxState::Removed(idx) }
       IdxState::Removed(_) => return Err(Error::ModelObjectRemoved),
     }
     self.update_model = true;
@@ -184,7 +182,7 @@ impl<T: ModelObject> IdxManager<T> {
     use std::collections::hash_map::Entry;
 
     match self.update_action {
-      UpdateAction::Noop => {},
+      UpdateAction::Noop => {}
 
       UpdateAction::Fix => { // O(k) where k is the number of elements that need to be updated
         let mut k = self.order.len() as i32 - 1;
@@ -198,37 +196,36 @@ impl<T: ModelObject> IdxManager<T> {
             IdxState::Build(idx) => {
               debug_assert_eq!(idx, k);
               *state = IdxState::Present(k)
-            },
+            }
             IdxState::Present(_) => break
           }
           k -= 1;
         }
-      },
+      }
 
       UpdateAction::Rebuild => { // O(n) where n is the total number of elements.
         let mut k = 0i32;
         let order = &mut self.order;
         let lookup = &mut self.lookup;
-        order.retain(|o| {
-          match lookup.entry(o.clone()) {
+        order.retain(|&o|
+          match lookup.entry(o) {
+            Entry::Vacant(_) => unreachable!("bug, should always have an entry in lookup"),
             Entry::Occupied(mut e) => {
-              let state= *e.get();
+              let state = *e.get();
               match state {
                 IdxState::Present(_) | IdxState::Build(_) | IdxState::Pending => {
                   e.insert(IdxState::Present(k));
                   k += 1;
-                  return true
+                  true
                 }
                 IdxState::Removed(_) => {
                   e.remove();
-                  return false
+                  false
                 }
-              };
+              }
             }
-
-            Entry::Vacant(_) => unreachable!("bug, should always have an entry in lookup")
           }
-        });
+        );
         debug_assert_eq!(k as usize, self.lookup.len());
       }
     }

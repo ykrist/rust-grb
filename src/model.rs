@@ -197,7 +197,7 @@ pub struct Model {
 }
 
 
-fn convert_to_cstring_ptrs(strings: &Vec<&str>) -> Result<Vec<*const ffi::c_char>> {
+fn convert_to_cstring_ptrs(strings: &[&str]) -> Result<Vec<*const ffi::c_char>> {
   strings.iter().map(|&s| {
     let s = CString::new(s)?;
     Ok(s.as_ptr())
@@ -282,7 +282,7 @@ impl Model {
     let id=Model::next_id();
     let mut model = Model {
       model,
-      id: id,
+      id,
       env,
       vars: IdxManager::new(id),
       constrs: IdxManager::new(id),
@@ -502,31 +502,7 @@ impl Model {
   pub fn get_tune_result(&self, n: i32) -> Result<()> {
     self.check_apicall(unsafe { ffi::GRBgettuneresult(self.model, n) })
   }
-
-  /// Create/retrieve a concurrent environment for the model
-  ///
-  /// Note that the number of concurrent environments (`num`) must be contiguously numbered.
-  ///
-  /// # Example
-  /// ```ignore
-  /// let env1 = model.get_concurrent_env(0).unwrap();
-  /// let env2 = model.get_concurrent_env(1).unwrap();
-  /// let env3 = model.get_concurrent_env(2).unwrap();
-  /// ...
-  /// ```
-  #[deprecated]
-  pub fn get_concurrent_env(&self, num: i32) -> Result<Env> {
-    let env = unsafe { ffi::GRBgetconcurrentenv(self.model, num) };
-    if env.is_null() {
-      return Err(Error::FromAPI("Cannot get a concurrent environment.".to_owned(), 20003));
-    }
-    Ok(Env::from_raw(env))
-  }
-
-  /// Discard all concurrent environments for the model.
-  #[deprecated]
-  pub fn discard_concurrent_envs(&self) { unsafe { ffi::GRBdiscardconcurrentenvs(self.model) } }
-
+  
   /// Insert a message into log file.
   ///
   /// When **message** cannot convert to raw C string, a panic is occurred.

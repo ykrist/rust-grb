@@ -2,8 +2,7 @@
 //
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
-
-/// Defines the name of parameters
+#![allow(clippy::missing_safety_doc)]
 use gurobi_sys as ffi;
 use std::ffi::CString;
 use std::result::Result as StdResult;

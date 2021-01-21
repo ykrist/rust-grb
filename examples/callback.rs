@@ -3,7 +3,6 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-extern crate gurobi;
 use gurobi::*;
 use std::io::{BufWriter, Write};
 use std::fs::OpenOptions;

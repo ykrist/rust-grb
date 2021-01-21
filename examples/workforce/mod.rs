@@ -3,12 +3,7 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-extern crate gurobi;
-extern crate itertools;
-
-use std::iter::repeat;
 use gurobi::*;
-use self::itertools::*;
 
 pub fn make_model(env: &Env) -> Result<Model> {
   // Set of worker's names
@@ -37,24 +32,18 @@ pub fn make_model(env: &Env) -> Result<Model> {
 
   let mut model = Model::new("assignment", &env)?;
 
-  let mut x = Vec::new();
-  for (worker, availability) in Zip::new((workers.iter(), availability.iter())) {
+  // x[worker_idx][shift_idx]
+  let mut x = Vec::with_capacity(workers.len());
+  for ((worker, &pay), worker_avail) in workers.iter().zip(&pays).zip(&availability) {
     let mut xshift = Vec::new();
-    for (shift, &availability) in Zip::new((shifts.iter(), availability.iter())) {
+    for (shift, &is_avail) in shifts.iter().zip(worker_avail) {
       let vname = format!("{}.{}", worker, shift);
-      let v = model.add_var(vname.as_str(), Continuous, 0.0, -INFINITY, availability as f64, &[], &[])?;
-      xshift.push(v);
+      xshift.push(model.add_var(&vname, Continuous, pay, -INFINITY, is_avail as f64, &[], &[])?);
     }
     x.push(xshift);
   }
   model.update()?;
-
-  let objterm = pays.iter().map(|pay| repeat(pay).take(shifts.len()));
-  let objexpr : Expr = Zip::new((Itertools::flatten(x.iter()), Itertools::flatten(objterm)))
-      .map(|(x, &c)| c*x)
-      .sum();
-
-  model.set_objective(objexpr, Minimize)?;
+  model.set_attr(attr::ModelSense, ModelSense::Minimize.into())?;
 
   for (s, (shift, &requirement)) in shifts.iter().zip(shift_requirements.iter()).enumerate() {
     model.add_constr(format!("c.{}", shift).as_str(),

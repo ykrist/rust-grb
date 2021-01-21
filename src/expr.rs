@@ -651,6 +651,7 @@ mod tests {
       $(
         let $var = $model.add_var(stringify!($var), Binary, 0.0, 0.0, 0.0, &[], &[]).unwrap();
       )+
+      $model.update().unwrap(); // necessary to retrieve variable attributes
     }
   }
 

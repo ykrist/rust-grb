@@ -3,8 +3,6 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-extern crate gurobi;
-extern crate itertools;
 use gurobi::*;
 
 mod workforce;

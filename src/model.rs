@@ -4,7 +4,6 @@
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
 use gurobi_sys as ffi;
-use itertools::{Itertools, Zip};
 use std::ffi::CString;
 use std::mem::transmute;
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -571,11 +570,8 @@ impl Model {
   }
 
   /// add decision variables to the model.
-  pub fn add_vars(&mut self, names: &[&str], vtypes: &[VarType], objs: &[f64], lbs: &[f64], ubs: &[f64],
-                  colconstrs: &[&[Constr]], colvals: &[&[f64]])
-                  -> Result<Vec<Var>> {
-    if names.len() != vtypes.len() || vtypes.len() != objs.len() || objs.len() != lbs.len() ||
-      lbs.len() != ubs.len() || ubs.len() != colconstrs.len() || colconstrs.len() != colvals.len() {
+  pub fn add_vars(&mut self, names: &[&str], vtypes: &[VarType], objs: &[f64], lbs: &[f64], ubs: &[f64], colcoeff: &[Vec<(Constr, f64)>]) -> Result<Vec<Var>> {
+    if names.len() != vtypes.len() || vtypes.len() != objs.len() || objs.len() != lbs.len() ||  lbs.len() != colcoeff.len() {
       return Err(Error::InconsistentDims);
     }
 
@@ -598,22 +594,20 @@ impl Model {
     };
 
     let (beg, ind, val) = {
-      let len_ind = colconstrs.iter().map(|constrs| constrs.len()).sum();
-      let mut buf_beg = Vec::with_capacity(colconstrs.len());
+      let len_ind = colcoeff.iter().map(|c| c.len()).sum();
+      let mut buf_beg = Vec::with_capacity(colcoeff.len());
       let mut buf_ind = Vec::with_capacity(len_ind);
       let mut buf_val: Vec<f64> = Vec::with_capacity(len_ind);
 
       let mut beg = 0i32;
-      for (constrs, &vals) in Zip::new((colconstrs, colvals)) {
-        if constrs.len() != vals.len() {
-          return Err(Error::InconsistentDims);
-        }
+      for coeff in colcoeff {
         buf_beg.push(beg);
-        beg += constrs.len() as i32;
-        for c in constrs.iter() {
-          buf_ind.push(self.get_index(c)?)
+        beg += coeff.len() as i32;
+
+        for (constr, c) in coeff.iter() {
+          buf_ind.push(self.get_index(constr)?);
+          buf_val.push(*c);
         }
-        buf_val.extend_from_slice(vals);
       }
       (buf_beg, buf_ind, buf_val)
     };
@@ -664,7 +658,7 @@ impl Model {
     }
     let lhs : Result<Vec<LinExpr>>= lhs.into_iter().map(|e| e.into_linexpr()).collect();
     let lhs = lhs?;
-    let sense = sense.iter().map(|&s| s.into()).collect_vec();
+    let sense : Vec<_> = sense.iter().map(|&s| s.into()).collect();
     rhs.iter_mut().zip(lhs.iter()).for_each(|(rhs, lhs)| *rhs -= lhs.get_offset());
     let constrnames = convert_to_cstring_ptrs(&names)?;
     let (cbeg, cind, cval) = self.convert_coeff_to_csr_build(lhs)?;
@@ -931,7 +925,7 @@ impl Model {
     } else {
       let mut pen_lb = vec![super::INFINITY; self.vars.len()];
       let mut pen_ub = vec![super::INFINITY; self.vars.len()];
-      for (v, &lb, &ub) in Zip::new((vars, lbpen, ubpen)) {
+      for (v, (&lb, &ub)) in vars.iter().zip(lbpen.iter().zip(ubpen)) {
         let idx = self.get_index(v)? as usize;
         if idx >= self.vars.len() {
           return Err(Error::InconsistentDims); // FIXME is this needed?
@@ -946,7 +940,7 @@ impl Model {
       std::ptr::null()
     } else {
       let mut pen_rhs = vec![super::INFINITY; self.constrs.len()];
-      for (c, &rhs) in Zip::new((constrs, rhspen)) {
+      for (c, &rhs) in constrs.iter().zip(rhspen) {
         let idx = self.get_index(c)? as usize;
         if idx >= self.constrs.len() {
           return Err(Error::InconsistentDims);
@@ -1142,22 +1136,40 @@ impl Drop for Model {
 }
 
 
+/// Convienence wrapper around [`Model.add_var`] Add a new variable to a `Model` object.  The macro keyword arguments are
+/// optional, but their ordering is not.
+///
+/// # Arguments
+/// The first argument is a `Model` object and the second argument is a [`VarType`] variant.  The `bounds` keyword argument
+/// is of the format `LB..UB` where `LB` and `UB` are the upper and lower bounds of the variable.  `LB` and `UB` can be
+/// left off as well, so `..UB`, `LB..` and `..` are also valid values.
+///
+/// [`Model.add_var`]: struct.Model.html#method.add_var
+/// [`VarType`]: enum.VarType.html
+/// ```
+/// use gurobi::*;
+/// let env = Env::new("gurobi.log").unwrap();
+/// let mut model = Model::new("Model", &env).unwrap();
+/// add_var!(model, Continuous, name="name", obj=0.0, bounds=-10..10).unwrap();
+/// add_var!(model, Integer, bounds=0..).unwrap();
+/// add_var!(model, Continuous, name=&format!("X[{}]", 42)).unwrap();
+/// ```
 #[macro_export]
 macro_rules! add_var {
-    ($model:ident, $t:ident, name=$name:expr, obj=$obj:expr, range=$a:literal..$b:literal) => {
-      $model.add_var($name, $t, $obj as f64, $a as f64, $b as f64, &[], &[])
+    ($model:ident, $t:ident, name=$name:expr, obj=$obj:expr, bounds=$($lb:literal)?..$($ub:literal)?) => {
+      $model.add_var($name, $t, $obj as f64, add_var!(@LB, $($lb)*), add_var!(@UB, $($ub)*), &[], &[])
     };
 
     ($model:tt, $t:tt, name=$name:expr, obj=$obj:expr) => {
-      add_var!($model, $t, name=$name, obj=$obj, range=0.0..gurobi::INFINITY)
+      add_var!($model, $t, name=$name, obj=$obj, bounds=0.0..)
     };
 
-    ($model:tt, $t:tt, obj=$obj:expr,  range=$a:literal..$b:literal) => {
-      add_var!($model, $t, name="", obj=$obj, range=$a..$b)
+    ($model:tt, $t:tt, obj=$obj:expr,  bounds=$($lb:literal)?..$($ub:literal)?) => {
+      add_var!($model, $t, name="", obj=$obj, bounds=$($lb)*..$($ub)*)
     };
 
-    ($model:tt, $t:tt, name=$name:expr,  range=$a:literal..$b:literal) => {
-      add_var!($model, $t, name=$name, obj=0.0, range=$a..$b)
+    ($model:tt, $t:tt, name=$name:expr,  bounds=$($lb:literal)?..$($ub:literal)?) => {
+      add_var!($model, $t, name=$name, obj=0.0, bounds=$($lb)*..$($ub)*)
     };
 
     ($model:tt, $t:tt, obj=$obj:expr) => {
@@ -1168,37 +1180,42 @@ macro_rules! add_var {
       add_var!($model, $t, name=$name, obj=0.0)
     };
 
-    ($model:tt, $t:tt, range=$a:literal..$b:literal) => {
-      add_var!($model, $t, name="", range=$a..$b)
+    ($model:tt, $t:tt, bounds=$($lb:literal)?..$($ub:literal)?) => {
+      add_var!($model, $t, name="", bounds=$($lb)*..$($ub)*)
     };
 
     ($model:tt, $t:tt) => {
       add_var!($model, $t, name="")
     };
+
+    (@UB, $x:literal) => { $x as f64 };
+    (@UB, ) => { $crate::INFINITY };
+    (@LB, $x:literal ) => { $x as f64 };
+    (@LB, ) => { $crate::INFINITY };
 }
 
+/// Add a binary variable to a Model object.  See [`add_var!`] for details.  The `bounds` keyword
+/// is not available here.
+///
+/// # Errors
+/// This macro will return a `Result<Var>`, forwarding any errors from the Gurobi API.
+///
+/// # Example
+/// Usage with all keyword arguments supplied:
+///
+/// [`add_var!`]: macro.add_var.html
+/// ```
+/// use gurobi::*;
+/// let env = Env::new("gurobi.log").unwrap();
+/// let mut model = Model::new("Model", &env).unwrap();
+/// add_binvar!(model, name="name", obj=0.0).unwrap();
+/// ```
 #[macro_export]
 macro_rules! add_binvar {
-    ($model:ident, $($field:tt=$value:tt),*) => {
-      add_var!($model, Binary, $($field=$value),*, range=0..1)
+    ($model:ident, $($field:tt=$value:expr),*) => {
+      add_var!($model, Binary, $($field=$value),*, bounds=0..1)
     };
 }
-
-#[macro_export]
-macro_rules! add_ctsvar {
-    ($model:ident, $($field:tt=$value:tt),*) => {
-      add_var!($model, Continuous, $($field=$value),*)
-    };
-}
-
-#[macro_export]
-macro_rules! add_intvar {
-    ($model:ident, $($field:tt=$value:tt),*) => {
-      add_var!($model, Integer, $($field=$value),*)
-    };
-}
-
-
 
 
 #[cfg(test)]
@@ -1220,8 +1237,8 @@ mod tests {
     let mut m1 = Model::new("test1", &env).unwrap();
     let mut m2 = Model::new("test2", &env).unwrap();
 
-    let x1 = add_binvar!(m1, name="x1").unwrap();
-    let x2 = add_binvar!(m2, name="x2").unwrap();
+    let x1 = add_var!(m1, Binary,  name="x1").unwrap();
+    let x2 = add_var!(m2, Binary,  name="x2").unwrap();
     assert_ne!(m1.id, m2.id);
 
     assert_eq!(x1.model_id, m1.id);

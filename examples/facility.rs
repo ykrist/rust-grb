@@ -3,10 +3,7 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-extern crate gurobi;
-extern crate itertools;
 use gurobi::*;
-use itertools::*;
 
 fn main() {
   // warehouse demand in thousands of units.
@@ -29,37 +26,35 @@ fn main() {
 
   // plant open decision variables.
   // open[p] == 1 means that plant p is open.
-  let open: Vec<Var> =
-    (0..(fixed_costs.len())).map(|p| model.add_var(&format!("Open{}", p), Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap()).collect();
+  let open: Vec<Var> = fixed_costs.iter().enumerate().map(|(p, &cost) | add_binvar!(model, name=&format!("Open{}", p), obj=cost).unwrap() ).collect();
 
   // transportation decision variables.
   // how much transport from a plant p to a warehouse w
-  let transport: Vec<Vec<_>> = trans_costs.iter()
+  let trans_vars: Vec<Vec<Var>> = trans_costs.iter()
     .enumerate()
     .map(|(w, costs)| {
-      (0..(costs.len()))
-        .map(|p| model.add_var(&format!("Trans{}.{}", p, w), Continuous, 0.0, 0.0, INFINITY, &[], &[]).unwrap())
+      costs.iter().enumerate()
+        .map(|(p, &cost)| add_var!(model, Continuous, name=&format!("Trans{}.{}", p, w), obj=cost).unwrap() )
         .collect()
     })
     .collect();
 
-  let expr: Expr = Zip::new((
-    open.iter().chain(Itertools::flatten(transport.iter())),
-    fixed_costs.iter().chain(Itertools::flatten(trans_costs.iter()))
-  )).map(|(x, &c)| x*c).sum();
+  let expr: Expr = open.iter().chain(trans_vars.iter().flat_map(|tr| tr.iter()))
+    .zip(fixed_costs.iter().chain(trans_costs.iter().flat_map(|c| c.iter())))
+    .map(|(x, &c)| x*c)
+    .sum();
 
   model.update().unwrap();
   model.set_objective(expr, Minimize).unwrap();
 
 
-  for (p, (&capacity, open)) in Zip::new((&capacity, &open)).enumerate() {
-    let lhs : Expr = transport.iter().map(|t| &t[p]).sum();
+  for (p, (&capacity, open)) in capacity.iter().zip(&open).enumerate() {
+    let lhs : Expr = trans_vars.iter().map(|t| &t[p]).sum();
     model.add_constr(&format!("Capacity{}", p), lhs - capacity * open, Less, 0.0).unwrap();
   }
 
-  for (w, (&demand, transport)) in Zip::new((&demand, &transport)).enumerate() {
-    let lhs  = transport.iter().sum();
-    model.add_constr(&format!("Demand{}", w), lhs, Equal, demand).unwrap();
+  for (w, (&demand, tvars)) in demand.iter().zip(&trans_vars).enumerate() {
+    model.add_constr(&format!("Demand{}", w), tvars.iter().sum(), Equal, demand).unwrap();
   }
 
   for o in open.iter() {
@@ -67,8 +62,8 @@ fn main() {
   }
 
   println!("Initial guesss:");
-  let max_fixed = fixed_costs.iter().cloned().fold(-1. / 0., f64::max);
-  for (p, (open, &cost)) in Zip::new((&open, &fixed_costs)).enumerate() {
+  let max_fixed = fixed_costs.iter().cloned().max_by(|a,b| a.partial_cmp(b).unwrap()).unwrap();
+  for (p, (open, &cost)) in open.iter().zip(&fixed_costs).enumerate() {
     if (cost - max_fixed).abs() < 1e-4 {
       model.set_obj_attr(attr::Start, open, 0.0).unwrap();
       println!("Closing plant {}", p);
@@ -90,7 +85,7 @@ fn main() {
     let x = model.get_obj_attr(attr::X, open).unwrap();
     if x > 0.9 {
       println!("Plant {} is open", p);
-      for (w, trans) in transport.iter().enumerate() {
+      for (w, trans) in trans_vars.iter().enumerate() {
         let t = model.get_obj_attr(attr::X, &trans[p]).unwrap();
         if t > 0.0 {
           println!("  Transport {} units to warehouse {}", t, w);

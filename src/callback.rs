@@ -16,9 +16,9 @@ use crate::constants::callback::*;
 // used for setting a partial solution in a callback
 use crate::constants::GRB_UNDEFINED;
 
-/// Location where the callback called
+/// Location where the callback was called.
 ///
-/// If you want to get more information, see [official
+/// If you want to get more information, see the [official
 /// manual](https://www.gurobi.com/documentation/6.5/refman/callback_codes.html).
 #[derive(Debug, Clone)]
 pub enum Where {
@@ -261,10 +261,10 @@ impl<'a> Callback<'a> {
     Ok(obj)
   }
 
-  /// Retrieve the elapsed solver runtime [sec].
+  /// Retrieve the elapsed solver runtime in seconds.
   pub fn get_runtime(&self) -> Result<f64> {
     if let Where::Polling = self.get_where()  {
-      return Err(Error::FromAPI("bad call in callback".to_owned(), 40001));
+      return Err(Error::FromAPI("Cannot query runtime in Polling state".to_owned(), 40001));
     }
     self.get_double(self.get_where().into(), RUNTIME)
   }

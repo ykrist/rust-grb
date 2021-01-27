@@ -3,16 +3,11 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-//! This crate provides primitive Rust APIs for Gurobi Optimizer.
+//! This crate provides Rust bindings for Gurobi Optimizer.
 //!
-//! It supports some types of mathematical programming problems (e.g. Linear programming; LP,
-//! Mixed Integer Linear Programming; MILP, and so on).
+//! ## Installing
 //!
-//! ## Notices
-//!
-//! * Before using this crate, you should install Gurobi and obtain a license.
-//!   The instruction can be found
-//!   [here](http://www.gurobi.com/downloads/licenses/license-center).
+//! * Before using this crate, you should install Gurobi and obtain a [license](http://www.gurobi.com/downloads/licenses/license-center).
 //!
 //! * Make sure that the environment variable `GUROBI_HOME` is set to the installation path of Gurobi
 //!   (like `C:\gurobi652\win64`, `/opt/gurobi652/linux64`).  If using the Conda package from the Gurobi
@@ -45,9 +40,9 @@
 //! let x2 = add_var!(model, Integer, name="x2", bounds=..).unwrap();
 //!
 //! // add a linear constraints
-//! model.add_constr("c0", x1 + 2*x2, Greater, -14).unwrap();
-//! model.add_constr("c1", -4 * x1 - x2, Less, -33).unwrap();
-//! model.add_constr("c2", 2* x1, Less, 20 - x2).unwrap();
+//! let c0 = model.add_constr("c0", x1 + 2*x2, Greater, -14).unwrap();
+//! let c1 = model.add_constr("c1", -4 * x1 - x2, Less, -33).unwrap();
+//! let c2 = model.add_constr("c2", 2* x1, Less, 20 - x2).unwrap();
 //!
 //! // set the objective function.
 //! model.set_objective(8*x1 + x2, Minimize).unwrap();
@@ -68,10 +63,11 @@
 //! // Querying a model attribute
 //! assert_eq!(model.get_attr(attr::ObjVal).unwrap() , 59.0);
 //!
-//! // Querying a model object attribute
+//! // Querying a model object attributes
+//! assert_eq!(&model.get_obj_attr(attr::ConstrName, &c0).unwrap(), "c0");
 //! let x1_name = model.get_obj_attr(attr::VarName, &x1).unwrap();
 //!
-//! // Querying multiple model object attributes
+//! // Querying an attribute for multiple model objects
 //! let val = model.get_obj_attr_batch(attr::X, &[x1, x2]).unwrap();
 //! assert_eq!(val, [6.5, 7.0]);
 //!
@@ -82,7 +78,7 @@
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 
-mod env;
+pub mod env;
 mod error;
 mod model;
 mod util;

@@ -90,6 +90,7 @@ enum UpdateAction {
 /// If variables have been removed, it is necessary to update to rebuild the lookup (see the `update` method).
 /// The `update_action` field is an optimisation to avoid having to do this for "appends" (only adding new variables)
 #[derive(Debug)]
+#[doc(hidden)]
 pub struct IdxManager<T: Hash + Eq> {
   update_model: bool,
   update_action: UpdateAction,

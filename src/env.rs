@@ -13,26 +13,43 @@ use crate::model::Model;
 use crate::param::Param;
 use crate::util;
 
-/// Gurobi environment object
+/// Gurobi environment object (see the Gurobi [manual](https://www.gurobi.com/documentation/9.1/refman/environments.html))
 pub struct Env {
   env: *mut ffi::GRBenv,
   require_drop: bool
 }
 
+/// A Gurobi environment which hasn't been started yet. Some Gurobi parameters,
+/// such as [`Record`](https://www.gurobi.com/documentation/9.1/refman/record.html)
+/// need to be set before the environment has been started.
+///
+/// # Examples
+/// ```
+/// use gurobi::*;
+/// let mut env = Env::empty()?;
+/// env.set(param::OutputFlag, 0)?
+///   .set(param::UpdateMode, 1)?
+///   .set(param::LogFile, "".to_string())?;
+/// let env = env.start();
+/// # Ok::<(), gurobi::Error>(())
+/// ```
 pub struct EmptyEnv {
-  pub(crate) env : Env
+  env : Env
 }
 
 impl EmptyEnv {
+  /// Query a parameter value
   pub fn get<P: Param>(&self, param : P) -> Result<P::Value> {
     self.env.get(param)
   }
 
+  /// Set a parameter value
   pub fn set<P: Param>(&mut self, param : P, value: P::Value) -> Result<&mut Self> {
     self.env.set(param, value)?;
     Ok(self)
   }
 
+  /// Start the environment, return the [`Env`] on success.
   pub fn start(self) -> Result<Env> {
     self.env.check_apicall(unsafe { ffi::GRBstartenv(self.env.get_ptr()) })?;
     Ok(self.env)
@@ -47,6 +64,7 @@ impl Env {
     }
   }
 
+  /// Create a new empty and un-started environment.
   pub fn empty() -> Result<EmptyEnv> {
     let mut env = null_mut();
     let err_code = unsafe { ffi::GRBemptyenv(&mut env) };
@@ -97,11 +115,11 @@ impl Env {
   }
 
   /// Create an empty Gurobi model from the environment
-  #[deprecated]
+  #[deprecated] // TODO remove
   pub fn new_model(&self, modelname: &str) -> Result<Model> { Model::new(modelname, self) }
 
   /// Read a model from a file
-  #[deprecated]
+  #[deprecated] // TODO remove
   pub fn read_model(&self, filename: &str) -> Result<Model> { Model::read_from(filename, self) }
 
   /// Query the value of a parameter

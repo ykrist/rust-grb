@@ -8,21 +8,22 @@ use gurobi_sys as ffi;
 /// The error type for operations in Gurobi Rust API
 #[derive(Debug, Eq, PartialEq)]
 pub enum Error {
-  /// An exception returned from Gurobi C API
-  FromAPI(String, ffi::c_int),
-
-  /// See https://doc.rust-lang.org/std/ffi/struct.NulError.html
+  /// An error returned from Gurobi C API.  Contains the message and the error code.
+  FromAPI(String, i32),
+  /// Conversion to a C-style null-termined string failed.  Contains the underlying [`std::ffi::NulError`].
   NulError(std::ffi::NulError),
-
   /// Inconsistent argument dimensions
   InconsistentDims,
-
   /// Query/modifying a removed variable or constraint
   ModelObjectRemoved,
+  /// Model object hasn't been updated yet.  A call to [`Model::update`](crate::Model::update) is needed.
   ModelObjectPending,
-  /// Object comes from a different model
+  /// Model object comes from a different model
   ModelObjectMismatch,
+  /// A call to [`Model::update`](crate::Model::update) is required before this operation
   ModelUpdateNeeded,
+  /// Modelling errors caused by the user, usually by providing quadratic expressions to methods that expect
+  /// linear terms such as [`Model::add_constr`](crate::Model::add_constr).
   AlgebraicError(String),
 }
 

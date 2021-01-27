@@ -14,14 +14,21 @@ use crate::{Var, Model, Result, Error};
 use crate::attr;
 
 
+/// An algbraic expression of variables.
 #[derive(Debug, Clone)]
 pub enum Expr {
-  Linear(LinExpr),
+  /// A quadratic expression
   Quad(QuadExpr),
-  Term(f64, Var),
+  /// A linear expression
+  Linear(LinExpr),
+  /// A single quadratic term
   QTerm(f64, Var, Var),
+  /// A single linear term
+  Term(f64, Var),
+  /// A constant term
   Constant(f64)
 }
+
 
 impl Expr {
   fn into_higher_order(self) -> Expr {
@@ -39,6 +46,7 @@ impl Expr {
     !matches!(self, Expr::QTerm(..) | Expr::Quad(..))
   }
 
+  /// Transform into a [`QuadExpr`], possibly with no quadratic terms)
   pub fn into_quadexpr(self) -> QuadExpr {
     use self::Expr::*;
     match self {
@@ -47,6 +55,10 @@ impl Expr {
     }
   }
 
+  /// Transform into a [`QuadExpr`], possibly with no quadratic terms)
+  ///
+  /// # Errors
+  /// Returns an [`Error::AlgebraicError`] if `Expr` is not linear.
   pub fn into_linexpr(self) -> Result<LinExpr> {
     use self::Expr::*;
     match self {
@@ -64,7 +76,10 @@ impl Default for Expr {
 
 /// Linear expression of variables
 ///
-/// A linear expression consists of a constant term plus a list of coefficients and variables.
+/// Represents an affine expression of variables: a constant term plus variables multiplied by coefficients.
+///
+/// A `LinExpr` object is typically created using [`Expr::into_linexpr`]. Most [`Model`] methods take
+/// [`Expr`] as arguments instead of `LinExpr`, so converting to `LinExpr` is rarely needed.
 #[derive(Debug, Clone, Default)]
 pub struct LinExpr {
   coeff: FnvHashMap<Var, f64>,
@@ -72,10 +87,13 @@ pub struct LinExpr {
 }
 
 
+
 /// Quadratic expression of variables
 ///
-/// A quadratic expression consists of a linear expression and a set of
-/// variable-variable-coefficient triples to express the quadratic term.
+/// Represents an linear summation of quadratic terms, plus a linear expression.
+///
+/// A `QuadExpr` object is typically created using [`Expr::into_quadexpr`]. Most [`Model`] methods take
+/// [`Expr`] as arguments instead of `QuadExpr`, so converting to `QuadExpr` is rarely needed.
 #[derive(Debug, Clone, Default)]
 pub struct QuadExpr {
   linexpr : LinExpr,
@@ -104,28 +122,6 @@ macro_rules! impl_all_primitives {
       $macr!{i64 $(,$args)*}
       $macr!{isize $(,$args)*}
     };
-}
-
-macro_rules! impl_from_prim_for_expr {
-    ($t:ty) => {
-      impl From<$t> for Expr {
-        fn from(val: $t) -> Expr { Expr::Constant(val as f64) }
-      }
-    };
-}
-
-impl_all_primitives!(impl_from_prim_for_expr; );
-
-impl From<LinExpr> for Expr {
-  fn from(val: LinExpr) -> Expr { Expr::Linear(val) }
-}
-
-impl From<QuadExpr> for Expr {
-  fn from(val: QuadExpr) -> Expr { Expr::Quad(val) }
-}
-
-impl<T: Clone + Into<Expr>> From<&T> for Expr {
-  fn from(val: &T) -> Expr { val.clone().into() }
 }
 
 
@@ -357,11 +353,33 @@ impl Add for Expr {
 }
 
 
+macro_rules! impl_from_prim_for_expr {
+    ($t:ty) => {
+      impl From<$t> for Expr {
+        fn from(val: $t) -> Expr { Expr::Constant(val as f64) }
+      }
+    };
+}
+
+impl_all_primitives!(impl_from_prim_for_expr; );
+
+impl From<LinExpr> for Expr {
+  fn from(val: LinExpr) -> Expr { Expr::Linear(val) }
+}
+
+impl From<QuadExpr> for Expr {
+  fn from(val: QuadExpr) -> Expr { Expr::Quad(val) }
+}
+
+impl<T: Clone + Into<Expr>> From<&T> for Expr { // TODO remove
+  fn from(val: &T) -> Expr { val.clone().into() }
+}
+
+
 impl Sub for Expr {
   type Output = Self;
   fn sub(self, rhs: Self) -> Self { self + (-rhs) }
 }
-
 
 impl Add for Var {
   type Output = Expr;
@@ -384,7 +402,6 @@ impl Sub for Var {
   type Output = Expr;
   fn sub(self, rhs: Self) -> Expr { self + (-rhs) }
 }
-
 
 
 macro_rules! impl_mul_t_expr {

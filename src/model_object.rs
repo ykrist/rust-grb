@@ -20,7 +20,14 @@ mod private_traits {
 
 use private_traits::ModelObjectPrivate;
 
+/// This trait encompasses all Gurobi model objects: [`Var`], [`Constr`], [`QConstr`] and [`SOS`].
+/// Each `ModelObject` is associated with a particular model, and can only be used with that model.
+/// Each `ModelObject` also has a unique, fixed 32-bit ID.  Gurobi itself uses an `i32` to index objects
+/// (only positive indices are used), so the 32-bit limitation is already there.  Note that IDs are only
+/// guaranteed to be unique if the concrete types of the `ModelObject` are the sane and the objects
+/// belong to the same model.
 pub trait ModelObject: ModelObjectPrivate + Debug {
+  /// Retrieve the object's ID.
   fn id(&self) -> u32;
 }
 

@@ -3,8 +3,6 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-use gurobi_sys as ffi;
-
 /// The error type for operations in Gurobi Rust API
 #[derive(Debug, Eq, PartialEq)]
 pub enum Error {
@@ -48,7 +46,5 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-/// A specialized
-/// [`Result`](https://doc.rust-lang.org/std/result/enum.Result.html)
-/// type for operations in Gurobi Rust API
+/// A specialized [`std::result::Result`] for library errors
 pub type Result<T> = std::result::Result<T, Error>;

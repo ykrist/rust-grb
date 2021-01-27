@@ -16,6 +16,7 @@ use crate::attr;
 use crate::attr::Attr;
 use crate::callback::Callback;
 use crate::model_object::*;
+use gurobi_sys::GRBmodel;
 
 /// Type for new variable
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -255,7 +256,7 @@ impl Model {
     let modelname = CString::new(modelname)?;
     let mut model = null_mut();
     env.check_apicall(unsafe {
-      ffi::GRBnewmodel(env.get_ptr(),
+      ffi::GRBnewmodel(env.as_ptr(),
                        &mut model,
                        modelname.as_ptr(),
                        0,
@@ -281,7 +282,7 @@ impl Model {
                                 2002));
     }
     let env = Env::from_raw(env);
-    let id=Model::next_id();
+    let id= Model::next_id();
 
 
     let mut model = Model {
@@ -311,18 +312,27 @@ impl Model {
   pub fn read_from(filename: &str, env: &Env) -> Result<Model> {
     let filename = CString::new(filename)?;
     let mut model = null_mut();
-    env.check_apicall(unsafe { ffi::GRBreadmodel(env.get_ptr(), filename.as_ptr(), &mut model) })?;
+    env.check_apicall(unsafe { ffi::GRBreadmodel(env.as_ptr(), filename.as_ptr(), &mut model) })?;
     Self::from_raw(model)
   }
 
   /// create a copy of the model
   pub fn copy(&self) -> Result<Model> {
+    if self.model_update_needed() { return Err(Error::ModelUpdateNeeded) }
+
     let copied = unsafe { ffi::GRBcopymodel(self.model) };
     if copied.is_null() {
       return Err(Error::FromAPI("Failed to create a copy of the model".to_owned(), 20002));
     }
 
     Model::from_raw(copied)
+  }
+
+  fn model_update_needed(&self) -> bool {
+    self.vars.model_update_needed() ||
+      self.constrs.model_update_needed() ||
+      self.qconstrs.model_update_needed() ||
+      self.sos.model_update_needed()
   }
 
   #[inline]
@@ -402,39 +412,11 @@ impl Model {
   /// In fixed model, each integer variable is fixed to the value that it takes in the
   /// original MIP solution.
   /// Note that the model must be MIP and have a solution loaded.
-  pub fn fixed(&self) -> Result<Model> {
-    let fixed = unsafe { ffi::GRBfixedmodel(self.model) };
-    if fixed.is_null() {
-      return Err(Error::FromAPI("failed to create fixed model".to_owned(), 20002));
-    }
+  pub fn fixed(&mut self) -> Result<Model> {
+    let mut fixed : *mut GRBmodel = null_mut();
+    self.check_apicall(unsafe { ffi::GRBfixmodel(self.model, &mut fixed) })?;
+    debug_assert!(!fixed.is_null());
     Model::from_raw(fixed)
-  }
-
-  /// Create an relaxation of the model (undocumented).
-  pub fn relax(&self) -> Result<Model> {
-    let relaxed = unsafe { ffi::GRBrelaxmodel(self.model) };
-    if relaxed.is_null() {
-      return Err(Error::FromAPI("failed to create relaxed model".to_owned(), 20002));
-    }
-    Model::from_raw(relaxed)
-  }
-
-  /// Perform presolve on the model.
-  pub fn presolve(&self) -> Result<Model> {
-    let presolved = unsafe { ffi::GRBpresolvemodel(self.model) };
-    if presolved.is_null() {
-      return Err(Error::FromAPI("failed to create presolved model".to_owned(), 20002));
-    }
-    Model::from_raw(presolved)
-  }
-
-  /// Create a feasibility model (undocumented).
-  pub fn feasibility(&self) -> Result<Model> {
-    let feasibility = unsafe { ffi::GRBfeasibility(self.model) };
-    if feasibility.is_null() {
-      return Err(Error::FromAPI("failed to create feasibility model".to_owned(), 20002));
-    }
-    Model::from_raw(feasibility)
   }
 
   /// Get immutable reference of an environment object associated with the model.
@@ -629,7 +611,6 @@ impl Model {
     let expr = (lhs.into() - rhs.into()).into_linexpr()?;
     let constrname = CString::new(name)?;
     let (vinds, cval) = self.get_coeffs_indices_build(&expr)?;
-    dbg!(&vinds, &cval, -expr.get_offset());
     self.check_apicall(unsafe {
       ffi::GRBaddconstr(self.model,
                         cval.len() as ffi::c_int,
@@ -1060,7 +1041,6 @@ impl Model {
 
   impl_object_list_getter!(get_sos, SOS, sos, "SOS constraints");
 
-  // FIXME, bug - the item should update according to self.updatemode
   /// Remove a variable from the model.
   pub fn remove<O: ModelObject>(&mut self, item: O) -> Result<()> {
     let lazy = self.update_mode_lazy()?;
@@ -1223,6 +1203,7 @@ macro_rules! add_binvar {
 #[cfg(test)]
 mod tests {
   use super::super::*;
+  use gurobi_sys::IntParam::OutputFlag;
 
   #[test]
   fn modelsense_conversion() {
@@ -1393,7 +1374,79 @@ mod tests {
 
     assert_eq!(model1.get_obj_attr(attr::VarName, &y2).unwrap_err(), Error::ModelObjectMismatch);
     assert_eq!(model2.get_obj_attr(attr::VarName, &x1).unwrap_err(), Error::ModelObjectMismatch);
-
   }
 
+
+  #[test]
+  fn new_model_copies_env() -> Result<()> {
+    let mut env = Env::new("")?;
+    env.set(param::OutputFlag, 0)?;
+    let mut model = Model::new("test", &env)?;
+    let model_env = model.get_env_mut();
+    // assert_eq!(model.get)
+
+    model_env.set(param::OutputFlag, 1)?;
+    assert_eq!(model_env.get(param::OutputFlag), Ok(1));
+    assert_eq!(env.get(param::OutputFlag), Ok(0));
+
+    assert_ne!(model_env.as_ptr(), env.as_ptr());
+    Ok(())
+  }
+
+  #[test]
+  fn new_model_copies_env_drop() -> Result<()> {
+    let mut env = Env::new("")?;
+    env.set(param::OutputFlag, 0)?;
+    let mut model = Model::new("test", &env)?;
+    drop(env); // frees underlying GRBEnv
+    let model_env = model.get_env_mut();
+    model_env.set(param::OutputFlag, 1)?;
+    assert_eq!(model_env.get(param::OutputFlag), Ok(1));
+    Ok(())
+  }
+
+
+  #[test]
+  fn model_copy_copies_env() -> Result<()> {
+    let mut env = Env::new("")?;
+    env.set(param::OutputFlag, 0)?;
+    let mut m1 = Model::new("m1", &env)?;
+    let m2 = m1.copy()?;
+
+    let m1_env = m1.get_env_mut();
+    let m2_env = m2.get_env();
+
+    m1_env.set(param::OutputFlag, 1)?;
+
+    assert_eq!(m1_env.get(param::OutputFlag), Ok(1));
+    assert_eq!(m2_env.get(param::OutputFlag), Ok(0));
+    Ok(())
+  }
+
+  #[test]
+  fn fixed_mip_model_copies_env() -> Result<()> {
+    let mut m = {
+      let mut env = Env::new("")?;
+      env.set(OutputFlag, 0)?;
+      Model::new("original", &env)?
+    };
+
+    let x = add_var!(m, Continuous, name="x")?;
+    let y = add_binvar!(m, name="y")?;
+
+    m.add_constr("c1", x + y ,Less, 1)?;
+    m.add_constr("c2", x - y , Less, 2)?;
+
+    m.optimize()?;
+    let fixed = m.fixed()?;
+    assert_eq!(fixed.get_attr(attr::IsMIP)?, 0);
+    assert_eq!(fixed.get_env().get(param::OutputFlag)?, 0);
+
+    m.get_env_mut().set(param::OutputFlag, 1)?;
+    assert_eq!(fixed.get_env().get(param::OutputFlag)?, 0);
+
+    assert_ne!(m.get_env().as_ptr(), fixed.get_env().as_ptr());
+
+    Ok(())
+  }
 }

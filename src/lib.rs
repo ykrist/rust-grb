@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-//! This crate provides Rust bindings for Gurobi Optimizer.
+//! This crate provides Rust bindings for Gurobi Optimizer.  It currently requires Gurobi 9.0 or higher.
 //!
 //! ## Installing
 //!

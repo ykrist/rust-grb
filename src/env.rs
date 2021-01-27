@@ -50,7 +50,7 @@ impl EmptyEnv {
 
   /// Start the environment, return the [`Env`] on success.
   pub fn start(self) -> Result<Env> {
-    self.env.check_apicall(unsafe { ffi::GRBstartenv(self.env.get_ptr()) })?;
+    self.env.check_apicall(unsafe { ffi::GRBstartenv(self.env.as_ptr()) })?;
     Ok(self.env)
   }
 }
@@ -150,7 +150,7 @@ impl Env {
     Error::FromAPI(get_error_msg(self.env), error)
   }
 
-  pub(crate) fn get_ptr(&self) -> *mut ffi::GRBenv { self.env }
+  pub(crate) fn as_ptr(&self) -> *mut ffi::GRBenv { self.env }
 
   pub(crate) fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
     if error != 0 {
@@ -166,7 +166,6 @@ impl Drop for Env {
     if self.require_drop {
       debug_assert!(!self.env.is_null());
       unsafe { ffi::GRBfreeenv(self.env) };
-      self.env = null_mut();
     }
   }
 }

@@ -1,4 +1,4 @@
-use gurobi_sys::c_int;
+use gurobi_sys::{c_char, c_int};
 
 // Constants defined by Gurobi API
 pub const GRB_MAX_STRLEN : usize = 512;
@@ -72,3 +72,128 @@ pub mod callback {
   pub const BARRIER_DUALINF: i32 = 7005;
   pub const BARRIER_COMPL: i32 = 7006;
 }
+
+
+/// Type for new variable
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[repr(u8)]
+pub enum VarType {
+  Binary = b'B',
+  Continuous = b'C',
+  Integer = b'I',
+  SemiCont = b'S',
+  SemiInt = b'N',
+}
+
+impl Into<c_char> for VarType {
+  fn into(self) -> c_char { self as u8 as c_char}
+}
+
+impl Into<VarType> for c_char {
+  fn into(self) -> VarType {
+    let ch = self as u8 as char;
+    match ch {
+      'B' => VarType::Binary,
+      'C' => VarType::Continuous,
+      'I' => VarType::Integer,
+      'S' => VarType::SemiCont,
+      'N' => VarType::SemiInt,
+      ch => panic!("unexpected value `{}` when converting to VarType", ch),
+    }
+  }
+}
+
+
+
+/// Sense for new linear/quadratic constraint
+#[derive(Debug, Copy, Clone)]
+#[repr(u8)]
+pub enum ConstrSense {
+  Equal = b'=',
+  Greater = b'>',
+  Less = b'<',
+}
+
+impl Into<c_char> for ConstrSense {
+  fn into(self) -> c_char {  self as u8 as c_char  }
+}
+
+
+/// Sense of new objective function
+#[derive(Debug, Copy, Clone)]
+#[repr(i32)]
+pub enum ModelSense {
+  Minimize = 1,
+  Maximize = -1,
+}
+
+impl Into<i32> for ModelSense {
+  fn into(self) -> i32 { self as i32 }
+}
+
+
+/// Type of new SOS constraint
+#[derive(Debug, Copy, Clone)]
+#[repr(i32)]
+pub enum SOSType {
+  SOSType1 = 1,
+  SOSType2 = 2,
+}
+
+impl Into<i32> for SOSType {
+  fn into(self) -> i32 { self as i32 }
+}
+
+
+
+/// Status of a model
+#[derive(Debug, Copy, Clone, PartialEq)]
+#[repr(i32)]
+pub enum Status {
+  Loaded = 1,
+  Optimal,
+  Infeasible,
+  InfOrUnbd,
+  Unbounded,
+  CutOff,
+  IterationLimit,
+  NodeLimit,
+  TimeLimit,
+  SolutionLimit,
+  Interrupted,
+  Numeric,
+  SubOptimal,
+  InProgress,
+}
+
+impl From<i32> for Status {
+  fn from(val: i32) -> Status {
+    match val {
+      1..=14 => unsafe { std::mem::transmute(val) },
+      _ => panic!("cannot convert to Status: {}", val)
+    }
+  }
+}
+
+/// Type of cost function at feasibility relaxation
+#[derive(Debug, Copy, Clone)]
+#[repr(i32)]
+pub enum RelaxType {
+  /// The weighted magnitude of bounds and constraint violations
+  /// ($penalty(s\_i) = w\_i s\_i$)
+  Linear = 0,
+
+  /// The weighted square of magnitude of bounds and constraint violations
+  /// ($penalty(s\_i) = w\_i s\_i\^2$)
+  Quadratic = 1,
+
+  /// The weighted count of bounds and constraint violations
+  /// ($penalty(s\_i) = w\_i \cdot [s\_i > 0]$)
+  Cardinality = 2,
+}
+
+impl Into<i32> for RelaxType {
+  fn into(self) -> i32 { self as i32 }
+}
+
+

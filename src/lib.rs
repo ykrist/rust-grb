@@ -64,7 +64,7 @@
 //! assert_eq!(model.get_attr(attr::ObjVal).unwrap() , 59.0);
 //!
 //! // Querying a model object attributes
-//! assert_eq!(&model.get_obj_attr(attr::ConstrName, &c0).unwrap(), "c0");
+//! assert_eq!(model.get_obj_attr(attr::Slack, &c0).unwrap(), -34.5);
 //! let x1_name = model.get_obj_attr(attr::VarName, &x1).unwrap();
 //!
 //! // Querying an attribute for multiple model objects
@@ -94,14 +94,15 @@ pub use env::Env;
 pub use expr::{Expr, LinExpr, QuadExpr, AttachModel, GurobiSum};
 pub use error::{Error, Result};
 pub use model::Model;
-pub use model::{VarType, ConstrSense, ModelSense, SOSType, Status, RelaxType};
+pub use constants::{VarType, ConstrSense, ModelSense, SOSType, Status, RelaxType};
 pub use model_object::*;
 pub use callback::{Callback, Where};
-pub use model::VarType::*;
-pub use model::ConstrSense::*;
-pub use model::ModelSense::*;
-pub use model::SOSType::*;
-pub use model::RelaxType::*;
+
+pub use VarType::*;
+pub use ConstrSense::*;
+pub use ModelSense::*;
+pub use SOSType::*;
+pub use RelaxType::*;
 
 /// Large number used in C API
 pub use constants::GRB_INFINITY as INFINITY;

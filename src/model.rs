@@ -16,137 +16,8 @@ use crate::attr;
 use crate::attr::Attr;
 use crate::callback::Callback;
 use crate::model_object::*;
+use crate::{VarType, ConstrSense, ModelSense, SOSType, RelaxType, Status};
 use gurobi_sys::GRBmodel;
-
-/// Type for new variable
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum VarType {
-  Binary,
-  Continuous,
-  Integer,
-  SemiCont,
-  SemiInt,
-}
-
-impl Into<ffi::c_char> for VarType {
-  fn into(self) -> ffi::c_char {
-    match self {
-      VarType::Binary => 'B' as ffi::c_char,
-      VarType::Continuous => 'C' as ffi::c_char,
-      VarType::Integer => 'I' as ffi::c_char,
-      VarType::SemiCont => 'S' as ffi::c_char,
-      VarType::SemiInt => 'N' as ffi::c_char,
-    }
-  }
-}
-
-impl Into<VarType> for ffi::c_char {
-  fn into(self) -> VarType {
-    let ch = self as u8 as char;
-    match ch {
-      'B' => VarType::Binary,
-      'C' => VarType::Continuous,
-      'I' => VarType::Integer,
-      'S' => VarType::SemiCont,
-      'N' => VarType::SemiInt,
-      ch => panic!("unexpected value `{}` when converting to VarType", ch),
-    }
-  }
-}
-
-
-
-
-/// Sense for new linear/quadratic constraint
-#[derive(Debug, Copy, Clone)]
-pub enum ConstrSense {
-  Equal,
-  Greater,
-  Less,
-}
-
-impl Into<ffi::c_char> for ConstrSense {
-  fn into(self) -> ffi::c_char {
-    match self {
-      ConstrSense::Equal => '=' as ffi::c_char,
-      ConstrSense::Less => '<' as ffi::c_char,
-      ConstrSense::Greater => '>' as ffi::c_char,
-    }
-  }
-}
-
-
-/// Sense of new objective function
-#[derive(Debug, Copy, Clone)]
-pub enum ModelSense {
-  Minimize = 1,
-  Maximize = -1,
-}
-
-impl Into<i32> for ModelSense {
-  fn into(self) -> i32 { (unsafe { transmute::<_, i8>(self) }) as i32 }
-}
-
-
-/// Type of new SOS constraint
-#[derive(Debug, Copy, Clone)]
-pub enum SOSType {
-  SOSType1 = 1,
-  SOSType2 = 2,
-}
-
-impl Into<i32> for SOSType {
-  fn into(self) -> i32 { (unsafe { transmute::<_, i8>(self) }) as i32 }
-}
-
-
-/// Status of a model
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum Status {
-  Loaded = 1,
-  Optimal,
-  Infeasible,
-  InfOrUnbd,
-  Unbounded,
-  CutOff,
-  IterationLimit,
-  NodeLimit,
-  TimeLimit,
-  SolutionLimit,
-  Interrupted,
-  Numeric,
-  SubOptimal,
-  InProgress,
-}
-
-impl From<i32> for Status {
-  fn from(val: i32) -> Status {
-    match val {
-      1..=14 => unsafe { transmute(val as i8) },
-      _ => panic!("cannot convert to Status: {}", val)
-    }
-  }
-}
-
-/// Type of cost function at feasibility relaxation
-#[derive(Debug, Copy, Clone)]
-pub enum RelaxType {
-  /// The weighted magnitude of bounds and constraint violations
-  /// ($penalty(s\_i) = w\_i s\_i$)
-  Linear = 0,
-
-  /// The weighted square of magnitude of bounds and constraint violations
-  /// ($penalty(s\_i) = w\_i s\_i\^2$)
-  Quadratic = 1,
-
-  /// The weighted count of bounds and constraint violations
-  /// ($penalty(s\_i) = w\_i \cdot [s\_i > 0]$)
-  Cardinality = 2,
-}
-
-impl Into<i32> for RelaxType {
-  fn into(self) -> i32 { (unsafe { transmute::<_, i8>(self) }) as i32 }
-}
 
 
 struct CallbackData<'a> {
@@ -468,7 +339,7 @@ impl Model {
     self.check_apicall(unsafe { ffi::GRBoptimize(self.model) })?;
 
     // clear callback from the model.
-    // Notice: Rust does not have approproate mechanism which treats "null" C-style function
+    // Notice: Rust does not have appropriate mechanism which treats "null" C-style function
     // pointer.
     self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, null_callback_wrapper, null_mut()) })
   }
@@ -1112,8 +983,9 @@ impl Model {
 
 impl Drop for Model {
   fn drop(&mut self) {
+    // Note: This method runs *before* the `drop()` method on the env inside the model
+    // so we free the GRBModel before the GRBEnv, as per the Gurobi docs.
     unsafe { ffi::GRBfreemodel(self.model) };
-    self.model = null_mut();
   }
 }
 
@@ -1447,6 +1319,18 @@ mod tests {
 
     assert_ne!(m.get_env().as_ptr(), fixed.get_env().as_ptr());
 
+    Ok(())
+  }
+
+  #[test]
+  fn read_model_copies_env() -> Result<()> {
+    use std::fs::remove_file;
+    let env = Env::new("")?;
+    let m1 = Model::new("test", &env)?;
+    let filename = "test_read_model_copies_env.lp";
+    m1.write(filename);
+    let m2 = Model::read_from(filename, &env)?;
+    assert_ne!(m2.get_env().as_ptr(), m1.get_env().as_ptr());
     Ok(())
   }
 }

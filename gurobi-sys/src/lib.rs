@@ -378,12 +378,6 @@ extern "C" {
   pub fn GRBupdatemodel(model: *mut GRBmodel) -> c_int;
 
   pub fn GRBfreemodel(model: *mut GRBmodel) -> c_int;
-
-// Xaddconstrs
-// Xaddrangeconstrs
-// Xaddvars
-// Xchgcoeffs
-// Xloadmodel
 }
 
 // Model Solution
@@ -399,13 +393,8 @@ extern "C" {
                       ubpen: *const c_double, rhspen: *const c_double, feasobjP: *const c_double)
                       -> c_int;
 
-  pub fn GRBfixedmodel(model: *mut GRBmodel) -> *mut GRBmodel;
+  pub fn GRBfixmodel(model: *mut GRBmodel, new_model: *mut *mut GRBmodel) -> c_int;
 
-  pub fn GRBrelaxmodel(model: *mut GRBmodel) -> *mut GRBmodel;
-
-  pub fn GRBpresolvemodel(model: *mut GRBmodel) -> *mut GRBmodel;
-
-  pub fn GRBfeasibility(model: *mut GRBmodel) -> *mut GRBmodel;
 
   pub fn GRBresetmodel(model: *mut GRBmodel) -> c_int;
 

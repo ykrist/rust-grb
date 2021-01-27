@@ -76,6 +76,8 @@ impl Env {
   }
 
   /// Create an environment with log file
+  ///
+  /// Setting `logfilename` to an empty string will not create a logfile.
   pub fn new(logfilename: &str) -> Result<Env> {
     let mut env = null_mut();
     let logfilename = CString::new(logfilename)?;
@@ -114,13 +116,6 @@ impl Env {
     })
   }
 
-  /// Create an empty Gurobi model from the environment
-  #[deprecated] // TODO remove
-  pub fn new_model(&self, modelname: &str) -> Result<Model> { Model::new(modelname, self) }
-
-  /// Read a model from a file
-  #[deprecated] // TODO remove
-  pub fn read_model(&self, filename: &str) -> Result<Model> { Model::read_from(filename, self) }
 
   /// Query the value of a parameter
   pub fn get<P: Param>(&self, param: P) -> Result<P::Value> {

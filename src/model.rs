@@ -1333,4 +1333,27 @@ mod tests {
     assert_ne!(m2.get_env().as_ptr(), m1.get_env().as_ptr());
     Ok(())
   }
+
+  #[test]
+  fn copy_env_model_to_model() -> Result<()> {
+    let env = Env::new("")?;
+    let m1 = Model::new("", &env)?;
+    let m2 = Model::new("", m1.get_env())?;
+
+    assert_ne!(m1.get_env().as_ptr(), m2.get_env().as_ptr());
+    Ok(())
+  }
+
+  #[test]
+  fn early_env_drop() -> Result<()> {
+    let env = Env::new("")?;
+    let p = env.as_ptr();
+    let mut m = Model::new("", &env)?;
+    drop(env); // this should not free the environment, as m is still in scope
+
+    drop(m);
+    let env = Env::from_raw(p);
+    env.get(param::UpdateMode)?; // FIXME causes an error, because the GRBEnv has been freed
+    Ok(())
+  }
 }

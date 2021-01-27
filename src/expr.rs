@@ -24,7 +24,7 @@ pub enum Expr {
 }
 
 impl Expr {
-  fn upgrade(self) -> Expr {
+  fn into_higher_order(self) -> Expr {
     use self::Expr::*;
     match self {
       Constant(x) => Linear(LinExpr::new()) + Constant(x),
@@ -36,14 +36,14 @@ impl Expr {
   }
 
   pub fn is_linear(&self) -> bool {
-    !matches!(self, Expr::QTerm(..) | Expr::Quad(_))
+    !matches!(self, Expr::QTerm(..) | Expr::Quad(..))
   }
 
   pub fn into_quadexpr(self) -> QuadExpr {
     use self::Expr::*;
     match self {
       Quad(e) => e,
-      other => other.upgrade().into_quadexpr()
+      other => other.into_higher_order().into_quadexpr()
     }
   }
 
@@ -52,7 +52,7 @@ impl Expr {
     match self {
       Quad(..) | QTerm(..) => Err(Error::AlgebraicError("expression contains quadratic terms".to_string())),
       Linear(e) => Ok(e),
-      other => other.upgrade().into_linexpr()
+      other => other.into_higher_order().into_linexpr()
     }
   }
 }
@@ -87,9 +87,34 @@ impl From<Var> for Expr {
   fn from(var: Var) -> Expr { Expr::Term(1.0, var) }
 }
 
-impl From<f64> for Expr {
-  fn from(val: f64) -> Expr { Expr::Constant(val) }
+
+
+macro_rules! impl_all_primitives {
+    ($macr:ident; $($args:tt),*) => {
+      $macr!{f64 $(,$args)*}
+      $macr!{f32 $(,$args)*}
+      $macr!{u8 $(,$args)*}
+      $macr!{u16 $(,$args)*}
+      $macr!{u32 $(,$args)*}
+      $macr!{u64 $(,$args)*}
+      $macr!{usize $(,$args)*}
+      $macr!{i8 $(,$args)*}
+      $macr!{i16 $(,$args)*}
+      $macr!{i32 $(,$args)*}
+      $macr!{i64 $(,$args)*}
+      $macr!{isize $(,$args)*}
+    };
 }
+
+macro_rules! impl_from_prim_for_expr {
+    ($t:ty) => {
+      impl From<$t> for Expr {
+        fn from(val: $t) -> Expr { Expr::Constant(val as f64) }
+      }
+    };
+}
+
+impl_all_primitives!(impl_from_prim_for_expr; );
 
 impl From<LinExpr> for Expr {
   fn from(val: LinExpr) -> Expr { Expr::Linear(val) }
@@ -151,6 +176,7 @@ impl LinExpr {
 
   /// Multiply expression by a scalar
   pub fn mul_scalar(&mut self, val: f64) -> &mut Self {
+    self.offset *= val;
     self.coeff.iter_mut().for_each(|(_, a)| *a *= val);
     self
   }
@@ -360,115 +386,128 @@ impl Sub for Var {
 }
 
 
-impl Add for &Var {
-  type Output = Expr;
-  fn add(self, rhs: &Var) -> Expr { *self + *rhs }
-}
 
-
-impl Mul for &Var {
-  type Output = Expr;
-  fn mul(self, rhs: &Var) -> Expr { *self *  *rhs }
-}
-
-
-impl Sub for &Var {
-  type Output = Expr;
-  fn sub(self, rhs: &Var) -> Expr { *self - *rhs }
-}
-
-
-
-impl Mul<f64> for Expr {
-  type Output = Expr;
-  fn mul(self, rhs: f64) -> Expr {
-    use self::Expr::*;
-    match self {
-      Constant(a) => Constant(a * rhs),
-      Term(a, x) => Term(a*rhs, x),
-      QTerm(a, x, y) => QTerm(a*rhs, x, y),
-      Linear(mut e) => {
-        e.mul_scalar(rhs);
-        e.into()
-      }
-      Quad(mut e) => {
-        e.mul_scalar(rhs);
-        e.into()
+macro_rules! impl_mul_t_expr {
+  ($p:ty, $($t:ty),+) => {
+    impl Mul<$p> for Expr {
+      type Output = Expr;
+      fn mul(self, rhs: $p) -> Expr {
+        use self::Expr::*;
+        let rhs = rhs as f64;
+        match self {
+          Constant(a) => Constant(a * rhs),
+          Term(a, x) => Term(a*rhs, x),
+          QTerm(a, x, y) => QTerm(a*rhs, x, y),
+          Linear(mut e) => {
+            e.mul_scalar(rhs);
+            e.into()
+          }
+          Quad(mut e) => {
+            e.mul_scalar(rhs);
+            e.into()
+          }
+        }
       }
     }
-  }
-}
 
-impl Mul<Expr> for f64 {
-  type Output = Expr;
-  fn mul(self, rhs: Expr) -> Expr { rhs*self }
-}
+    impl Mul<Expr> for $p {
+      type Output = Expr;
+      fn mul(self, rhs: Expr) -> Expr { rhs*self }
+    }
 
-macro_rules! impl_f64_mul_expr_for_unwrapped {
-  ($($t:ty),+) => {
     $(
-      impl Mul<$t> for f64 {
+      impl Mul<$t> for $p {
         type Output = Expr;
         fn mul(self, rhs: $t) -> Expr { self * <$t as Into<Expr>>::into(rhs) }
       }
 
-      impl Mul<&$t> for f64 {
+      impl Mul<$p> for $t {
         type Output = Expr;
-        fn mul(self, rhs: &$t) -> Expr { self * <$t as Into<Expr>>::into(rhs.clone()) }
-      }
-
-      impl Mul<f64> for $t {
-        type Output = Expr;
-        fn mul(self, rhs: f64) -> Expr { rhs*self }
-      }
-
-      impl Mul<f64> for &$t {
-        type Output = Expr;
-        fn mul(self, rhs: f64) -> Expr { rhs*self.clone() }
+        fn mul(self, rhs: $p) -> Expr { rhs*self }
       }
 
     )+
-  }
+  };
 }
 
-impl_f64_mul_expr_for_unwrapped!( Var, LinExpr, QuadExpr );
+impl_all_primitives!(impl_mul_t_expr; Var, LinExpr, QuadExpr );
 
-macro_rules! impl_add_expr_for_unwrapped {
+macro_rules! impl_add_nonprim_expr {
   ($($t:ty),+) => {
     $(
       impl Add<$t> for Expr {
         type Output = Expr;
-        fn add(self, rhs: $t) -> Expr { self + <$t as Into<Expr>>::into(rhs) }
+        fn add(self, rhs: $t) -> Expr { self + Expr::from(rhs) }
       }
 
-      impl Add<&$t> for Expr {
-        type Output = Expr;
-        fn add(self, rhs: &$t) -> Expr { self + rhs.clone() }
-      }
 
       impl Add<Expr> for $t {
         type Output = Expr;
         fn add(self, rhs: Expr) -> Expr { rhs + self }
       }
 
-      impl Add<Expr> for &$t {
+    )+
+  }
+}
+
+
+macro_rules! impl_add_prim_t {
+  ($p:ty, $($t:ty),+) => {
+    $(
+      impl Add<$p> for $t {
         type Output = Expr;
-        fn add(self, rhs: Expr) -> Expr { rhs + self.clone() }
+        fn add(self, rhs: $p) -> Expr { Expr::from(self) + Expr::from(rhs) }
+      }
+
+      impl Add<$t> for $p {
+        type Output = Expr;
+        fn add(self, rhs: $t) -> Expr { Expr::from(rhs) + Expr::from(self) }
       }
     )+
   }
 }
 
-impl_add_expr_for_unwrapped!( f64, Var, LinExpr, QuadExpr );
+impl_add_nonprim_expr!(Var, LinExpr, QuadExpr );
+impl_all_primitives!(impl_add_prim_t; Expr, Var, LinExpr, QuadExpr );
+
+macro_rules! impl_sub_nonprim_expr {
+    ($($t:ty),+) => {
+    $(
+      impl Sub<$t> for Expr {
+        type Output = Expr;
+        fn sub(self, rhs : $t) -> Expr { self + (-Expr::from(rhs))}
+      }
+
+      impl Sub<Expr> for $t {
+        type Output = Expr;
+        fn sub(self, rhs: Expr) -> Expr { Expr::from(self) + (-rhs) }
+      }
+    )+
+  };
+}
+
+macro_rules! impl_sub_prim_t {
+  ($p:ty, $($t:ty),+) => {
+    $(
+      impl Sub<$p> for $t {
+        type Output = Expr;
+        fn sub(self, rhs: $p) -> Expr { Expr::from(self) + -Expr::from(rhs) }
+      }
+
+      impl Sub<$t> for $p {
+        type Output = Expr;
+        fn sub(self, rhs: $t) -> Expr { Expr::from(self) + -Expr::from(rhs)  }
+      }
+    )+
+  }
+}
+
+impl_sub_nonprim_expr!(Var, LinExpr, QuadExpr );
+impl_all_primitives!(impl_sub_prim_t; Expr, Var, LinExpr, QuadExpr);
 
 impl Neg for Var {
   type Output = Expr;
   fn neg(self) -> Expr { Expr::Term(-1.0, self) }
-}
-
-impl Neg for &Var {
-  type Output = Expr;
-  fn neg(self) -> Expr { - *self }
 }
 
 impl Neg for Expr {
@@ -486,17 +525,14 @@ impl Neg for Expr {
 
 impl<A: Into<Expr>> Sum<A> for Expr {
   fn sum<I>(mut iter: I) -> Expr where I: Iterator<Item=A> {
-    if let Some(total) = iter.next() {
-      let mut total: Expr = total.into();
-      for x in iter {
-        total = total + x.into();
-      }
-      total
-    } else {
-      Expr::Constant(0.0)
+    let mut total = iter.next().map_or(Expr::Constant(0.0), |x| x.into());
+    for x in iter {
+      total = total + x.into();
     }
+    total
   }
 }
+
 
 /// Convenience trait for summing over iterators to produce a concrete type.
 /// Analogous to `collect_vec` from the `itertools` crate.
@@ -666,21 +702,21 @@ mod tests {
   #[test]
   fn simple() {
     make_model_with_vars!(model, x, y);
-    let e = x.clone() * y.clone() + 1.0 + x.clone() + (2.0*y.clone());
+    let e : Expr = x * y + 1 + x + 2.0*y;
     e.into_linexpr().unwrap_err(); // should be quadratic
   }
 
   #[test]
   fn nested() {
     make_model_with_vars!(model, x, y);
-    let e = (x.clone() * y.clone())*3.0 + 2.0*(x.clone() + 2.0*y.clone());
+    let e = (x * y)*3 + 2*(x + 2.0*y);
   }
 
   #[test]
-  fn subtract() {
+  fn multiplication_commutes() {
     make_model_with_vars!(model, x, y, z);
-    let _ = x.clone() - y.clone();
-    let e = y.clone()*x.clone() - x.clone()*y.clone();
+    let _ = x - y;
+    let e = y*x - x*y;
     dbg!(e.attach(&model));
     let mut e = e.into_quadexpr();
     assert!(!e.is_empty());
@@ -688,10 +724,51 @@ mod tests {
     assert!(e.is_empty());
   }
 
+
+  #[test]
+  fn multiplication() {
+    make_model_with_vars!(model, x, y);
+    let e = 2*x;
+    let e = x*x;
+    let e = 2*(x*x);
+  }
+
+  #[test]
+  fn addition() {
+    make_model_with_vars!(model, x, y);
+    let e = 2 + x;
+    let e = x + y;
+    let e = x + x;
+    let e = x + 2.8*y + 2*x;
+  }
+
+
+  #[test]
+  fn subtraction() {
+    make_model_with_vars!(model, x, y);
+    let e = 2 - x;
+    let mut e = (x - x).into_linexpr().unwrap();
+    e.sparsify();
+    assert!(e.is_empty());
+    let e = 2 * x - y - x;
+
+    let e1 : Expr = 2*x + 1.0*y;
+    let e2 : Expr = 4 - 3*y;
+    let e : LinExpr = (e1 - e2).into_linexpr().unwrap();
+    assert!((e.get_offset() - -4.0).abs() < f64::EPSILON);
+
+    for (&var, &coeff) in e.iter_terms() {
+      if var == x { assert!((coeff - 2.0) < f64::EPSILON) }
+      if var == x { assert!((coeff - 4.0) < f64::EPSILON) }
+    }
+
+
+  }
+
   #[test]
   fn negate() {
     make_model_with_vars!(model, x);
-    let q = -x.clone();
+    let q = -x;
     let y = -q;
     if let Expr::Term(a, var) = y {
       assert_eq!(x, var);
@@ -712,7 +789,12 @@ mod tests {
     let e = e.into_linexpr().unwrap();
     assert_eq!(e.coeff.len(), 3);
 
-    let vars = [2.0*x.clone(),-y.clone(),-z.clone(),0.2*x.clone()];
+    let vars = [
+      2*x,
+      -y,
+      -z,
+      0.2*x
+    ];
     let e : Expr = vars.iter().cloned().sum();
     let e = e.into_linexpr().unwrap();
     assert_eq!(e.coeff.len(), 3);
@@ -721,10 +803,11 @@ mod tests {
   #[test]
   fn linexpr_debug_fmt() {
     make_model_with_vars!(m, x, y);
-    let e = 2.0 * y.clone();
+    let e = 2usize * y;
     let s = format!("{:?}", e.attach(&m));
     assert_eq!("2 y", s.to_string());
     eprintln!("{}", s);
-    eprintln!("{:?}", (x.clone()*y.clone() + 2.0*(x.clone()*x.clone())).attach(&m));
+    let e = x*y - 2.0f64 *(x*x);
+    eprintln!("{:?}", e.attach(&m));
   }
 }

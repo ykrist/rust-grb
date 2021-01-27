@@ -41,14 +41,14 @@ fn main() {
 
   let expr = open.iter().chain(trans_vars.iter().flat_map(|tr| tr.iter()))
     .zip(fixed_costs.iter().chain(trans_costs.iter().flat_map(|c| c.iter())))
-    .map(|(x, &c)| x*c)
+    .map(|(&x, &c)| x*c)
     .grb_sum();
 
   model.update().unwrap();
   model.set_objective(expr, Minimize).unwrap();
 
 
-  for (p, (&capacity, open)) in capacity.iter().zip(&open).enumerate() {
+  for (p, (&capacity, &open)) in capacity.iter().zip(&open).enumerate() {
     let lhs = trans_vars.iter().map(|t| &t[p]).grb_sum();
     model.add_constr(&format!("Capacity{}", p), lhs - capacity * open, Less, 0.0).unwrap();
   }

@@ -9,16 +9,16 @@ fn main() {
   let env = Env::new("mip.log").unwrap();
   let mut model = Model::new("mip", &env).unwrap();
 
-  let x = model.add_var("x", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
-  let y = model.add_var("y", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
-  let z = model.add_var("z", Binary, 0.0, 0.0, 1.0, &[], &[]).unwrap();
+  let x = add_binvar!(model, name="x").unwrap();
+  let y = add_binvar!(model, name="y").unwrap();
+  let z = add_binvar!(model, name="z").unwrap();
   model.update().unwrap();
 
-  model.set_objective(&x + &y + 2.0 * &z, Minimize).unwrap();
+  model.set_objective(x + y + 2 * z, Minimize).unwrap();
 
-  model.add_constr("c0", &x + 2.0 * &y + 3.0 * &z, Less, 4.0).unwrap();
+  model.add_constr("c0", x + 2 * y + 3 * z, Less, 4).unwrap();
 
-  model.add_constr("c1", &x + &y, Greater, 1.0).unwrap();
+  model.add_constr("c1", x + y, Greater, 1).unwrap();
 
   model.optimize().unwrap();
 

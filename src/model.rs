@@ -629,7 +629,7 @@ impl Model {
     let expr = (lhs.into() - rhs.into()).into_linexpr()?;
     let constrname = CString::new(name)?;
     let (vinds, cval) = self.get_coeffs_indices_build(&expr)?;
-
+    dbg!(&vinds, &cval, -expr.get_offset());
     self.check_apicall(unsafe {
       ffi::GRBaddconstr(self.model,
                         cval.len() as ffi::c_int,
@@ -1193,7 +1193,7 @@ macro_rules! add_var {
     (@UB, $x:literal) => { $x as f64 };
     (@UB, ) => { $crate::INFINITY };
     (@LB, $x:literal ) => { $x as f64 };
-    (@LB, ) => { $crate::INFINITY };
+    (@LB, ) => { -$crate::INFINITY };
 }
 
 /// Add a binary variable to a Model object.  See [`add_var!`] for details.  The `bounds` keyword

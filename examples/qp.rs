@@ -3,7 +3,6 @@
 // This software is released under the MIT License.
 // See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 
-extern crate gurobi;
 use gurobi::*;
 
 fn main() {
@@ -19,18 +18,13 @@ fn main() {
   model.update().unwrap();
 
   // set objective funtion:
-  //   f(x,y,z) = x*x + x*y + y*y + y*z + z*z + 2*x
-  model.set_objective(&x * &x + &x * &y + &y * &y + &y * &z + &z * &z + 2.0 * &x,
-                   Minimize)
-    .unwrap();
+  model.set_objective(x*x + x*y + y*y + y*z + 2*(z*z) + 2*x, Minimize).unwrap();
 
   // add linear constraints
 
-  // c0: x + 2*y + 3*z >= 4
-  model.add_constr("c0", &x + 2.0 * &y + 3.0 * &z, Greater, 4.0).unwrap();
+  model.add_constr("c0", x + 2*y + 3*z, Greater, 4).unwrap();
 
-  // c1: x + y >= 1
-  model.add_constr("c1", &x + &y, Greater, 1.0).unwrap();
+  model.add_constr("c1", x + y, Greater, 1).unwrap();
 
   // optimize the model.
   model.optimize().unwrap();

@@ -13,11 +13,16 @@ pub fn make_model(env: &Env) -> Result<Model> {
   let pays = vec![10.0, 12.0, 10.0, 8.0, 8.0, 9.0, 11.0];
 
   // Set of shift labels
-  let shifts = vec!["Mon1", "Tue2", "Wed3", "Thu4", "Fri5", "Sat6", "Sun7", "Mon8", "Tue9", "Wed10", "Thu11", "Fri12",
-                    "Sat13", "Sun14"];
+  let shifts = vec![
+    "Mon1", "Tue2", "Wed3", "Thu4", "Fri5", "Sat6", "Sun7",
+    "Mon8", "Tue9", "Wed10", "Thu11", "Fri12", "Sat13", "Sun14"
+  ];
 
   // Number of workers required for each shift
-  let shift_requirements = vec![3.0, 2.0, 4.0, 4.0, 5.0, 6.0, 5.0, 2.0, 2.0, 3.0, 4.0, 6.0, 7.0, 5.0];
+  let shift_requirements = vec![
+    3.0, 2.0, 4.0, 4.0, 5.0, 6.0, 5.0,
+    2.0, 2.0, 3.0, 4.0, 6.0, 7.0, 5.0
+  ];
 
   // Worker availability: 0 if the worker is unavailable for a shift
   let availability = vec![
@@ -46,8 +51,8 @@ pub fn make_model(env: &Env) -> Result<Model> {
   model.set_attr(attr::ModelSense, ModelSense::Minimize.into())?;
 
   for (s, (shift, &requirement)) in shifts.iter().zip(shift_requirements.iter()).enumerate() {
-    model.add_constr(format!("c.{}", shift).as_str(),
-                          x.iter().map(|ref x| &x[s]).grb_sum(),
+    model.add_constr(format!("shift-{}", shift).as_str(),
+                          x.iter().map(|x_workers| x_workers[s]).grb_sum(),
                           Equal,
                           requirement)?;
   }

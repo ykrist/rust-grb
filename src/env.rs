@@ -9,7 +9,6 @@ use std::ffi::CString;
 use std::ptr::null_mut;
 
 use crate::error::{Error, Result};
-use crate::model::Model;
 use crate::param::Param;
 use crate::util;
 

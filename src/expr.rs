@@ -371,8 +371,8 @@ impl From<QuadExpr> for Expr {
   fn from(val: QuadExpr) -> Expr { Expr::Quad(val) }
 }
 
-impl<T: Clone + Into<Expr>> From<&T> for Expr { // TODO remove
-  fn from(val: &T) -> Expr { val.clone().into() }
+impl<T: Copy + Into<Expr>> From<&T> for Expr {
+  fn from(val: &T) -> Expr { (*val).into() }
 }
 
 
@@ -563,6 +563,7 @@ impl<T,I> GurobiSum for I where
 {
   fn grb_sum(self) -> Expr { self.sum() }
 }
+
 
 pub struct Attached<'a, T> {
   inner: &'a T,

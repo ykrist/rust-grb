@@ -49,7 +49,7 @@ fn main() {
 
 
   for (p, (&capacity, &open)) in capacity.iter().zip(&open).enumerate() {
-    let lhs = trans_vars.iter().map(|t| &t[p]).grb_sum();
+    let lhs = trans_vars.iter().map(|t| t[p]).grb_sum();
     model.add_constr(&format!("Capacity{}", p), lhs - capacity * open, Less, 0.0).unwrap();
   }
 

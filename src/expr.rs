@@ -704,12 +704,11 @@ impl fmt::Debug for Attached<'_, Expr> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{Env, Binary, Model};
+  use crate::{Binary, Model};
 
   macro_rules! make_model_with_vars {
     ($model:ident, $($var:ident),+) => {
-      let env = Env::new("gurobi.log").unwrap();
-      let mut $model = Model::new("test", &env).unwrap();
+      let mut $model = Model::new("test").unwrap();
       $(
         let $var = $model.add_var(stringify!($var), Binary, 0.0, 0.0, 0.0, &[], &[]).unwrap();
       )+

@@ -9,7 +9,7 @@ fn main() {
   let env = Env::new("qp.log").unwrap();
 
   // create an empty model.
-  let mut model = Model::new("qp", &env).unwrap();
+  let mut model = Model::with_env("qp", &env).unwrap();
 
   // add & integrate new variables.
   let x = model.add_var("x", Continuous, 0.0, 0.0, 1.0, &[], &[]).unwrap();

@@ -7,7 +7,7 @@ use gurobi::*;
 
 fn main() {
   let env = Env::new("mip.log").unwrap();
-  let mut model = Model::new("mip", &env).unwrap();
+  let mut model = Model::with_env("mip", &env).unwrap();
 
   let x = add_binvar!(model, name="x").unwrap();
   let y = add_binvar!(model, name="y").unwrap();

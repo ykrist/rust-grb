@@ -19,6 +19,7 @@ use crate::model_object::*;
 use crate::{VarType, ConstrSense, ModelSense, SOSType, RelaxType, Status};
 use crate::env::AsPtr;
 use gurobi_sys::GRBmodel;
+use crate::param::Param;
 
 
 struct CallbackData<'a> {
@@ -95,11 +96,7 @@ impl Model {
   ///
   /// Note that the given environment will be copied by the Gurobi API
   /// and a new environment associated with the model will be created.
-  /// If you want to query/modify the value of parameters, use `get_env()`/`get_env_mut()`.
-  ///
-  /// # Arguments
-  /// * __modelname__ : Name of the model
-  /// * __env__ : An environment object.
+  /// If you want to query or modify this environment, use `get_env()`/`get_env_mut()`.
   ///
   /// # Example
   /// ```
@@ -111,7 +108,7 @@ impl Model {
   /// let env = env;
   /// // ...
   ///
-  /// let mut model = Model::new("model1", &env).unwrap();
+  /// let mut model = Model::with_env("model1", &env).unwrap();
   /// assert_eq!(model.get_env().get(param::OutputFlag).unwrap(), 0);
   ///
   /// model.get_env_mut().set(param::OutputFlag, 1).unwrap();
@@ -125,7 +122,7 @@ impl Model {
     NEXT_ID.fetch_add(1, Ordering::Relaxed)
   }
 
-  pub fn new(modelname: &str, env: &Env) -> Result<Model> {
+  pub fn with_env(modelname: &str, env: &Env) -> Result<Model> {
     let modelname = CString::new(modelname)?;
     let mut model = null_mut();
     env.check_apicall(unsafe {
@@ -142,9 +139,9 @@ impl Model {
     Self::from_raw(env, model)
   }
 
-  pub fn with_default_env(name: &str) -> Result<Model> {
-    let env = Env::new("gurobi.log")?;
-    Model::new(name, &env)
+  /// Create a new model with the default environment, which is lazily initialised.
+  pub fn new(modelname: &str) -> Result<Model> {
+    Env::GLOBAL_DEFAULT.with(|env| Model::with_env(modelname, env))
   }
 
   /// Create the `Model` object from a raw pointer returned by a Gurobi routine.
@@ -411,7 +408,6 @@ impl Model {
     if colconstrs.len() != colvals.len() {
       return Err(Error::InconsistentDims);
     }
-    dbg!(name, vtype, obj, lb, ub);
     let colconstrs = self.get_indices(colconstrs)?;
     let name = CString::new(name)?;
     self.check_apicall(unsafe {
@@ -499,7 +495,6 @@ impl Model {
     let expr = (lhs.into() - rhs.into()).into_linexpr()?;
     let constrname = CString::new(name)?;
     let (vinds, cval) = self.get_coeffs_indices_build(&expr)?;
-    dbg!(&vinds, &cval, -expr.get_offset());
     self.check_apicall(unsafe {
       ffi::GRBaddconstr(self.model,
                         cval.len() as ffi::c_int,
@@ -686,7 +681,7 @@ impl Model {
   /// # Usage
   /// ```
   /// use gurobi::*;
-  /// let mut m = Model::with_default_env("model").unwrap();
+  /// let mut m = Model::new("model").unwrap();
   /// let x = add_binvar!(m).unwrap();
   /// let y = add_binvar!(m).unwrap();
   /// let c = m.add_constr("constraint", x + y, Equal, 1.0).unwrap();
@@ -775,6 +770,14 @@ impl Model {
     }
     let indices = self.get_indices_build(elem)?;
     unsafe { attr.set_elements(self.model, &indices, values) }.map_err(|code| self.env.error_from_api(code))
+  }
+
+  pub fn set_param<P: Param>(&mut self, param: P, value: P::Value) -> Result<()> {
+    self.get_env_mut().set(param, value)
+  }
+
+  pub fn get_param<P: Param>(&self, param: P) -> Result<P::Value> {
+    self.get_env().get(param)
   }
 
 
@@ -1021,7 +1024,7 @@ impl Drop for Model {
 /// ```
 /// use gurobi::*;
 /// let env = Env::new("gurobi.log").unwrap();
-/// let mut model = Model::new("Model", &env).unwrap();
+/// let mut model = Model::with_env("Model", &env).unwrap();
 /// add_var!(model, Continuous, name="name", obj=0.0, bounds=-10..10).unwrap();
 /// add_var!(model, Integer, bounds=0..).unwrap();
 /// add_var!(model, Continuous, name=&format!("X[{}]", 42)).unwrap();
@@ -1079,7 +1082,7 @@ macro_rules! add_var {
 /// ```
 /// use gurobi::*;
 /// let env = Env::new("gurobi.log").unwrap();
-/// let mut model = Model::new("Model", &env).unwrap();
+/// let mut model = Model::with_env("Model", &env).unwrap();
 /// add_binvar!(model, name="name", obj=0.0).unwrap();
 /// ```
 #[macro_export]
@@ -1094,22 +1097,15 @@ macro_rules! add_binvar {
 mod tests {
   use super::*;
   use crate::*;
-  use gurobi_sys::IntParam::OutputFlag;
-
-  #[test]
-  fn modelsense_conversion() {
-    use self::ModelSense;
-    assert_eq!(Into::<i32>::into(ModelSense::Minimize), 1i32);
-    assert_eq!(Into::<i32>::into(ModelSense::Maximize), -1i32);
-  }
+  
 
   #[test]
   fn model_id_factory() {
     let mut env = Env::new("").unwrap();
     env.set(param::OutputFlag, 0).unwrap();
 
-    let mut m1 = Model::new("test1", &env).unwrap();
-    let mut m2 = Model::new("test2", &env).unwrap();
+    let mut m1 = Model::with_env("test1", &env).unwrap();
+    let mut m2 = Model::with_env("test2", &env).unwrap();
 
     let x1 = add_var!(m1, Binary,  name="x1").unwrap();
     let x2 = add_var!(m2, Binary,  name="x2").unwrap();
@@ -1124,10 +1120,8 @@ mod tests {
 
   #[test]
   fn eager_update() {
-    let env = Env::empty().unwrap().start().unwrap();
-    assert_eq!(env.get(param::UpdateMode).unwrap(), 1);
-
-    let mut model = Model::new("test", &env).unwrap();
+    let mut model = Model::new("test").unwrap();
+    assert_eq!(model.get_param(param::UpdateMode).unwrap(), 1);
     assert!(!model.update_mode_lazy().unwrap());
     let x = add_binvar!(model, name="x").unwrap();
     let y = add_binvar!(model, name="y").unwrap();
@@ -1188,7 +1182,7 @@ mod tests {
     let mut env = Env::new("").unwrap();
     env.set(param::OutputFlag, 0).unwrap();
     env.set(param::UpdateMode, 0).unwrap();
-    let mut model = Model::new("bug", &env).unwrap();
+    let mut model = Model::with_env("bug", &env).unwrap();
     assert!(model.update_mode_lazy().unwrap());
 
     let x = add_binvar!(model, name="x").unwrap();
@@ -1241,8 +1235,8 @@ mod tests {
     env.set(param::OutputFlag, 0).unwrap();
     assert_eq!(env.get(param::UpdateMode).unwrap(), 1);
 
-    let mut model1 = Model::new("model1", &env).unwrap();
-    let mut model2 = Model::new("model1", &env).unwrap();
+    let mut model1 = Model::with_env("model1", &env).unwrap();
+    let mut model2 = Model::with_env("model1", &env).unwrap();
 
     let x1 = add_binvar!(model1, name="x1").unwrap();
     let y1 = add_binvar!(model1, name="y1").unwrap();
@@ -1272,7 +1266,7 @@ mod tests {
   fn new_model_copies_env() -> Result<()> {
     let mut env = Env::new("")?;
     env.set(param::OutputFlag, 0)?;
-    let mut model = Model::new("test", &env)?;
+    let mut model = Model::with_env("test", &env)?;
     let model_env = model.get_env_mut();
     // assert_eq!(model.get)
 
@@ -1288,7 +1282,7 @@ mod tests {
   fn new_model_copies_env_drop() -> Result<()> {
     let mut env = Env::new("")?;
     env.set(param::OutputFlag, 0)?;
-    let mut model = Model::new("test", &env)?;
+    let mut model = Model::with_env("test", &env)?;
     drop(env); // frees underlying GRBEnv
     let model_env = model.get_env_mut();
     model_env.set(param::OutputFlag, 1)?;
@@ -1301,7 +1295,7 @@ mod tests {
   fn model_copy_copies_env() -> Result<()> {
     let mut env = Env::new("")?;
     env.set(param::OutputFlag, 0)?;
-    let mut m1 = Model::new("m1", &env)?;
+    let mut m1 = Model::with_env("m1", &env)?;
     let m2 = m1.copy()?;
 
     let m1_env = m1.get_env_mut();
@@ -1316,12 +1310,8 @@ mod tests {
 
   #[test]
   fn fixed_mip_model_copies_env() -> Result<()> {
-    let mut m = {
-      let mut env = Env::new("")?;
-      env.set(OutputFlag, 0)?;
-      Model::new("original", &env)?
-    };
-
+    let mut m = Model::new("")?;
+    m.set_param(param::OutputFlag, 0)?;
     let x = add_var!(m, Continuous, name="x")?;
     let y = add_binvar!(m, name="y")?;
 
@@ -1344,7 +1334,7 @@ mod tests {
   #[test]
   fn read_model_copies_env() -> Result<()> {
     let env = Env::new("")?;
-    let m1 = Model::new("test", &env)?;
+    let m1 = Model::with_env("test", &env)?;
     let filename = "test_read_model_copies_env.lp";
     m1.write(filename)?;
     let m2 = Model::read_from(filename, &env)?;
@@ -1355,8 +1345,8 @@ mod tests {
   #[test]
   fn copy_env_model_to_model() -> Result<()> {
     let env = Env::new("")?;
-    let m1 = Model::new("", &env)?;
-    let m2 = Model::new("", m1.get_env())?;
+    let m1 = Model::with_env("", &env)?;
+    let m2 = Model::with_env("", m1.get_env())?;
 
     assert_ne!(m1.get_env().as_ptr(), m2.get_env().as_ptr());
     Ok(())

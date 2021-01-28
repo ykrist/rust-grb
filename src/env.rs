@@ -30,6 +30,7 @@ pub(crate) trait AsPtr {
 }
 
 /// Represents a User-Allocated Gurobi Env
+#[derive(Debug, Eq, PartialEq)]
 pub(crate) struct UserAllocEnv {
   ptr: *mut GRBenv
 }
@@ -46,7 +47,11 @@ impl Drop for UserAllocEnv {
   }
 }
 
-
+/// A Gurobi Environment object.
+///
+/// [`Model`s](crate::Model) objects created with [`Model::new`](crate::Model::new) will use the default `Env`.
+/// This default `Env` is thread-local and lazily initialized.  Currently, it lasts until the current thread;
+/// there is no way to de-allocate it from the current thread.
 pub struct Env{
   /// The original user-allocated environment created by the user
   user_allocated: Rc<UserAllocEnv>,
@@ -74,7 +79,7 @@ impl AsPtr for Env {
 /// env.set(param::OutputFlag, 0)?
 ///   .set(param::UpdateMode, 1)?
 ///   .set(param::LogFile, "".to_string())?;
-/// let env = env.start();
+/// let env : Env = env.start()?;
 /// # Ok::<(), gurobi::Error>(())
 /// ```
 pub struct EmptyEnv {
@@ -101,7 +106,9 @@ impl EmptyEnv {
 }
 
 impl Env {
-  fn master(&self) -> Rc<UserAllocEnv> {
+  thread_local!(pub(crate) static GLOBAL_DEFAULT : Env = Env::new("gurobi.log").unwrap());
+
+  fn ua_ref(&self) -> Rc<UserAllocEnv> {
     self.user_allocated.clone()
   }
 
@@ -121,7 +128,7 @@ impl Env {
   /// - `ptr` must have been obtained using `GRBgetenv`
   pub(crate) unsafe fn new_gurobi_allocated(original: &Env, ptr: *mut ffi::GRBenv) -> Env {
     debug_assert!(!ptr.is_null());
-    Env { user_allocated: original.master(), gurobi_allocated: Some(ptr) }
+    Env { user_allocated: original.ua_ref(), gurobi_allocated: Some(ptr) }
   }
 
   /// Create a new empty and un-started environment.
@@ -223,32 +230,29 @@ fn get_error_msg(env: *mut ffi::GRBenv) -> String {
 }
 
 
-// #[test]
-// fn env_with_logfile() {
-//   use std::path::Path;
-//   use std::fs::remove_file;
-//
-//   let path = Path::new("test_env.log");
-//
-//   if path.exists() {
-//     remove_file(path).unwrap();
-//   }
-//
-//   {
-//     let env = Env::new(path.to_str().unwrap()).unwrap();
-//   }
-//
-//   assert!(path.exists());
-//   remove_file(path).unwrap();
-// }
 
-#[test]
-fn param_get_set() {
+#[cfg(test)]
+mod tests {
   use super::*;
-  let mut env = Env::new("").unwrap();
-  env.set(param::IISMethod, 1).unwrap();
-  assert_eq!(env.get(param::IISMethod).unwrap(), 1);
-  env.set(param::IISMethod, 0).unwrap();
-  assert_eq!(env.get(param::IISMethod).unwrap(), 0);
-  assert!(env.set(param::IISMethod, 9999).is_err());
+  use crate::{param, Model};
+
+  #[test]
+  fn param_get_set() {
+    use super::*;
+    let mut env = Env::new("").unwrap();
+    env.set(param::IISMethod, 1).unwrap();
+    assert_eq!(env.get(param::IISMethod).unwrap(), 1);
+    env.set(param::IISMethod, 0).unwrap();
+    assert_eq!(env.get(param::IISMethod).unwrap(), 0);
+    assert!(env.set(param::IISMethod, 9999).is_err());
+  }
+
+
+  #[test]
+  fn default_env_created_once() -> Result<()> {
+    let m1 = Model::new("m1")?;
+    let m2 = Model::new("m2")?;
+    assert_eq!(m1.get_env().ua_ref(), m2.get_env().ua_ref());
+    Ok(())
+  }
 }

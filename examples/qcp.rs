@@ -9,7 +9,7 @@ fn main() {
   let env = gurobi::Env::new("qcp.log").unwrap();
 
   // create an empty model.
-  let mut model = Model::new("qcp", &env).unwrap();
+  let mut model = Model::with_env("qcp", &env).unwrap();
 
   // add & integrate new variables.
   let x = model.add_var("x", Continuous, 0.0, 0.0, INFINITY, &[], &[]).unwrap();

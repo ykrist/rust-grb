@@ -22,7 +22,7 @@ fn main() {
                          vec![2200f64, 2600.0, 3100.0, 3700.0, 3200.0]];
 
   let env = Env::new("facility.log").unwrap();
-  let mut model = Model::new("facility", &env).unwrap();
+  let mut model = Model::with_env("facility", &env).unwrap();
 
   // plant open decision variables.
   // open[p] == 1 means that plant p is open.

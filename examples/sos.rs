@@ -7,7 +7,7 @@ use gurobi::*;
 
 fn main() {
   let env = Env::new("sos.log").unwrap();
-  let mut model = Model::new("sos", &env).unwrap();
+  let mut model = Model::with_env("sos", &env).unwrap();
 
   let x0 = model.add_var("x0", Continuous, 0.0, 0.0, 1.0, &[], &[]).unwrap();
   let x1 = model.add_var("x1", Continuous, 0.0, 0.0, 1.0, &[], &[]).unwrap();

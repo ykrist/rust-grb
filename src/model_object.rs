@@ -302,21 +302,17 @@ mod tests {
       let mut update_mode_lazy = true;
       let mut vars : Vec<Option<Var>> = vec![None; u8::MAX as usize + 1];
       let mut idx_manager = IdxManager::new(0);
-      println!("{}", "-".repeat(80));
       for a in actions {
-        println!("{:?}", a);
         match a {
           Action::SwitchUpdateMode => {
             update_mode_lazy = !update_mode_lazy;
             if !update_mode_lazy {
               idx_manager.update(); // purge old pending states
             }
-            dbg!(update_mode_lazy);
           },
           Action::AddVar(i) => {
             let i = i as usize;
             let v = vars[i];
-            dbg!(v);
             match v {
               Some(v) => {
                 if !update_mode_lazy {
@@ -331,7 +327,6 @@ mod tests {
           Action::RemoveVar(i) => {
             let i = i as usize;
             let v = vars[i];
-            dbg!(v);
             match v {
               Some(v) => {
                 match idx_manager.remove(v, update_mode_lazy) {

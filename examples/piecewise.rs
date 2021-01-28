@@ -8,7 +8,7 @@ use gurobi::*;
 #[allow(clippy::many_single_char_names)]
 fn main() {
   let env = Env::new("piecewise.log").unwrap();
-  let mut model = Model::new("piecewise", &env).unwrap();
+  let mut model = Model::with_env("piecewise", &env).unwrap();
 
   // Add variables.
   let x = model.add_var("x", Continuous, 0.0, 0.0, 1.0, &[], &[]).unwrap();

@@ -30,10 +30,7 @@
 //! ```
 //! use gurobi::*;
 //!
-//! let env = Env::new("logfile.log").unwrap();
-//!
-//! // create an empty model which associated with `env`:
-//! let mut model = Model::new("model1", &env).unwrap();
+//! let mut model = Model::new("model1").unwrap();
 //!
 //! // add decision variables with no bounds
 //! let x1 = add_var!(model, Continuous, name="x1", bounds=..).unwrap();
@@ -74,7 +71,10 @@
 //! // Querying variables by name
 //! assert_eq!(model.get_var_by_name(&x1_name).unwrap(), Some(x1));
 //! ```
-
+//!
+//! ## Errors
+//! Due to the nature of C APIs, almost every Gurobi routine can return an error.  Unless otherwise stated,
+//! if a method or function returns a [`Result`], the error will be [`Error::FromAPI`].
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 

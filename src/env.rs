@@ -11,13 +11,58 @@ use std::ptr::null_mut;
 use crate::error::{Error, Result};
 use crate::param::Param;
 use crate::util;
+use gurobi_sys::GRBenv;
+use std::rc::Rc;
 
-/// Gurobi environment object (see the Gurobi [manual](https://www.gurobi.com/documentation/9.1/refman/environments.html))
-pub struct Env {
-  env: *mut ffi::GRBenv,
-  require_drop: bool
+pub(crate) trait AsPtr {
+  /// Return the underling Gurobi pointer
+  ///
+  /// # Safety
+  /// One of the following conditions must hold
+  /// - self is mutable
+  /// - the resulting pointer is passed only to Gurobi library routines
+  unsafe fn as_mut_ptr(&self) -> *mut GRBenv;
+
+  /// Return the underling Gurobi pointer
+  fn as_ptr(&self) -> *const GRBenv {
+    (unsafe { self.as_mut_ptr() }) as *const GRBenv
+  }
 }
 
+/// Represents a User-Allocated Gurobi Env
+pub(crate) struct UserAllocEnv {
+  ptr: *mut GRBenv
+}
+
+impl AsPtr for UserAllocEnv {
+  unsafe fn as_mut_ptr(&self) -> *mut GRBenv { self.ptr }
+}
+
+impl Drop for UserAllocEnv {
+  fn drop(&mut self) {
+    debug_assert!(!self.ptr.is_null());
+    unsafe { ffi::GRBfreeenv(self.ptr) };
+    self.ptr = null_mut();
+  }
+}
+
+
+pub struct Env{
+  /// The original user-allocated environment created by the user
+  user_allocated: Rc<UserAllocEnv>,
+  /// Is None if Env is user-allocated, otherwise is `Some(ptr)` where `ptr `
+  /// is a Gurobi-allocated *GRBEnv
+  gurobi_allocated: Option<*mut GRBenv>
+}
+
+
+impl AsPtr for Env {
+  unsafe fn as_mut_ptr(&self) -> *mut GRBenv {
+    self.gurobi_allocated.unwrap_or_else(|| self.user_allocated.as_mut_ptr())
+  }
+}
+
+/// Gurobi environment object (see the Gurobi [manual](https://www.gurobi.com/documentation/9.1/refman/environments.html))
 /// A Gurobi environment which hasn't been started yet. Some Gurobi parameters,
 /// such as [`Record`](https://www.gurobi.com/documentation/9.1/refman/record.html)
 /// need to be set before the environment has been started.
@@ -50,17 +95,33 @@ impl EmptyEnv {
 
   /// Start the environment, return the [`Env`] on success.
   pub fn start(self) -> Result<Env> {
-    self.env.check_apicall(unsafe { ffi::GRBstartenv(self.env.as_ptr()) })?;
+    self.env.check_apicall(unsafe { ffi::GRBstartenv(self.env.as_mut_ptr()) })?;
     Ok(self.env)
   }
 }
 
 impl Env {
-  pub(crate) fn from_raw(env: *mut ffi::GRBenv) -> Env {
-    Env {
-      env,
-      require_drop: false // TODO this seems sketchy, should use Rc instead
-    }
+  fn master(&self) -> Rc<UserAllocEnv> {
+    self.user_allocated.clone()
+  }
+
+  /// Wrap user-allocated Gurobi env pointer
+  /// # Safety
+  /// - `ptr` must be non-null
+  /// - `ptr` must have been obtained using `GRBEmptyEnv` or `GRBloadenv`
+  /// - `ptr` must not have previously been used (elsewhere wrapped)
+  unsafe fn new_user_allocated(ptr: *mut GRBenv) -> Env {
+    debug_assert!(!ptr.is_null());
+    Env { user_allocated: Rc::new(UserAllocEnv{ptr}), gurobi_allocated: None }
+  }
+
+  /// Wrap Gurobi-allocated Gurobi env pointer
+  /// # Safety
+  /// - `ptr` must be non-null
+  /// - `ptr` must have been obtained using `GRBgetenv`
+  pub(crate) unsafe fn new_gurobi_allocated(original: &Env, ptr: *mut ffi::GRBenv) -> Env {
+    debug_assert!(!ptr.is_null());
+    Env { user_allocated: original.master(), gurobi_allocated: Some(ptr) }
   }
 
   /// Create a new empty and un-started environment.
@@ -70,7 +131,7 @@ impl Env {
     if err_code != 0 {
       return Err(Error::FromAPI(get_error_msg(env), err_code));
     }
-    let env = Env { env, require_drop: true };
+    let env = unsafe{ Env::new_user_allocated(env) };
     Ok(EmptyEnv{env})
   }
 
@@ -84,10 +145,7 @@ impl Env {
     if error != 0 {
       return Err(Error::FromAPI(get_error_msg(env), error));
     }
-    Ok(Env {
-      env,
-      require_drop: true
-    })
+    Ok(unsafe { Env::new_user_allocated(env) })
   }
 
   /// Create a client environment on a computer server with log file
@@ -109,33 +167,30 @@ impl Env {
     if error != 0 {
       return Err(Error::FromAPI(get_error_msg(env), error));
     }
-    Ok(Env {
-      env,
-      require_drop: true
-    })
+    Ok(unsafe{ Env::new_user_allocated(env) })
   }
 
 
   /// Query the value of a parameter
   pub fn get<P: Param>(&self, param: P) -> Result<P::Value> {
-    unsafe { param.get_param(self.env) }.map_err(|code| self.error_from_api(code))
+    unsafe { param.get_param(self.as_mut_ptr()) }.map_err(|code| self.error_from_api(code))
   }
 
   /// Set the value of a parameter
   pub fn set<P: Param>(&mut self, param: P, value: P::Value) -> Result<()> {
-    unsafe { param.set_param(self.env, value) }.map_err(|code| self.error_from_api(code))
+    unsafe { param.set_param(self.as_mut_ptr(), value) }.map_err(|code| self.error_from_api(code))
   }
 
   /// Import a set of parameter values from a file
   pub fn read_params(&mut self, filename: &str) -> Result<()> {
     let filename = CString::new(filename)?;
-    self.check_apicall(unsafe { ffi::GRBreadparams(self.env, filename.as_ptr()) })
+    self.check_apicall(unsafe { ffi::GRBreadparams(self.as_mut_ptr(), filename.as_ptr()) })
   }
 
   /// Write the set of parameter values to a file
   pub fn write_params(&self, filename: &str) -> Result<()> {
     let filename = CString::new(filename)?;
-    self.check_apicall(unsafe { ffi::GRBwriteparams(self.env, filename.as_ptr()) })
+    self.check_apicall(unsafe { ffi::GRBwriteparams(self.as_mut_ptr(), filename.as_ptr()) })
   }
 
   /// Insert a message into log file.
@@ -143,14 +198,14 @@ impl Env {
   /// When **message** cannot convert to raw C string, a panic is occurred.
   pub fn message(&self, message: &str) {
     let msg = CString::new(message).unwrap();
-    unsafe { ffi::GRBmsg(self.env, msg.as_ptr()) };
+    unsafe { ffi::GRBmsg(self.as_mut_ptr(), msg.as_ptr()) };
   }
 
   pub(crate) fn error_from_api(&self, error: ffi::c_int) -> Error {
-    Error::FromAPI(get_error_msg(self.env), error)
+    Error::FromAPI(get_error_msg(unsafe { self.as_mut_ptr() }), error)
   }
 
-  pub(crate) fn as_ptr(&self) -> *mut ffi::GRBenv { self.env }
+  // pub(crate) fn as_mut_ptr(&self) -> *mut ffi::GRBenv { self.env }
 
   pub(crate) fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
     if error != 0 {
@@ -161,16 +216,11 @@ impl Env {
 }
 
 
-impl Drop for Env {
-  fn drop(&mut self) {
-    if self.require_drop {
-      debug_assert!(!self.env.is_null());
-      unsafe { ffi::GRBfreeenv(self.env) };
-    }
+fn get_error_msg(env: *mut ffi::GRBenv) -> String {
+  unsafe {
+    util::copy_c_str(ffi::GRBgeterrormsg(env))
   }
 }
-
-fn get_error_msg(env: *mut ffi::GRBenv) -> String { unsafe { util::copy_c_str(ffi::GRBgeterrormsg(env)) } }
 
 
 // #[test]

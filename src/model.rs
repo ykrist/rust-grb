@@ -17,6 +17,7 @@ use crate::attr::Attr;
 use crate::callback::Callback;
 use crate::model_object::*;
 use crate::{VarType, ConstrSense, ModelSense, SOSType, RelaxType, Status};
+use crate::env::AsPtr;
 use gurobi_sys::GRBmodel;
 
 
@@ -55,11 +56,12 @@ extern "C" fn null_callback_wrapper(_model: *mut ffi::GRBmodel, _cbdata: *mut ff
 
 
 
-/// Gurobi model object associated with certain environment.
+/// Gurobi Model object.
 pub struct Model {
   model: *mut ffi::GRBmodel,
   #[allow(dead_code)]
   id: u32,
+  // init_env: Rc<Env>,
   env: Env,
   pub(crate) vars: IdxManager<Var>,
   pub(crate) constrs: IdxManager<Constr>,
@@ -127,7 +129,7 @@ impl Model {
     let modelname = CString::new(modelname)?;
     let mut model = null_mut();
     env.check_apicall(unsafe {
-      ffi::GRBnewmodel(env.as_ptr(),
+      ffi::GRBnewmodel(env.as_mut_ptr(),
                        &mut model,
                        modelname.as_ptr(),
                        0,
@@ -137,7 +139,7 @@ impl Model {
                        null(),
                        null())
     })?;
-    Self::from_raw(model)
+    Self::from_raw(env, model)
   }
 
   pub fn with_default_env(name: &str) -> Result<Model> {
@@ -145,14 +147,28 @@ impl Model {
     Model::new(name, &env)
   }
 
-  /// create an empty model which associated with certain environment.
-  fn from_raw(model: *mut ffi::GRBmodel) -> Result<Model> {
-    let env = unsafe { ffi::GRBgetenv(model) };
-    if env.is_null() {
+  /// Create the `Model` object from a raw pointer returned by a Gurobi routine.
+  ///
+  /// # Safety
+  /// Here we assume that the `GRBEnv` is tied to a specific `GRBModel`
+  /// In other words, the pointer returned by GRBgetenv(model) is unique to
+  /// that model.  It is explicitly stated in the docs for
+  /// [`GRBnewmodel`](https://www.gurobi.com/documentation/9.1/refman/c_newmodel.html)
+  /// that the environment the user supplies is copied,  but must be assumed for other
+  /// Gurobi routines that create new `GRBmodel`s like
+  /// [`GRBfeasrelax`](https://www.gurobi.com/documentation/9.1/refman/c_feasrelax.html),
+  /// [`GRBfixmodel`](https://www.gurobi.com/documentation/9.1/refman/c_fixmodel.html)
+  /// and [`GRBreadmodel`](https://www.gurobi.com/documentation/9.1/refman/c_readmodel.html)
+  /// This assumption is necessary to prevent a double free when a `Model` object is dropped,
+  /// which frees the `GRBModel` and triggers the drop of a `Env`, which in turn
+  /// frees the `GRBEnv`.  The `*copies_env` tests in this module validate this assumption.
+  fn from_raw(env: &Env, model: *mut ffi::GRBmodel) -> Result<Model> {
+    let env_ptr = unsafe { ffi::GRBgetenv(model) };
+    if env_ptr.is_null() {
       return Err(Error::FromAPI("Failed to retrieve GRBenv from given model".to_owned(),
                                 2002));
     }
-    let env = Env::from_raw(env);
+    let env = unsafe { Env::new_gurobi_allocated(env, env_ptr) };
     let id= Model::next_id();
 
 
@@ -183,8 +199,8 @@ impl Model {
   pub fn read_from(filename: &str, env: &Env) -> Result<Model> {
     let filename = CString::new(filename)?;
     let mut model = null_mut();
-    env.check_apicall(unsafe { ffi::GRBreadmodel(env.as_ptr(), filename.as_ptr(), &mut model) })?;
-    Self::from_raw(model)
+    env.check_apicall(unsafe { ffi::GRBreadmodel(env.as_mut_ptr(), filename.as_ptr(), &mut model) })?;
+    Self::from_raw(env, model)
   }
 
   /// create a copy of the model
@@ -196,7 +212,7 @@ impl Model {
       return Err(Error::FromAPI("Failed to create a copy of the model".to_owned(), 20002));
     }
 
-    Model::from_raw(copied)
+    Model::from_raw(&self.env, copied)
   }
 
   fn model_update_needed(&self) -> bool {
@@ -287,7 +303,7 @@ impl Model {
     let mut fixed : *mut GRBmodel = null_mut();
     self.check_apicall(unsafe { ffi::GRBfixmodel(self.model, &mut fixed) })?;
     debug_assert!(!fixed.is_null());
-    Model::from_raw(fixed)
+    Model::from_raw(&self.env, fixed)
   }
 
   /// Get immutable reference of an environment object associated with the model.
@@ -395,6 +411,7 @@ impl Model {
     if colconstrs.len() != colvals.len() {
       return Err(Error::InconsistentDims);
     }
+    dbg!(name, vtype, obj, lb, ub);
     let colconstrs = self.get_indices(colconstrs)?;
     let name = CString::new(name)?;
     self.check_apicall(unsafe {
@@ -482,6 +499,7 @@ impl Model {
     let expr = (lhs.into() - rhs.into()).into_linexpr()?;
     let constrname = CString::new(name)?;
     let (vinds, cval) = self.get_coeffs_indices_build(&expr)?;
+    dbg!(&vinds, &cval, -expr.get_offset());
     self.check_apicall(unsafe {
       ffi::GRBaddconstr(self.model,
                         cval.len() as ffi::c_int,
@@ -1074,7 +1092,8 @@ macro_rules! add_binvar {
 
 #[cfg(test)]
 mod tests {
-  use super::super::*;
+  use super::*;
+  use crate::*;
   use gurobi_sys::IntParam::OutputFlag;
 
   #[test]
@@ -1324,11 +1343,10 @@ mod tests {
 
   #[test]
   fn read_model_copies_env() -> Result<()> {
-    use std::fs::remove_file;
     let env = Env::new("")?;
     let m1 = Model::new("test", &env)?;
     let filename = "test_read_model_copies_env.lp";
-    m1.write(filename);
+    m1.write(filename)?;
     let m2 = Model::read_from(filename, &env)?;
     assert_ne!(m2.get_env().as_ptr(), m1.get_env().as_ptr());
     Ok(())
@@ -1341,19 +1359,6 @@ mod tests {
     let m2 = Model::new("", m1.get_env())?;
 
     assert_ne!(m1.get_env().as_ptr(), m2.get_env().as_ptr());
-    Ok(())
-  }
-
-  #[test]
-  fn early_env_drop() -> Result<()> {
-    let env = Env::new("")?;
-    let p = env.as_ptr();
-    let mut m = Model::new("", &env)?;
-    drop(env); // this should not free the environment, as m is still in scope
-
-    drop(m);
-    let env = Env::from_raw(p);
-    env.get(param::UpdateMode)?; // FIXME causes an error, because the GRBEnv has been freed
     Ok(())
   }
 }

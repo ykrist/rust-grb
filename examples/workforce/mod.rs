@@ -26,14 +26,14 @@ pub fn make_model(env: &Env) -> Result<Model> {
 
   // Worker availability: 0 if the worker is unavailable for a shift
   let availability = vec![
-     vec![ 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1 ],
-     vec![ 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0 ],
-     vec![ 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1 ],
-     vec![ 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1 ],
-     vec![ 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1 ],
-     vec![ 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1 ],
-     vec![ 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
-   ];
+    vec![0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1],
+    vec![1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0],
+    vec![0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+    vec![0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1],
+    vec![1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1],
+    vec![1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1],
+    vec![1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  ];
 
   let mut model = Model::with_env("assignment", &env)?;
 
@@ -52,9 +52,7 @@ pub fn make_model(env: &Env) -> Result<Model> {
 
   for (s, (shift, &requirement)) in shifts.iter().zip(shift_requirements.iter()).enumerate() {
     model.add_constr(format!("shift-{}", shift).as_str(),
-                          x.iter().map(|x_workers| x_workers[s]).grb_sum(),
-                          Equal,
-                          requirement)?;
+                     c!(x.iter().map(|x_workers| x_workers[s]).grb_sum() == requirement))?;
   }
 
   Ok(model)

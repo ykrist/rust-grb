@@ -17,8 +17,8 @@ fn main() {
   model.update().unwrap();
 
   // Add constraints.
-  model.add_constr("c0", x + 2.0 * y + 3.0 * z, Less, 4.0).unwrap();
-  model.add_constr("c1", x + y, Greater, 1.0).unwrap();
+  model.add_constr("c0", c!(x + 2* y + 3*z <= 4)).unwrap();
+  model.add_constr("c1", c!(x + y >= 1)).unwrap();
 
   // Set `convex` objective function:
   //  minimize f(x) - y + g(z)

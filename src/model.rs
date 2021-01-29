@@ -16,8 +16,9 @@ use crate::attr;
 use crate::attr::Attr;
 use crate::callback::Callback;
 use crate::model_object::*;
-use crate::{VarType, ConstrSense, ModelSense, SOSType, RelaxType, Status};
+use crate::{VarType, ModelSense, SOSType, RelaxType, Status};
 use crate::env::AsPtr;
+use crate::constr::ConstrExpr;
 use gurobi_sys::GRBmodel;
 use crate::param::Param;
 
@@ -487,21 +488,18 @@ impl Model {
 
 
   /// add a linear constraint to the model.
-  pub fn add_constr<Lhs, Rhs>(&mut self, name: &str, lhs: Lhs, sense: ConstrSense, rhs: Rhs) -> Result<Constr> where
-    Lhs: Into<Expr>,
-    Rhs: Into<Expr>,
+  pub fn add_constr(&mut self, name: &str, con: ConstrExpr) -> Result<Constr> where
   {
-
-    let expr = (lhs.into() - rhs.into()).into_linexpr()?;
+    let (lhs, sense, rhs) = con.into_normalised_linear()?;
     let constrname = CString::new(name)?;
-    let (vinds, cval) = self.get_coeffs_indices_build(&expr)?;
+    let (vinds, cval) = self.get_coeffs_indices_build(&lhs)?;
     self.check_apicall(unsafe {
       ffi::GRBaddconstr(self.model,
                         cval.len() as ffi::c_int,
                         vinds.as_ptr(),
                         cval.as_ptr(),
                         sense.into(),
-                        -expr.get_offset(),
+                        rhs,
                         constrname.as_ptr())
     })?;
 
@@ -510,31 +508,52 @@ impl Model {
 
 
   /// add linear constraints to the model.
-  pub fn add_constrs(&mut self, names: Vec<&str>, lhs: Vec<Expr>, sense: Vec<ConstrSense>, mut rhs: Vec<f64>) -> Result<Vec<Constr>> {
-    if !(names.len() == lhs.len() && lhs.len() == sense.len() && sense.len() == rhs.len()) {
-      return Err(Error::InconsistentDims);
+  pub fn add_constrs<'a>(&mut self, constr_with_name: impl Iterator<Item=(&'a str, ConstrExpr)>) -> Result<Vec<Constr>> {
+    let (nconstr, _) = constr_with_name.size_hint();
+    let mut names = Vec::with_capacity(nconstr); // needed to ensure CString lives long enough
+    let mut cnames = Vec::with_capacity(nconstr);
+    let mut rhs = Vec::with_capacity(nconstr);
+    let mut cbeg = Vec::with_capacity(nconstr);
+    let mut cind = Vec::with_capacity(nconstr);
+    let mut cval = Vec::with_capacity(nconstr);
+    let mut senses = Vec::with_capacity(nconstr);
+
+    let mut c_start = 0;
+    for (n, c) in constr_with_name {
+      let n = CString::new(n)?;
+      cnames.push(n.as_ptr());
+      names.push(n);
+      let (lhs, sense, r) = c.into_normalised_linear()?;
+      rhs.push(r);
+      senses.push(sense.into());
+
+      let (var_coeff, _) = lhs.into_parts();
+      let nterms = var_coeff.len();
+      cbeg.push(c_start);
+      c_start += nterms as i32;
+
+      cind.reserve(nterms);
+      cval.reserve(nterms);
+      for (var, coeff) in var_coeff {
+        cind.push(self.get_index_build(&var)?);
+        cval.push(coeff);
+      }
     }
-    let lhs : Result<Vec<LinExpr>>= lhs.into_iter().map(|e| e.into_linexpr()).collect();
-    let lhs = lhs?;
-    let sense : Vec<_> = sense.iter().map(|&s| s.into()).collect();
-    rhs.iter_mut().zip(lhs.iter()).for_each(|(rhs, lhs)| *rhs -= lhs.get_offset());
-    let constrnames = convert_to_cstring_ptrs(&names)?;
-    let (cbeg, cind, cval) = self.convert_coeff_to_csr_build(lhs)?;
 
     self.check_apicall(unsafe {
       ffi::GRBaddconstrs(self.model,
-                         constrnames.len() as ffi::c_int,
+                         cnames.len() as ffi::c_int,
                          cbeg.len() as ffi::c_int,
                          cbeg.as_ptr(),
                          cind.as_ptr(),
                          cval.as_ptr(),
-                         sense.as_ptr(),
+                         senses.as_ptr(),
                          rhs.as_ptr(),
-                         constrnames.as_ptr())
+                         cnames.as_ptr())
     })?;
 
     let lazy = self.update_mode_lazy()?;
-    Ok(vec![self.constrs.add_new(lazy); constrnames.len()])
+    Ok(vec![self.constrs.add_new(lazy); cnames.len()])
   }
 
   /// Add a range constraint to the model.
@@ -594,13 +613,12 @@ impl Model {
   }
 
   /// add a quadratic constraint to the model.
-  pub fn add_qconstr(&mut self, constrname: &str, expr: Expr, sense: ConstrSense, rhs: f64) -> Result<QConstr> {
-    let constrname = CString::new(constrname)?;
-    let expr = expr.into_quadexpr();
-    let (qrow, qcol, qval) = self.get_qcoeffs_indices_build(&expr)?;
-    let (_, expr) = expr.into_parts();
-    let (lvar, lval) = self.get_coeffs_indices_build(&expr)?;
-    let offset = expr.get_offset();
+  pub fn add_qconstr(&mut self, name: &str, constraint: ConstrExpr) -> Result<QConstr> {
+    let (lhs, sense, rhs) = constraint.into_normalised_quad();
+    let cname = CString::new(name)?;
+    let (qrow, qcol, qval) = self.get_qcoeffs_indices_build(&lhs)?;
+    let (_, lexpr) = lhs.into_parts();
+    let (lvar, lval) = self.get_coeffs_indices_build(&lexpr)?;
     self.check_apicall(unsafe {
       ffi::GRBaddqconstr(self.model,
                          lval.len() as ffi::c_int,
@@ -611,8 +629,8 @@ impl Model {
                          qcol.as_ptr(),
                          qval.as_ptr(),
                          sense.into(),
-                         rhs - offset,
-                         constrname.as_ptr())
+                         rhs,
+                         cname.as_ptr())
     })?;
 
     Ok(self.qconstrs.add_new(self.update_mode_lazy()?))
@@ -679,7 +697,7 @@ impl Model {
   /// let mut m = Model::new("model").unwrap();
   /// let x = add_binvar!(m).unwrap();
   /// let y = add_binvar!(m).unwrap();
-  /// let c = m.add_constr("constraint", x + y, Equal, 1.0).unwrap();
+  /// let c = m.add_constr("constraint", c!(x + y == 1)).unwrap();
   /// assert_eq!(m.get_constr_by_name("constraint").unwrap_err(), Error::ModelUpdateNeeded);
   /// m.update().unwrap();
   /// assert_eq!(m.get_constr_by_name("constraint").unwrap(), Some(c));
@@ -1090,7 +1108,7 @@ macro_rules! add_binvar {
 mod tests {
   use super::*;
   use crate::*;
-
+  extern crate self as gurobi;
 
   #[test]
   fn model_id_factory() {
@@ -1118,7 +1136,7 @@ mod tests {
     assert!(!model.update_mode_lazy().unwrap());
     let x = add_binvar!(model, name="x").unwrap();
     let y = add_binvar!(model, name="y").unwrap();
-    let c1 = model.add_constr("c1", x + y, Less, 1.0).unwrap(); // should work fine
+    let c1 = model.add_constr("c1", c!(x + y <= 1)).unwrap(); // should work fine
 
     assert_eq!(model.get_attr(attr::NumVars).unwrap(), 0);
     assert!(model.get_index(&x).is_err());
@@ -1140,7 +1158,7 @@ mod tests {
     assert_eq!(model.get_index_build(&z).unwrap(), 2);
 
     model.remove(y).unwrap();
-    let c2 = model.add_constr("c2", z + y, Less, 1.0).unwrap(); // I know it's weird, because y is removed, but that's what Gurobi does
+    let c2 = model.add_constr("c2", c!(z + y <= 1)).unwrap(); // I know it's weird, because y is removed, but that's what Gurobi does
     assert_eq!(model.get_index_build(&c2).unwrap(), 1);
     assert_eq!(model.get_attr(attr::NumVars).unwrap(), 2);
     assert_eq!(model.get_index(&x).unwrap(), 0);
@@ -1183,13 +1201,13 @@ mod tests {
     assert_eq!(model.get_attr(attr::NumVars).unwrap(), 0);
     assert_eq!(model.get_index_build(&x).unwrap_err(), Error::ModelObjectPending);
     assert_eq!(model.get_index_build(&y).unwrap_err(), Error::ModelObjectPending);
-    model.add_constr("c1", x + y, Less, 1.0).unwrap_err();
+    model.add_constr("c1", c!(x + y <= 1)).unwrap_err();
 
     model.update().unwrap();
     assert_eq!(model.get_attr(attr::NumVars).unwrap(), 2);
     assert_eq!(model.get_index(&x).unwrap(), 0);
     assert_eq!(model.get_index(&y).unwrap(), 1);
-    let c1 = model.add_constr("c1", x + y, Less, 1.0).unwrap();
+    let c1 = model.add_constr("c1", c!(x + y <= 1)).unwrap();
 
     model.remove(y).unwrap();
     let z = add_binvar!(model, name="z").unwrap();
@@ -1236,10 +1254,10 @@ mod tests {
     let x2 = add_binvar!(model2, name="x2").unwrap();
     let y2 = add_binvar!(model2, name="y2").unwrap();
 
-    model1.add_constr("", x1 - y1, Less, 0.0).unwrap();
-    model2.add_constr("", x2 - y2, Less, 0.0).unwrap();
-    assert_eq!(model1.add_constr("", x2 - y1, Less, 0.0).unwrap_err(), Error::ModelObjectMismatch);
-    assert_eq!(model1.add_constr("", x1 - y2, Less, 0.0).unwrap_err(), Error::ModelObjectMismatch);
+    model1.add_constr("", c!(x1 <= y1)).unwrap();
+    model2.add_constr("", c!(x2 <= y2)).unwrap();
+    assert_eq!(model1.add_constr("", c!(x2 <= y1)).unwrap_err(), Error::ModelObjectMismatch);
+    assert_eq!(model1.add_constr("", c!(x1 <= y2)).unwrap_err(), Error::ModelObjectMismatch);
 
     model1.update().unwrap();
     model2.update().unwrap();
@@ -1308,8 +1326,8 @@ mod tests {
     let x = add_var!(m, Continuous, name="x")?;
     let y = add_binvar!(m, name="y")?;
 
-    m.add_constr("c1", x + y ,Less, 1)?;
-    m.add_constr("c2", x - y , Less, 2)?;
+    m.add_constr("c1", c!(x + y <= 1))?;
+    m.add_constr("c1", c!(x - y <= 2))?;
 
     m.optimize()?;
     let fixed = m.fixed()?;

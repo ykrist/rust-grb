@@ -50,11 +50,11 @@ fn main() {
 
   for (p, (&capacity, &open)) in capacity.iter().zip(&open).enumerate() {
     let lhs = trans_vars.iter().map(|t| t[p]).grb_sum();
-    model.add_constr(&format!("Capacity{}", p), lhs - capacity * open, Less, 0.0).unwrap();
+    model.add_constr(&format!("Capacity{}", p), c!(lhs <= capacity * open)).unwrap();
   }
 
   for (w, (&demand, tvars)) in demand.iter().zip(&trans_vars).enumerate() {
-    model.add_constr(&format!("Demand{}", w), tvars.iter().grb_sum(), Equal, demand).unwrap();
+    model.add_constr(&format!("Demand{}", w), c!(tvars.iter().grb_sum() == demand)).unwrap();
   }
 
   for o in open.iter() {

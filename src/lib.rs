@@ -37,9 +37,9 @@
 //! let x2 = add_var!(model, Integer, name="x2", bounds=..).unwrap();
 //!
 //! // add a linear constraints
-//! let c0 = model.add_constr("c0", x1 + 2*x2, Greater, -14).unwrap();
-//! let c1 = model.add_constr("c1", -4 * x1 - x2, Less, -33).unwrap();
-//! let c2 = model.add_constr("c2", 2* x1, Less, 20 - x2).unwrap();
+//! let c0 = model.add_constr("c0", c!(x1 + 2*x2 >= -14)).unwrap();
+//! let c1 = model.add_constr("c1", c!(-4 * x1 - x2 <= -33)).unwrap();
+//! let c2 = model.add_constr("c2", c!(2* x1 <= 20 - x2)).unwrap();
 //!
 //! // set the objective function.
 //! model.set_objective(8*x1 + x2, Minimize).unwrap();

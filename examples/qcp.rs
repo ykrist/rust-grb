@@ -24,13 +24,11 @@ fn main() {
   // add linear constraints
 
   //  c0: x + y + z == 1
-  model.add_constr("c0", x + y + z, Equal, 1.0).unwrap();
+  model.add_constr("c0", c!(x + y + z == 1)).unwrap();
 
   // add quadratic constraints
-  model.add_qconstr("qc0", x * x + y * y - z * z, Less, 0.0).unwrap();
-
-  //  qc1: x^2 - y*z <= 0.0
-  model.add_qconstr("qc1", x * x - y * z, Less, 0.0).unwrap();
+  model.add_qconstr("qc0", c!(x*x + y*y <= z*z)).unwrap();
+  model.add_qconstr("qc1", c!(x*x <= y*z)).unwrap();
 
   // optimize the model.
   model.optimize().unwrap();

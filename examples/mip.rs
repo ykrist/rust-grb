@@ -16,9 +16,8 @@ fn main() {
 
   model.set_objective(x + y + 2 * z, Minimize).unwrap();
 
-  model.add_constr("c0", x + 2 * y + 3 * z, Less, 4).unwrap();
-
-  model.add_constr("c1", x + y, Greater, 1).unwrap();
+  model.add_constr("c0", c!(x + 2 * y + 3 * z <= 4)).unwrap();
+  model.add_constr("c1", c!(x + y >= 1)).unwrap();
 
   model.optimize().unwrap();
 

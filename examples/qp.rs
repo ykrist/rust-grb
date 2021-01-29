@@ -22,9 +22,8 @@ fn main() {
 
   // add linear constraints
 
-  model.add_constr("c0", x + 2*y + 3*z, Greater, 4).unwrap();
-
-  model.add_constr("c1", x + y, Greater, 1).unwrap();
+  model.add_constr("c0", c!(x + 2*y + 3*z >= 4)).unwrap();
+  model.add_constr("c1", c!(x + y >= 1)).unwrap();
 
   // optimize the model.
   model.optimize().unwrap();

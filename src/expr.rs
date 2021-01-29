@@ -150,6 +150,11 @@ impl LinExpr {
   /// Get the constant offset
   pub fn get_offset(&self) -> f64 { self.offset }
 
+  /// Set the constant offset,  returning the old one
+  pub fn set_offset(&mut self, val: f64) -> f64 {
+    std::mem::replace(&mut self.offset, val)
+  }
+
   /// Get actual value of the expression.
   pub fn get_value(&self, model: &Model) -> Result<f64> {
     let coeff = self.coeff.values();
@@ -219,6 +224,11 @@ impl QuadExpr {
 
   /// Get the offset value (constant)
   pub fn get_offset(&self) -> f64 { self.linexpr.get_offset() }
+
+  /// Set the constant offset,  returning the old one
+  pub fn set_offset(&mut self, val: f64) -> f64 {
+    self.linexpr.set_offset(val)
+  }
 
   /// Get actual value of the expression.
   pub fn get_value(&self, model: &Model) -> Result<f64> {

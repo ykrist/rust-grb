@@ -18,7 +18,7 @@ use crate::callback::Callback;
 use crate::model_object::*;
 use crate::{VarType, ModelSense, SOSType, RelaxType, Status};
 use crate::env::AsPtr;
-use crate::constr::ConstrExpr;
+use crate::constr::{IneqExpr, RangeExpr};
 use gurobi_sys::GRBmodel;
 use crate::param::Param;
 
@@ -488,7 +488,7 @@ impl Model {
 
 
   /// add a linear constraint to the model.
-  pub fn add_constr(&mut self, name: &str, con: ConstrExpr) -> Result<Constr> where
+  pub fn add_constr(&mut self, name: &str, con: IneqExpr) -> Result<Constr> where
   {
     let (lhs, sense, rhs) = con.into_normalised_linear()?;
     let constrname = CString::new(name)?;
@@ -508,7 +508,7 @@ impl Model {
 
 
   /// add linear constraints to the model.
-  pub fn add_constrs<'a>(&mut self, constr_with_name: impl Iterator<Item=(&'a str, ConstrExpr)>) -> Result<Vec<Constr>> {
+  pub fn add_constrs<'a>(&mut self, constr_with_name: impl Iterator<Item=(&'a str, IneqExpr)>) -> Result<Vec<Constr>> {
     let (nconstr, _) = constr_with_name.size_hint();
     let mut names = Vec::with_capacity(nconstr); // needed to ensure CString lives long enough
     let mut cnames = Vec::with_capacity(nconstr);
@@ -564,17 +564,17 @@ impl Model {
   /// # Returns
   /// * An decision variable associated with the model. It has lower/upper bound constraints.
   /// * An linear equality constraint associated with the model.
-  pub fn add_range(&mut self, name: &str, expr: LinExpr, lb: f64, ub: f64) -> Result<(Var, Constr)> {
+  pub fn add_range(&mut self, name: &str, expr: RangeExpr) -> Result<(Var, Constr)> {
     let constrname = CString::new(name)?;
-    let offset = expr.get_offset();
+    let (expr, lb, ub) = expr.into_normalised()?;
     let (inds, coeff) = self.get_coeffs_indices_build(&expr)?;
     self.check_apicall(unsafe {
       ffi::GRBaddrangeconstr(self.model,
                              coeff.len() as ffi::c_int,
                              inds.as_ptr(),
                              coeff.as_ptr(),
-                             lb - offset,
-                             ub - offset,
+                             lb,
+                             ub ,
                              constrname.as_ptr())
     })?;
 
@@ -584,6 +584,7 @@ impl Model {
     Ok((var, cons))
   }
 
+  // TODO switch to a (&str, RangeExpr) iterator.
   #[allow(unused_variables)]
   /// Add range constraints to the model.
   pub fn add_ranges(&mut self, names: Vec<&str>, expr: Vec<LinExpr>, mut lb: Vec<f64>, mut ub: Vec<f64>)
@@ -613,7 +614,7 @@ impl Model {
   }
 
   /// add a quadratic constraint to the model.
-  pub fn add_qconstr(&mut self, name: &str, constraint: ConstrExpr) -> Result<QConstr> {
+  pub fn add_qconstr(&mut self, name: &str, constraint: IneqExpr) -> Result<QConstr> {
     let (lhs, sense, rhs) = constraint.into_normalised_quad();
     let cname = CString::new(name)?;
     let (qrow, qcol, qval) = self.get_qcoeffs_indices_build(&lhs)?;

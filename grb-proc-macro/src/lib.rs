@@ -1,12 +1,13 @@
 #![allow(unused_imports)] // TODO remove
 #![allow(dead_code)] // TODO remove
-use quote::{ToTokens, quote, TokenStreamExt};
+use quote::{ToTokens, quote, quote_spanned, TokenStreamExt};
 use proc_macro::{TokenStream};
 use syn;
 use syn::{Token, Result, Error, ExprBinary, Expr};
 use proc_macro2::{TokenStream as TokenStream2, TokenTree, Ident, Span};
 use syn::parse::{ParseStream, Parse, Parser, discouraged::Speculative};
 use syn::token::Token;
+use syn::spanned::Spanned;
 use crate::ConstrExpr::{Inequality, Range};
 use syn::group::Group;
 use std::str::FromStr;
@@ -37,8 +38,8 @@ impl Parse for InequalityConstr {
 impl ToTokens for InequalityConstr {
   fn to_tokens(&self, tokens: &mut TokenStream2) {
     // let Self{ ref lhs, ref rhs, ref sense } = self;
-    let lhs = &self.lhs;
-    let rhs = &self.rhs;
+    let lhs = self.lhs.as_ref();
+    let rhs = self.rhs.as_ref();
     let sense = &self.sense;
     let ts = quote! {
       gurobi::constr::IneqExpr{
@@ -87,15 +88,25 @@ impl Parse for RangeConstr {
 impl ToTokens for RangeConstr {
   fn to_tokens(&self, tokens: &mut TokenStream2) {
     let expr = &self.expr;
+    let expr = quote_spanned! { expr.span() => gurobi::Expr::from(#expr) };
 
-    let lb = self.range.lb.as_ref().map(|lb| lb.to_token_stream()).unwrap_or(quote!{ -gurobi::INFINITY });
-    let ub = self.range.ub.as_ref().map(|ub| ub.to_token_stream()).unwrap_or(quote!{ gurobi::INFINITY });
+    let lb = if let Some(ref lb) = self.range.lb {
+      quote_spanned! { lb.span()=> #lb as f64 }
+    } else {
+      quote! { -gurobi::INFINITY }
+    };
+
+    let ub = if let Some(ref ub) = self.range.ub {
+      quote_spanned! { ub.span()=> #ub as f64 }
+    } else {
+      quote! { gurobi::INFINITY }
+    };
 
     let ts : TokenStream2 = quote!{
       gurobi::constr::RangeExpr{
-        expr: gurobi::Expr::from(#expr),
-        ub: #ub as f64,
-        lb: #lb as f64,
+        expr: #expr,
+        ub: #ub,
+        lb: #lb,
       }
     };
     ts.to_tokens(tokens)
@@ -110,6 +121,7 @@ enum ConstrExpr {
 impl Parse for ConstrExpr {
   fn parse(input: ParseStream) -> Result<Self> {
     // Forward-scan for the `in` keyword -- top level tokens only, don't walk the whole tree
+    // Heuristic that is more efficient than speculative parsing, and gives better error messages
     let in_found = {
       let mut curs = input.cursor();
       let in_  = Ident::new("in", Span::call_site());

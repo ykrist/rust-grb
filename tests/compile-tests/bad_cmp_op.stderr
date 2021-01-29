@@ -1,0 +1,17 @@
+error: expected >=, <= or ==
+ --> $DIR/bad_cmp_op.rs:7:12
+  |
+7 |   c!(x + y != 1 - z);
+  |            ^^
+
+error: expected >=, <= or ==
+ --> $DIR/bad_cmp_op.rs:8:12
+  |
+8 |   c!(x + y < 1 - z);
+  |            ^
+
+error: expected >=, <= or ==
+ --> $DIR/bad_cmp_op.rs:9:12
+  |
+9 |   c!(x + y > 1 - z);
+  |            ^

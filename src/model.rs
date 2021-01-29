@@ -642,11 +642,6 @@ impl Model {
 
   /// Set the objective function of the model.
   pub fn set_objective(&mut self, expr: impl Into<Expr>, sense: ModelSense) -> Result<()> {
-    // if self.updatemode.is_some() {
-    //   return Err(Error::FromAPI("The objective function cannot be set before any pending modifies existed".to_owned(),
-    //                             50000));
-    // }
-
     let expr : Expr = expr.into();
     self.del_qpterms()?;
 
@@ -690,7 +685,6 @@ impl Model {
   /// assert_eq!(m.get_constr_by_name("constraint").unwrap(), Some(c));
   /// assert_eq!(m.get_constr_by_name("foo").unwrap(), None);
   /// ```
-
   pub fn get_constr_by_name(&self, name: &str) -> Result<Option<Constr>> {
     if self.constrs.model_update_needed() { return Err(Error::ModelUpdateNeeded) }
     let n = CString::new(name)?;
@@ -918,7 +912,6 @@ impl Model {
                         x.as_ptr(),
                         y.as_ptr())
     })
-    // self.update()
   }
 
   /// Retrieve the status of the model.
@@ -1031,7 +1024,7 @@ impl Drop for Model {
 /// ```
 #[macro_export]
 macro_rules! add_var {
-    ($model:ident, $t:ident, name=$name:expr, obj=$obj:expr, bounds=$($lb:literal)?..$($ub:literal)?) => {
+    ($model:ident, $t:path, name=$name:expr, obj=$obj:expr, bounds=$($lb:literal)?..$($ub:literal)?) => {
       $model.add_var($name, $t, $obj as f64, add_var!(@LB, $($lb)*), add_var!(@UB, $($ub)*), &[], &[])
     };
 
@@ -1097,7 +1090,7 @@ macro_rules! add_binvar {
 mod tests {
   use super::*;
   use crate::*;
-  
+
 
   #[test]
   fn model_id_factory() {

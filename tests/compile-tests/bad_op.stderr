@@ -1,0 +1,17 @@
+error: expression should be a ==, >= or <= comparison
+ --> $DIR/bad_op.rs:7:6
+  |
+7 |   c!(x + y + 2*z + 1);
+  |      ^^^^^^^^^^^^^^^
+
+error: expression should be a ==, >= or <= comparison
+ --> $DIR/bad_op.rs:8:6
+  |
+8 |   c!(2*z);
+  |      ^^^
+
+error: expression should be a ==, >= or <= comparison
+ --> $DIR/bad_op.rs:9:6
+  |
+9 |   c!(2/z);
+  |      ^^^

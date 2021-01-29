@@ -88,6 +88,8 @@ mod constants;
 mod model_object;
 pub mod param;
 pub mod attr;
+pub mod constr;
+
 
 // re-exports
 pub use env::Env;
@@ -114,3 +116,5 @@ pub fn version() -> (i32, i32, i32) {
   unsafe { gurobi_sys::GRBversion(&mut major, &mut minor, &mut technical) };
   (major, minor, technical)
 }
+
+pub use grb_proc_macro::*;

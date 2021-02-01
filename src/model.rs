@@ -123,6 +123,24 @@ impl Model {
     NEXT_ID.fetch_add(1, Ordering::Relaxed)
   }
 
+  /// Create a new model with the given environment.  The original environment is
+  /// copied by Gurobi.  To modify the environment of the model, use [`Model::get_env_mut`].
+  ///
+  /// # Examples
+  /// ```
+  /// # use gurobi::*;
+  /// let mut env = gurobi::Env::new("")?;
+  /// env.set(param::OutputFlag, 0)?;
+  ///
+  /// let mut model = Model::with_env("Model", &env)?;
+  /// assert_eq!(model.get_param(param::OutputFlag)?,  0);
+  ///
+  /// // Equivalent to model.set_param(param::OutputFlag, 1)?
+  /// model.get_env_mut().set(param::OutputFlag, 1)?;
+  ///
+  /// assert_eq!(env.get(param::OutputFlag).unwrap(), 0); // original env is unchanged
+  /// # Ok::<(), Error>(())
+  /// ```
   pub fn with_env(modelname: &str, env: &Env) -> Result<Model> {
     let modelname = CString::new(modelname)?;
     let mut model = null_mut();
@@ -193,7 +211,7 @@ impl Model {
     Ok(model)
   }
 
-  /// Read a model from a file
+  /// Read a model from a file.  See the [manual](https://www.gurobi.com/documentation/9.1/refman/c_readmodel.html) for accepted file formats.
   pub fn read_from(filename: &str, env: &Env) -> Result<Model> {
     let filename = CString::new(filename)?;
     let mut model = null_mut();
@@ -201,8 +219,13 @@ impl Model {
     Self::from_raw(env, model)
   }
 
-  /// create a copy of the model
-  pub fn copy(&self) -> Result<Model> {
+  /// Create a copy of the model.  This method is fallible due to the lazy update approach and the underlying
+  /// Gurobi C API, so a [`Clone`] implementation is not provided.
+  ///
+  /// # Errors
+  ///  * [`Error::FromAPI`] if a Gurobi error occurs
+  ///  * [`Error::ModelUpdateNeeded`] if model objects have been added to the model since the last update.
+  pub fn try_clone(&self) -> Result<Model> {
     if self.model_update_needed() { return Err(Error::ModelUpdateNeeded) }
 
     let copied = unsafe { ffi::GRBcopymodel(self.model) };
@@ -292,11 +315,10 @@ impl Model {
     Ok((constr_index_end, variable_indices, coeff))
   }
 
-  /// Create an fixed model associated with the model.
+  /// Create the fixed model associated with the current MIP model.
   ///
-  /// In fixed model, each integer variable is fixed to the value that it takes in the
-  /// original MIP solution.
-  /// Note that the model must be MIP and have a solution loaded.
+  /// The model must be MIP and have a solution loaded. In the fixed model,
+  /// each integer variable is fixed to the value that it takes in the current MIP solution.
   pub fn fixed(&mut self) -> Result<Model> {
     let mut fixed : *mut GRBmodel = null_mut();
     self.check_apicall(unsafe { ffi::GRBfixmodel(self.model, &mut fixed) })?;
@@ -304,13 +326,29 @@ impl Model {
     Model::from_raw(&self.env, fixed)
   }
 
-  /// Get immutable reference of an environment object associated with the model.
+  /// Get shared reference of the environment associated with the model.
   pub fn get_env(&self) -> &Env { &self.env }
 
-  /// Get mutable reference of an environment object associated with the model.
+  /// Get mutable reference of the environment associated with the model.
   pub fn get_env_mut(&mut self) -> &mut Env { &mut self.env }
 
-  /// Apply all queued modification of the model
+  /// Apply all queued modification of the model and update internal lookups.
+  ///
+  /// Some operations like [`Model::try_clone`] require this method to be called.
+  ///
+  /// # Examples
+  /// ```
+  /// # use gurobi::*;
+  /// let mut m = Model::new("model")?;
+  /// let x = add_ctsvar!(m);
+  ///
+  /// assert_eq!(m.try_clone().err().unwrap(), Error::ModelUpdateNeeded);
+  ///
+  /// m.update();
+  /// assert!(m.try_clone().is_ok());
+  ///
+  /// # Ok::<(), Error>(())
+  /// ```
   pub fn update(&mut self) -> Result<()> {
     self.vars.update();
     self.constrs.update();
@@ -327,19 +365,60 @@ impl Model {
     Ok(self.env.get(param::UpdateMode)? == 0)
   }
 
-  /// Optimize the model synchronously
+  /// Optimize the model synchronously.  This method will always trigger a [`Model::update`].
   pub fn optimize(&mut self) -> Result<()> {
     self.update()?;
     self.check_apicall(unsafe { ffi::GRBoptimize(self.model) })
   }
 
-  /// Optimize the model asynchronously
-  pub fn optimize_async(&mut self) -> Result<()> {
-    self.update()?;
-    self.check_apicall(unsafe { ffi::GRBoptimizeasync(self.model) })
-  }
+  // /// Optimize the model asynchronously // TODO this should take an owned self, return a handle which has a join method.
+  // pub fn optimize_async(&mut self) -> Result<()> {
+  //   self.update()?;
+  //   self.check_apicall(unsafe { ffi::GRBoptimizeasync(self.model) })
+  // }
 
-  /// Optimize the model with a callback function
+  /// Optimize the model with a callback function.  Note that the callback is `FnMut`, which is safe
+  /// because the Gurobi API guarantees that callbacks run on a single thread.  See the `callback.rs` example.
+  ///
+  /// Because of Rust's lifetime requirements on closures, if you are using large lookup structures within your
+  /// callbacks, you should wrap them in a [`std::rc::Rc`]`<`[`std::cell::RefCell`]`<_>>`
+  ///
+  /// ```
+  /// use gurobi::*;
+  /// use std::{rc::Rc, cell::RefCell};
+  ///
+  /// #[derive(Default)]
+  /// struct MyCallbackStats {
+  ///   ncalls : usize,
+  ///   big_data: [u8; 32],
+  /// }
+  ///
+  /// let mut m = Model::new("model")?;
+  /// let x = add_ctsvar!(m, obj: 2)?;
+  /// let y = add_intvar!(m, bounds: 0..100)?;
+  /// m.add_constr("c0", c!(x <= y - 0.5 ))?;
+  ///
+  /// // Need to put `stats` behind a Rc<RefCell<_>> because of closure lifetimes.
+  /// let stats = Rc::new(RefCell::new(MyCallbackStats::default()));
+  ///
+  /// let callback = {
+  ///   // Note that `MyCallbackStats` doesn't implement Clone: `Rc<_>` makes a cheap pointer copy
+  ///   let stats = stats.clone();
+  ///   move |ctx : Callback| {
+  ///     let stats: &mut MyCallbackStats = &mut *stats.borrow_mut();
+  ///     match ctx.get_where() {
+  ///       Where::Polling => println!("in polling: callback has been called {} times", stats.ncalls),
+  ///       _ => {},
+  ///     }
+  ///     stats.ncalls += 1;
+  ///     Ok(())
+  ///  }
+  /// };
+  ///
+  /// m.optimize_with_callback(callback)?;
+  ///
+  /// # Ok::<(), Error>(())
+  /// ```
   pub fn optimize_with_callback<F>(&mut self, mut callback: F) -> Result<()>
     where F: FnMut(Callback) -> Result<()> + 'static
   {
@@ -358,8 +437,8 @@ impl Model {
     self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, null_callback_wrapper, null_mut()) })
   }
 
-  /// Wait for a optimization called asynchronously.
-  pub fn sync(&self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBsync(self.model) }) }
+  // /// Wait for a optimization called asynchronously.
+  // pub fn sync(&self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBsync(self.model) }) }
 
   /// Compute an Irreducible Inconsistent Subsystem (IIS) of the model.
   pub fn compute_iis(&mut self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBcomputeIIS(self.model) }) }

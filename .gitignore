@@ -10,3 +10,5 @@ gh-pages/
 .idea/
 changes.txt
 *.grbr
+watch_docs.sh
+set_doc_window_id.sh

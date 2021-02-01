@@ -6,18 +6,17 @@
 use gurobi::*;
 
 mod workforce;
-use workforce::make_model;
 
 fn main() {
   let mut env = Env::new("workforce3.log").unwrap();
   env.set(param::LogToConsole, 0).unwrap();
 
-  let mut model = make_model(&env).unwrap();
+  let mut model = workforce::make_model(&env).unwrap();
   model.optimize().unwrap();
 
   match model.status().unwrap() {
     Status::Infeasible => {
-      let mut model = model.copy().unwrap();
+      let mut model = model.try_clone().unwrap();
       model.set_attr(attr::ModelName, "assignment_relaxed".to_owned()).unwrap();
 
       // do relaxation.

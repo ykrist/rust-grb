@@ -91,6 +91,49 @@ macro_rules! impl_object_list_getter {
     };
 }
 
+/// A handle to a Gurobi model which is currently solving asynchronously.
+pub struct AsyncHandle {
+  model: Model
+}
+
+impl AsyncHandle {
+  /// Retrieve current the `attr::Status` of the model.
+  pub fn status(&self) -> Result<Status> {
+    self.model.status()
+  }
+
+  /// Retrieve current the `attr::ObjVal` of the model.
+  pub fn obj_val(&self) -> Result<f64> {
+    self.model.get_attr(attr::ObjVal)
+  }
+
+  /// Retrieve current the `attr::ObjBound` of the model.
+  pub fn obj_bound(&self) -> Result<f64> {
+    self.model.get_attr(attr::ObjBound)
+  }
+
+  /// Retrieve current the `attr::IterCount` of the model.
+  pub fn iter_count(&self) -> Result<f64> {
+    self.model.get_attr(attr::IterCount)
+  }
+
+  /// Retrieve current the `attr::BarIterCount` of the model.
+  pub fn bar_iter_count(&self) -> Result<i32> {
+    self.model.get_attr(attr::BarIterCount)
+  }
+
+  /// Retrieve current the `attr::NodeCount` of the model.
+  pub fn node_count(&self) -> Result<f64> {
+    self.model.get_attr(attr::NodeCount)
+  }
+
+  /// Wait for optimisation to finish
+  pub fn join(self) -> (Model, Result<()>) {
+    let errors = self.model.check_apicall(unsafe { ffi::GRBsync(self.model.model) });
+    (self.model, errors)
+  }
+}
+
 
 impl Model {
   /// Create an empty Gurobi model from the environment.
@@ -371,14 +414,56 @@ impl Model {
     self.check_apicall(unsafe { ffi::GRBoptimize(self.model) })
   }
 
-  // /// Optimize the model asynchronously // TODO this should take an owned self, return a handle which has a join method.
-  // pub fn optimize_async(&mut self) -> Result<()> {
-  //   self.update()?;
-  //   self.check_apicall(unsafe { ffi::GRBoptimizeasync(self.model) })
-  // }
+  /// Optimize the model on another thread.  This method will always trigger a [`Model::update`].
+  ///
+  /// On success, returns an [`AsyncHandle`](crate::model::AsyncHandle) that provides a limited API.  The `Model` can be
+  /// retrieved by calling [`AsyncHandle::join`](crate::model::AsyncHandle::join).
+  ///
+  /// Note that from the Gurobi [manual](https://www.gurobi.com/documentation/9.1/refman/c_optimizeasync.html):
+  /// *"[modifying or performing non-permitted] calls on the running model, **or on any other models that were built within the same Gurobi environment**,
+  /// will fail with error code `OPTIMIZATION_IN_PROGRESS`."*
+  ///
+  /// Therefore, it is recommend that you create an [`Env`] for each model you wish to solve asynchronously and use [`Model::with_env`].
+  ///
+  /// The permitted calls are attibute querys like those available on [`AsyncHandle`](crate::model::AsyncHandle).
+  ///
+  /// # Errors
+  /// An `Error::FromAPI` may occur.  In this case, the `Err` variant contains this error
+  /// and gives back ownership of this `Model`.
+  ///
+  ///
+  /// # Examples
+  /// ```
+  /// use gurobi::*;
+  ///
+  /// let mut m = Model::new("model")?;
+  /// let x = add_ctsvar!(m, obj: 2)?;
+  /// let y = add_intvar!(m, bounds: 0..100)?;
+  /// m.add_constr("c0", c!(x <= y - 0.5 ))?;
+  ///
+  /// let handle = match m.optimize_async() {
+  ///   Err((_, e)) => panic!("{}", e),
+  ///   Ok(h) => h
+  /// };
+  ///
+  /// println!("The model has explored {} MIP nodes so far", handle.node_count()?);
+  /// let (m, errors) = handle.join(); // the Model is always returned
+  /// errors?; // optimisation errors - as if Model::optimize were called.
+  ///
+  /// # Ok::<(), Error>(())
+  /// ```
+  pub fn optimize_async(mut self) -> std::result::Result<AsyncHandle, (Model, Error)> {
+    match self.update()
+      .and_then(|_| self.check_apicall(unsafe { ffi::GRBoptimizeasync(self.model) }))
+    {
+      Ok(()) => Ok(AsyncHandle{ model: self }),
+      Err(e) => Err((self, e)),
+    }
+  }
 
-  /// Optimize the model with a callback function.  Note that the callback is `FnMut`, which is safe
-  /// because the Gurobi API guarantees that callbacks run on a single thread.  See the `callback.rs` example.
+  /// Optimize the model with a callback function.  This method will always trigger a [`Model::update`].
+  /// Note that the callback is `FnMut`, which is safe because the Gurobi API guarantees that callbacks
+  /// run on a single thread.  See the `callback.rs` example.
   ///
   /// Because of Rust's lifetime requirements on closures, if you are using large lookup structures within your
   /// callbacks, you should wrap them in a [`std::rc::Rc`]`<`[`std::cell::RefCell`]`<_>>`
@@ -405,6 +490,7 @@ impl Model {
   ///   // Note that `MyCallbackStats` doesn't implement Clone: `Rc<_>` makes a cheap pointer copy
   ///   let stats = stats.clone();
   ///   move |ctx : Callback| {
+  ///     // This should never panic - `callback` runs single-threaded
   ///     let stats: &mut MyCallbackStats = &mut *stats.borrow_mut();
   ///     match ctx.get_where() {
   ///       Where::Polling => println!("in polling: callback has been called {} times", stats.ncalls),
@@ -481,7 +567,9 @@ impl Model {
   }
 
 
-  /// add a decision variable to the model.
+  /// Add a decision variable to the model.  This method allows the user to give the entire column (constraint coefficients).
+  ///
+  /// The [`add_var!`](crate::add_var) macro and its friends are usually preferred.
   pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64, lb: f64, ub: f64, colconstrs: &[Constr],
                  colvals: &[f64])
                  -> Result<Var> {
@@ -504,7 +592,7 @@ impl Model {
     Ok(self.vars.add_new(self.update_mode_lazy()?))
   }
 
-  /// add decision variables to the model.
+  /// Add multiple decision variables to the model in a single Gurobi API call.
   pub fn add_vars(&mut self, names: &[&str], vtypes: &[VarType], objs: &[f64], lbs: &[f64], ubs: &[f64], colcoeff: &[Vec<(Constr, f64)>]) -> Result<Vec<Var>> {
     if names.len() != vtypes.len() || vtypes.len() != objs.len() || objs.len() != lbs.len() ||  lbs.len() != colcoeff.len() {
       return Err(Error::InconsistentDims);
@@ -883,7 +971,7 @@ impl Model {
   ///
   /// This method will modify the model.
   /// If you don't want to modify the model, copy the model before invoking
-  /// this method (see also [`copy()`](#method.copy)).
+  /// this method with [`Model::try_clone()`].
   ///
   /// ## Arguments
   /// * `relaxtype` : The type of cost function used when finding the minimum cost relaxation.
@@ -1324,7 +1412,7 @@ mod tests {
     let mut env = Env::new("")?;
     env.set(param::OutputFlag, 0)?;
     let mut m1 = Model::with_env("m1", &env)?;
-    let m2 = m1.copy()?;
+    let m2 = m1.try_clone()?;
 
     let m1_env = m1.get_env_mut();
     let m2_env = m2.get_env();

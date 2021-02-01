@@ -80,7 +80,7 @@
 
 pub mod env;
 mod error;
-mod model;
+pub mod model;
 mod util;
 mod expr;
 mod callback;

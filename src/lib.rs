@@ -33,8 +33,8 @@
 //! let mut model = Model::new("model1").unwrap();
 //!
 //! // add decision variables with no bounds
-//! let x1 = add_var!(model, Continuous, name="x1", bounds=..).unwrap();
-//! let x2 = add_var!(model, Integer, name="x2", bounds=..).unwrap();
+//! let x1 = add_ctsvar!(model, name: "x1", bounds: ..).unwrap();
+//! let x2 = add_intvar!(model, name: "x2", bounds: ..).unwrap();
 //!
 //! // add a linear constraints
 //! let c0 = model.add_constr("c0", c!(x1 + 2*x2 >= -14)).unwrap();
@@ -117,4 +117,5 @@ pub fn version() -> (i32, i32, i32) {
   (major, minor, technical)
 }
 
+#[doc(inline)]
 pub use grb_proc_macro::*;

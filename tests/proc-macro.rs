@@ -8,4 +8,6 @@ fn compile_tests() {
   cases.compile_fail("tests/compile-tests/bad_nested.rs");
   cases.compile_fail("tests/compile-tests/eq_range.rs");
   cases.compile_fail("tests/compile-tests/garbage.rs");
+  cases.compile_fail("tests/compile-tests/bad_add_var_args.rs");
+  cases.pass("tests/compile-tests/add_var.rs");
 }

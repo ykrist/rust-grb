@@ -1023,63 +1023,6 @@ impl Drop for Model {
 }
 
 
-/// Convienence wrapper around [`Model.add_var`] Add a new variable to a `Model` object.  The macro keyword arguments are
-/// optional, but their ordering is not.
-///
-/// # Arguments
-/// The first argument is a `Model` object and the second argument is a [`VarType`] variant.  The `bounds` keyword argument
-/// is of the format `LB..UB` where `LB` and `UB` are the upper and lower bounds of the variable.  `LB` and `UB` can be
-/// left off as well, so `..UB`, `LB..` and `..` are also valid values.
-///
-/// [`Model.add_var`]: struct.Model.html#method.add_var
-/// [`VarType`]: enum.VarType.html
-/// ```
-/// use gurobi::*;
-/// let env = Env::new("gurobi.log").unwrap();
-/// let mut model = Model::with_env("Model", &env).unwrap();
-/// add_var!(model, Continuous, name="name", obj=0.0, bounds=-10..10).unwrap();
-/// add_var!(model, Integer, bounds=0..).unwrap();
-/// add_var!(model, Continuous, name=&format!("X[{}]", 42)).unwrap();
-/// ```
-#[macro_export]
-macro_rules! add_var {
-    ($model:ident, $t:path, name=$name:expr, obj=$obj:expr, bounds=$($lb:literal)?..$($ub:literal)?) => {
-      $model.add_var($name, $t, $obj as f64, add_var!(@LB, $($lb)*), add_var!(@UB, $($ub)*), &[], &[])
-    };
-
-    ($model:tt, $t:tt, name=$name:expr, obj=$obj:expr) => {
-      add_var!($model, $t, name=$name, obj=$obj, bounds=0.0..)
-    };
-
-    ($model:tt, $t:tt, obj=$obj:expr,  bounds=$($lb:literal)?..$($ub:literal)?) => {
-      add_var!($model, $t, name="", obj=$obj, bounds=$($lb)*..$($ub)*)
-    };
-
-    ($model:tt, $t:tt, name=$name:expr,  bounds=$($lb:literal)?..$($ub:literal)?) => {
-      add_var!($model, $t, name=$name, obj=0.0, bounds=$($lb)*..$($ub)*)
-    };
-
-    ($model:tt, $t:tt, obj=$obj:expr) => {
-      add_var!($model, $t, name="", obj=$obj)
-    };
-
-    ($model:tt, $t:tt, name=$name:expr) => {
-      add_var!($model, $t, name=$name, obj=0.0)
-    };
-
-    ($model:tt, $t:tt, bounds=$($lb:literal)?..$($ub:literal)?) => {
-      add_var!($model, $t, name="", bounds=$($lb)*..$($ub)*)
-    };
-
-    ($model:tt, $t:tt) => {
-      add_var!($model, $t, name="")
-    };
-
-    (@UB, $x:literal) => { $x as f64 };
-    (@UB, ) => { $crate::INFINITY };
-    (@LB, $x:literal ) => { $x as f64 };
-    (@LB, ) => { -$crate::INFINITY };
-}
 
 /// Add a binary variable to a Model object.  See [`add_var!`] for details.  The `bounds` keyword
 /// is not available here.
@@ -1097,12 +1040,6 @@ macro_rules! add_var {
 /// let mut model = Model::with_env("Model", &env).unwrap();
 /// add_binvar!(model, name="name", obj=0.0).unwrap();
 /// ```
-#[macro_export]
-macro_rules! add_binvar {
-    ($model:ident $(,$field:tt=$value:expr)*) => {
-      add_var!($model, Binary $(,$field=$value)* , bounds=0..1)
-    };
-}
 
 
 #[cfg(test)]
@@ -1119,8 +1056,8 @@ mod tests {
     let mut m1 = Model::with_env("test1", &env).unwrap();
     let mut m2 = Model::with_env("test2", &env).unwrap();
 
-    let x1 = add_var!(m1, Binary,  name="x1").unwrap();
-    let x2 = add_var!(m2, Binary,  name="x2").unwrap();
+    let x1 = add_var!(m1, Binary,  name:"x1").unwrap();
+    let x2 = add_var!(m2, Binary,  name:"x2").unwrap();
     assert_ne!(m1.id, m2.id);
 
     assert_eq!(x1.model_id, m1.id);
@@ -1135,8 +1072,8 @@ mod tests {
     let mut model = Model::new("test").unwrap();
     assert_eq!(model.get_param(param::UpdateMode).unwrap(), 1);
     assert!(!model.update_mode_lazy().unwrap());
-    let x = add_binvar!(model, name="x").unwrap();
-    let y = add_binvar!(model, name="y").unwrap();
+    let x = add_binvar!(model, name:"x").unwrap();
+    let y = add_binvar!(model, name:"y").unwrap();
     let c1 = model.add_constr("c1", c!(x + y <= 1)).unwrap(); // should work fine
 
     assert_eq!(model.get_attr(attr::NumVars).unwrap(), 0);
@@ -1151,7 +1088,7 @@ mod tests {
     assert_eq!(model.get_index(&x).unwrap(), 0);
     assert_eq!(model.get_index(&y).unwrap(), 1);
 
-    let z = add_binvar!(model, name="z").unwrap();
+    let z = add_binvar!(model, name:"z").unwrap();
     assert_eq!(model.get_attr(attr::NumVars).unwrap(), 2);
     assert_eq!(model.get_index(&x).unwrap(), 0);
     assert_eq!(model.get_index(&y).unwrap(), 1);
@@ -1167,7 +1104,7 @@ mod tests {
     assert!(model.get_index(&z).is_err());
     assert_eq!(model.get_index_build(&z).unwrap(), 2);
 
-    let w = add_binvar!(model, name="w").unwrap();
+    let w = add_binvar!(model, name:"w").unwrap();
     assert_eq!(model.get_attr(attr::NumVars).unwrap(), 2);
     assert_eq!(model.get_index(&x).unwrap(), 0);
     assert_eq!(model.get_index(&y), Err(Error::ModelObjectRemoved)); // No longer available
@@ -1197,8 +1134,8 @@ mod tests {
     let mut model = Model::with_env("bug", &env).unwrap();
     assert!(model.update_mode_lazy().unwrap());
 
-    let x = add_binvar!(model, name="x").unwrap();
-    let y = add_binvar!(model, name="y").unwrap();
+    let x = add_binvar!(model, name:"x").unwrap();
+    let y = add_binvar!(model, name:"y").unwrap();
     assert_eq!(model.get_attr(attr::NumVars).unwrap(), 0);
     assert_eq!(model.get_index_build(&x).unwrap_err(), Error::ModelObjectPending);
     assert_eq!(model.get_index_build(&y).unwrap_err(), Error::ModelObjectPending);
@@ -1211,8 +1148,8 @@ mod tests {
     let c1 = model.add_constr("c1", c!(x + y <= 1)).unwrap();
 
     model.remove(y).unwrap();
-    let z = add_binvar!(model, name="z").unwrap();
-    let w = add_binvar!(model, name="w").unwrap();
+    let z = add_binvar!(model, name:"z").unwrap();
+    let w = add_binvar!(model, name:"w").unwrap();
     assert_eq!(model.get_attr(attr::NumVars).unwrap(), 2);
     assert_eq!(model.get_index(&x).unwrap(), 0);
     assert_eq!(model.get_index(&y).unwrap_err(), Error::ModelObjectRemoved); // this is updated instantly
@@ -1250,10 +1187,10 @@ mod tests {
     let mut model1 = Model::with_env("model1", &env).unwrap();
     let mut model2 = Model::with_env("model1", &env).unwrap();
 
-    let x1 = add_binvar!(model1, name="x1").unwrap();
-    let y1 = add_binvar!(model1, name="y1").unwrap();
-    let x2 = add_binvar!(model2, name="x2").unwrap();
-    let y2 = add_binvar!(model2, name="y2").unwrap();
+    let x1 = add_binvar!(model1, name:"x1").unwrap();
+    let y1 = add_binvar!(model1, name:"y1").unwrap();
+    let x2 = add_binvar!(model2, name:"x2").unwrap();
+    let y2 = add_binvar!(model2, name:"y2").unwrap();
 
     model1.add_constr("", c!(x1 <= y1)).unwrap();
     model2.add_constr("", c!(x2 <= y2)).unwrap();
@@ -1324,8 +1261,8 @@ mod tests {
   fn fixed_mip_model_copies_env() -> Result<()> {
     let mut m = Model::new("")?;
     m.set_param(param::OutputFlag, 0)?;
-    let x = add_var!(m, Continuous, name="x")?;
-    let y = add_binvar!(m, name="y")?;
+    let x = add_var!(m, Continuous, name:"x")?;
+    let y = add_binvar!(m, name:"y")?;
 
     m.add_constr("c1", c!(x + y <= 1))?;
     m.add_constr("c1", c!(x - y <= 2))?;

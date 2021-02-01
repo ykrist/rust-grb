@@ -9,9 +9,9 @@ fn main() {
   let env = Env::new("mip.log").unwrap();
   let mut model = Model::with_env("mip", &env).unwrap();
 
-  let x = add_binvar!(model, name="x").unwrap();
-  let y = add_binvar!(model, name="y").unwrap();
-  let z = add_binvar!(model, name="z").unwrap();
+  let x = add_binvar!(model, name: "x").unwrap();
+  let y = add_binvar!(model, name: "y").unwrap();
+  let z = add_binvar!(model, name: "z").unwrap();
   model.update().unwrap();
 
   model.set_objective(x + y + 2 * z, Minimize).unwrap();

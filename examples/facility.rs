@@ -26,7 +26,7 @@ fn main() {
 
   // plant open decision variables.
   // open[p] == 1 means that plant p is open.
-  let open: Vec<Var> = fixed_costs.iter().enumerate().map(|(p, &cost) | add_binvar!(model, name=&format!("Open{}", p), obj=cost).unwrap() ).collect();
+  let open: Vec<Var> = fixed_costs.iter().enumerate().map(|(p, &cost) | add_binvar!(model, name: &format!("Open{}", p), obj: cost).unwrap() ).collect();
 
   // transportation decision variables.
   // how much transport from a plant p to a warehouse w
@@ -34,7 +34,7 @@ fn main() {
     .enumerate()
     .map(|(w, costs)| {
       costs.iter().enumerate()
-        .map(|(p, &cost)| add_var!(model, Continuous, name=&format!("Trans{}.{}", p, w), obj=cost).unwrap() )
+        .map(|(p, &cost)| add_ctsvar!(model, name: &format!("Trans{}.{}", p, w), obj: cost).unwrap() )
         .collect()
     })
     .collect();

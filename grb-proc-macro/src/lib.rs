@@ -1,7 +1,6 @@
 #![allow(unused_imports)] // TODO remove
 #![allow(dead_code)] // TODO remove
 use quote::{ToTokens, quote, quote_spanned, TokenStreamExt};
-use proc_macro::{TokenStream};
 use syn;
 use syn::{Token, Result, Error, ExprBinary, Expr};
 use proc_macro2::{TokenStream as TokenStream2, TokenTree, Ident, Span};
@@ -52,9 +51,26 @@ impl ToTokens for InequalityConstr {
   }
 }
 
+#[derive(Debug, Default, Clone)]
 struct GrbRangeExpr {
   lb: Option<Box<syn::Expr>>,
   ub: Option<Box<syn::Expr>>,
+}
+
+impl GrbRangeExpr {
+  pub fn ub_to_tokens(&self) -> TokenStream2 {
+    match self.ub {
+      Some(ref x) => quote_spanned!{ x.span()=>  #x as f64},
+      None => quote!{ gurobi::INFINITY },
+    }
+  }
+
+  pub fn lb_to_tokens(&self) -> TokenStream2 {
+    match self.lb {
+      Some(ref x) => quote_spanned!{ x.span()=> #x as f64},
+      None => quote!{ -gurobi::INFINITY },
+    }
+  }
 }
 
 impl Parse for GrbRangeExpr {
@@ -63,7 +79,7 @@ impl Parse for GrbRangeExpr {
     match expr.limits {
       syn::RangeLimits::HalfOpen(..) => {},
       syn::RangeLimits::Closed(dde) => {
-        return Err(Error::new_spanned(dde, "Use '..' for range constraints"))
+        return Err(Error::new_spanned(dde, "Use '..' for bounds and range constraints"))
       },
     }
     Ok(GrbRangeExpr {lb: expr.from, ub: expr.to})
@@ -90,17 +106,8 @@ impl ToTokens for RangeConstr {
     let expr = &self.expr;
     let expr = quote_spanned! { expr.span() => gurobi::Expr::from(#expr) };
 
-    let lb = if let Some(ref lb) = self.range.lb {
-      quote_spanned! { lb.span()=> #lb as f64 }
-    } else {
-      quote! { -gurobi::INFINITY }
-    };
-
-    let ub = if let Some(ref ub) = self.range.ub {
-      quote_spanned! { ub.span()=> #ub as f64 }
-    } else {
-      quote! { gurobi::INFINITY }
-    };
+    let lb = self.range.lb_to_tokens();
+    let ub = self.range.ub_to_tokens();
 
     let ts : TokenStream2 = quote!{
       gurobi::constr::RangeExpr{
@@ -160,7 +167,201 @@ impl ToTokens for ConstrExpr {
 ///
 /// The syntax is `c!( lhs CMP rhs )` where `CMP` is one of: `==`, `>=` or `<=`.
 #[proc_macro]
-pub fn c(expr: TokenStream) -> TokenStream {
+pub fn c(expr: proc_macro::TokenStream) -> proc_macro::TokenStream {
   let expr = syn::parse_macro_input!(expr as ConstrExpr);
   expr.into_token_stream().into()
+}
+
+trait OptionalArg {
+  type Value: Parse;
+  fn name() -> &'static str;
+  fn value(&self) -> &Option<Self::Value>;
+  fn value_mut(&mut self) -> &mut Option<Self::Value>;
+
+  fn match_parse(&mut self, name: &syn::Ident, input: &ParseStream) -> Result<bool> {
+    if &name.to_string() == Self::name() {
+      input.parse::<Token![:]>()?;
+      let v = self.value_mut();
+      if v.is_some() { return Err(Error::new_spanned(name, "duplicate argument"))}
+      *v = Some(input.parse()?);
+      Ok(true)
+    } else {
+      Ok(false)
+    }
+  }
+}
+
+trait OptionalArgDefault: OptionalArg {
+  fn default_value() -> TokenStream2;
+}
+
+macro_rules! impl_optional_arg {
+    ($t:ident, $vt:path, $name:expr, $default:expr) => {
+      impl_optional_arg!{$t, $vt, $name}
+
+      impl OptionalArgDefault for $t {
+        fn default_value() -> TokenStream2 { $default }
+      }
+
+      impl ToTokens for $t {
+        fn to_tokens(&self, tokens: &mut TokenStream2) {
+          match self.value() {
+            None => tokens.append_all(Self::default_value()),
+            Some(v) => v.to_tokens(tokens),
+          }
+        }
+      }
+
+    };
+
+    ($t:ident, $vt:path, $name:expr) => {
+
+      #[derive(Debug)]
+      struct $t(Option<$vt>);
+
+      impl OptionalArg for $t {
+      type Value = $vt;
+        fn name() -> &'static str { $name }
+
+        fn value(&self) -> &Option<$vt> { &self.0 }
+        fn value_mut(&mut self) -> &mut Option<$vt> { &mut self.0 }
+      }
+    };
+}
+
+impl_optional_arg!(VarName, syn::Expr, "name", quote!{ "" });
+impl_optional_arg!(VarObj, syn::Expr, "obj", quote!{ 0.0 });
+impl_optional_arg!(VarBounds, GrbRangeExpr, "bounds");
+
+struct OptArgs {
+  name: VarName,
+  obj: VarObj,
+  bounds: VarBounds,
+}
+
+impl OptArgs {
+  pub fn to_token_stream(&self, model: &syn::Ident, vtype: &impl ToTokens) -> TokenStream2 {
+    let name = &self.name;
+    let obj = &self.obj;
+    let (lb, ub) = match self.bounds.0 {
+      Some(ref bounds) => (bounds.lb_to_tokens(), bounds.ub_to_tokens()),
+      None => (quote!{ 0.0f64 }, quote!{ gurobi::INFINITY })
+    };
+
+    quote!{ #model.add_var(#name, #vtype, #obj as f64, #lb, #ub, &[], &[]) }
+  }
+}
+
+impl Parse for OptArgs {
+  fn parse(input: ParseStream) -> Result<Self> {
+    let mut name = VarName(None);
+    let mut bounds = VarBounds(None);
+    let mut obj = VarObj(None);
+
+    while !input.is_empty() {
+      let comma = input.parse::<Token![,]>()?;
+      let optname: syn::Ident = input.parse().map_err(|e| {
+        if input.is_empty() {
+          Error::new_spanned(comma, "unexpected end of input: remove trailing comma")
+        } else {
+          e
+        }
+      })?;
+
+      if !(name.match_parse(&optname, &input)?
+        || obj.match_parse(&optname, &input)?
+        || bounds.match_parse(&optname, &input)?) {
+        return Err(Error::new_spanned(&optname, format_args!("unknown argument '{}'", &optname)))
+      };
+
+    }
+    Ok(OptArgs{ name, obj, bounds})
+  }
+}
+
+
+struct AddVarInput {
+  model: syn::Ident,
+  vtype: syn::ExprPath,
+  optargs : OptArgs,
+}
+
+impl Parse for AddVarInput {
+  fn parse(input: ParseStream) -> Result<Self> {
+    let model: syn::Ident = input.parse()?;
+    input.parse::<Token![,]>()
+      .map_err(|e| Error::new(e.span(), "expected `,` (macro expects 2 positional args)"))?;
+    let vtype: syn::ExprPath = input.parse()?;
+    let optargs = input.parse()?;
+    Ok(AddVarInput { model, vtype, optargs })
+  }
+}
+
+impl ToTokens for AddVarInput {
+  fn to_tokens(&self, tokens: &mut TokenStream2) {
+    let out = self.optargs.to_token_stream(&self.model, &self.vtype);
+    out.to_tokens(tokens);
+  }
+}
+
+
+macro_rules! specialised_addvar {
+    ($t:ident, $vtype:expr, $procmacroname:ident, $docvtype:expr) => {
+      struct $t {
+        model: syn::Ident,
+        optargs : OptArgs,
+      }
+
+      impl Parse for $t {
+        fn parse(input: ParseStream) -> Result<Self> {
+          let model= input.parse()?;
+          let optargs = input.parse()?;
+          Ok(Self { model, optargs })
+        }
+      }
+
+      impl ToTokens for $t {
+        fn to_tokens(&self, tokens: &mut TokenStream2) {
+          let vtype = $vtype;
+          let out = self.optargs.to_token_stream(&self.model, &vtype);
+          out.to_tokens(tokens);
+        }
+      }
+
+      #[doc= "Equivalent to calling [`add_var`]`(model, "]
+      #[doc= $docvtype]
+      #[doc=", ...)`.\n\n"]
+      #[proc_macro]
+      pub fn $procmacroname(expr: proc_macro::TokenStream) -> proc_macro::TokenStream {
+        syn::parse_macro_input!(expr as $t).into_token_stream().into()
+      }
+    };
+}
+
+specialised_addvar!(AddBinVarInput, quote!{ gurobi::Binary }, add_binvar, "Binary");
+specialised_addvar!(AddCtsVarInput, quote!{ gurobi::Continuous }, add_ctsvar, "Continuous");
+specialised_addvar!(AddIntVarInput, quote!{ gurobi::Integer }, add_intvar, "Integer");
+
+
+/// Convienence wrapper around [`Model::add_var`] Add a new variable to a `Model` object.  The macro keyword arguments are
+/// optional.
+///
+/// # Arguments
+/// The first argument is a `Model` object and the second argument is a [`VarType`] variant.  The `bounds` keyword argument
+/// is of the format `LB..UB` where `LB` and `UB` are the upper and lower bounds of the variable.  `LB` and `UB` can be
+/// left off as well, so `..UB` (short for `-INFINITY..UB`), `LB..` (short for `LB..INFINITY`) and `..` are also valid values.
+///
+/// [`Model::add_var`]: struct.Model.html#method.add_var
+/// [`VarType`]: enum.VarType.html
+/// ```
+/// use gurobi::*;
+/// let mut model = Model::new("Model").unwrap();
+/// add_var!(model, Continuous, name: "name", obj: 0.0, bounds: -10..10).unwrap();
+/// add_var!(model, Integer, bounds: 0..).unwrap();
+/// add_var!(model, Continuous, name: &format!("X[{}]", 42)).unwrap();
+/// ```
+///
+#[proc_macro]
+pub fn add_var(expr: proc_macro::TokenStream) -> proc_macro::TokenStream {
+  syn::parse_macro_input!(expr as AddVarInput).into_token_stream().into()
 }

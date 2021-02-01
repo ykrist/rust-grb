@@ -1,25 +1,25 @@
 error: unexpected end of input, expected expression
- --> $DIR/bad_cmp_expr.rs:7:3
+ --> $DIR/bad_cmp_expr.rs:6:3
   |
-7 |   c!(x + y == );
+6 |   c!(x + y == );
   |   ^^^^^^^^^^^^^^
   |
   = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: expected expression
- --> $DIR/bad_cmp_expr.rs:8:6
+ --> $DIR/bad_cmp_expr.rs:7:6
   |
-8 |   c!(==);
+7 |   c!(==);
   |      ^^
 
 error: expected binary operation
- --> $DIR/bad_cmp_expr.rs:9:6
+ --> $DIR/bad_cmp_expr.rs:8:6
   |
-9 |   c!(x);
+8 |   c!(x);
   |      ^
 
 error: expected expression
-  --> $DIR/bad_cmp_expr.rs:10:6
-   |
-10 |   c!(>=3);
-   |      ^^
+ --> $DIR/bad_cmp_expr.rs:9:6
+  |
+9 |   c!(>=3);
+  |      ^^

@@ -1,11 +1,11 @@
-error: Use '..' for range constraints
- --> $DIR/eq_range.rs:7:26
+error: Use '..' for bounds and range constraints
+ --> $DIR/eq_range.rs:6:26
   |
-7 |   c!(x + y + 2*z + 1 in 0..=1);
+6 |   c!(x + y + 2*z + 1 in 0..=1);
   |                          ^^^
 
-error: Use '..' for range constraints
- --> $DIR/eq_range.rs:8:25
+error: Use '..' for bounds and range constraints
+ --> $DIR/eq_range.rs:7:25
   |
-8 |   c!(x + y + 2*z + 1 in ..=1);
+7 |   c!(x + y + 2*z + 1 in ..=1);
   |                         ^^^

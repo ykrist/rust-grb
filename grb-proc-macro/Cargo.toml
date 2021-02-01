@@ -12,5 +12,7 @@ proc-macro = true
 [dependencies]
 syn = { version = "^1.0", features = ["full", "extra-traits", "printing", "parsing"] }
 quote = "^1.0"
-gurobi = "0.3.*"
 proc-macro2 = "*"
+
+[dev-dependencies]
+gurobi = { path="../" }

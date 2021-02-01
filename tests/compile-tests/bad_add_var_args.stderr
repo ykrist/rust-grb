@@ -1,0 +1,31 @@
+error: duplicate argument
+ --> $DIR/bad_add_var_args.rs:6:34
+  |
+6 |   add_var!(m, Binary, name: "x", name: "y")?;
+  |                                  ^^^^
+
+error: unknown argument 'unknown'
+ --> $DIR/bad_add_var_args.rs:7:34
+  |
+7 |   add_var!(m, Binary, name: "x", unknown: 30)?;
+  |                                  ^^^^^^^
+
+error: Use '..' for bounds and range constraints
+ --> $DIR/bad_add_var_args.rs:8:42
+  |
+8 |   add_var!(m, Binary, name: "x", bounds: ..=10)?;
+  |                                          ^^^
+
+error: expected `:`
+ --> $DIR/bad_add_var_args.rs:9:27
+  |
+9 |   add_var!(m, Binary, name="x")?;
+  |                           ^
+
+error: expected `,` (macro expects 2 positional args)
+  --> $DIR/bad_add_var_args.rs:10:3
+   |
+10 |   add_var!(m)?;
+   |   ^^^^^^^^^^^
+   |
+   = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)

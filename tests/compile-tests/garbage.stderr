@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `Expr: From<bool>` is not satisfied
- --> $DIR/garbage.rs:8:6
+ --> $DIR/garbage.rs:7:6
   |
-8 |   c!(x + y + 2*z + 1 <= 0 in 1..0);
+7 |   c!(x + y + 2*z + 1 <= 0 in 1..0);
   |      ^ the trait `From<bool>` is not implemented for `Expr`
   |
   = help: the following implementations were found:
@@ -13,19 +13,19 @@ error[E0277]: the trait bound `Expr: From<bool>` is not satisfied
   = note: required by `from`
 
 error[E0605]: non-primitive cast: `Var` as `f64`
- --> $DIR/garbage.rs:9:18
+ --> $DIR/garbage.rs:8:18
   |
-9 |   c!(z + y in 0..z);
+8 |   c!(z + y in 0..z);
   |                  ^ an `as` expression can only be used to convert between primitive types or to coerce to a specific trait object
 
 error[E0605]: non-primitive cast: `Var` as `f64`
-  --> $DIR/garbage.rs:11:14
+  --> $DIR/garbage.rs:10:14
    |
-11 |   c!(y in x..z);
+10 |   c!(y in x..z);
    |              ^ an `as` expression can only be used to convert between primitive types or to coerce to a specific trait object
 
 error[E0605]: non-primitive cast: `Var` as `f64`
-  --> $DIR/garbage.rs:11:11
+  --> $DIR/garbage.rs:10:11
    |
-11 |   c!(y in x..z);
+10 |   c!(y in x..z);
    |           ^ an `as` expression can only be used to convert between primitive types or to coerce to a specific trait object

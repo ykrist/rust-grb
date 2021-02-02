@@ -57,7 +57,6 @@ extern "C" fn null_callback_wrapper(_model: *mut ffi::GRBmodel, _cbdata: *mut ff
 }
 
 
-
 /// Gurobi Model object.
 pub struct Model {
   model: *mut ffi::GRBmodel,
@@ -72,7 +71,7 @@ pub struct Model {
 }
 
 
-fn convert_to_cstring_ptrs(strings: &[&str]) -> Result<Vec<*const ffi::c_char>> {
+fn convert_to_cstring_ptrs(strings: &[&str]) -> Result<Vec<*const ffi::c_char>> { //FIXME this is UB! pointer may not live long enough
   strings.iter().map(|&s| {
     let s = CString::new(s)?;
     Ok(s.as_ptr())
@@ -188,7 +187,7 @@ impl Model {
                                 2002));
     }
     let env = unsafe { Env::new_gurobi_allocated(env, env_ptr) };
-    let id= Model::next_id();
+    let id = Model::next_id();
 
 
     let mut model = Model {
@@ -221,7 +220,7 @@ impl Model {
   ///  * [`Error::FromAPI`] if a Gurobi error occurs
   ///  * [`Error::ModelUpdateNeeded`] if model objects have been added to the model since the last update.
   pub fn try_clone(&self) -> Result<Model> {
-    if self.model_update_needed() { return Err(Error::ModelUpdateNeeded) }
+    if self.model_update_needed() { return Err(Error::ModelUpdateNeeded); }
 
     let copied = unsafe { ffi::GRBcopymodel(self.model) };
     if copied.is_null() {
@@ -284,7 +283,7 @@ impl Model {
     let mut rowinds = Vec::with_capacity(nqterms);
     let mut colinds = Vec::with_capacity(nqterms);
     let mut coeff = Vec::with_capacity(nqterms);
-    for ((x,y), &c) in expr.iter_qterms() {
+    for ((x, y), &c) in expr.iter_qterms() {
       rowinds.push(self.get_index_build(x)?);
       colinds.push(self.get_index_build(y)?);
       coeff.push(c);
@@ -323,7 +322,7 @@ impl Model {
   /// The model must be MIP and have a solution loaded. In the fixed model,
   /// each integer variable is fixed to the value that it takes in the current MIP solution.
   pub fn fixed(&mut self) -> Result<Model> {
-    let mut fixed : *mut GRBmodel = null_mut();
+    let mut fixed: *mut GRBmodel = null_mut();
     self.check_apicall(unsafe { ffi::GRBfixmodel(self.model, &mut fixed) })?;
     debug_assert!(!fixed.is_null());
     Model::from_raw(&self.env, fixed)
@@ -375,7 +374,6 @@ impl Model {
   }
 
 
-
   /// Optimize the model with a callback function.  This method will always trigger a [`Model::update`].
   /// Note that the callback is `FnMut`, which is safe because the Gurobi API guarantees that callbacks
   /// run on a single thread.  See the `callback.rs` example.
@@ -409,7 +407,7 @@ impl Model {
   ///     let stats: &mut MyCallbackStats = &mut *stats.borrow_mut();
   ///     match ctx.get_where() {
   ///       Where::Polling => println!("in polling: callback has been called {} times", stats.ncalls),
-  ///       _ => {},
+  ///       _ => {}
   ///     }
   ///     stats.ncalls += 1;
   ///     Ok(())
@@ -509,7 +507,7 @@ impl Model {
 
   /// Add multiple decision variables to the model in a single Gurobi API call.
   pub fn add_vars(&mut self, names: &[&str], vtypes: &[VarType], objs: &[f64], lbs: &[f64], ubs: &[f64], colcoeff: &[Vec<(Constr, f64)>]) -> Result<Vec<Var>> {
-    if names.len() != vtypes.len() || vtypes.len() != objs.len() || objs.len() != lbs.len() ||  lbs.len() != colcoeff.len() {
+    if names.len() != vtypes.len() || vtypes.len() != objs.len() || objs.len() != lbs.len() || lbs.len() != colcoeff.len() {
       return Err(Error::InconsistentDims);
     }
 
@@ -569,7 +567,19 @@ impl Model {
   }
 
 
-  /// add a linear constraint to the model.
+  /// Add a Linear constraint to the model.
+  ///
+  /// The `con` argument is usually created with the [`c!`](crate::c) macro.
+  ///
+  /// # Examples
+  /// ```
+  /// # use gurobi::*;
+  /// let mut m = Model::new("model")?;
+  /// let x = add_ctsvar!(m)?;
+  /// let y = add_ctsvar!(m)?;
+  /// m.add_constr("c1", c!(x <= 1 - y))?;
+  /// # Ok::<(), Error>(())
+  /// ```
   pub fn add_constr(&mut self, name: &str, con: IneqExpr) -> Result<Constr> where
   {
     let (lhs, sense, rhs) = con.into_normalised_linear()?;
@@ -589,8 +599,34 @@ impl Model {
   }
 
 
-  /// add linear constraints to the model.
-  pub fn add_constrs<'a>(&mut self, constr_with_name: impl Iterator<Item=(&'a str, IneqExpr)>) -> Result<Vec<Constr>> {
+  /// Add multiple linear constraints to the model in a single Gurobi API call.
+  ///
+  /// Accepts anything that can be turned into an iterator of `(name, constraint)` pairs.
+  ///
+  /// # Examples
+  /// ```
+  /// # use gurobi::*;
+  /// let mut m = Model::new("model")?;
+  /// let x = add_ctsvar!(m)?;
+  /// let y = add_ctsvar!(m)?;
+  ///
+  /// let constraints = vec![
+  ///   ("c1", c!(x <= 1 - y )),
+  ///   ("c2", c!(x == 0.5*y )),
+  /// ];
+  ///
+  /// // store names in Vec to ensure they live long enough
+  /// let more_constraints_names : Vec<_> =  (0..10).map(|i| format!("r{}", i)).collect();
+  /// // A Map<_> iterator of (&String, IneqConstr)
+  /// let more_constraints = (0..10).map(|i| (&more_constraints_names[i], c!(x >= i*y )));
+  /// m.add_constrs(more_constraints)?;
+  /// # Ok::<(), Error>(())
+  /// ```
+  pub fn add_constrs<'a, I, N>(&mut self, constr_with_names: I) -> Result<Vec<Constr>> where
+    N: AsRef<str> + 'a,
+    I: Iterator<Item=(&'a N, IneqExpr)>
+  {
+    let constr_with_name = constr_with_names.into_iter();
     let (nconstr, _) = constr_with_name.size_hint();
     let mut names = Vec::with_capacity(nconstr); // needed to ensure CString lives long enough
     let mut cnames = Vec::with_capacity(nconstr);
@@ -602,7 +638,7 @@ impl Model {
 
     let mut c_start = 0;
     for (n, c) in constr_with_name {
-      let n = CString::new(n)?;
+      let n = CString::new(n.as_ref())?;
       cnames.push(n.as_ptr());
       names.push(n);
       let (lhs, sense, r) = c.into_normalised_linear()?;
@@ -643,9 +679,26 @@ impl Model {
   /// This operation adds a decision variable with lower/upper bound, and a linear
   /// equality constraint which states that the value of variable must equal to `expr`.
   ///
-  /// # Returns
-  /// * An decision variable associated with the model. It has lower/upper bound constraints.
-  /// * An linear equality constraint associated with the model.
+  /// As with [`Model::add_constr`], the [`c!`](crate::c) macro is usually used to construct
+  /// the second argument.
+  ///
+  /// # Errors
+  ///  - [`Error::AlgebraicError`] if the expression in the range constraint is not linear.
+  ///  - [`Error::ModelObjectPending`] if some variables haven't yet been added to the model.
+  ///  - [`Error::ModelObjectRemoved`] if some variables have been removed from the model.
+  ///  - [`Error::ModelObjectMismatch`] if some variables are from a different model.
+  ///  - [`Error::FromAPI`]
+  ///
+  /// # Examples
+  /// ```
+  /// # use gurobi::*;
+  /// let mut m = Model::new("model")?;
+  /// let x = add_ctsvar!(m)?;
+  /// let y = add_ctsvar!(m)?;
+  /// m.add_range("", c!(x - y in 0..1))?;
+  /// assert!(matches!(m.add_range("", c!(x*y in 0..1)).unwrap_err(), Error::AlgebraicError(_)));
+  /// # Ok::<(), Error>(())
+  /// ```
   pub fn add_range(&mut self, name: &str, expr: RangeExpr) -> Result<(Var, Constr)> {
     let constrname = CString::new(name)?;
     let (expr, lb, ub) = expr.into_normalised()?;
@@ -656,7 +709,7 @@ impl Model {
                              inds.as_ptr(),
                              coeff.as_ptr(),
                              lb,
-                             ub ,
+                             ub,
                              constrname.as_ptr())
     })?;
 
@@ -666,26 +719,54 @@ impl Model {
     Ok((var, cons))
   }
 
-  // TODO switch to a (&str, RangeExpr) iterator.
   #[allow(unused_variables)]
   /// Add range constraints to the model.
-  pub fn add_ranges(&mut self, names: Vec<&str>, expr: Vec<LinExpr>, mut lb: Vec<f64>, mut ub: Vec<f64>)
-                    -> Result<(Vec<Var>, Vec<Constr>)> {
-    let constrnames = convert_to_cstring_ptrs(&names)?;
-    ub.iter_mut().zip(expr.iter()).for_each(|(x, e)| *x -= e.get_offset());
-    lb.iter_mut().zip(expr.iter()).for_each(|(x, e)| *x -= e.get_offset());
-    let (cbeg, cind, cval) = self.convert_coeff_to_csr_build(expr)?;
+  pub fn add_ranges<'a, I, N>(&mut self, ranges_with_names: I) -> Result<(Vec<Var>, Vec<Constr>)> where
+    N: AsRef<str> + 'a,
+    I: IntoIterator<Item=(&'a N, RangeExpr)>
+  {
+    let ranges_with_names = ranges_with_names.into_iter();
+    let (nconstr, _) = ranges_with_names.size_hint();
+    let mut names = Vec::with_capacity(nconstr); // needed to ensure CString lives long enough
+    let mut cnames = Vec::with_capacity(nconstr);
+    let mut ubs = Vec::with_capacity(nconstr);
+    let mut lbs = Vec::with_capacity(nconstr);
+    let mut cbeg = Vec::with_capacity(nconstr);
+    let mut cind = Vec::with_capacity(nconstr);
+    let mut cval = Vec::with_capacity(nconstr);
+
+    let mut c_start = 0;
+    for (n, r) in ranges_with_names {
+      let n = CString::new(n.as_ref())?;
+      cnames.push(n.as_ptr());
+      names.push(n);
+      let (expr, lb, ub) = r.into_normalised()?;
+      ubs.push(ub);
+      lbs.push(lb);
+
+      let (var_coeff, _) = expr.into_parts();
+      let nterms = var_coeff.len();
+      cbeg.push(c_start);
+      c_start += nterms as i32;
+
+      cind.reserve(nterms);
+      cval.reserve(nterms);
+      for (var, coeff) in var_coeff {
+        cind.push(self.get_index_build(&var)?);
+        cval.push(coeff);
+      }
+    }
 
     self.check_apicall(unsafe {
       ffi::GRBaddrangeconstrs(self.model,
-                              constrnames.len() as ffi::c_int,
+                              cnames.len() as ffi::c_int,
                               cbeg.len() as ffi::c_int,
                               cbeg.as_ptr(),
                               cind.as_ptr(),
                               cval.as_ptr(),
-                              lb.as_ptr(),
-                              ub.as_ptr(),
-                              constrnames.as_ptr())
+                              lbs.as_ptr(),
+                              ubs.as_ptr(),
+                              cnames.as_ptr())
     })?;
 
     let ncons = names.len();
@@ -743,7 +824,7 @@ impl Model {
 
   /// Set the objective function of the model.
   pub fn set_objective(&mut self, expr: impl Into<Expr>, sense: ModelSense) -> Result<()> {
-    let expr : Expr = expr.into();
+    let expr: Expr = expr.into();
     self.del_qpterms()?;
 
     let expr = if expr.is_linear() {
@@ -787,10 +868,10 @@ impl Model {
   /// assert_eq!(m.get_constr_by_name("foo").unwrap(), None);
   /// ```
   pub fn get_constr_by_name(&self, name: &str) -> Result<Option<Constr>> {
-    if self.constrs.model_update_needed() { return Err(Error::ModelUpdateNeeded) }
+    if self.constrs.model_update_needed() { return Err(Error::ModelUpdateNeeded); }
     let n = CString::new(name)?;
     let mut idx = i32::min_value();
-    self.check_apicall(unsafe { ffi::GRBgetconstrbyname(self.model, n.as_ptr(), &mut idx)})?;
+    self.check_apicall(unsafe { ffi::GRBgetconstrbyname(self.model, n.as_ptr(), &mut idx) })?;
     if idx < 0 {
       Ok(None)
     } else {
@@ -802,10 +883,10 @@ impl Model {
   ///
   /// [`Model.get_constr_by_name`]: struct.Model.html#methods.get_constr_by_name
   pub fn get_var_by_name(&self, name: &str) -> Result<Option<Var>> {
-    if self.vars.model_update_needed() { return Err(Error::ModelUpdateNeeded) }
+    if self.vars.model_update_needed() { return Err(Error::ModelUpdateNeeded); }
     let n = CString::new(name)?;
     let mut idx = i32::min_value();
-    self.check_apicall(unsafe { ffi::GRBgetvarbyname(self.model, n.as_ptr(), &mut idx)})?;
+    self.check_apicall(unsafe { ffi::GRBgetvarbyname(self.model, n.as_ptr(), &mut idx) })?;
     if idx < 0 {
       Ok(None)
     } else {
@@ -820,20 +901,20 @@ impl Model {
   }
 
   /// Query a model object attribute (Constr, Var, etc)
-  pub fn get_obj_attr<A,E>(&self, attr: A, elem: &E) -> Result<A::Value>
-  where
-    A: Attr,
-    E: ModelObject
+  pub fn get_obj_attr<A, E>(&self, attr: A, elem: &E) -> Result<A::Value>
+    where
+      A: Attr,
+      E: ModelObject
   {
     let index = self.get_index(elem)?;
     unsafe { attr.get_element(self.model, index) }.map_err(|code| self.env.error_from_api(code))
   }
 
   /// Query an attribute of multiple model objectis
-  pub fn get_obj_attr_batch<A,E>(&self, attr: A, elem: &[E]) -> Result<Vec<A::Value>>
+  pub fn get_obj_attr_batch<A, E>(&self, attr: A, elem: &[E]) -> Result<Vec<A::Value>>
     where
-        A: Attr,
-        E: ModelObject
+      A: Attr,
+      E: ModelObject
   {
     let index = self.get_indices(elem)?;
     unsafe { attr.get_elements(self.model, &index) }.map_err(|code| self.env.error_from_api(code))
@@ -845,20 +926,20 @@ impl Model {
   }
 
   /// Set an attribute of a Model object (Const, Var, etc)
-  pub fn set_obj_attr<A,E>(&self, attr: A, elem: &E, value: A::Value) -> Result<()>
+  pub fn set_obj_attr<A, E>(&self, attr: A, elem: &E, value: A::Value) -> Result<()>
     where
-        A: Attr,
-        E: ModelObject
+      A: Attr,
+      E: ModelObject
   {
     let index = self.get_index_build(elem)?;
     unsafe { attr.set_element(self.model, index, value) }.map_err(|code| self.env.error_from_api(code))
   }
 
   /// Set an attribute of multiple Model objects (Const, Var, etc)
-  pub fn set_obj_attr_batch<A,E>(&self, attr: A, elem: &[E], values: &[A::Value]) -> Result<()>
+  pub fn set_obj_attr_batch<A, E>(&self, attr: A, elem: &[E], values: &[A::Value]) -> Result<()>
     where
-        A: Attr,
-        E: ModelObject
+      A: Attr,
+      E: ModelObject
   {
     if elem.len() != values.len() {
       return Err(Error::InconsistentDims);
@@ -874,7 +955,6 @@ impl Model {
   pub fn get_param<P: Param>(&self, param: P) -> Result<P::Value> {
     self.get_env().get(param)
   }
-
 
 
   /// Modify the model to create a feasibility relaxation.
@@ -906,7 +986,6 @@ impl Model {
   pub fn feas_relax(&mut self, relaxtype: RelaxType, minrelax: bool, vars: &[Var], lbpen: &[f64], ubpen: &[f64],
                     constrs: &[Constr], rhspen: &[f64])
                     -> Result<(f64, Vec<Var>, Vec<Constr>, Vec<QConstr>)> {
-
     if vars.len() != lbpen.len() || vars.len() != ubpen.len() {
       return Err(Error::InconsistentDims);
     }
@@ -964,15 +1043,15 @@ impl Model {
 
     let n_vars = self.get_attr(attr::NumVars)? as usize;
     assert!(n_vars >= n_old_vars);
-    let new_vars = (0..n_vars-n_old_vars).map(|_| self.vars.add_new(lazy)).collect();
+    let new_vars = (0..n_vars - n_old_vars).map(|_| self.vars.add_new(lazy)).collect();
 
     let n_cons = self.get_attr(attr::NumConstrs)? as usize;
     assert!(n_cons >= n_old_constr);
-    let new_cons = (0..n_cons-n_old_constr).map(|_| self.constrs.add_new(lazy)).collect();
+    let new_cons = (0..n_cons - n_old_constr).map(|_| self.constrs.add_new(lazy)).collect();
 
     let n_qcons = self.get_attr(attr::NumQConstrs)? as usize;
     assert!(n_qcons >= n_old_qconstr);
-    let new_qcons = (0..n_cons-n_old_constr).map(|_| self.qconstrs.add_new(lazy)).collect();
+    let new_qcons = (0..n_cons - n_old_constr).map(|_| self.qconstrs.add_new(lazy)).collect();
 
     // FIXME: are SOS added here? are QConstr ever added?
 
@@ -1033,7 +1112,7 @@ impl Model {
     let im = O::idx_manager_mut(self);
     let idx = im.get_index(&item)?;
     im.remove(item, lazy)?;
-    self.check_apicall(unsafe {O::gurobi_remove(self.model, &[idx]) })
+    self.check_apicall(unsafe { O::gurobi_remove(self.model, &[idx]) })
   }
 
 
@@ -1041,7 +1120,7 @@ impl Model {
   pub fn get_coeff(&self, var: &Var, constr: &Constr) -> Result<f64> {
     let mut value = 0.0;
     self.check_apicall(unsafe {
-      ffi::GRBgetcoeff(self.model, self.get_index_build(constr)?,self.get_index_build(var)?, &mut value)
+      ffi::GRBgetcoeff(self.model, self.get_index_build(constr)?, self.get_index_build(var)?, &mut value)
     })?;
     Ok(value)
   }
@@ -1254,6 +1333,7 @@ impl std::convert::From<AsyncModel> for Model {
 mod tests {
   use super::*;
   use crate::*;
+
   extern crate self as gurobi;
 
   #[test]

@@ -6,50 +6,20 @@
 use gurobi_sys as ffi;
 use std::ffi::CString;
 use std::mem::transmute;
-use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr::{null, null_mut};
 use std::sync::atomic::{Ordering, AtomicU32};
-
+use std::borrow::Borrow;
 use crate::{Error, Result, Env, QuadExpr, LinExpr, Expr};
 use crate::param;
 use crate::attr;
 use crate::attr::Attr;
-use crate::callback::Callback;
+use crate::callback::{Callback, UserCallbackData, callback_wrapper};
 use crate::model_object::*;
 use crate::{VarType, ModelSense, SOSType, RelaxType, Status};
 use crate::env::AsPtr;
 use crate::constr::{IneqExpr, RangeExpr};
 use gurobi_sys::GRBmodel;
 use crate::param::Param;
-
-
-struct CallbackData<'a> {
-  model: &'a Model,
-  callback: &'a mut dyn FnMut(Callback) -> Result<()>,
-}
-
-#[allow(unused_variables)]
-extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel,
-                               cbdata: *mut ffi::c_void,
-                               where_: ffi::c_int,
-                               usrdata: *mut ffi::c_void) -> ffi::c_int {
-  let usrdata = unsafe { &mut *(usrdata as *mut CallbackData) };
-  let (callback, model) = (&mut usrdata.callback, &usrdata.model);
-
-  #[allow(clippy::useless_conversion)]
-  match Callback::new(cbdata, where_.into(), model) {
-    Err(err) => {
-      println!("failed to create context: {:?}", err);
-      -3
-    }
-    Ok(context) => {
-      match catch_unwind(AssertUnwindSafe(|| if callback(context).is_ok() { 0 } else { -1 })) {
-        Ok(ret) => ret,
-        Err(_e) => -3000,
-      }
-    }
-  }
-}
 
 
 /// Gurobi Model object.
@@ -81,31 +51,6 @@ macro_rules! impl_object_list_getter {
 
 
 impl Model {
-  /// Create an empty Gurobi model from the environment.
-  ///
-  /// Note that the given environment will be copied by the Gurobi API
-  /// and a new environment associated with the model will be created.
-  /// If you want to query or modify this environment, use `get_env()`/`get_env_mut()`.
-  ///
-  /// # Example
-  /// ```
-  /// use gurobi::*;
-  ///
-  /// let mut env = gurobi::Env::new("").unwrap();
-  /// env.set(param::OutputFlag, 0).unwrap();
-  /// env.set(param::Heuristics, 0.5).unwrap();
-  /// let env = env;
-  /// // ...
-  ///
-  /// let mut model = Model::with_env("model1", &env).unwrap();
-  /// assert_eq!(model.get_env().get(param::OutputFlag).unwrap(), 0);
-  ///
-  /// model.get_env_mut().set(param::OutputFlag, 1).unwrap();
-  /// // ...
-  /// assert_eq!(model.get_env().get(param::OutputFlag).unwrap(), 1);
-  /// assert_eq!(env.get(param::OutputFlag).unwrap(), 0); // original env is copied
-  /// ```
-
   fn next_id() -> u32 {
     static NEXT_ID: AtomicU32 = AtomicU32::new(0);
     NEXT_ID.fetch_add(1, Ordering::Relaxed)
@@ -129,7 +74,8 @@ impl Model {
   /// assert_eq!(env.get(param::OutputFlag).unwrap(), 0); // original env is unchanged
   /// # Ok::<(), Error>(())
   /// ```
-  pub fn with_env(modelname: &str, env: &Env) -> Result<Model> {
+  pub fn with_env(modelname: &str, env: impl Borrow<Env>) -> Result<Model> {
+    let env = env.borrow();
     let modelname = CString::new(modelname)?;
     let mut model = null_mut();
     env.check_apicall(unsafe {
@@ -336,13 +282,15 @@ impl Model {
   }
 
 
-  /// Optimize the model with a callback function.  This method will always trigger a [`Model::update`].
-  /// Note that the callback is `FnMut`, which is safe because the Gurobi API guarantees that callbacks
-  /// run on a single thread.  See the `callback.rs` example.
+  /// Optimize the model with a callback.  The callback is any type that implements the
+  /// [`Callback`] trait.  Closures, and anything else that implements `FnMut(CbCtx) -> Result<()>`
+  /// implement the `Callback` trait automatically.   This method will always trigger a [`Model::update`].
   ///
+  /// # Examples
+  /// ## Using closures
   /// Because of Rust's lifetime requirements on closures, if you are using large lookup structures within your
-  /// callbacks, you should wrap them in a [`std::rc::Rc`]`<`[`std::cell::RefCell`]`<_>>`
-  ///
+  /// callbacks, you should wrap them in a [`std::rc::Rc`]`<`[`std::cell::RefCell`]`<_>>`.  This can be a little
+  /// tedious, so if you need to use a stateful callback, implementing the `Callback` trait is preferred.
   /// ```
   /// use gurobi::*;
   /// use std::{rc::Rc, cell::RefCell};
@@ -361,36 +309,78 @@ impl Model {
   /// // Need to put `stats` behind a Rc<RefCell<_>> because of closure lifetimes.
   /// let stats = Rc::new(RefCell::new(MyCallbackStats::default()));
   ///
-  /// let callback = {
+  /// let mut callback = {
   ///   // Note that `MyCallbackStats` doesn't implement Clone: `Rc<_>` makes a cheap pointer copy
   ///   let stats = stats.clone();
-  ///   move |ctx : Callback| {
+  ///   move |ctx : CbCtx| {
   ///     // This should never panic - `callback` runs single-threaded
   ///     let stats: &mut MyCallbackStats = &mut *stats.borrow_mut();
   ///     match ctx.get_where() {
-  ///       Where::Polling => println!("in polling: callback has been called {} times", stats.ncalls),
+  ///       WhereData::Polling => println!("in polling: callback has been called {} times", stats.ncalls),
   ///       _ => {}
   ///     }
   ///     stats.ncalls += 1;
-  ///     Ok(())
+  ///     Ok::<(), Error>(()) // no uses of ? operator, so require a type annotation for error type
   ///  }
   /// };
   ///
-  /// m.optimize_with_callback(callback)?;
+  /// m.optimize_with_callback(&mut callback)?;
   ///
   /// # Ok::<(), Error>(())
   /// ```
-  pub fn optimize_with_callback<F>(&mut self, mut callback: F) -> Result<()>
-    where F: FnMut(Callback) -> Result<()> + 'static
+  ///
+  /// ## Using the `Callback` trait
+  /// ```
+  /// use gurobi::*;
+  /// use std::{rc::Rc, cell::RefCell};
+  ///
+  /// #[derive(Default)]
+  /// struct MyCallbackStats {
+  ///   ncalls : usize,
+  ///   big_data: [u8; 32],
+  /// }
+  ///
+  /// impl Callback for MyCallbackStats {
+  ///   fn callback(&mut self, ctx: CbCtx) -> Result<()> {
+  ///     match ctx.get_where() {
+  ///       WhereData::Polling => println!("in polling: callback has been called {} times", self.ncalls),
+  ///       _ => {}
+  ///     }
+  ///     self.ncalls += 1;
+  ///     Ok(())
+  ///   }
+  /// }
+  /// let mut m = Model::new("model")?;
+  /// let x = add_ctsvar!(m, obj: 2)?;
+  /// let y = add_intvar!(m, bounds: 0..100)?;
+  /// m.add_constr("c0", c!(x <= y - 0.5 ))?;
+  ///
+  /// // Need to put `stats` behind a Rc<RefCell<_>> because of closure lifetimes.
+  /// let mut stats = MyCallbackStats::default();
+  /// m.optimize_with_callback(&mut stats)?;
+  ///
+  /// # Ok::<(), Error>(())
+  /// ```
+  ///
+  pub fn optimize_with_callback<F>(&mut self,  callback: &mut F) -> Result<()>
+    where
+      F: Callback
   {
     self.update()?;
-    let mut usrdata = CallbackData {
+    let nvars = self.get_attr(attr::NumVars)? as usize;
+    let mut usrdata = UserCallbackData {
       model: self,
-      callback: &mut callback,
+      cb_obj: callback,
+      nvars,
     };
-    self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, Some(callback_wrapper), transmute(&mut usrdata)) })?;
-    self.check_apicall(unsafe { ffi::GRBoptimize(self.model) })?;
-    self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, None, null_mut()) })
+
+    unsafe {
+      self.check_apicall( ffi::GRBsetcallbackfunc(self.model, Some(callback_wrapper), transmute(&mut usrdata)))?;
+      self.check_apicall(ffi::GRBoptimize(self.model))?;
+      self.check_apicall(ffi::GRBsetcallbackfunc(self.model, None, null_mut()))?
+    }
+
+    Ok(())
   }
 
   // /// Wait for a optimization called asynchronously.

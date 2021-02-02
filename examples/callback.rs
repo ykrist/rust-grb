@@ -16,7 +16,7 @@ fn main() {
 
   let mut model = load_model_file_from_clarg(&env);
 
-  let callback = {
+  let mut callback = {
     let mut lastiter = -INFINITY;
     let mut lastnode = -INFINITY;
     let vars: Vec<_> = model.get_vars().unwrap().to_vec();
@@ -24,8 +24,8 @@ fn main() {
     let file = OpenOptions::new().write(true).create(true).open("cb.log").unwrap();
     let mut writer = BufWriter::new(file);
 
-    move |ctx: Callback| {
-      use Where::*;
+    move |ctx: CbCtx| {
+      use WhereData::*;
       match ctx.get_where() {
         // Periodic polling callback
         Polling => {
@@ -126,7 +126,8 @@ fn main() {
       Ok(())
     }
   };
-  model.optimize_with_callback(callback).unwrap();
+
+  model.optimize_with_callback(&mut callback).unwrap();
 
   println!("\nOptimization complete");
   if model.get_attr(attr::SolCount).unwrap() == 0 {

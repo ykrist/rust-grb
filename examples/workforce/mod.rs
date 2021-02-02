@@ -35,7 +35,7 @@ pub fn make_model(env: &Env) -> Result<Model> {
     vec![1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   ];
 
-  let mut model = Model::with_env("assignment", &env)?;
+  let mut model = Model::with_env("assignment", env)?;
 
   // x[worker_idx][shift_idx]
   let mut x = Vec::with_capacity(workers.len());

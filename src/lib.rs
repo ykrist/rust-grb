@@ -98,7 +98,7 @@ pub use error::{Error, Result};
 pub use model::{Model};
 pub use constants::{VarType, ConstrSense, ModelSense, SOSType, Status, RelaxType};
 pub use model_object::*;
-pub use callback::{Callback, Where};
+pub use callback::{CbCtx, WhereData, Callback};
 
 pub use VarType::*;
 pub use ConstrSense::*;

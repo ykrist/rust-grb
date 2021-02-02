@@ -1,19 +1,15 @@
-// Copyright (c) 2016 Yusuke Sasaki
-//
-// This software is released under the MIT License.
-// See http://opensource.org/licenses/mit-license.php or <LICENSE>.
-
 #![allow(clippy::missing_safety_doc)]
 use gurobi_sys as ffi;
 use std::ffi::CString;
-use crate::util::copy_c_str;
-use std::result::Result as StdResult;
 
+use std::result::Result as StdResult;
 pub use ffi::{IntAttr, DoubleAttr, CharAttr, StringAttr};
 pub use ffi::IntAttr::*;
 pub use ffi::DoubleAttr::*;
 pub use ffi::CharAttr::*;
 pub use ffi::StringAttr::*;
+
+use crate::util::copy_c_str;
 
 // We don't have any &Model here, so the best we can do is give Gurobi error codes.
 // Fortunately, the errors encountered either are from converting String to CString, null pointers

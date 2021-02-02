@@ -1,4 +1,4 @@
-use gurobi::{Env, Model};
+use grb::{Env, Model};
 
 pub fn load_model_file_from_clarg(env: &Env) -> Model {
     let filepath = &std::env::args().nth(1).expect(

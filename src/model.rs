@@ -1,16 +1,15 @@
-// Copyright (c) 2016 Yusuke Sasaki
-//
-// This software is released under the MIT License.
-// See http://opensource.org/licenses/mit-license.php or <LICENSE>.
-
-use gurobi_sys as ffi;
 use std::ffi::CString;
 use std::mem::transmute;
 use std::ptr::{null, null_mut};
 use std::sync::atomic::{Ordering, AtomicU32};
 use std::borrow::Borrow;
+
+use gurobi_sys as ffi;
+use gurobi_sys::GRBmodel;
+
 use crate::{Error, Result, Env, QuadExpr, LinExpr, Expr};
 use crate::param;
+use crate::param::Param;
 use crate::attr;
 use crate::attr::Attr;
 use crate::callback::{Callback, UserCallbackData, callback_wrapper};
@@ -18,8 +17,7 @@ use crate::model_object::*;
 use crate::{VarType, ModelSense, SOSType, RelaxType, Status};
 use crate::env::AsPtr;
 use crate::constr::{IneqExpr, RangeExpr};
-use gurobi_sys::GRBmodel;
-use crate::param::Param;
+
 
 
 /// Gurobi Model object.
@@ -61,8 +59,8 @@ impl Model {
   ///
   /// # Examples
   /// ```
-  /// # use gurobi::*;
-  /// let mut env = gurobi::Env::new("")?;
+  /// # use grb::*;
+  /// let mut env = Env::new("")?;
   /// env.set(param::OutputFlag, 0)?;
   ///
   /// let mut model = Model::with_env("Model", &env)?;
@@ -248,7 +246,7 @@ impl Model {
   ///
   /// # Examples
   /// ```
-  /// # use gurobi::*;
+  /// # use grb::*;
   /// let mut m = Model::new("model")?;
   /// let x = add_ctsvar!(m);
   ///
@@ -292,7 +290,7 @@ impl Model {
   /// callbacks, you should wrap them in a [`std::rc::Rc`]`<`[`std::cell::RefCell`]`<_>>`.  This can be a little
   /// tedious, so if you need to use a stateful callback, implementing the `Callback` trait is preferred.
   /// ```
-  /// use gurobi::*;
+  /// use grb::*;
   /// use std::{rc::Rc, cell::RefCell};
   ///
   /// #[derive(Default)]
@@ -331,7 +329,7 @@ impl Model {
   ///
   /// ## Using the `Callback` trait
   /// ```
-  /// use gurobi::*;
+  /// use grb::*;
   /// use std::{rc::Rc, cell::RefCell};
   ///
   /// #[derive(Default)]
@@ -520,7 +518,7 @@ impl Model {
   ///
   /// # Examples
   /// ```
-  /// # use gurobi::*;
+  /// # use grb::*;
   /// let mut m = Model::new("model")?;
   /// let x = add_ctsvar!(m)?;
   /// let y = add_ctsvar!(m)?;
@@ -552,7 +550,7 @@ impl Model {
   ///
   /// # Examples
   /// ```
-  /// # use gurobi::*;
+  /// # use grb::*;
   /// let mut m = Model::new("model")?;
   /// let x = add_ctsvar!(m)?;
   /// let y = add_ctsvar!(m)?;
@@ -638,7 +636,7 @@ impl Model {
   ///
   /// # Examples
   /// ```
-  /// # use gurobi::*;
+  /// # use grb::*;
   /// let mut m = Model::new("model")?;
   /// let x = add_ctsvar!(m)?;
   /// let y = add_ctsvar!(m)?;
@@ -804,7 +802,7 @@ impl Model {
   ///
   /// # Usage
   /// ```
-  /// use gurobi::*;
+  /// use grb::*;
   /// let mut m = Model::new("model").unwrap();
   /// let x = add_binvar!(m).unwrap();
   /// let y = add_binvar!(m).unwrap();
@@ -1192,8 +1190,8 @@ impl AsyncModel {
   ///
   /// This example panics because `env` has two references - inside `m` and the bound variable in the current scope
   /// ```should_panic
-  /// use gurobi::*;
-  /// use gurobi::model::AsyncModel;
+  /// use grb::*;
+  /// use grb::model::AsyncModel;
   ///
   /// let env = Env::new("")?;
   /// let mut m = Model::with_env("model", &env)?;
@@ -1202,8 +1200,8 @@ impl AsyncModel {
   /// ```
   /// This is easily resolved by ensuring `env` is no longer in scope when the `AsyncModel` is created.
   /// ```
-  /// # use gurobi::*;
-  /// # use gurobi::model::AsyncModel;
+  /// # use grb::*;
+  /// # use grb::model::AsyncModel;
   /// # let env = Env::new("")?;
   /// let mut m = Model::with_env("model", &env)?;
   /// drop(env);
@@ -1213,8 +1211,8 @@ impl AsyncModel {
   /// This example panics because `m` uses the default `Env`, which is also stored globally.
   /// `Model`s created with [`Model::new`] can never be made into `AsyncModel`s for this reason.
   /// ```should_panic
-  /// # use gurobi::*;
-  /// # use gurobi::model::AsyncModel;
+  /// # use grb::*;
+  /// # use grb::model::AsyncModel;
   /// let m = Model::new("model1")?;
   /// let m =  AsyncModel::new(m); // panic
   /// # Ok::<(), Error>(())
@@ -1239,8 +1237,8 @@ impl AsyncModel {
   ///
   /// # Examples
   /// ```
-  /// use gurobi::*;
-  /// use gurobi::model::AsyncModel;
+  /// use grb::*;
+  /// use grb::model::AsyncModel;
   ///
   /// let mut m = Model::with_env("model", &Env::new("")?)?;
   /// let x = add_ctsvar!(m, obj: 2)?;
@@ -1281,7 +1279,7 @@ mod tests {
   use super::*;
   use crate::*;
 
-  extern crate self as gurobi;
+  extern crate self as grb;
 
   #[test]
   fn model_id_factory() {

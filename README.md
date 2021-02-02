@@ -1,19 +1,10 @@
-# rust-gurobi
+# rust-grb
 
-[![](http://meritbadge.herokuapp.com/gurobi)](https://crates.io/crates/gurobi)
+Bindings to Gurobi optimizer.  Currently unstable. 
 
-An unofficial Rust API for Gurobi optimizer.
-
-* Documentation - [master](https://ys-nuem.github.io/rust-gurobi/master/gurobi/index.html) / [0.3 (latest)](https://ys-nuem.github.io/rust-gurobi/v0.3.1/gurobi/index.html)
-
-## Notices
-
-* This wrapper library is not officially supported by Gurobi.
-* Too many works have not finished yet.
-
+This library started as fork of [`rust-gurobi`](https://github.com/ubnt-intrepid/rust-gurobi).  It has since undergone a number
+of fundamental changes that it will be released as a new crate. 
 
 ## License
-
-Copyright (c) 2016, Yusuke Sasaki
-
 This software is released under the MIT license, see [LICENSE](LICENSE).
+

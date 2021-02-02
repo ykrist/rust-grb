@@ -1,7 +1,3 @@
-// Copyright (c) 2016 Yusuke Sasaki
-//
-// This software is released under the MIT License.
-// See http://opensource.org/licenses/mit-license.php or <LICENSE>.
 #![allow(clippy::missing_safety_doc)]
 use gurobi_sys as ffi;
 use std::ffi::CString;
@@ -14,7 +10,7 @@ pub use ffi::{IntParam, DoubleParam, StringParam};
 pub use ffi::IntParam::*;
 pub use ffi::DoubleParam::*;
 pub use ffi::StringParam::*;
-
+// TODO add an Undocumented parameter type - eg GRB_MINPARFORBID
 
 type RawResult<T> = StdResult<T, ffi::c_int>;
 

@@ -1,14 +1,9 @@
 #![allow(clippy::many_single_char_names)]
-// Copyright (c) 2016 Yusuke Sasaki
-//
-// This software is released under the MIT License.
-// See http://opensource.org/licenses/mit-license.php or <LICENSE>.
-//
 use std::ops::{Add, Sub, Mul, Neg};
 use std::iter::{Sum};
-use fnv::FnvHashMap;
 use std::fmt;
 use std::fmt::Write;
+use fnv::FnvHashMap;
 
 use crate::{Var, Model, Result, Error};
 use crate::attr;

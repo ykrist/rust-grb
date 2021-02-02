@@ -1,18 +1,13 @@
-// Copyright (c) 2016 Yusuke Sasaki
-//
-// This software is released under the MIT License.
-// See http://opensource.org/licenses/mit-license.php or <LICENSE>.
-
-use gurobi_sys as ffi;
-
 use std::ffi::CString;
 use std::ptr::null_mut;
+use std::rc::Rc;
 
+use gurobi_sys as ffi;
 use crate::error::{Error, Result};
 use crate::param::Param;
 use crate::util;
-use gurobi_sys::GRBenv;
-use std::rc::Rc;
+use ffi::GRBenv;
+
 
 pub(crate) trait AsPtr {
   /// Return the underling Gurobi pointer
@@ -74,13 +69,13 @@ impl AsPtr for Env {
 ///
 /// # Examples
 /// ```
-/// use gurobi::*;
+/// use grb::*;
 /// let mut env = Env::empty()?;
 /// env.set(param::OutputFlag, 0)?
 ///   .set(param::UpdateMode, 1)?
 ///   .set(param::LogFile, "".to_string())?;
 /// let env : Env = env.start()?;
-/// # Ok::<(), gurobi::Error>(())
+/// # Ok::<(), Error>(())
 /// ```
 pub struct EmptyEnv {
   env : Env

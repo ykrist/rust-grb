@@ -1,9 +1,3 @@
-// Copyright (c) 2016 Yusuke Sasaki
-//
-// This software is released under the MIT License.
-// See http://opensource.org/licenses/mit-license.php or <LICENSE>.
-
-
 use gurobi_sys as ffi;
 use std::ptr::null;
 use std::os::raw;
@@ -12,9 +6,8 @@ use crate::{Error, Result, Model, Var, ConstrSense, INFINITY};
 use crate::expr::LinExpr;
 use crate::util;
 use crate::constants::callback::*;
-// used for setting a partial solution in a callback
-use crate::constants::GRB_UNDEFINED;
 
+use crate::constants::GRB_UNDEFINED; // used for setting a partial solution in a callback
 
 pub trait Callback {
   fn callback(&mut self, ctx: CbCtx) -> Result<()>;
@@ -59,9 +52,6 @@ pub ( crate ) model: & 'a Model,
 pub ( crate ) nvars: usize,
 pub (crate ) cb_obj: & 'a mut dyn Callback,
 }
-
-
-
 
 
 /// Location where the callback was called.

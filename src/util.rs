@@ -1,11 +1,5 @@
-// Copyright (c) 2016 Yusuke Sasaki
-//
-// This software is released under the MIT License.
-// See http://opensource.org/licenses/mit-license.php or <LICENSE>.
-
-use gurobi_sys as ffi;
 use std::ffi::CStr;
-
+use gurobi_sys as ffi;
 
 /// Copy a raw C-string into a String
 ///

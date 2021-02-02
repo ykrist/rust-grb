@@ -23,9 +23,9 @@ impl Parse for InequalityConstr {
 
     let cmpexpr: syn::ExprBinary = input.parse()?;
     let sense = match cmpexpr.op {
-      Eq(..) => quote! { gurobi::Equal },
-      Le(..) => quote! { gurobi::Less },
-      Ge(..) => quote! { gurobi::Greater },
+      Eq(..) => quote! { grb::Equal },
+      Le(..) => quote! { grb::Less },
+      Ge(..) => quote! { grb::Greater },
       Lt(..) | Gt(..) | Ne(..) => { return Err(Error::new_spanned(cmpexpr.op, "expected >=, <= or ==")); }
       _ => { return Err(Error::new_spanned(cmpexpr, "expression should be a ==, >= or <= comparison")); }
     };
@@ -41,10 +41,10 @@ impl ToTokens for InequalityConstr {
     let rhs = self.rhs.as_ref();
     let sense = &self.sense;
     let ts = quote! {
-      gurobi::constr::IneqExpr{
-        lhs: gurobi::Expr::from(#lhs),
+      grb::constr::IneqExpr{
+        lhs: grb::Expr::from(#lhs),
         sense: #sense,
-        rhs: gurobi::Expr::from(#rhs),
+        rhs: grb::Expr::from(#rhs),
       }
     };
     ts.to_tokens(tokens);
@@ -61,14 +61,14 @@ impl GrbRangeExpr {
   pub fn ub_to_tokens(&self) -> TokenStream2 {
     match self.ub {
       Some(ref x) => quote_spanned!{ x.span()=>  #x as f64},
-      None => quote!{ gurobi::INFINITY },
+      None => quote!{ grb::INFINITY },
     }
   }
 
   pub fn lb_to_tokens(&self) -> TokenStream2 {
     match self.lb {
       Some(ref x) => quote_spanned!{ x.span()=> #x as f64},
-      None => quote!{ -gurobi::INFINITY },
+      None => quote!{ -grb::INFINITY },
     }
   }
 }
@@ -104,13 +104,13 @@ impl Parse for RangeConstr {
 impl ToTokens for RangeConstr {
   fn to_tokens(&self, tokens: &mut TokenStream2) {
     let expr = &self.expr;
-    let expr = quote_spanned! { expr.span() => gurobi::Expr::from(#expr) };
+    let expr = quote_spanned! { expr.span() => grb::Expr::from(#expr) };
 
     let lb = self.range.lb_to_tokens();
     let ub = self.range.ub_to_tokens();
 
     let ts : TokenStream2 = quote!{
-      gurobi::constr::RangeExpr{
+      grb::constr::RangeExpr{
         expr: #expr,
         ub: #ub,
         lb: #lb,
@@ -245,7 +245,7 @@ impl OptArgs {
     let obj = &self.obj;
     let (lb, ub) = match self.bounds.0 {
       Some(ref bounds) => (bounds.lb_to_tokens(), bounds.ub_to_tokens()),
-      None => (quote!{ 0.0f64 }, quote!{ gurobi::INFINITY })
+      None => (quote!{ 0.0f64 }, quote!{ grb::INFINITY })
     };
 
     quote!{ #model.add_var(#name, #vtype, #obj as f64, #lb, #ub, &[], &[]) }
@@ -338,9 +338,9 @@ macro_rules! specialised_addvar {
     };
 }
 
-specialised_addvar!(AddBinVarInput, quote!{ gurobi::Binary }, add_binvar, "Binary");
-specialised_addvar!(AddCtsVarInput, quote!{ gurobi::Continuous }, add_ctsvar, "Continuous");
-specialised_addvar!(AddIntVarInput, quote!{ gurobi::Integer }, add_intvar, "Integer");
+specialised_addvar!(AddBinVarInput, quote!{ grb::Binary }, add_binvar, "Binary");
+specialised_addvar!(AddCtsVarInput, quote!{ grb::Continuous }, add_ctsvar, "Continuous");
+specialised_addvar!(AddIntVarInput, quote!{ grb::Integer }, add_intvar, "Integer");
 
 
 /// Convienence wrapper around [`Model::add_var`] Add a new variable to a `Model` object.  The macro keyword arguments are
@@ -354,7 +354,7 @@ specialised_addvar!(AddIntVarInput, quote!{ gurobi::Integer }, add_intvar, "Inte
 /// [`Model::add_var`]: struct.Model.html#method.add_var
 /// [`VarType`]: enum.VarType.html
 /// ```
-/// use gurobi::*;
+/// use grb::*;
 /// let mut model = Model::new("Model").unwrap();
 /// add_var!(model, Continuous, name: "name", obj: 0.0, bounds: -10..10).unwrap();
 /// add_var!(model, Integer, bounds: 0..).unwrap();

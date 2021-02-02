@@ -1,15 +1,15 @@
 [package]
-authors = ["Yusuke Sasaki <y_sasaki@nuem.nagoya-u.ac.jp>", "Alice Ryhl <alice@ryhl.io>"]
+authors = ["Yannik Rist"]
 autoexamples = false
 categories = ["algorithms", "api-bindings", "mathematics", "science"]
-description = "An unofficial Rust API for Gurobi optimizer"
-documentation = "https://docs.rs/gurobi/0.3.4/gurobi/"
+description = "A Rust API for Gurobi optimizer"
+#documentation = "https://docs.rs/gurobi/0.3.4/gurobi/"
 edition = "2018"
 keywords = ["optimization", "linear", "integer"]
 license = "MIT"
-name = "gurobi"
-repository = "https://github.com/ubnt-intrepid/rust-gurobi"
-version = "0.3.7"
+name = "grb"
+repository = "https://github.com/ykrist/rust-grb"
+version = "0.1.0"
 
 [dependencies]
 fnv = "1.0"

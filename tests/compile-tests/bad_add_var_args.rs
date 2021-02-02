@@ -1,4 +1,4 @@
-use gurobi::*;
+use grb::*;
 mod utils;
 
 fn main() -> Result<()> {

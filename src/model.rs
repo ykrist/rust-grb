@@ -83,7 +83,7 @@ macro_rules! impl_object_list_getter {
     ($name:ident, $t:ty, $attr:ident, $noun:literal) => {
       #[doc="Retrieve the "]
       #[doc=$noun]
-      #[doc=" in the model. Returns an error if a model update is needed"]
+      #[doc=" in the model. \n\n # Errors\nReturns an error if a model update is needed"]
       pub fn $name<'a>(&'a self) -> Result<&'a [$t]> {
         if self.$attr.model_update_needed() {  Err(Error::ModelUpdateNeeded)  }
         else  { Ok(self.$attr.objects()) }
@@ -91,48 +91,7 @@ macro_rules! impl_object_list_getter {
     };
 }
 
-/// A handle to a Gurobi model which is currently solving asynchronously.
-pub struct AsyncHandle {
-  model: Model
-}
 
-impl AsyncHandle {
-  /// Retrieve current the `attr::Status` of the model.
-  pub fn status(&self) -> Result<Status> {
-    self.model.status()
-  }
-
-  /// Retrieve current the `attr::ObjVal` of the model.
-  pub fn obj_val(&self) -> Result<f64> {
-    self.model.get_attr(attr::ObjVal)
-  }
-
-  /// Retrieve current the `attr::ObjBound` of the model.
-  pub fn obj_bound(&self) -> Result<f64> {
-    self.model.get_attr(attr::ObjBound)
-  }
-
-  /// Retrieve current the `attr::IterCount` of the model.
-  pub fn iter_count(&self) -> Result<f64> {
-    self.model.get_attr(attr::IterCount)
-  }
-
-  /// Retrieve current the `attr::BarIterCount` of the model.
-  pub fn bar_iter_count(&self) -> Result<i32> {
-    self.model.get_attr(attr::BarIterCount)
-  }
-
-  /// Retrieve current the `attr::NodeCount` of the model.
-  pub fn node_count(&self) -> Result<f64> {
-    self.model.get_attr(attr::NodeCount)
-  }
-
-  /// Wait for optimisation to finish
-  pub fn join(self) -> (Model, Result<()>) {
-    let errors = self.model.check_apicall(unsafe { ffi::GRBsync(self.model.model) });
-    (self.model, errors)
-  }
-}
 
 
 impl Model {
@@ -203,7 +162,8 @@ impl Model {
 
   /// Create a new model with the default environment, which is lazily initialised.
   pub fn new(modelname: &str) -> Result<Model> {
-    Env::GLOBAL_DEFAULT.with(|env| Model::with_env(modelname, env))
+    Env::GLOBAL_DEFAULT.with(|env|
+      Model::with_env(modelname, env))
   }
 
   /// Create the `Model` object from a raw pointer returned by a Gurobi routine.
@@ -254,14 +214,6 @@ impl Model {
     Ok(model)
   }
 
-  /// Read a model from a file.  See the [manual](https://www.gurobi.com/documentation/9.1/refman/c_readmodel.html) for accepted file formats.
-  pub fn read_from(filename: &str, env: &Env) -> Result<Model> {
-    let filename = CString::new(filename)?;
-    let mut model = null_mut();
-    env.check_apicall(unsafe { ffi::GRBreadmodel(env.as_mut_ptr(), filename.as_ptr(), &mut model) })?;
-    Self::from_raw(env, model)
-  }
-
   /// Create a copy of the model.  This method is fallible due to the lazy update approach and the underlying
   /// Gurobi C API, so a [`Clone`] implementation is not provided.
   ///
@@ -277,6 +229,14 @@ impl Model {
     }
 
     Model::from_raw(&self.env, copied)
+  }
+
+  /// Read a model from a file.  See the [manual](https://www.gurobi.com/documentation/9.1/refman/c_readmodel.html) for accepted file formats.
+  pub fn read_from(filename: &str, env: &Env) -> Result<Model> {
+    let filename = CString::new(filename)?;
+    let mut model = null_mut();
+    env.check_apicall(unsafe { ffi::GRBreadmodel(env.as_mut_ptr(), filename.as_ptr(), &mut model) })?;
+    Self::from_raw(env, model)
   }
 
   fn model_update_needed(&self) -> bool {
@@ -414,52 +374,7 @@ impl Model {
     self.check_apicall(unsafe { ffi::GRBoptimize(self.model) })
   }
 
-  /// Optimize the model on another thread.  This method will always trigger a [`Model::update`].
-  ///
-  /// On success, returns an [`AsyncHandle`](crate::model::AsyncHandle) that provides a limited API.  The `Model` can be
-  /// retrieved by calling [`AsyncHandle::join`](crate::model::AsyncHandle::join).
-  ///
-  /// Note that from the Gurobi [manual](https://www.gurobi.com/documentation/9.1/refman/c_optimizeasync.html):
-  /// *"[modifying or performing non-permitted] calls on the running model, **or on any other models that were built within the same Gurobi environment**,
-  /// will fail with error code `OPTIMIZATION_IN_PROGRESS`."*
-  ///
-  /// Therefore, it is recommend that you create an [`Env`] for each model you wish to solve asynchronously and use [`Model::with_env`].
-  ///
-  /// The permitted calls are attibute querys like those available on [`AsyncHandle`](crate::model::AsyncHandle).
-  ///
-  /// # Errors
-  /// An `Error::FromAPI` may occur.  In this case, the `Err` variant contains this error
-  /// and gives back ownership of this `Model`.
-  ///
-  ///
-  /// # Examples
-  /// ```
-  /// use gurobi::*;
-  ///
-  /// let mut m = Model::new("model")?;
-  /// let x = add_ctsvar!(m, obj: 2)?;
-  /// let y = add_intvar!(m, bounds: 0..100)?;
-  /// m.add_constr("c0", c!(x <= y - 0.5 ))?;
-  ///
-  /// let handle = match m.optimize_async() {
-  ///   Err((_, e)) => panic!("{}", e),
-  ///   Ok(h) => h
-  /// };
-  ///
-  /// println!("The model has explored {} MIP nodes so far", handle.node_count()?);
-  /// let (m, errors) = handle.join(); // the Model is always returned
-  /// errors?; // optimisation errors - as if Model::optimize were called.
-  ///
-  /// # Ok::<(), Error>(())
-  /// ```
-  pub fn optimize_async(mut self) -> std::result::Result<AsyncHandle, (Model, Error)> {
-    match self.update()
-      .and_then(|_| self.check_apicall(unsafe { ffi::GRBoptimizeasync(self.model) }))
-    {
-      Ok(()) => Ok(AsyncHandle{ model: self }),
-      Err(e) => Err((self, e)),
-    }
-  }
+
 
   /// Optimize the model with a callback function.  This method will always trigger a [`Model::update`].
   /// Note that the callback is `FnMut`, which is safe because the Gurobi API guarantees that callbacks
@@ -1189,25 +1104,151 @@ impl Drop for Model {
   }
 }
 
+/// A handle to an [`AsyncModel`](crate::model::AsyncModel) which is currently solving.
+pub struct AsyncHandle(Model);
+
+impl AsyncHandle {
+  /// Retrieve current the `attr::Status` of the model.
+  pub fn status(&self) -> Result<Status> {
+    self.0.status()
+  }
+
+  /// Retrieve the current `attr::ObjVal` of the model.
+  pub fn obj_val(&self) -> Result<f64> {
+    self.0.get_attr(attr::ObjVal)
+  }
+
+  /// Retrieve the current  `attr::ObjBound` of the model.
+  pub fn obj_bound(&self) -> Result<f64> {
+    self.0.get_attr(attr::ObjBound)
+  }
+
+  /// Retrieve the current `attr::IterCount` of the model.
+  pub fn iter_count(&self) -> Result<f64> {
+    self.0.get_attr(attr::IterCount)
+  }
+
+  /// Retrieve the current `attr::BarIterCount` of the model.
+  pub fn bar_iter_count(&self) -> Result<i32> {
+    self.0.get_attr(attr::BarIterCount)
+  }
+
+  /// Retrieve the current `attr::NodeCount` of the model.
+  pub fn node_count(&self) -> Result<f64> {
+    self.0.get_attr(attr::NodeCount)
+  }
+
+  /// Wait for optimisation to finish.
+  ///
+  /// # Errors
+  /// An [`Error::FromAPI`] may occur during optimisation, in which case it is stored in the `Result`.
+  pub fn join(self) -> (AsyncModel, Result<()>) {
+    let errors = self.0.check_apicall(unsafe { ffi::GRBsync(self.0.model) });
+    (AsyncModel(self.0), errors)
+  }
+}
+
+/// A wrapper around [`Model`] that supports async optimisation in the background.
+///
+///  From the Gurobi [manual](https://www.gurobi.com/documentation/9.1/refman/c_optimizeasync.html), regarding solving models asynchronously:
+///
+/// *"[modifying or performing non-permitted] calls on the running model, **or on any other models that were built within the same Gurobi environment**,
+///  will fail with error code `OPTIMIZATION_IN_PROGRESS`."*
+///
+/// For this reason, creating an `AsyncModel` requires a [`Model`] whose [`Env`] wasn't previously been used to construct other models.
+pub struct AsyncModel(Model);
+
+impl AsyncModel {
+  /// # Panics
+  /// This function will panic if the `model` does not have sole ownership over its `Env`.  It therefore requires that
+  /// the `Model` be created with [`Model::new`].
+  /// # Examples
+  ///
+  /// This example panics because `env` has two references - inside `m` and the bound variable in the current scope
+  /// ```should_panic
+  /// use gurobi::*;
+  /// use gurobi::model::AsyncModel;
+  ///
+  /// let env = Env::new("")?;
+  /// let mut m = Model::with_env("model", &env)?;
+  /// let mut m =  AsyncModel::new(m); // panic - env is still in scope
+  /// # Ok::<(), Error>(())
+  /// ```
+  /// This is easily resolved by ensuring `env` is no longer in scope when the `AsyncModel` is created.
+  /// ```
+  /// # use gurobi::*;
+  /// # use gurobi::model::AsyncModel;
+  /// # let env = Env::new("")?;
+  /// let mut m = Model::with_env("model", &env)?;
+  /// drop(env);
+  /// let mut m =  AsyncModel::new(m); // ok
+  /// # Ok::<(), Error>(())
+  /// ```
+  /// This example panics because `m` uses the default `Env`, which is also stored globally.
+  /// `Model`s created with [`Model::new`] can never be made into `AsyncModel`s for this reason.
+  /// ```should_panic
+  /// # use gurobi::*;
+  /// # use gurobi::model::AsyncModel;
+  /// let m = Model::new("model1")?;
+  /// let m =  AsyncModel::new(m); // panic
+  /// # Ok::<(), Error>(())
+  /// ```
+  ///
+  pub fn new(model: Model) -> AsyncModel {
+    if model.env.is_shared() {
+      panic!("Cannot create async model - environment is used in other models");
+    }
+    AsyncModel(model)
+  }
+
+  /// Optimize the model on another thread.  This method will always trigger a [`Model::update`] on the underlying `Model`.
+  ///
+  /// On success, returns an [`AsyncHandle`](crate::model::AsyncHandle) that provides a limited API for model queries.
+  /// The `AsyncModel` can be retrieved by calling [`AsyncHandle::join`](crate::model::AsyncHandle::join).
+  ///
+  /// # Errors
+  /// An `Error::FromAPI` may occur.  In this case, the `Err` variant contains this error
+  /// and gives back ownership of this `AsyncModel`.
+  ///
+  ///
+  /// # Examples
+  /// ```
+  /// use gurobi::*;
+  /// use gurobi::model::AsyncModel;
+  ///
+  /// let mut m = Model::with_env("model", &Env::new("")?)?;
+  /// let x = add_ctsvar!(m, obj: 2)?;
+  /// let y = add_intvar!(m, bounds: 0..100)?;
+  /// m.add_constr("c0", c!(x <= y - 0.5 ))?;
+  /// let m = AsyncModel::new(m);
+  ///
+  /// let handle = match m.optimize() {
+  ///   Err((_, e)) => panic!("{}", e),
+  ///   Ok(h) => h
+  /// };
+  ///
+  /// println!("The model has explored {} MIP nodes so far", handle.node_count()?);
+  /// let (m, errors) = handle.join(); // the AsyncModel is always returned
+  /// errors?; // optimisation errors - as if Model::optimize were called.
+  /// let m: Model = m.into();
+  /// # Ok::<(), Error>(())
+  /// ```
+  pub fn optimize(mut self) -> std::result::Result<AsyncHandle, (Self, Error)> {
+    match self.0.update()
+      .and_then(|_| self.0.check_apicall(unsafe { ffi::GRBoptimizeasync(self.0.model) }))
+    {
+      Ok(()) => Ok(AsyncHandle(self.0)),
+      Err(e) => Err((self, e)),
+    }
+  }
+}
 
 
-/// Add a binary variable to a Model object.  See [`add_var!`] for details.  The `bounds` keyword
-/// is not available here.
-///
-/// # Errors
-/// This macro will return a `Result<Var>`, forwarding any errors from the Gurobi API.
-///
-/// # Example
-/// Usage with all keyword arguments supplied:
-///
-/// [`add_var!`]: macro.add_var.html
-/// ```
-/// use gurobi::*;
-/// let env = Env::new("gurobi.log").unwrap();
-/// let mut model = Model::with_env("Model", &env).unwrap();
-/// add_binvar!(model, name="name", obj=0.0).unwrap();
-/// ```
-
+impl std::convert::From<AsyncModel> for Model {
+  fn from(model: AsyncModel) -> Model {
+    model.0
+  }
+}
 
 #[cfg(test)]
 mod tests {

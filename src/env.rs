@@ -98,7 +98,7 @@ impl EmptyEnv {
     Ok(self)
   }
 
-  /// Start the environment, return the [`Env`] on success.
+  /// Start the environment, returning the [`Env`] on success.
   pub fn start(self) -> Result<Env> {
     self.env.check_apicall(unsafe { ffi::GRBstartenv(self.env.as_mut_ptr()) })?;
     Ok(self.env)
@@ -112,6 +112,9 @@ impl Env {
     self.user_allocated.clone()
   }
 
+  pub(crate) fn is_shared(&self) -> bool {
+    Rc::strong_count(&self.user_allocated) > 1 || Rc::weak_count(&self.user_allocated) > 0
+  }
   /// Wrap user-allocated Gurobi env pointer
   /// # Safety
   /// - `ptr` must be non-null

@@ -95,7 +95,7 @@ pub mod constr;
 pub use env::Env;
 pub use expr::{Expr, LinExpr, QuadExpr, AttachModel, GurobiSum};
 pub use error::{Error, Result};
-pub use model::Model;
+pub use model::{Model};
 pub use constants::{VarType, ConstrSense, ModelSense, SOSType, Status, RelaxType};
 pub use model_object::*;
 pub use callback::{Callback, Where};

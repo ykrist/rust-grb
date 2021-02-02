@@ -29,14 +29,15 @@ struct CallbackData<'a> {
 }
 
 #[allow(unused_variables)]
-extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_void, loc: ffi::c_int,
-                               usrdata: *mut ffi::c_void)
-                               -> ffi::c_int {
+extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel,
+                               cbdata: *mut ffi::c_void,
+                               where_: ffi::c_int,
+                               usrdata: *mut ffi::c_void) -> ffi::c_int {
   let usrdata = unsafe { &mut *(usrdata as *mut CallbackData) };
   let (callback, model) = (&mut usrdata.callback, &usrdata.model);
 
   #[allow(clippy::useless_conversion)]
-  match Callback::new(cbdata, loc.into(), model) {
+  match Callback::new(cbdata, where_.into(), model) {
     Err(err) => {
       println!("failed to create context: {:?}", err);
       -3
@@ -48,12 +49,6 @@ extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel, cbdata: *mut ffi::c_vo
       }
     }
   }
-}
-
-extern "C" fn null_callback_wrapper(_model: *mut ffi::GRBmodel, _cbdata: *mut ffi::c_void, _loc: ffi::c_int,
-                                    _usrdata: *mut ffi::c_void)
-                                    -> ffi::c_int {
-  0
 }
 
 
@@ -389,18 +384,13 @@ impl Model {
     where F: FnMut(Callback) -> Result<()> + 'static
   {
     self.update()?;
-    let usrdata = CallbackData {
+    let mut usrdata = CallbackData {
       model: self,
       callback: &mut callback,
     };
-    self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, callback_wrapper, transmute(&usrdata)) })?;
-
+    self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, Some(callback_wrapper), transmute(&mut usrdata)) })?;
     self.check_apicall(unsafe { ffi::GRBoptimize(self.model) })?;
-
-    // clear callback from the model.
-    // Notice: Rust does not have appropriate mechanism which treats "null" C-style function
-    // pointer.
-    self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, null_callback_wrapper, null_mut()) })
+    self.check_apicall(unsafe { ffi::GRBsetcallbackfunc(self.model, None, null_mut()) })
   }
 
   // /// Wait for a optimization called asynchronously.

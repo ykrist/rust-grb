@@ -585,12 +585,12 @@ extern "C" {
   pub fn GRBmsg(env: *mut GRBenv, message: c_str);
 
   pub fn GRBsetcallbackfunc(model: *mut GRBmodel,
-                            cb: extern "C" fn(*mut GRBmodel, *mut c_void, c_int, *mut c_void) -> c_int,
+                            cb: Option<extern "C" fn(*mut GRBmodel, *mut c_void, c_int, *mut c_void) -> c_int>,
                             usrdata: *mut c_void)
                             -> c_int;
 
   pub fn GRBgetcallbackfunc(model: *mut GRBmodel,
-                            cb: *mut extern "C" fn(*mut GRBmodel, *mut c_void, c_int, *mut c_void) -> c_int)
+                            cb: *mut Option<extern "C" fn(*mut GRBmodel, *mut c_void, c_int, *mut c_void) -> c_int>)
                             -> c_int;
 
   pub fn GRBcbget(cbdata: *mut c_void, where_: c_int, what: c_int, resultP: *mut c_void) -> c_int;

@@ -70,14 +70,6 @@ pub struct Model {
   pub(crate) sos: IdxManager<SOS>,
 }
 
-
-fn convert_to_cstring_ptrs(strings: &[&str]) -> Result<Vec<*const ffi::c_char>> { //FIXME this is UB! pointer may not live long enough
-  strings.iter().map(|&s| {
-    let s = CString::new(s)?;
-    Ok(s.as_ptr())
-  }).collect()
-}
-
 macro_rules! impl_object_list_getter {
     ($name:ident, $t:ty, $attr:ident, $noun:literal) => {
       #[doc="Retrieve the "]
@@ -291,31 +283,6 @@ impl Model {
     Ok((rowinds, colinds, coeff))
   }
 
-
-  /// Helper function to convert LinExpr objects into Compressed Sparse Row (CSR) format
-  /// Assumes variables are ready in Build or Present state
-  fn convert_coeff_to_csr_build(&self, expr: Vec<LinExpr>) -> Result<(Vec<i32>, Vec<i32>, Vec<f64>)> {
-    let expr: Vec<(_, _)> = expr.into_iter().map(|e| e.into_parts()).collect();
-
-    let mut constr_index_end = Vec::with_capacity(expr.len());
-    let mut cumulative_nz = 0;
-
-    for (coeff, _) in &expr {
-      cumulative_nz += coeff.len();
-      constr_index_end.push(cumulative_nz as i32);
-    }
-
-    let mut variable_indices = Vec::with_capacity(cumulative_nz);
-    let mut coeff = Vec::with_capacity(cumulative_nz);
-
-    for (coeffs, _) in expr {
-      for (x, a) in coeffs {
-        variable_indices.push(self.get_index_build(&x)?);
-        coeff.push(a);
-      }
-    }
-    Ok((constr_index_end, variable_indices, coeff))
-  }
 
   /// Create the fixed model associated with the current MIP model.
   ///

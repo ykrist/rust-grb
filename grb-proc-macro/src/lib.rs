@@ -205,7 +205,7 @@ impl ToTokens for ConstrExpr {
 /// c!( EXPR in ..UB )
 /// c!( EXPR in .. )
 /// ```
-/// where EXPR is a valid expression, like `LHS`/`RHS` above.  Additionally, EXPR must be linear,
+/// where `EXPR` is a valid expression, like `LHS` and `RHS` above.  Additionally, `EXPR` must be linear,
 /// although this is not checked at compile-time.
 ///
 /// `LB` and `UB` can be any expression that evaluates to type that can be cast to a `f64` using
@@ -399,19 +399,38 @@ specialised_addvar!(AddIntVarInput, quote!{ grb::Integer }, add_intvar, "Integer
 /// Convienence wrapper around [`Model::add_var`] Add a new variable to a `Model` object.  The macro keyword arguments are
 /// optional.
 ///
-/// # Arguments
-/// The first argument is a `Model` object and the second argument is a [`VarType`] variant.  The `bounds` keyword argument
-/// is of the format `LB..UB` where `LB` and `UB` are the upper and lower bounds of the variable.  `LB` and `UB` can be
-/// left off as well, so `..UB` (short for `-INFINITY..UB`), `LB..` (short for `LB..INFINITY`) and `..` are also valid values.
+/// # Syntax
+/// The syntax of macro is two positional arguments followed by any number of named arguments:
+/// ```text
+/// add_var!(MODEL, VAR_TYPE, NAMED_ARG1: VAL1, NAMED_ARG2: VAL2, ...)
+/// ```
+/// `MODEL` should be an instance of a `Model`.
+///
+/// `VAR_TYPE` should be the variable type - a variant of [`VarType`].
+///
+/// The named arguments are described below.
+///
+/// | Name     | Type                                                      | `Model::add_var` argument |
+/// | -------- | -------------------------------------------------------   | --------------------------- |
+/// | `name`   | Anything that implements `AsRef<str>` (&str, String, etc) | `name`                      |
+/// | `obj`    | Anything that can be cast to a `f64`                      | `obj`                       |
+/// | `bounds` | A range expression, see below                             | `ub` & `lb`                 |
+///
+/// The `bounds` argument takes a value of the form `LB..UB` where `LB` and `UB` are the upper and lower bounds of the variable.
+///  `LB` and `UB` can be   left off as well, so `..UB` (short for `-INFINITY..UB`), `LB..` (short for `LB..INFINITY`) and `..`
+/// are also valid values.
+///
+///
 ///
 /// [`Model::add_var`]: struct.Model.html#method.add_var
 /// [`VarType`]: enum.VarType.html
 /// ```
 /// use grb::*;
 /// let mut model = Model::new("Model").unwrap();
-/// add_var!(model, Continuous, name: "name", obj: 0.0, bounds: -10..10).unwrap();
-/// add_var!(model, Integer, bounds: 0..).unwrap();
-/// add_var!(model, Continuous, name: &format!("X[{}]", 42)).unwrap();
+/// add_var!(model, Continuous, name: "name", obj: 0.0, bounds: -10..10)?;
+/// add_var!(model, Integer, bounds: 0..)?;
+/// add_var!(model, Continuous, name: &format!("X[{}]", 42))?;
+/// # Ok::<(), Error>(())
 /// ```
 ///
 #[proc_macro]

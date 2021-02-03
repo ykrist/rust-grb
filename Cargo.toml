@@ -12,7 +12,8 @@ repository = "https://github.com/ykrist/rust-grb"
 version = "0.1.0"
 
 [dependencies]
-fnv = "1.0"
+fnv = "^1.0"
+anyhow = "^1.0"
 gurobi-sys = {path = "./gurobi-sys", version="0.5.0" }
 grb-proc-macro = {path= "./grb-proc-macro", version="0.1.0" }
 

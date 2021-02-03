@@ -4,69 +4,73 @@ use std::fs::OpenOptions;
 mod example_utils;
 use example_utils::*;
 
-fn main() {
-  let mut env = Env::new("callback.log").unwrap();
-  env.set(param::OutputFlag, 0).unwrap();
-  env.set(param::Heuristics, 0.0).unwrap();
-
+fn main() -> Result<()> {
+  let mut env = Env::new("callback.log")?;
+  env.set(param::OutputFlag, 0)?;
+  env.set(param::Heuristics, 0.0)?;
   let mut model = load_model_file_from_clarg(&env);
+  let vars = model.get_vars()?.to_vec();
 
   let mut callback = {
     let mut lastiter = -INFINITY;
     let mut lastnode = -INFINITY;
-    let vars: Vec<_> = model.get_vars().unwrap().to_vec();
 
     let file = OpenOptions::new().write(true).create(true).open("cb.log").unwrap();
     let mut writer = BufWriter::new(file);
 
-    move |ctx: CbCtx| {
-      use WhereData::*;
-      match ctx.get_where() {
+    move |w: Where| {
+      use Where::*;
+      match w {
         // Periodic polling callback
-        Polling => {
+        Polling(_) => {
           // Ignore polling callback
         }
 
         // Currently performing presolve
-        PreSolve { coldel, rowdel, .. } => {
+        PreSolve(ctx) => {
           println!("@PreSolve");
+          let (coldel, rowdel) = (ctx.col_del()?, ctx.row_del()?);
           if coldel > 0 || rowdel > 0 {
-            println!("**** {} columns and {} rows are removed. ****",
+            println!("**** {} columns and {} rows removed so far. ****",
                      coldel,
                      rowdel);
           }
         }
 
         // Currently in simplex
-        Simplex { ispert, itrcnt, objval, priminf, dualinf } => {
+        Simplex(ctx) => {
+          let itrcnt = ctx.iter_cnt()?;
           if itrcnt - lastiter >= 100.0 {
             lastiter = itrcnt;
-            let ch = match ispert {
+            let ch = match ctx.is_perturbed()? {
               0 => ' ',
               1 => 'S',
               _ => 'P'
             };
             println!("@Simplex: itrcnt={}, objval={}{}, priminf={}, dualinf={}.",
                      itrcnt,
-                     objval,
+                     ctx.obj_val()?,
                      ch,
-                     priminf,
-                     dualinf);
+                     ctx.prim_inf()?,
+                     ctx.dual_inf()?);
           }
         }
 
         // Currently in MIP
-        MIP { solcnt, cutcnt, objbst, objbnd, nodcnt, nodleft: actnodes, itrcnt } => {
+        MIP(ctx) => {
+          let (objbst, objbnd, solcnt, nodcnt) =
+            (ctx.obj_best()?, ctx.obj_bnd()?, ctx.sol_cnt()?, ctx.node_cnt()?);
+
           if nodcnt - lastnode >= 100.0 {
             lastnode = nodcnt;
             println!("@MIP: nodcnt={}, actnodes={}, itrcnt={}, objbst={}, objbnd={}, solcnt={}, cutcnt={}.",
                      nodcnt,
-                     actnodes,
-                     itrcnt,
+                     ctx.node_left()?,
+                     ctx.iter_cnt()?,
                      objbst,
                      objbnd,
                      solcnt,
-                     cutcnt);
+                     ctx.cut_cnt()?);
           }
 
           if (objbst - objbnd).abs() < 0.1 * (1.0 + objbst.abs()) {
@@ -74,47 +78,51 @@ fn main() {
             ctx.terminate();
           }
 
-          if nodcnt >= 10000.0 && solcnt != 0.0 {
+          if nodcnt >= 10000.0 && solcnt != 0 {
             println!("Stop early - 10000 nodes explored");
             ctx.terminate();
           }
         }
 
         // Found a new MIP incumbent
-        MIPSol { solcnt, obj, nodcnt, .. } => {
+        MIPSol(ctx) => {
           println!("@MIPSol: ");
-          let x = ctx.get_solution(vars.as_slice())?;
+          let x = ctx.get_solution(&vars)?;
           println!("**** New solution at node {}, obj {}, sol {}, x[0] = {} ****",
-                   nodcnt,
-                   obj,
-                   solcnt,
+                   ctx.node_cnt()?,
+                   ctx.obj()?,
+                   ctx.sol_cnt()?,
                    x[0]);
         }
 
         // Currently exploring a MIP node
-        MIPNode { .. } => {
+        MIPNode(ctx) => {
           println!("@MIPNode");
           println!("**** NEW NODE! ****");
-          let x = ctx.get_node_rel(vars.as_slice())?;
-          println!("  relaxed solution = {:?}", x);
-          ctx.set_solution(vars.as_slice(), x.as_slice())?;
+          let x = ctx.get_solution(&vars)?;
+          if ctx.status()? == Status::Optimal {
+            println!("  relaxation solution = {:?}", x);
+            let obj = ctx.set_solution(vars.iter().zip(x))?;
+            // Should not return None - we didn't modify the solution
+            assert!(obj.is_some());
+          }
         }
 
         // Currently in barrier
-        Barrier { itrcnt, primobj, dualobj, priminf, dualinf, compl } => {
+        Barrier(ctx) => {
           println!("@Barrier: itrcnt={}, primobj={}, dualobj={}, priminf={}, dualinf={}, compl={}.",
-                   itrcnt,
-                   primobj,
-                   dualobj,
-                   priminf,
-                   dualinf,
-                   compl);
+                   ctx.iter_cnt()?,
+                   ctx.prim_obj()?,
+                   ctx.dual_obj()?,
+                   ctx.prim_inf()?,
+                   ctx.dual_inf()?,
+                   ctx.compl_viol()?)
         }
 
         // Printing a log message
-        Message(message) => {
-          writer.write_all(message.as_bytes()).unwrap();
-          writer.write_all(&[b'\n']).unwrap();
+        Message(ctx) => {
+          writer.write_all(ctx.message()?.as_bytes())?;
+          writer.write_all(&[b'\n'])?;
         }
       }
 
@@ -122,21 +130,22 @@ fn main() {
     }
   };
 
-  model.optimize_with_callback(&mut callback).unwrap();
+  model.optimize_with_callback(&mut callback)?;
 
   println!("\nOptimization complete");
-  if model.get_attr(attr::SolCount).unwrap() == 0 {
+  if model.get_attr(attr::SolCount)? == 0 {
     println!("No solution found. optimization status = {:?}",
              model.status());
   } else {
     println!("Solution found. objective = {}",
-             model.get_attr(attr::ObjVal).unwrap());
+             model.get_attr(attr::ObjVal)?);
     for v in model.get_vars().unwrap() {
-      let vname = model.get_obj_attr(attr::VarName, v).unwrap();
-      let value = model.get_obj_attr(attr::X, v).unwrap();
+      let vname = model.get_obj_attr(attr::VarName, v)?;
+      let value = model.get_obj_attr(attr::X, v)?;
       if value > 1e-10 {
         println!("  {}: {}", vname, value);
       }
     }
   }
+  Ok(())
 }

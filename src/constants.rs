@@ -8,6 +8,7 @@ pub const GRB_INFINITY: f64 = 1e100;
 pub const ERROR_INVALID_ARGUMENT: c_int = 10003;
 pub const ERROR_UNKNOWN_ATTR: c_int = 10004;
 pub const ERROR_DATA_NOT_AVAILABLE: c_int = 10005;
+pub const ERROR_CALLBACK: c_int = 10011;
 
 pub mod callback {
   // Location where the callback called.

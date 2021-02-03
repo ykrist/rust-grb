@@ -80,7 +80,7 @@ mod error;
 pub mod model;
 mod util;
 mod expr;
-mod callback;
+pub mod callback;
 mod constants;
 mod model_object;
 pub mod param;
@@ -95,7 +95,7 @@ pub use error::{Error, Result};
 pub use model::{Model};
 pub use constants::{VarType, ConstrSense, ModelSense, SOSType, Status, RelaxType};
 pub use model_object::*;
-pub use callback::{CbCtx, WhereData, Callback};
+pub use callback::{Where, Callback};
 
 #[doc(inline)]
 pub use VarType::*;

@@ -310,15 +310,15 @@ impl Model {
   /// let mut callback = {
   ///   // Note that `MyCallbackStats` doesn't implement Clone: `Rc<_>` makes a cheap pointer copy
   ///   let stats = stats.clone();
-  ///   move |ctx : CbCtx| {
+  ///   // `move` moves the `stats` clone we just made into the closure
+  ///   move |w : Where| {
   ///     // This should never panic - `callback` runs single-threaded
   ///     let stats: &mut MyCallbackStats = &mut *stats.borrow_mut();
-  ///     match ctx.get_where() {
-  ///       WhereData::Polling => println!("in polling: callback has been called {} times", stats.ncalls),
-  ///       _ => {}
+  ///     if let Where::Polling(_) = w {
+  ///       println!("in polling: callback has been called {} times", stats.ncalls);
   ///     }
   ///     stats.ncalls += 1;
-  ///     Ok::<(), Error>(()) // no uses of ? operator, so require a type annotation for error type
+  ///     Ok(())
   ///  }
   /// };
   ///
@@ -339,10 +339,9 @@ impl Model {
   /// }
   ///
   /// impl Callback for MyCallbackStats {
-  ///   fn callback(&mut self, ctx: CbCtx) -> Result<()> {
-  ///     match ctx.get_where() {
-  ///       WhereData::Polling => println!("in polling: callback has been called {} times", self.ncalls),
-  ///       _ => {}
+  ///   fn callback(&mut self, w: Where) -> callback::CbResult {
+  ///     if let Where::Polling(_) = w {
+  ///       println!("in polling: callback has been called {} times", self.ncalls);
   ///     }
   ///     self.ncalls += 1;
   ///     Ok(())
@@ -368,7 +367,7 @@ impl Model {
     let nvars = self.get_attr(attr::NumVars)? as usize;
     let mut usrdata = UserCallbackData {
       model: self,
-      cb_obj: callback,
+      cb_obj:  callback,
       nvars,
     };
 

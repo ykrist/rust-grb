@@ -9,6 +9,7 @@ use crate::expr::{LinExpr, QuadExpr};
 /// Instead, it should be passed to [`Model::add_constr`](crate::Model::add_constr) or [`Model::add_constrs`](crate::Model::add_constrs).
 ///
 /// Usually created with an invocation of `c!(...)`.
+#[derive(Clone)]
 pub struct IneqExpr {
   pub lhs : Expr,
   pub sense: ConstrSense,
@@ -36,6 +37,7 @@ impl IneqExpr {
 ///
 /// Usually created with an invocation of `c!(...)`.
 /// Note that `expr` must be linear.
+#[derive(Clone)]
 pub struct RangeExpr {
   pub expr: Expr,
   pub ub : f64,

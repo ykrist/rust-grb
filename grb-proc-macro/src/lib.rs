@@ -163,9 +163,69 @@ impl ToTokens for ConstrExpr {
 }
 
 
-/// A proc-macro for creating [`constr::ConstrExpr`] objects.
+/// A proc-macro for creating constraint objects.
 ///
-/// The syntax is `c!( lhs CMP rhs )` where `CMP` is one of: `==`, `>=` or `<=`.
+/// # Syntax
+/// ## Inequality constraints
+/// To create an `IneqExpr` object for a linear or quadratic constraint, the syntax is
+/// ```text
+/// c!( LHS CMP RHS )
+/// ```
+/// `LHS` and `RHS` should be valid algebraic expressions involving `Var` objects and numeric constants.
+/// For example, if `x`, `y` and `z` are `Var` objects and `vars` is an `Vec<Var>` objects, these are valid:
+/// ```
+/// # use grb::*;
+/// # fn f(x: Var, y: Var, z: Var, vars: Vec<Var>){
+///   c!(vars.iter().grb_sum() == x );
+///   c!( x + 1/2 == 1.4*y - 2*z );
+///   c!( 2*x >= z*y );
+///   c!( 2*x >= 7*(z*y) ); // note the brackets on the non-linear term when a coefficient is present
+/// # }
+/// ```
+/// but the following are not:
+/// ```compile_fail
+/// # use grb::*;
+/// # fn f(x: Var, y: Var, z: Var){
+///   c!(vars.iter().sum() == x ); // cannot infer type on sum() call
+///   c!( 2*x >= z >= y ); // chained comparison
+///   c!( 2*x >= 7*z*y ); // no brackets around var*var when a coefficient is present
+/// # }
+/// ```
+/// The macro expands `c!( LHS == RHS )` to:
+/// ```
+/// # use grb::*;
+/// # let LHS = 0;
+/// # let RHS = 0;
+/// constr::IneqExpr {
+///   lhs: Expr::from(LHS),
+///   sense: ConstrSense::Equal,
+///   rhs: Expr::from(RHS),
+/// }
+///
+/// ```
+///
+/// ## Range constraints
+/// To create a `RangeExpr` object for a range constraint, use the syntax
+/// ```text
+/// c!( EXPR in LB..UB )
+/// c!( EXPR in LB.. )
+/// c!( EXPR in ..UB )
+/// c!( EXPR in .. )
+/// ```
+/// where EXPR is a valid expression, like `LHS`/`RHS` above.  Additionally, EXPR must be linear,
+/// although this is not checked at compile-time.
+///
+/// `LB` and `UB` can be any expression that evaluates to type that can be cast to a `f64` using
+/// the `as` operator. For example, the following are valid (variables have the meaning as above):
+/// ```
+/// # use grb::*;
+/// # fn f(x: Var, y: Var, z: Var, vars: Vec<Var>){
+///   c!( x - y + 2*z in 0..200 );
+///   c!( x - y + 2*z in 1.. );
+///   c!( x - y in (1.0/3.0)..(1<<4));
+/// # }
+/// ```
+///
 #[proc_macro]
 pub fn c(expr: proc_macro::TokenStream) -> proc_macro::TokenStream {
   let expr = syn::parse_macro_input!(expr as ConstrExpr);

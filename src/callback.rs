@@ -1,3 +1,107 @@
+//! Interface to Gurobi's callback API
+//!
+//! Gurobi allows for user callbacks to be called at different points during a solve.
+//! At each of these points, the user may query or modify the model in different ways.
+//!
+//! This module provides a context handle type for each place at which a callback may be called.
+//! In the Gurobi [manual](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html),
+//! these are represented by the `where` values. The handle types are bundled in the
+//! [`Where`] enum, so to obtain an instance of a particular handle type
+//! in a callback, use pattern matching. For example:
+//! ```
+//! # use grb::*;
+//! fn callback(w: Where) -> callback::CbResult {
+//!   match w {
+//!     Where::PreSolve(ctx) => {/* type of ctx = PreSolveCtx  */ },
+//!     Where::MIPSol(ctx) => {/* type of ctx = MIPCtx  */ },
+//!     _ => {},
+//!   }
+//!   Ok(())
+//! }
+//! ```
+//!
+//! For details on each handle type and its available methods, see the `*Ctx` structs in this module.
+//!
+//! Callbacks can be defined using the [`Callback`] trait on an object, or using a closure.
+//! See [`Model::optimize_with_callback`] for details.
+//!
+//! # Examples
+//! ## Using closures
+//! Because of Rust's lifetime requirements on closures, if you are using large lookup structures within your
+//! callbacks, you should wrap them in a [`std::rc::Rc`]`<`[`std::cell::RefCell`]`<_>>`.  This can be a little
+//! tedious, so if you need to use a stateful callback, so implementing the `Callback` trait is preferred for
+//! callbacks which require state.
+//! ```
+//! use grb::*;
+//! use std::{rc::Rc, cell::RefCell};
+//!
+//! #[derive(Default)]
+//! struct MyCallbackStats {
+//!   ncalls : usize,
+//!   big_data: [u8; 32],
+//! }
+//!
+//! let mut m = Model::new("model")?;
+//! let x = add_ctsvar!(m, obj: 2)?;
+//! let y = add_intvar!(m, bounds: 0..100)?;
+//! m.add_constr("c0", c!(x <= y - 0.5 ))?;
+//!
+//! // Need to put `stats` behind a Rc<RefCell<_>> because of closure lifetimes.
+//! let stats = Rc::new(RefCell::new(MyCallbackStats::default()));
+//!
+//! let mut callback = {
+//!   // Note that `MyCallbackStats` doesn't implement Clone: `Rc<_>` makes a cheap pointer copy
+//!   let stats = stats.clone();
+//!   // `move` moves the `stats` clone we just made into the closure
+//!   move |w : Where| {
+//!     // This should never panic - `callback` runs single-threaded
+//!     let stats: &mut MyCallbackStats = &mut *stats.borrow_mut();
+//!     if let Where::Polling(_) = w {
+//!       println!("in polling: callback has been called {} times", stats.ncalls);
+//!     }
+//!     stats.ncalls += 1;
+//!     Ok(())
+//!  }
+//! };
+//!
+//! m.optimize_with_callback(&mut callback)?;
+//!
+//! # Ok::<(), Error>(())
+//! ```
+//!
+//! ## Using the `Callback` trait
+//! ```
+//! use grb::*;
+//! use std::{rc::Rc, cell::RefCell};
+//!
+//! #[derive(Default)]
+//! struct MyCallbackStats {
+//!   ncalls : usize,
+//!   big_data: [u8; 32],
+//! }
+//!
+//! impl Callback for MyCallbackStats {
+//!   fn callback(&mut self, w: Where) -> callback::CbResult {
+//!     if let Where::Polling(_) = w {
+//!       println!("in polling: callback has been called {} times", self.ncalls);
+//!     }
+//!     self.ncalls += 1;
+//!     Ok(())
+//!   }
+//! }
+//! let mut m = Model::new("model")?;
+//! let x = add_ctsvar!(m, obj: 2)?;
+//! let y = add_intvar!(m, bounds: 0..100)?;
+//! m.add_constr("c0", c!(x <= y - 0.5 ))?;
+//!
+//! // Need to put `stats` behind a Rc<RefCell<_>> because of closure lifetimes.
+//! let mut stats = MyCallbackStats::default();
+//! m.optimize_with_callback(&mut stats)?;
+//!
+//! # Ok::<(), Error>(())
+//! ```
+//!
+
 use gurobi_sys as ffi;
 use std::ptr::null;
 use std::os::raw;
@@ -9,9 +113,77 @@ use crate::util;
 use crate::constants::{callback::*, GRB_UNDEFINED, ERROR_CALLBACK};
 use crate::constr::IneqExpr; // used for setting a partial solution in a callback
 
+
+
+
+/// The return type for callbacks, an alias of [`anyhow::Result`].
+///
+/// All callbacks, whether they are implemented as closures, functions or objects
+/// should return this type.  The [`anyhow::Error`] type can be constructed from any
+/// [`std::error::Error`], so you can use the `?` operator on any error inside a callback.
 pub type CbResult = anyhow::Result<()>;
 
+/// A trait that allows structs to be used as a callback object
+///
+/// # Examples
+/// This example shows how to store every integer solution found during a MIP solve
+/// ```
+/// use grb::*;
+///
+/// struct CallbackData {
+///   vars: Vec<Var>,
+///   solutions: Vec<Vec<f64>>,
+/// }
+///
+/// impl Callback for CallbackData {
+///   fn callback(&mut self, w: Where) -> callback::CbResult {
+///     match w {
+///       Where::MIPSol(ctx) => {
+///         self.solutions.push(ctx.get_solution(&self.vars)?)
+///       }
+///       _ => {}
+///     }
+///     Ok(())
+///   }
+/// }
+///
+/// ```
+///
+/// ```
+/// use grb::*;
+/// use grb::constr::IneqExpr;
+/// use grb::callback::CbResult;
+///
+/// struct LazyCutSep {
+///   vars: Vec<Var>,
+///   past_cuts : Vec<IneqExpr>,
+/// }
+///
+/// impl LazyCutSep {
+///   fn separate_cuts(&self, solution: &[f64]) -> Vec<IneqExpr> {
+///     /* ... */
+///     # Vec::new()
+///   }
+/// }
+///
+/// impl Callback for LazyCutSep {
+///   fn callback(&mut self, w: Where) -> CbResult {
+///     if let Where::MIPSol(ctx) = w {
+///       let solution = ctx.get_solution(&self.vars)?;
+///       let cuts = self.separate_cuts(&solution);
+///       self.past_cuts.extend_from_slice(&cuts);
+///       for c in cuts {
+///         ctx.add_lazy(c)?;
+///       }
+///     }
+///     Ok(())
+///   }
+/// }
+/// ```
+///
 pub trait Callback {
+  /// The main callback method.  The pattern-matching the [`Where`] will give a
+  /// context object (see module-level docs) which can be used to interact with Gurobi.
   fn callback(&mut self, w: Where) -> CbResult;
 }
 
@@ -22,21 +194,23 @@ impl<F: FnMut(Where) -> CbResult> Callback for F {
 }
 
 /// The C function given to the Gurobi API with `GRBsetcallbackfunc`
-#[allow(unused_variables)]
-pub(crate) extern "C" fn callback_wrapper(model: *mut ffi::GRBmodel,
+pub(crate) extern "C" fn callback_wrapper(_model: *mut ffi::GRBmodel,
                                           cbdata: *mut ffi::c_void,
                                           where_: ffi::c_int,
                                           usrdata: *mut ffi::c_void) -> ffi::c_int {
   use std::panic::{catch_unwind, AssertUnwindSafe};
   let usrdata = unsafe { &mut *(usrdata as *mut UserCallbackData) };
   let (cb_obj, model, nvars) = (&mut usrdata.cb_obj, usrdata.model, usrdata.nvars);
-
   let where_ = Where::new(CbCtx::new(cbdata, where_, model, nvars));
 
   let callback_result = catch_unwind(AssertUnwindSafe(|| {
     let w = match where_ {
       Ok(w) => w,
-      Err(e @ Error::NotYetSupported(_)) => { return Ok(()) }
+      #[allow(unused_variables)]
+      Err(e @ Error::NotYetSupported(_)) => {
+        // eprintln!("{}", e);
+        return Ok(())
+      }
       Err(_) => unreachable!(),
     };
     cb_obj.callback(w)
@@ -111,12 +285,13 @@ macro_rules! impl_add_lazy {
     };
 }
 
-
+/// Callback context object during [`POLLING`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct PollingCtx<'a>(CbCtx<'a>);
 impl<'a> PollingCtx<'a> {
   impl_terminate! {}
 }
 
+/// Callback context object during [`PRESOLVE`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct PreSolveCtx<'a>(CbCtx<'a>);
 impl<'a> PreSolveCtx<'a> {
   impl_terminate! {}
@@ -128,6 +303,7 @@ impl<'a> PreSolveCtx<'a> {
   impl_getter! { coeff_chg, i32, PRESOLVE, PRE_COECHG, "Number of coefficients changed so far." }
 }
 
+/// Callback context object during [`SIMPLEX`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct SimplexCtx<'a>(CbCtx<'a>);
 impl<'a> SimplexCtx<'a> {
   impl_terminate! {}
@@ -139,6 +315,7 @@ impl<'a> SimplexCtx<'a> {
   impl_getter! { is_perturbed, i32, SIMPLEX, SPX_ISPERT, "Is problem currently perturbed?" }
 }
 
+/// Callback context object during [`MIP`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct MIPCtx<'a>(CbCtx<'a>);
 impl<'a> MIPCtx<'a> {
   impl_terminate! {}
@@ -152,6 +329,7 @@ impl<'a> MIPCtx<'a> {
   impl_getter! { iter_cnt, f64, MIP, MIP_ITRCNT, "Current simplex iteration count." }
 }
 
+/// Callback context object during [`MIPSOL`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct MIPSolCtx<'a>(CbCtx<'a>);
 impl<'a> MIPSolCtx<'a> {
   /// Add a new (linear) cutting plane to the MIP model.
@@ -174,6 +352,7 @@ impl<'a> MIPSolCtx<'a> {
   impl_getter! { sol_cnt, i32, MIPSOL, MIPSOL_SOLCNT, "Current count of feasible solutions found." }
 }
 
+/// Callback context object during [`MIPNODE`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct MIPNodeCtx<'a>(CbCtx<'a>);
 impl<'a> MIPNodeCtx<'a> {
   // Optimization status of current MIP node
@@ -208,6 +387,7 @@ impl<'a> MIPNodeCtx<'a> {
   impl_getter! { sol_cnt, i32, MIPNODE, MIPNODE_SOLCNT, "Current count of feasible solutions found." }
 }
 
+/// Callback context object during [`MESSAGE`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct MessageCtx<'a>(CbCtx<'a>);
 impl<'a> MessageCtx<'a> {
   /// The message about to be logged
@@ -218,8 +398,8 @@ impl<'a> MessageCtx<'a> {
   impl_terminate! {}
 }
 
+/// Callback context object during [`BARRIER`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct BarrierCtx<'a>(CbCtx<'a>);
-
 impl<'a> BarrierCtx<'a> {
   impl_terminate! {}
   impl_runtime! {}
@@ -231,7 +411,7 @@ impl<'a> BarrierCtx<'a> {
   impl_getter! { compl_viol, f64, BARRIER, BARRIER_COMPL, "Complementarity violation for current barrier iterate." }
 }
 
-
+/// The argument given to callbacks.
 pub enum Where<'a> {
   Polling(PollingCtx<'a>),
   PreSolve(PreSolveCtx<'a>),

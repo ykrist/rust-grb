@@ -6,7 +6,7 @@ use example_utils::*;
 
 fn main() -> Result<()> {
   let mut env = Env::new("callback.log")?;
-  env.set(param::OutputFlag, 0)?;
+  // env.set(param::OutputFlag, 0)?;
   env.set(param::Heuristics, 0.0)?;
   let mut model = load_model_file_from_clarg(&env);
   let vars = model.get_vars()?.to_vec();

@@ -18,7 +18,7 @@ pub enum Error {
   /// Modelling errors caused by the user, usually by providing quadratic expressions to methods that expect
   /// linear terms such as [`Model::add_constr`](crate::Model::add_constr).
   AlgebraicError(String),
-  /// Gurobi feature not yet supported by this crate.
+  /// Gurobi feature not yet supported by this crate. Currently for internal use only.
   NotYetSupported(String),
 }
 

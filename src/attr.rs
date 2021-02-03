@@ -3,6 +3,8 @@ use gurobi_sys as ffi;
 use std::ffi::CString;
 
 use std::result::Result as StdResult;
+
+#[doc(inline)]
 pub use ffi::{IntAttr, DoubleAttr, CharAttr, StringAttr};
 pub use ffi::IntAttr::*;
 pub use ffi::DoubleAttr::*;

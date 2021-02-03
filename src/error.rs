@@ -18,6 +18,8 @@ pub enum Error {
   /// Modelling errors caused by the user, usually by providing quadratic expressions to methods that expect
   /// linear terms such as [`Model::add_constr`](crate::Model::add_constr).
   AlgebraicError(String),
+  /// Gurobi feature not yet supported by this crate.
+  NotYetSupported(String),
 }
 
 impl From<std::ffi::NulError> for Error {
@@ -35,6 +37,7 @@ impl std::fmt::Display for Error {
       Error::ModelObjectMismatch => f.write_str("Variable or constraint is part of a different model"),
       Error::ModelUpdateNeeded => f.write_str("Variables or constraints have been added/removed.  Call model.update() first."),
       Error::AlgebraicError(s) => f.write_fmt(format_args!("Algebraic error: {}", s)),
+      Error::NotYetSupported(s) => f.write_fmt(format_args!("Not yet supported: {}", s)),
     }
   }
 }

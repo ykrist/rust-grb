@@ -28,43 +28,45 @@
 //! let mut model = Model::new("model1").unwrap();
 //!
 //! // add decision variables with no bounds
-//! let x1 = add_ctsvar!(model, name: "x1", bounds: ..).unwrap();
-//! let x2 = add_intvar!(model, name: "x2", bounds: ..).unwrap();
+//! let x1 = add_ctsvar!(model, name: "x1", bounds: ..)?;
+//! let x2 = add_intvar!(model, name: "x2", bounds: ..)?;
 //!
 //! // add a linear constraints
-//! let c0 = model.add_constr("c0", c!(x1 + 2*x2 >= -14)).unwrap();
-//! let c1 = model.add_constr("c1", c!(-4 * x1 - x2 <= -33)).unwrap();
-//! let c2 = model.add_constr("c2", c!(2* x1 <= 20 - x2)).unwrap();
+//! let c0 = model.add_constr("c0", c!(x1 + 2*x2 >= -14))?;
+//! let c1 = model.add_constr("c1", c!(-4 * x1 - x2 <= -33))?;
+//! let c2 = model.add_constr("c2", c!(2* x1 <= 20 - x2))?;
 //!
 //! // set the objective function.
-//! model.set_objective(8*x1 + x2, Minimize).unwrap();
+//! model.set_objective(8*x1 + x2, Minimize)?;
 //!
 //! // model is lazily updated by default
 //! assert_eq!(model.get_obj_attr(attr::VarName, &x1).unwrap_err(), Error::ModelObjectPending);
-//! assert_eq!(model.get_attr(attr::IsMIP).unwrap(), 0);
-//! model.update().unwrap();
-//! assert_eq!(model.get_attr(attr::IsMIP).unwrap(), 1, "Model is not a MIP.");
+//! assert_eq!(model.get_attr(attr::IsMIP)?, 0);
+//! model.update()?;
+//! assert_eq!(model.get_attr(attr::IsMIP)?, 1, "Model is not a MIP.");
 //!
 //! // write model to the file.
-//! model.write("logfile.lp").unwrap();
+//! model.write("logfile.lp")?;
 //!
 //! // optimize the model
-//! model.optimize().unwrap();
-//! assert_eq!(model.status().unwrap(), Status::Optimal);
+//! model.optimize()?;
+//! assert_eq!(model.status()?, Status::Optimal);
 //!
 //! // Querying a model attribute
-//! assert_eq!(model.get_attr(attr::ObjVal).unwrap() , 59.0);
+//! assert_eq!(model.get_attr(attr::ObjVal)? , 59.0);
 //!
 //! // Querying a model object attributes
-//! assert_eq!(model.get_obj_attr(attr::Slack, &c0).unwrap(), -34.5);
-//! let x1_name = model.get_obj_attr(attr::VarName, &x1).unwrap();
+//! assert_eq!(model.get_obj_attr(attr::Slack, &c0)?, -34.5);
+//! let x1_name = model.get_obj_attr(attr::VarName, &x1)?;
 //!
 //! // Querying an attribute for multiple model objects
-//! let val = model.get_obj_attr_batch(attr::X, &[x1, x2]).unwrap();
+//! let val = model.get_obj_attr_batch(attr::X, &[x1, x2])?;
 //! assert_eq!(val, [6.5, 7.0]);
 //!
 //! // Querying variables by name
-//! assert_eq!(model.get_var_by_name(&x1_name).unwrap(), Some(x1));
+//! assert_eq!(model.get_var_by_name(&x1_name)?, Some(x1));
+//!
+//! # Ok::<(), Error>(())
 //! ```
 //!
 //! ## Errors
@@ -95,6 +97,7 @@ pub use constants::{VarType, ConstrSense, ModelSense, SOSType, Status, RelaxType
 pub use model_object::*;
 pub use callback::{CbCtx, WhereData, Callback};
 
+#[doc(inline)]
 pub use VarType::*;
 pub use ConstrSense::*;
 pub use ModelSense::*;

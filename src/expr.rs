@@ -5,9 +5,8 @@ use std::fmt;
 use std::fmt::Write;
 use fnv::FnvHashMap;
 
-use crate::{Var, Model, Result, Error};
-use crate::attr;
-
+use crate::prelude::*;
+use crate::{Result, Error};
 
 /// An algbraic expression of variables.
 #[derive(Debug, Clone)]
@@ -709,7 +708,6 @@ impl fmt::Debug for Attached<'_, Expr> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{Binary, Model};
 
   macro_rules! make_model_with_vars {
     ($model:ident, $($var:ident),+) => {

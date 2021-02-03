@@ -1,10 +1,10 @@
-use grb::*;
+use grb::prelude::*;
 use std::io::{BufWriter, Write};
 use std::fs::OpenOptions;
 mod example_utils;
 use example_utils::*;
 
-fn main() -> Result<()> {
+fn main() -> grb::Result<()> {
   let mut env = Env::new("callback.log")?;
   // env.set(param::OutputFlag, 0)?;
   env.set(param::Heuristics, 0.0)?;

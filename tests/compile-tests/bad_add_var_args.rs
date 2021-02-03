@@ -1,7 +1,7 @@
-use grb::*;
+use grb::prelude::*;
 mod utils;
 
-fn main() -> Result<()> {
+fn main() -> grb::Result<()> {
   create_model!(_g, m);
   add_var!(m, Binary, name: "x", name: "y")?;
   add_var!(m, Binary, name: "x", unknown: 30)?;

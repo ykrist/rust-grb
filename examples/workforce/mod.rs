@@ -1,6 +1,6 @@
-use grb::*;
+use grb::prelude::*;
 
-pub fn make_model(env: &Env) -> Result<Model> {
+pub fn make_model(env: &Env) -> grb::Result<Model> {
   // Set of worker's names
   let workers = vec!["Amy", "Bob", "Cathy", "Dan", "Ed", "Fred", "Gu"];
 
@@ -38,12 +38,12 @@ pub fn make_model(env: &Env) -> Result<Model> {
     let mut xshift = Vec::new();
     for (shift, &is_avail) in shifts.iter().zip(worker_avail) {
       let vname = format!("{}.{}", worker, shift);
-      xshift.push(model.add_var(&vname, Binary, pay, 0.0, is_avail as f64, &[], &[])?);
+      xshift.push( add_binvar!(model, name: &vname, bounds: 0..is_avail)? );
     }
     x.push(xshift);
   }
   model.update()?;
-  model.set_attr(attr::ModelSense, ModelSense::Minimize.into())?;
+  model.set_attr(attr::ModelSense, Minimize.into())?;
 
   for (s, (shift, &requirement)) in shifts.iter().zip(shift_requirements.iter()).enumerate() {
     model.add_constr(format!("shift-{}", shift).as_str(),

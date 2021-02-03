@@ -1,6 +1,6 @@
-use grb::*;
+use grb::prelude::*;
 
-fn main() -> Result<()> {
+fn main() -> grb::Result<()> {
   // create an empty model.
   let mut model = Model::new("qcp")?;
 

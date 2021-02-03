@@ -137,8 +137,8 @@ impl Into<i32> for ModelSense {
 #[derive(Debug, Copy, Clone)]
 #[repr(i32)]
 pub enum SOSType {
-  SOSType1 = 1,
-  SOSType2 = 2,
+  Ty1 = 1,
+  Ty2 = 2,
 }
 
 impl Into<i32> for SOSType {

@@ -17,9 +17,9 @@ impl Parse for InequalityConstr {
 
     let cmpexpr: syn::ExprBinary = input.parse()?;
     let sense = match cmpexpr.op {
-      Eq(..) => quote! { grb::Equal },
-      Le(..) => quote! { grb::Less },
-      Ge(..) => quote! { grb::Greater },
+      Eq(..) => quote! { grb::ConstrSense::Equal },
+      Le(..) => quote! { grb::ConstrSense::Less },
+      Ge(..) => quote! { grb::ConstrSense::Greater },
       Lt(..) | Gt(..) | Ne(..) => { return Err(Error::new_spanned(cmpexpr.op, "expected >=, <= or ==")); }
       _ => { return Err(Error::new_spanned(cmpexpr, "expression should be a ==, >= or <= comparison")); }
     };
@@ -391,9 +391,9 @@ macro_rules! specialised_addvar {
     };
 }
 
-specialised_addvar!(AddBinVarInput, quote!{ grb::Binary }, add_binvar, "Binary");
-specialised_addvar!(AddCtsVarInput, quote!{ grb::Continuous }, add_ctsvar, "Continuous");
-specialised_addvar!(AddIntVarInput, quote!{ grb::Integer }, add_intvar, "Integer");
+specialised_addvar!(AddBinVarInput, quote!{ grb::VarType::Binary }, add_binvar, "Binary");
+specialised_addvar!(AddCtsVarInput, quote!{ grb::VarType::Continuous }, add_ctsvar, "Continuous");
+specialised_addvar!(AddIntVarInput, quote!{ grb::VarType::Integer }, add_intvar, "Integer");
 
 
 /// Convienence wrapper around [`Model::add_var`] Add a new variable to a `Model` object.  The macro keyword arguments are

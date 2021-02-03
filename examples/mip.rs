@@ -1,6 +1,6 @@
-use grb::*;
+use grb::prelude::*;
 
-fn main() -> Result<()> {
+fn main() -> grb::Result<()> {
   let env = Env::new("mip.log")?;
   let mut model = Model::with_env("mip", &env)?;
 
@@ -13,7 +13,7 @@ fn main() -> Result<()> {
 
   model.add_constr("c0", c!(x + 2 * y + 3 * z <= 4))?;
   model.add_constr("c1", c!(x + y >= 1))?;
-  let (range_var, range_constr) = model.add_range("range", c!(x + 2.6*y in 1..10))?;
+  let (range_var, _range_constr) = model.add_range("range", c!(x + 2.6*y in 1..10))?;
   model.update()?;
   model.set_obj_attr(attr::VarName, &range_var, "range-variable".to_string())?;
   model.optimize()?;

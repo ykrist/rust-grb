@@ -23,7 +23,7 @@
 //! ## Examples
 //!
 //! ```
-//! use grb::*;
+//! use grb::prelude::*;
 //!
 //! let mut model = Model::new("model1").unwrap();
 //!
@@ -40,7 +40,7 @@
 //! model.set_objective(8*x1 + x2, Minimize)?;
 //!
 //! // model is lazily updated by default
-//! assert_eq!(model.get_obj_attr(attr::VarName, &x1).unwrap_err(), Error::ModelObjectPending);
+//! assert_eq!(model.get_obj_attr(attr::VarName, &x1).unwrap_err(), grb::Error::ModelObjectPending);
 //! assert_eq!(model.get_attr(attr::IsMIP)?, 0);
 //! model.update()?;
 //! assert_eq!(model.get_attr(attr::IsMIP)?, 1, "Model is not a MIP.");
@@ -66,7 +66,7 @@
 //! // Querying variables by name
 //! assert_eq!(model.get_var_by_name(&x1_name)?, Some(x1));
 //!
-//! # Ok::<(), Error>(())
+//! # Ok::<(), grb::Error>(())
 //! ```
 //!
 //! ## Errors
@@ -75,40 +75,6 @@
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 
-pub mod env;
-mod error;
-pub mod model;
-mod util;
-mod expr;
-pub mod callback;
-mod constants;
-mod model_object;
-pub mod param;
-pub mod attr;
-pub mod constr;
-
-
-// re-exports
-pub use env::Env;
-pub use expr::{Expr, LinExpr, QuadExpr, AttachModel, GurobiSum};
-pub use error::{Error, Result};
-#[doc(no_inline)]
-pub use model::{Model};
-pub use constants::{VarType, ConstrSense, ModelSense, SOSType, Status, RelaxType};
-pub use model_object::*;
-pub use callback::{Where, Callback};
-
-#[doc(inline)]
-pub use VarType::*;
-pub use ConstrSense::*;
-pub use ModelSense::*;
-pub use SOSType::*;
-pub use RelaxType::*;
-
-/// Large number used in C API
-pub use constants::GRB_INFINITY as INFINITY;
-
-
 /// Returns the version number of Gurobi
 pub fn version() -> (i32, i32, i32) {
   let (mut major, mut minor, mut technical) = (0, 0, 0);
@@ -116,5 +82,44 @@ pub fn version() -> (i32, i32, i32) {
   (major, minor, technical)
 }
 
+// external re-exports
 #[doc(inline)]
 pub use grb_proc_macro::*;
+
+// public modules
+pub mod attr;
+pub mod callback;
+pub mod constr;
+pub mod expr;
+pub mod param;
+pub mod prelude;
+
+// Public re-exports
+pub use expr::Expr;
+
+// private modules and their re-exports
+mod constants;
+pub use constants::{
+  VarType,
+  ModelSense,
+  SOSType,
+  Status,
+  RelaxType,
+  ConstrSense,
+  GRB_INFINITY as INFINITY
+};
+
+mod env;
+pub use env::{Env, EmptyEnv};
+
+mod error;
+pub use error::{Error, Result};
+
+mod model;
+pub use model::{Model, AsyncModel, AsyncHandle};
+
+mod model_object;
+pub use model_object::{Var, QConstr, Constr, SOS, ModelObject};
+
+mod util;
+

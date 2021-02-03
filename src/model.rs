@@ -7,18 +7,15 @@ use std::borrow::Borrow;
 use gurobi_sys as ffi;
 use gurobi_sys::GRBmodel;
 
-use crate::{Error, Result, Env, QuadExpr, LinExpr, Expr};
-use crate::param;
+use crate::prelude::*;
 use crate::param::Param;
-use crate::attr;
 use crate::attr::Attr;
-use crate::callback::{Callback, UserCallbackData, callback_wrapper};
-use crate::model_object::*;
-use crate::{VarType, ModelSense, SOSType, RelaxType, Status};
-use crate::env::AsPtr;
+use crate::callback::{UserCallbackData, callback_wrapper};
+use crate::{Result, Error};
+use crate::model_object::IdxManager;
+use crate::expr::{LinExpr, QuadExpr};
 use crate::constr::{IneqExpr, RangeExpr};
-
-
+use crate::env::AsPtr;
 
 /// Gurobi Model object.
 pub struct Model {
@@ -58,7 +55,7 @@ impl Model {
   ///
   /// # Examples
   /// ```
-  /// # use grb::*;
+  /// # use grb::prelude::*;
   /// let mut env = Env::new("")?;
   /// env.set(param::OutputFlag, 0)?;
   ///
@@ -69,7 +66,7 @@ impl Model {
   /// model.get_env_mut().set(param::OutputFlag, 1)?;
   ///
   /// assert_eq!(env.get(param::OutputFlag).unwrap(), 0); // original env is unchanged
-  /// # Ok::<(), Error>(())
+  /// # Ok::<(), grb::Error>(())
   /// ```
   pub fn with_env(modelname: &str, env: impl Borrow<Env>) -> Result<Model> {
     let env = env.borrow();
@@ -245,16 +242,16 @@ impl Model {
   ///
   /// # Examples
   /// ```
-  /// # use grb::*;
+  /// # use grb::prelude::*;
   /// let mut m = Model::new("model")?;
   /// let x = add_ctsvar!(m);
   ///
-  /// assert_eq!(m.try_clone().err().unwrap(), Error::ModelUpdateNeeded);
+  /// assert_eq!(m.try_clone().err().unwrap(), grb::Error::ModelUpdateNeeded);
   ///
   /// m.update();
   /// assert!(m.try_clone().is_ok());
   ///
-  /// # Ok::<(), Error>(())
+  /// # Ok::<(), grb::Error>(())
   /// ```
   pub fn update(&mut self) -> Result<()> {
     self.vars.update();
@@ -441,12 +438,12 @@ impl Model {
   ///
   /// # Examples
   /// ```
-  /// # use grb::*;
+  /// # use grb::prelude::*;
   /// let mut m = Model::new("model")?;
   /// let x = add_ctsvar!(m)?;
   /// let y = add_ctsvar!(m)?;
   /// m.add_constr("c1", c!(x <= 1 - y))?;
-  /// # Ok::<(), Error>(())
+  /// # Ok::<(), grb::Error>(())
   /// ```
   pub fn add_constr(&mut self, name: &str, con: IneqExpr) -> Result<Constr> where
   {
@@ -473,7 +470,7 @@ impl Model {
   ///
   /// # Examples
   /// ```
-  /// # use grb::*;
+  /// # use grb::prelude::*;
   /// let mut m = Model::new("model")?;
   /// let x = add_ctsvar!(m)?;
   /// let y = add_ctsvar!(m)?;
@@ -488,7 +485,7 @@ impl Model {
   /// // A Map<_> iterator of (&String, IneqConstr)
   /// let more_constraints = (0..10).map(|i| (&more_constraints_names[i], c!(x >= i*y )));
   /// m.add_constrs(more_constraints)?;
-  /// # Ok::<(), Error>(())
+  /// # Ok::<(), grb::Error>(())
   /// ```
   pub fn add_constrs<'a, I, N>(&mut self, constr_with_names: I) -> Result<Vec<Constr>> where
     N: AsRef<str> + 'a,
@@ -559,13 +556,13 @@ impl Model {
   ///
   /// # Examples
   /// ```
-  /// # use grb::*;
+  /// # use grb::prelude::*;
   /// let mut m = Model::new("model")?;
   /// let x = add_ctsvar!(m)?;
   /// let y = add_ctsvar!(m)?;
   /// m.add_range("", c!(x - y in 0..1))?;
-  /// assert!(matches!(m.add_range("", c!(x*y in 0..1)).unwrap_err(), Error::AlgebraicError(_)));
-  /// # Ok::<(), Error>(())
+  /// assert!(matches!(m.add_range("", c!(x*y in 0..1)).unwrap_err(), grb::Error::AlgebraicError(_)));
+  /// # Ok::<(), grb::Error>(())
   /// ```
   pub fn add_range(&mut self, name: &str, expr: RangeExpr) -> Result<(Var, Constr)> {
     let constrname = CString::new(name)?;
@@ -725,12 +722,12 @@ impl Model {
   ///
   /// # Usage
   /// ```
-  /// use grb::*;
+  /// use grb::prelude::*;
   /// let mut m = Model::new("model").unwrap();
   /// let x = add_binvar!(m).unwrap();
   /// let y = add_binvar!(m).unwrap();
   /// let c = m.add_constr("constraint", c!(x + y == 1)).unwrap();
-  /// assert_eq!(m.get_constr_by_name("constraint").unwrap_err(), Error::ModelUpdateNeeded);
+  /// assert_eq!(m.get_constr_by_name("constraint").unwrap_err(), grb::Error::ModelUpdateNeeded);
   /// m.update().unwrap();
   /// assert_eq!(m.get_constr_by_name("constraint").unwrap(), Some(c));
   /// assert_eq!(m.get_constr_by_name("foo").unwrap(), None);
@@ -1066,22 +1063,22 @@ impl AsyncHandle {
   }
 
   /// Retrieve the current  `attr::ObjBound` of the model.
-  pub fn obj_bound(&self) -> Result<f64> {
+  pub fn obj_bnd(&self) -> Result<f64> {
     self.0.get_attr(attr::ObjBound)
   }
 
   /// Retrieve the current `attr::IterCount` of the model.
-  pub fn iter_count(&self) -> Result<f64> {
+  pub fn iter_cnt(&self) -> Result<f64> {
     self.0.get_attr(attr::IterCount)
   }
 
   /// Retrieve the current `attr::BarIterCount` of the model.
-  pub fn bar_iter_count(&self) -> Result<i32> {
+  pub fn bar_iter_cnt(&self) -> Result<i32> {
     self.0.get_attr(attr::BarIterCount)
   }
 
   /// Retrieve the current `attr::NodeCount` of the model.
-  pub fn node_count(&self) -> Result<f64> {
+  pub fn node_cnt(&self) -> Result<f64> {
     self.0.get_attr(attr::NodeCount)
   }
 
@@ -1103,42 +1100,44 @@ impl AsyncHandle {
 ///  will fail with error code `OPTIMIZATION_IN_PROGRESS`."*
 ///
 /// For this reason, creating an `AsyncModel` requires a [`Model`] whose [`Env`] wasn't previously been used to construct other models.
+///
+/// `Model` implements `From<AsyncModel>`, so you can recover the `Model` using `.into()` (see examples).
 pub struct AsyncModel(Model);
 
 impl AsyncModel {
   /// # Panics
-  /// This function will panic if the `model` does not have sole ownership over its `Env`.  It therefore requires that
-  /// the `Model` be created with [`Model::new`].
+  /// This function will panic if the `model` does not have sole ownership over its `Env`.  This means
+  /// the `Model` cannot be created with [`Model::new`], instead you must use [`Model::with_env`].
   /// # Examples
   ///
   /// This example panics because `env` has two references - inside `m` and the bound variable in the current scope
   /// ```should_panic
-  /// use grb::*;
-  /// use grb::model::AsyncModel;
+  /// use grb::prelude::*;
+  /// use grb::AsyncModel;
   ///
   /// let env = Env::new("")?;
   /// let mut m = Model::with_env("model", &env)?;
   /// let mut m =  AsyncModel::new(m); // panic - env is still in scope
-  /// # Ok::<(), Error>(())
+  /// # Ok::<(), grb::Error>(())
   /// ```
   /// This is easily resolved by ensuring `env` is no longer in scope when the `AsyncModel` is created.
   /// ```
-  /// # use grb::*;
-  /// # use grb::model::AsyncModel;
+  /// # use grb::prelude::*;
+  /// # use grb::AsyncModel;
   /// # let env = Env::new("")?;
   /// let mut m = Model::with_env("model", &env)?;
   /// drop(env);
   /// let mut m =  AsyncModel::new(m); // ok
-  /// # Ok::<(), Error>(())
+  /// # Ok::<(), grb::Error>(())
   /// ```
   /// This example panics because `m` uses the default `Env`, which is also stored globally.
   /// `Model`s created with [`Model::new`] can never be made into `AsyncModel`s for this reason.
   /// ```should_panic
-  /// # use grb::*;
-  /// # use grb::model::AsyncModel;
+  /// # use grb::prelude::*;
+  /// # use grb::AsyncModel;
   /// let m = Model::new("model1")?;
   /// let m =  AsyncModel::new(m); // panic
-  /// # Ok::<(), Error>(())
+  /// # Ok::<(), grb::Error>(())
   /// ```
   ///
   pub fn new(model: Model) -> AsyncModel {
@@ -1154,14 +1153,14 @@ impl AsyncModel {
   /// The `AsyncModel` can be retrieved by calling [`AsyncHandle::join`](crate::model::AsyncHandle::join).
   ///
   /// # Errors
-  /// An `Error::FromAPI` may occur.  In this case, the `Err` variant contains this error
+  /// An `grb::Error::FromAPI` may occur.  In this case, the `Err` variant contains this error
   /// and gives back ownership of this `AsyncModel`.
   ///
   ///
   /// # Examples
   /// ```
-  /// use grb::*;
-  /// use grb::model::AsyncModel;
+  /// use grb::prelude::*;
+  /// use grb::AsyncModel;
   ///
   /// let mut m = Model::with_env("model", &Env::new("")?)?;
   /// let x = add_ctsvar!(m, obj: 2)?;
@@ -1174,11 +1173,11 @@ impl AsyncModel {
   ///   Ok(h) => h
   /// };
   ///
-  /// println!("The model has explored {} MIP nodes so far", handle.node_count()?);
+  /// println!("The model has explored {} MIP nodes so far", handle.node_cnt()?);
   /// let (m, errors) = handle.join(); // the AsyncModel is always returned
   /// errors?; // optimisation errors - as if Model::optimize were called.
-  /// let m: Model = m.into();
-  /// # Ok::<(), Error>(())
+  /// let m: Model = m.into(); // get original Model back
+  /// # Ok::<(), grb::Error>(())
   /// ```
   pub fn optimize(mut self) -> std::result::Result<AsyncHandle, (Self, Error)> {
     match self.0.update()
@@ -1200,7 +1199,7 @@ impl std::convert::From<AsyncModel> for Model {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::*;
+  use crate::prelude::*;
 
   extern crate self as grb;
 

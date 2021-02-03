@@ -9,8 +9,9 @@
 //! [`Where`] enum, so to obtain an instance of a particular handle type
 //! in a callback, use pattern matching. For example:
 //! ```
-//! # use grb::*;
-//! fn callback(w: Where) -> callback::CbResult {
+//! # use grb::prelude::*;
+//! # use grb::callback::CbResult;
+//! fn callback(w: Where) -> CbResult {
 //!   match w {
 //!     Where::PreSolve(ctx) => {/* type of ctx = PreSolveCtx  */ },
 //!     Where::MIPSol(ctx) => {/* type of ctx = MIPCtx  */ },
@@ -32,7 +33,7 @@
 //! tedious, so if you need to use a stateful callback, so implementing the `Callback` trait is preferred for
 //! callbacks which require state.
 //! ```
-//! use grb::*;
+//! use grb::prelude::*;
 //! use std::{rc::Rc, cell::RefCell};
 //!
 //! #[derive(Default)]
@@ -66,12 +67,13 @@
 //!
 //! m.optimize_with_callback(&mut callback)?;
 //!
-//! # Ok::<(), Error>(())
+//! # Ok::<(), grb::Error>(())
 //! ```
 //!
 //! ## Using the `Callback` trait
 //! ```
-//! use grb::*;
+//! use grb::prelude::*;
+//! use grb::callback::CbResult;
 //! use std::{rc::Rc, cell::RefCell};
 //!
 //! #[derive(Default)]
@@ -81,7 +83,7 @@
 //! }
 //!
 //! impl Callback for MyCallbackStats {
-//!   fn callback(&mut self, w: Where) -> callback::CbResult {
+//!   fn callback(&mut self, w: Where) -> CbResult {
 //!     if let Where::Polling(_) = w {
 //!       println!("in polling: callback has been called {} times", self.ncalls);
 //!     }
@@ -98,7 +100,7 @@
 //! let mut stats = MyCallbackStats::default();
 //! m.optimize_with_callback(&mut stats)?;
 //!
-//! # Ok::<(), Error>(())
+//! # Ok::<(), grb::Error>(())
 //! ```
 //!
 
@@ -108,7 +110,7 @@ use std::os::raw;
 use std::iter::{Iterator, IntoIterator};
 use std::borrow::Borrow;
 
-use crate::{Error, Result, Model, Var, INFINITY, Status};
+use crate::{Error, Result, model::Model, Var, INFINITY, Status};
 use crate::util;
 use crate::constants::{callback::*, GRB_UNDEFINED, ERROR_CALLBACK};
 use crate::constr::IneqExpr; // used for setting a partial solution in a callback
@@ -128,7 +130,8 @@ pub type CbResult = anyhow::Result<()>;
 /// # Examples
 /// This example shows how to store every integer solution found during a MIP solve
 /// ```
-/// use grb::*;
+/// use grb::prelude::*;
+/// use grb::callback::CbResult;
 ///
 /// struct CallbackData {
 ///   vars: Vec<Var>,
@@ -136,7 +139,7 @@ pub type CbResult = anyhow::Result<()>;
 /// }
 ///
 /// impl Callback for CallbackData {
-///   fn callback(&mut self, w: Where) -> callback::CbResult {
+///   fn callback(&mut self, w: Where) -> CbResult {
 ///     match w {
 ///       Where::MIPSol(ctx) => {
 ///         self.solutions.push(ctx.get_solution(&self.vars)?)
@@ -146,11 +149,10 @@ pub type CbResult = anyhow::Result<()>;
 ///     Ok(())
 ///   }
 /// }
-///
 /// ```
-///
+/// This example shows how to cache lazy cuts for later use (perhaps added them as hard constraints)
 /// ```
-/// use grb::*;
+/// use grb::prelude::*;
 /// use grb::constr::IneqExpr;
 /// use grb::callback::CbResult;
 ///

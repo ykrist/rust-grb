@@ -1,9 +1,9 @@
 //! This module contains the structs passed to the [`Model::add_constr(s)`](crate::Model::add_constr) and [`Model::add_range(s)`](crate::Model::add_constr) methods.
 //!
 //! The structs themselves are usually constructed using the [`c!(...)`](crate::c) macro.
-use crate::{Expr, Result, ConstrSense};
+use crate::prelude::*;
+use crate::Result;
 use crate::expr::{LinExpr, QuadExpr};
-
 
 /// A inequality constraint (linear or quadratic).  Creating this object does not automatically add the constraint to a model.
 /// Instead, it should be passed to [`Model::add_constr`](crate::Model::add_constr) or [`Model::add_constrs`](crate::Model::add_constrs).

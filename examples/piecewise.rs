@@ -1,19 +1,18 @@
-use grb::*;
+use grb::prelude::*;
 
 #[allow(clippy::many_single_char_names)]
-fn main() {
-  let env = Env::new("piecewise.log").unwrap();
-  let mut model = Model::with_env("piecewise", &env).unwrap();
+fn main() -> grb::Result<()> {
+  let mut model = Model::new("piecewise")?;
 
   // Add variables.
-  let x = model.add_var("x", Continuous, 0.0, 0.0, 1.0, &[], &[]).unwrap();
-  let y = model.add_var("y", Continuous, 0.0, 0.0, 1.0, &[], &[]).unwrap();
-  let z = model.add_var("z", Continuous, 0.0, 0.0, 1.0, &[], &[]).unwrap();
-  model.update().unwrap();
+  let x = add_ctsvar!(model, name: "x", bounds: 0..1)?;
+  let y = add_ctsvar!(model, name: "y", bounds: 0..1)?;
+  let z = add_ctsvar!(model, name: "z", bounds: 0..1)?;
+  model.update()?;
 
   // Add constraints.
-  model.add_constr("c0", c!(x + 2* y + 3*z <= 4)).unwrap();
-  model.add_constr("c1", c!(x + y >= 1)).unwrap();
+  model.add_constr("c0", c!(x + 2* y + 3*z <= 4))?;
+  model.add_constr("c1", c!(x + y >= 1))?;
 
   // Set `convex` objective function:
   //  minimize f(x) - y + g(z)
@@ -29,25 +28,25 @@ fn main() {
   let pt_f: Vec<f64> = pt_u.iter().map(|&x| f(x)).collect();
   let pt_g: Vec<f64> = pt_u.iter().map(|&z| g(z)).collect();
 
-  model.set_pwl_obj(&x, pt_u.as_slice(), pt_f.as_slice()).unwrap();
-  model.set_pwl_obj(&z, pt_u.as_slice(), pt_g.as_slice()).unwrap();
-  model.set_obj_attr(attr::Obj, &y, -1.0).unwrap();
+  model.set_pwl_obj(&x, pt_u.as_slice(), pt_f.as_slice())?;
+  model.set_pwl_obj(&z, pt_u.as_slice(), pt_g.as_slice())?;
+  model.set_obj_attr(attr::Obj, &y, -1.0)?;
 
-  optimize_and_print_status(&mut model).unwrap();
+  optimize_and_print_status(&mut model)?;
 
   // Negate piecewise-linear objective function for x.
   // And then the objective function becomes non-convex.
   let pt_f: Vec<f64> = pt_f.into_iter().map(|f| -f).collect();
-  model.set_pwl_obj(&x, pt_u.as_slice(), pt_f.as_slice()).unwrap();
+  model.set_pwl_obj(&x, pt_u.as_slice(), pt_f.as_slice())?;
 
-  optimize_and_print_status(&mut model).unwrap();
+  optimize_and_print_status(&mut model)
 }
 
-fn optimize_and_print_status(model: &mut Model) -> Result<()> {
+fn optimize_and_print_status(model: &mut Model) -> grb::Result<()> {
   model.optimize()?;
 
   println!("IsMIP = {}", model.get_attr(attr::IsMIP)? != 0);
-  let vars = model.get_vars().unwrap();
+  let vars = model.get_vars()?;
   for v in vars {
     let vname = model.get_obj_attr(attr::VarName, v)?;
     let x = model.get_obj_attr(attr::X, v)?;

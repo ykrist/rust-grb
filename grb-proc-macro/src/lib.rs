@@ -1,15 +1,9 @@
-#![allow(unused_imports)] // TODO remove
-#![allow(dead_code)] // TODO remove
+use proc_macro2::{TokenStream as TokenStream2, TokenTree, Ident, Span};
 use quote::{ToTokens, quote, quote_spanned, TokenStreamExt};
 use syn;
-use syn::{Token, Result, Error, ExprBinary, Expr};
-use proc_macro2::{TokenStream as TokenStream2, TokenTree, Ident, Span};
-use syn::parse::{ParseStream, Parse, Parser, discouraged::Speculative};
-use syn::token::Token;
+use syn::{Token, Result, Error, Expr};
+use syn::parse::{ParseStream, Parse};
 use syn::spanned::Spanned;
-use crate::ConstrExpr::{Inequality, Range};
-use syn::group::Group;
-use std::str::FromStr;
 
 struct InequalityConstr {
   lhs : Box<Expr>,
@@ -146,9 +140,9 @@ impl Parse for ConstrExpr {
     };
 
     if in_found {
-      input.parse::<RangeConstr>().map(Range)
+      input.parse::<RangeConstr>().map(ConstrExpr::Range)
     } else {
-      input.parse::<InequalityConstr>().map(Inequality)
+      input.parse::<InequalityConstr>().map(ConstrExpr::Inequality)
     }
   }
 }
@@ -156,8 +150,8 @@ impl Parse for ConstrExpr {
 impl ToTokens for ConstrExpr {
   fn to_tokens(&self, tokens: &mut TokenStream2) {
     match self {
-      Inequality(e) => e.to_tokens(tokens),
-      Range(e) => e.to_tokens(tokens),
+      ConstrExpr::Inequality(e) => e.to_tokens(tokens),
+      ConstrExpr::Range(e) => e.to_tokens(tokens),
     }
   }
 }
@@ -200,8 +194,7 @@ impl ToTokens for ConstrExpr {
 ///   lhs: Expr::from(LHS),
 ///   sense: ConstrSense::Equal,
 ///   rhs: Expr::from(RHS),
-/// }
-///
+/// };
 /// ```
 ///
 /// ## Range constraints

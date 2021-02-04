@@ -348,6 +348,7 @@ impl Model {
   /// Add a decision variable to the model.  This method allows the user to give the entire column (constraint coefficients).
   ///
   /// The [`add_var!`](crate::add_var) macro and its friends are usually preferred.
+  #[allow(clippy::too_many_arguments)]
   pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64, lb: f64, ub: f64, colconstrs: &[Constr],
                  colvals: &[f64])
                  -> Result<Var> {
@@ -489,7 +490,7 @@ impl Model {
   /// ```
   pub fn add_constrs<'a, I, N>(&mut self, constr_with_names: I) -> Result<Vec<Constr>> where
     N: AsRef<str> + 'a,
-    I: Iterator<Item=(&'a N, IneqExpr)>
+    I: IntoIterator<Item=(&'a N, IneqExpr)>
   {
     let constr_with_name = constr_with_names.into_iter();
     let (nconstr, _) = constr_with_name.size_hint();
@@ -848,6 +849,7 @@ impl Model {
   /// * The objective value for the relaxation performed (if `minrelax` is `true`).
   /// * Slack variables for relaxation and related linear/quadratic constraints.
   #[allow(clippy::type_complexity)]
+  #[allow(clippy::too_many_arguments)]
   pub fn feas_relax(&mut self, relaxtype: RelaxType, minrelax: bool, vars: &[Var], lbpen: &[f64], ubpen: &[f64],
                     constrs: &[Constr], rhspen: &[f64])
                     -> Result<(f64, Vec<Var>, Vec<Constr>, Vec<QConstr>)> {

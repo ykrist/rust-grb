@@ -1,6 +1,5 @@
 use proc_macro2::{TokenStream as TokenStream2, TokenTree, Ident, Span};
 use quote::{ToTokens, quote, quote_spanned, TokenStreamExt};
-use syn;
 use syn::{Token, Result, Error, Expr};
 use syn::parse::{ParseStream, Parse};
 use syn::spanned::Spanned;
@@ -114,6 +113,7 @@ impl ToTokens for RangeConstr {
   }
 }
 
+#[allow(clippy::large_enum_variant)]
 enum ConstrExpr {
   Inequality(InequalityConstr),
   Range(RangeConstr)
@@ -231,7 +231,7 @@ trait OptionalArg {
   fn value_mut(&mut self) -> &mut Option<Self::Value>;
 
   fn match_parse(&mut self, name: &syn::Ident, input: &ParseStream) -> Result<bool> {
-    if &name.to_string() == Self::name() {
+    if name == Self::name() {
       input.parse::<Token![:]>()?;
       let v = self.value_mut();
       if v.is_some() { return Err(Error::new_spanned(name, "duplicate argument"))}

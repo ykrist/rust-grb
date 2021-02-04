@@ -23,7 +23,7 @@ pub struct GRBsvec {
   pub val: *mut c_double
 }
 
-
+/// Integer (`i32`) Gurobi parameters
 #[derive(Debug,Copy,Clone)]
 pub enum IntParam {
   SolutionLimit,
@@ -103,6 +103,7 @@ pub enum IntParam {
   Record
 }
 
+/// Double (`f64`) Gurobi parameters
 #[derive(Debug,Copy,Clone)]
 pub enum DoubleParam {
   Cutoff,
@@ -131,6 +132,7 @@ pub enum DoubleParam {
   PreSOS2BigM
 }
 
+/// String Gurobi parameters
 #[derive(Debug,Copy,Clone)]
 pub enum StringParam {
   LogFile,
@@ -141,6 +143,7 @@ pub enum StringParam {
   Dummy
 }
 
+/// Integer (`i32`) Gurobi attributes
 #[derive(Debug,Copy,Clone)]
 pub enum IntAttr {
   NumConstrs,
@@ -188,6 +191,7 @@ pub enum IntAttr {
   VarHintPri
 }
 
+/// `char` Gurobi attributes
 #[derive(Debug,Copy,Clone)]
 pub enum CharAttr {
   VType,
@@ -195,6 +199,7 @@ pub enum CharAttr {
   QCSense
 }
 
+/// Double (`f64`) Gurobi attributes
 #[derive(Debug,Copy,Clone)]
 pub enum DoubleAttr {
   Runtime,
@@ -270,6 +275,7 @@ pub enum DoubleAttr {
   VarHintVal
 }
 
+/// String Gurobi attributes
 #[derive(Debug,Copy,Clone)]
 pub enum StringAttr {
   ModelName,

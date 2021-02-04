@@ -1,4 +1,7 @@
-#![allow(clippy::missing_safety_doc)]
+//! [Gurobi Attributes](https://www.gurobi.com/documentation/9.1/refman/attributes.html) for models,
+//! constraints and variables.
+//!
+//! Setting or querying the wrong attribute for an object will result in an [`Error::FromAPI`](crate::Error::FromAPI).
 use grb_sys as ffi;
 use std::ffi::CString;
 
@@ -6,16 +9,16 @@ use std::result::Result as StdResult;
 
 #[doc(inline)]
 pub use ffi::{IntAttr, DoubleAttr, CharAttr, StringAttr};
-pub use ffi::IntAttr::*;
-pub use ffi::DoubleAttr::*;
-pub use ffi::CharAttr::*;
-pub use ffi::StringAttr::*;
+pub use IntAttr::*;
+pub use DoubleAttr::*;
+pub use CharAttr::*;
+pub use StringAttr::*;
 
 use crate::util::copy_c_str;
 
 // We don't have any &Model here, so the best we can do is give Gurobi error codes.
 // Fortunately, the errors encountered either are from converting String to CString, null pointers
-// and trying to access Char attributes on the model (there are none defined), all Char attributes
+// or trying to access Char attributes on the model (there are none defined), all Char attributes
 // are either Constr or Var attributes.  The Gurobi error codes therefore match up nicely.
 use crate::constants::{ERROR_INVALID_ARGUMENT, ERROR_DATA_NOT_AVAILABLE, ERROR_UNKNOWN_ATTR};
 
@@ -23,14 +26,25 @@ fn check_error_code(code: ffi::c_int) -> StdResult<(), ffi::c_int> {
     if code == 0 { Ok(()) } else { Err(code) }
 }
 
+/// This is an implementation detail and should not be considered as part of the public API of this crate.
+///
+/// # Safety
+/// The trait methods are all require a valid pointer to `GRBmodel`.
 pub trait Attr: Into<CString> {
+    /// This attribute's value type (string, double, int, char)
     type Value;
 
+    /// Query a model attribute
     unsafe fn get(self, model: *mut ffi::GRBmodel) -> StdResult<Self::Value, ffi::c_int>;
+    /// Query a model object (var/constraint) attribute
     unsafe fn get_element(self, model: *mut ffi::GRBmodel, index: i32) -> StdResult<Self::Value, ffi::c_int>;
+    /// Query an attribute of multiple model objects at once
     unsafe fn get_elements(self, model: *mut ffi::GRBmodel, indices: &[i32]) -> StdResult<Vec<Self::Value>, ffi::c_int>;
+    /// Set a model attribute
     unsafe fn set(self, model: *mut ffi::GRBmodel, val: Self::Value) -> StdResult<(), ffi::c_int>;
+    /// Set a model object (var/constraint) attribute
     unsafe fn set_element(self, model: *mut ffi::GRBmodel, index: i32, value: Self::Value) -> StdResult<(), ffi::c_int>;
+    /// Set an attribute of multiple model objects at once
     unsafe fn set_elements(self, model: *mut ffi::GRBmodel, indices: &[i32], values: &[Self::Value]) -> StdResult<(), ffi::c_int>;
 }
 

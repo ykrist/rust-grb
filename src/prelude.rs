@@ -1,3 +1,5 @@
+//! Most commonly used items from this crate bundled for convenient import.
+
 pub use crate::{
   attr,
   callback::{Where, Callback},

@@ -50,120 +50,6 @@ impl Model {
     NEXT_ID.fetch_add(1, Ordering::Relaxed)
   }
 
-  /// Create a new model with the given environment.  The original environment is
-  /// copied by Gurobi.  To modify the environment of the model, use [`Model::get_env_mut`].
-  ///
-  /// # Examples
-  /// ```
-  /// # use grb::prelude::*;
-  /// let mut env = Env::new("")?;
-  /// env.set(param::OutputFlag, 0)?;
-  ///
-  /// let mut model = Model::with_env("Model", &env)?;
-  /// assert_eq!(model.get_param(param::OutputFlag)?,  0);
-  ///
-  /// // Equivalent to model.set_param(param::OutputFlag, 1)?
-  /// model.get_env_mut().set(param::OutputFlag, 1)?;
-  ///
-  /// assert_eq!(env.get(param::OutputFlag).unwrap(), 0); // original env is unchanged
-  /// # Ok::<(), grb::Error>(())
-  /// ```
-  pub fn with_env(modelname: &str, env: impl Borrow<Env>) -> Result<Model> {
-    let env = env.borrow();
-    let modelname = CString::new(modelname)?;
-    let mut model = null_mut();
-    env.check_apicall(unsafe {
-      ffi::GRBnewmodel(env.as_mut_ptr(),
-                       &mut model,
-                       modelname.as_ptr(),
-                       0,
-                       null(),
-                       null(),
-                       null(),
-                       null(),
-                       null())
-    })?;
-    Self::from_raw(env, model)
-  }
-
-  /// Create a new model with the default environment, which is lazily initialised.
-  pub fn new(modelname: &str) -> Result<Model> {
-    Env::GLOBAL_DEFAULT.with(|env|
-      Model::with_env(modelname, env))
-  }
-
-  /// Create the `Model` object from a raw pointer returned by a Gurobi routine.
-  ///
-  /// # Safety
-  /// Here we assume that the `GRBEnv` is tied to a specific `GRBModel`
-  /// In other words, the pointer returned by GRBgetenv(model) is unique to
-  /// that model.  It is explicitly stated in the docs for
-  /// [`GRBnewmodel`](https://www.gurobi.com/documentation/9.1/refman/c_newmodel.html)
-  /// that the environment the user supplies is copied,  but must be assumed for other
-  /// Gurobi routines that create new `GRBmodel`s like
-  /// [`GRBfeasrelax`](https://www.gurobi.com/documentation/9.1/refman/c_feasrelax.html),
-  /// [`GRBfixmodel`](https://www.gurobi.com/documentation/9.1/refman/c_fixmodel.html)
-  /// and [`GRBreadmodel`](https://www.gurobi.com/documentation/9.1/refman/c_readmodel.html)
-  /// This assumption is necessary to prevent a double free when a `Model` object is dropped,
-  /// which frees the `GRBModel` and triggers the drop of a `Env`, which in turn
-  /// frees the `GRBEnv`.  The `*copies_env` tests in this module validate this assumption.
-  fn from_raw(env: &Env, model: *mut ffi::GRBmodel) -> Result<Model> {
-    let env_ptr = unsafe { ffi::GRBgetenv(model) };
-    if env_ptr.is_null() {
-      return Err(Error::FromAPI("Failed to retrieve GRBenv from given model".to_owned(),
-                                2002));
-    }
-    let env = unsafe { Env::new_gurobi_allocated(env, env_ptr) };
-    let id = Model::next_id();
-
-
-    let mut model = Model {
-      ptr: model,
-      id,
-      env,
-      vars: IdxManager::new(id),
-      constrs: IdxManager::new(id),
-      qconstrs: IdxManager::new(id),
-      sos: IdxManager::new(id),
-    };
-
-    let nvars = model.get_attr(attr::NumVars)?;
-    let nconstr = model.get_attr(attr::NumConstrs)?;
-    let nqconstr = model.get_attr(attr::NumQConstrs)?;
-    let sos = model.get_attr(attr::NumSOS)?;
-
-    model.vars = IdxManager::new_with_existing_obj(id, nvars as usize);
-    model.constrs = IdxManager::new_with_existing_obj(id, nconstr as usize);
-    model.qconstrs = IdxManager::new_with_existing_obj(id, nqconstr as usize);
-    model.sos = IdxManager::new_with_existing_obj(id, sos as usize);
-
-    Ok(model)
-  }
-
-  /// Create a copy of the model.  This method is fallible due to the lazy update approach and the underlying
-  /// Gurobi C API, so a [`Clone`] implementation is not provided.
-  ///
-  /// # Errors
-  ///  * [`Error::FromAPI`] if a Gurobi error occurs
-  ///  * [`Error::ModelUpdateNeeded`] if model objects have been added to the model since the last update.
-  pub fn try_clone(&self) -> Result<Model> {
-    if self.model_update_needed() { return Err(Error::ModelUpdateNeeded); }
-
-    let copied = unsafe { ffi::GRBcopymodel(self.ptr) };
-    if copied.is_null() {
-      return Err(Error::FromAPI("Failed to create a copy of the model".to_owned(), 20002));
-    }
-
-    Model::from_raw(&self.env, copied)
-  }
-
-  /// Read a model from a file.  See the [manual](https://www.gurobi.com/documentation/9.1/refman/c_readmodel.html) for accepted file formats.
-  pub fn read_from(filename: &str, env: &Env) -> Result<Model> {
-    let filename = CString::new(filename)?;
-    let mut model = null_mut();
-    env.check_apicall(unsafe { ffi::GRBreadmodel(env.as_mut_ptr(), filename.as_ptr(), &mut model) })?;
-    Self::from_raw(env, model)
-  }
 
   fn model_update_needed(&self) -> bool {
     self.vars.model_update_needed() ||
@@ -216,6 +102,123 @@ impl Model {
       coeff.push(c);
     }
     Ok((rowinds, colinds, coeff))
+  }
+
+  /// Create the `Model` object from a raw pointer returned by a Gurobi routine.
+  ///
+  /// # Safety
+  /// Here we assume that the `GRBEnv` is tied to a specific `GRBModel`
+  /// In other words, the pointer returned by GRBgetenv(model) is unique to
+  /// that model.  It is explicitly stated in the docs for
+  /// [`GRBnewmodel`](https://www.gurobi.com/documentation/9.1/refman/c_newmodel.html)
+  /// that the environment the user supplies is copied,  but must be assumed for other
+  /// Gurobi routines that create new `GRBmodel`s like
+  /// [`GRBfeasrelax`](https://www.gurobi.com/documentation/9.1/refman/c_feasrelax.html),
+  /// [`GRBfixmodel`](https://www.gurobi.com/documentation/9.1/refman/c_fixmodel.html)
+  /// and [`GRBreadmodel`](https://www.gurobi.com/documentation/9.1/refman/c_readmodel.html)
+  /// This assumption is necessary to prevent a double free when a `Model` object is dropped,
+  /// which frees the `GRBModel` and triggers the drop of a `Env`, which in turn
+  /// frees the `GRBEnv`.  The `*copies_env` tests in this module validate this assumption.
+  fn from_raw(env: &Env, model: *mut ffi::GRBmodel) -> Result<Model> {
+    let env_ptr = unsafe { ffi::GRBgetenv(model) };
+    if env_ptr.is_null() {
+      return Err(Error::FromAPI("Failed to retrieve GRBenv from given model".to_owned(),
+                                2002));
+    }
+    let env = unsafe { Env::new_gurobi_allocated(env, env_ptr) };
+    let id = Model::next_id();
+
+
+    let mut model = Model {
+      ptr: model,
+      id,
+      env,
+      vars: IdxManager::new(id),
+      constrs: IdxManager::new(id),
+      qconstrs: IdxManager::new(id),
+      sos: IdxManager::new(id),
+    };
+
+    let nvars = model.get_attr(attr::NumVars)?;
+    let nconstr = model.get_attr(attr::NumConstrs)?;
+    let nqconstr = model.get_attr(attr::NumQConstrs)?;
+    let sos = model.get_attr(attr::NumSOS)?;
+
+    model.vars = IdxManager::new_with_existing_obj(id, nvars as usize);
+    model.constrs = IdxManager::new_with_existing_obj(id, nconstr as usize);
+    model.qconstrs = IdxManager::new_with_existing_obj(id, nqconstr as usize);
+    model.sos = IdxManager::new_with_existing_obj(id, sos as usize);
+
+    Ok(model)
+  }
+
+
+  /// Create a new model with the given environment.  The original environment is
+  /// copied by Gurobi.  To modify the environment of the model, use [`Model::get_env_mut`].
+  ///
+  /// # Examples
+  /// ```
+  /// # use grb::prelude::*;
+  /// let mut env = Env::new("")?;
+  /// env.set(param::OutputFlag, 0)?;
+  ///
+  /// let mut model = Model::with_env("Model", &env)?;
+  /// assert_eq!(model.get_param(param::OutputFlag)?,  0);
+  ///
+  /// // Equivalent to model.set_param(param::OutputFlag, 1)?
+  /// model.get_env_mut().set(param::OutputFlag, 1)?;
+  ///
+  /// assert_eq!(env.get(param::OutputFlag).unwrap(), 0); // original env is unchanged
+  /// # Ok::<(), grb::Error>(())
+  /// ```
+  pub fn with_env(modelname: &str, env: impl Borrow<Env>) -> Result<Model> {
+    let env = env.borrow();
+    let modelname = CString::new(modelname)?;
+    let mut model = null_mut();
+    env.check_apicall(unsafe {
+      ffi::GRBnewmodel(env.as_mut_ptr(),
+                       &mut model,
+                       modelname.as_ptr(),
+                       0,
+                       null(),
+                       null(),
+                       null(),
+                       null(),
+                       null())
+    })?;
+    Self::from_raw(env, model)
+  }
+
+  /// Create a new model with the default environment, which is lazily initialised.
+  pub fn new(modelname: &str) -> Result<Model> {
+    Env::GLOBAL_DEFAULT.with(|env|
+      Model::with_env(modelname, env))
+  }
+
+
+  /// Create a copy of the model.  This method is fallible due to the lazy update approach and the underlying
+  /// Gurobi C API, so a [`Clone`] implementation is not provided.
+  ///
+  /// # Errors
+  ///  * [`Error::FromAPI`] if a Gurobi error occurs
+  ///  * [`Error::ModelUpdateNeeded`] if model objects have been added to the model since the last update.
+  pub fn try_clone(&self) -> Result<Model> {
+    if self.model_update_needed() { return Err(Error::ModelUpdateNeeded); }
+
+    let copied = unsafe { ffi::GRBcopymodel(self.ptr) };
+    if copied.is_null() {
+      return Err(Error::FromAPI("Failed to create a copy of the model".to_owned(), 20002));
+    }
+
+    Model::from_raw(&self.env, copied)
+  }
+
+  /// Read a model from a file.  See the [manual](https://www.gurobi.com/documentation/9.1/refman/c_readmodel.html) for accepted file formats.
+  pub fn read_from(filename: &str, env: &Env) -> Result<Model> {
+    let filename = CString::new(filename)?;
+    let mut model = null_mut();
+    env.check_apicall(unsafe { ffi::GRBreadmodel(env.as_mut_ptr(), filename.as_ptr(), &mut model) })?;
+    Self::from_raw(env, model)
   }
 
 
@@ -301,8 +304,6 @@ impl Model {
     Ok(())
   }
 
-  // /// Wait for a optimization called asynchronously.
-  // pub fn sync(&self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBsync(self.model) }) }
 
   /// Compute an Irreducible Inconsistent Subsystem (IIS) of the model.
   pub fn compute_iis(&mut self) -> Result<()> { self.check_apicall(unsafe { ffi::GRBcomputeIIS(self.ptr) }) }
@@ -347,7 +348,7 @@ impl Model {
 
   /// Add a decision variable to the model.  This method allows the user to give the entire column (constraint coefficients).
   ///
-  /// The [`add_var!`](crate::add_var) macro and its friends are usually preferred.
+  /// The [`add_var!`](crate::add_var) macro and its friends are usually easier to use.
   #[allow(clippy::too_many_arguments)]
   pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64, lb: f64, ub: f64, colconstrs: &[Constr],
                  colvals: &[f64])
@@ -467,7 +468,8 @@ impl Model {
 
   /// Add multiple linear constraints to the model in a single Gurobi API call.
   ///
-  /// Accepts anything that can be turned into an iterator of `(name, constraint)` pairs.
+  /// Accepts anything that can be turned into an iterator of `(name, constraint)` pairs
+  /// where `name : AsRef<str>` (eg `&str` or `String`) and `constraint` is a *linear* [`IneqExpr`].
   ///
   /// # Examples
   /// ```
@@ -477,20 +479,29 @@ impl Model {
   /// let y = add_ctsvar!(m)?;
   ///
   /// let constraints = vec![
-  ///   ("c1", c!(x <= 1 - y )),
-  ///   ("c2", c!(x == 0.5*y )),
+  ///   (&"c1", c!(x <= 1 - y )),
+  ///   (&"c2", c!(x == 0.5*y )),
   /// ];
   ///
-  /// // store names in Vec to ensure they live long enough
+  /// m.add_constrs(constraints)?;
+  ///
+  /// // store owned names in Vec to ensure they live long enough
   /// let more_constraints_names : Vec<_> =  (0..10).map(|i| format!("r{}", i)).collect();
-  /// // A Map<_> iterator of (&String, IneqConstr)
+  /// // A Map iterator of (&String, IneqConstr)
   /// let more_constraints = (0..10).map(|i| (&more_constraints_names[i], c!(x >= i*y )));
   /// m.add_constrs(more_constraints)?;
   /// # Ok::<(), grb::Error>(())
   /// ```
-  pub fn add_constrs<'a, I, N>(&mut self, constr_with_names: I) -> Result<Vec<Constr>> where
-    N: AsRef<str> + 'a,
-    I: IntoIterator<Item=(&'a N, IneqExpr)>
+  ///
+  /// # Errors
+  /// - [`Error::AlgebraicError`] if a nonlinear constraint is given.
+  /// - [`Error::ModelObjectPending`] if some variables haven't yet been added to the model.
+  /// - [`Error::ModelObjectRemoved`] if some variables have been removed from the model.
+  /// - [`Error::ModelObjectMismatch`] if some variables are from a different model.
+  /// - [`Error::FromAPI`] if a Gurobi API error occurs.
+  pub fn add_constrs<'a, I, S>(&mut self, constr_with_names: I) -> Result<Vec<Constr>> where
+    I: IntoIterator<Item=(&'a S, IneqExpr)>,
+    S: AsRef<str> + 'a,
   {
     let constr_with_name = constr_with_names.into_iter();
     let (nconstr, _) = constr_with_name.size_hint();
@@ -549,11 +560,11 @@ impl Model {
   /// the second argument.
   ///
   /// # Errors
-  ///  - [`Error::AlgebraicError`] if the expression in the range constraint is not linear.
-  ///  - [`Error::ModelObjectPending`] if some variables haven't yet been added to the model.
-  ///  - [`Error::ModelObjectRemoved`] if some variables have been removed from the model.
-  ///  - [`Error::ModelObjectMismatch`] if some variables are from a different model.
-  ///  - [`Error::FromAPI`]
+  /// - [`Error::AlgebraicError`] if the expression in the range constraint is not linear.
+  /// - [`Error::ModelObjectPending`] if some variables haven't yet been added to the model.
+  /// - [`Error::ModelObjectRemoved`] if some variables have been removed from the model.
+  /// - [`Error::ModelObjectMismatch`] if some variables are from a different model.
+  /// - [`Error::FromAPI`] if a Gurobi API error occurs.
   ///
   /// # Examples
   /// ```
@@ -562,9 +573,12 @@ impl Model {
   /// let x = add_ctsvar!(m)?;
   /// let y = add_ctsvar!(m)?;
   /// m.add_range("", c!(x - y in 0..1))?;
-  /// assert!(matches!(m.add_range("", c!(x*y in 0..1)).unwrap_err(), grb::Error::AlgebraicError(_)));
+  /// let r = m.add_range("", c!(x*y in 0..1));
+  /// assert!(matches!(r, Err(grb::Error::AlgebraicError(_))));
   /// # Ok::<(), grb::Error>(())
   /// ```
+  ///
+  ///
   pub fn add_range(&mut self, name: &str, expr: RangeExpr) -> Result<(Var, Constr)> {
     let constrname = CString::new(name)?;
     let (expr, lb, ub) = expr.into_normalised()?;
@@ -586,7 +600,15 @@ impl Model {
   }
 
   #[allow(unused_variables)]
-  /// Add range constraints to the model.
+  /// Add multiple range constraints to the model in a single API call, analagous to
+  /// [`Model::add_constrs`].
+  ///
+  /// # Errors
+  /// - [`Error::AlgebraicError`] if the expression a the range constraint is not linear.
+  /// - [`Error::ModelObjectPending`] if some variables haven't yet been added to the model.
+  /// - [`Error::ModelObjectRemoved`] if some variables have been removed from the model.
+  /// - [`Error::ModelObjectMismatch`] if some variables are from a different model.
+  /// - [`Error::FromAPI`] if a Gurobi API error occurs.
   pub fn add_ranges<'a, I, N>(&mut self, ranges_with_names: I) -> Result<(Vec<Var>, Vec<Constr>)> where
     N: AsRef<str> + 'a,
     I: IntoIterator<Item=(&'a N, RangeExpr)>
@@ -642,7 +664,20 @@ impl Model {
     Ok((vars, cons))
   }
 
-  /// add a quadratic constraint to the model.
+  /// Add a quadratic constraint to the model.  See the [manual](https://www.gurobi.com/documentation/9.1/refman/c_addqconstr.html)
+  /// for which quadratic expressions are accepted by Gurobi.
+
+
+
+  /// Add multiple range constraints to the model in a single API call, analagous to
+  /// [`Model::add_constrs`].
+  ///
+  /// # Errors
+  /// - [`Error::AlgebraicError`] if the expression a the range constraint is not linear.
+  /// - [`Error::ModelObjectPending`] if some variables haven't yet been added to the model.
+  /// - [`Error::ModelObjectRemoved`] if some variables have been removed from the model.
+  /// - [`Error::ModelObjectMismatch`] if some variables are from a different model.
+  /// - [`Error::FromAPI`] if a Gurobi API error occurs.
   pub fn add_qconstr(&mut self, name: &str, constraint: IneqExpr) -> Result<QConstr> {
     let (lhs, sense, rhs) = constraint.into_normalised_quad();
     let cname = CString::new(name)?;
@@ -666,7 +701,15 @@ impl Model {
     Ok(self.qconstrs.add_new(self.update_mode_lazy()?))
   }
 
-  /// add Special Order Set (SOS) constraint to the model.
+  /// Add a [Special Order Set (SOS)](https://www.gurobi.com/documentation/9.1/refman/constraints.html#subsubsection:SOSConstraints)
+  /// constraint to the model.
+  ///
+  /// # Errors
+  /// - [`Error::ModelObjectPending`] if some variables haven't yet been added to the model.
+  /// - [`Error::ModelObjectRemoved`] if some variables have been removed from the model.
+  /// - [`Error::ModelObjectMismatch`] if some variables are from a different model.
+  /// - [`Error::InconsistentDims`] if `vars` and `weights` have different lengths.
+  /// - [`Error::FromAPI`] if a Gurobi API error occurs.
   pub fn add_sos(&mut self, vars: &[Var], weights: &[f64], sostype: SOSType) -> Result<SOS> {
     if vars.len() != weights.len() {
       return Err(Error::InconsistentDims);
@@ -688,7 +731,13 @@ impl Model {
     Ok(self.sos.add_new(self.update_mode_lazy()?))
   }
 
-  /// Set the objective function of the model.
+  /// Set the objective function of the model and optimisation direction (min or max).
+  ///
+  /// # Errors
+  /// - [`Error::ModelObjectPending`] if some variables haven't yet been added to the model.
+  /// - [`Error::ModelObjectRemoved`] if some variables have been removed from the model.
+  /// - [`Error::ModelObjectMismatch`] if some variables are from a different model.
+  /// - [`Error::FromAPI`] if a Gurobi API error occurs.
   pub fn set_objective(&mut self, expr: impl Into<Expr>, sense: ModelSense) -> Result<()> {
     let expr: Expr = expr.into();
     self.del_qpterms()?;
@@ -718,9 +767,6 @@ impl Model {
   /// Get a constraint by name.  Returns either a constraint if one was found, or `None` if none were found.
   /// If multiple constraints match, the method returns an arbitary one.
   ///
-  /// # Errors
-  /// Returns an error if the model requires an update,  the `name` cannot be converted to a C-string or a Gurobi error occurs.
-  ///
   /// # Usage
   /// ```
   /// use grb::prelude::*;
@@ -733,6 +779,13 @@ impl Model {
   /// assert_eq!(m.get_constr_by_name("constraint").unwrap(), Some(c));
   /// assert_eq!(m.get_constr_by_name("foo").unwrap(), None);
   /// ```
+  ///
+  /// # Errors
+  /// - [`Error::NulError`] if the `name` cannot be converted to a C-string
+  /// - [`Error::ModelUpdateNeeded`] if a model update is needed.
+  /// - [`Error::ModelObjectRemoved`] if the constraint has been removed from the model.
+  /// - [`Error::ModelObjectMismatch`] if the constraint is from a different model.
+  /// - [`Error::FromAPI`] if a Gurobi API error occurs.
   pub fn get_constr_by_name(&self, name: &str) -> Result<Option<Constr>> {
     if self.constrs.model_update_needed() { return Err(Error::ModelUpdateNeeded); }
     let n = CString::new(name)?;
@@ -745,9 +798,14 @@ impl Model {
     }
   }
 
-  /// Get a variable object by name.  See [`Model.get_constr_by_name`] for details
+  /// Get a variable object by name.  See [`Model::get_constr_by_name`] for details
   ///
-  /// [`Model.get_constr_by_name`]: struct.Model.html#methods.get_constr_by_name
+  /// # Errors
+  /// - [`Error::NulError`] if the `name` cannot be converted to a C-string
+  /// - [`Error::ModelUpdateNeeded`] if a model update is needed.
+  /// - [`Error::ModelObjectRemoved`] if the variable has been removed from the model.
+  /// - [`Error::ModelObjectMismatch`] if the variable is from a different model.
+  /// - [`Error::FromAPI`] if a Gurobi API error occurs.
   pub fn get_var_by_name(&self, name: &str) -> Result<Option<Var>> {
     if self.vars.model_update_needed() { return Err(Error::ModelUpdateNeeded); }
     let n = CString::new(name)?;
@@ -761,12 +819,13 @@ impl Model {
   }
 
 
-  /// Query a Model attribute
+  /// Query a Model attribute.    Attributes (objects with the `Attr` trait) can be found in the [`attr`] module.
   pub fn get_attr<A: Attr>(&self, attr: A) -> Result<A::Value> {
     unsafe { attr.get(self.ptr) }.map_err(|code| self.env.error_from_api(code))
   }
 
-  /// Query a model object attribute (Constr, Var, etc)
+  /// Query a model object attribute (Constr, Var, etc).    Attributes (objects with the `Attr` trait) can be found
+  /// in the [`attr`] module.
   pub fn get_obj_attr<A, E>(&self, attr: A, elem: &E) -> Result<A::Value>
     where
       A: Attr,
@@ -776,7 +835,8 @@ impl Model {
     unsafe { attr.get_element(self.ptr, index) }.map_err(|code| self.env.error_from_api(code))
   }
 
-  /// Query an attribute of multiple model objectis
+  /// Query an attribute of multiple model objects.   Attributes (objects with the `Attr` trait) can be found in the
+  /// [`attr`] module.
   pub fn get_obj_attr_batch<A, E>(&self, attr: A, elem: &[E]) -> Result<Vec<A::Value>>
     where
       A: Attr,
@@ -786,12 +846,37 @@ impl Model {
     unsafe { attr.get_elements(self.ptr, &index) }.map_err(|code| self.env.error_from_api(code))
   }
 
-  /// Set a Model attribute
+  /// Set a model attribute.  Attributes (objects with the `Attr` trait) can be found in the [`attr`] module.
+  ///
+  /// # Example
+  /// ```
+  /// # use grb::prelude::*;
+  /// let mut model = Model::new("")?;
+  /// model.set_attr(attr::ModelName, "model".to_string())?;
+  /// # Ok::<(), grb::Error>(())
+  /// ```
   pub fn set_attr<A: Attr>(&self, attr: A, value: A::Value) -> Result<()> {
     unsafe { attr.set(self.ptr, value) }.map_err(|code| self.env.error_from_api(code))
   }
 
-  /// Set an attribute of a Model object (Const, Var, etc)
+  /// Set an attribute of a Model object (Const, Var, etc).   Attributes (objects with the `Attr` trait) can be found
+  /// in the [`attr`] module.
+  ///
+  /// # Example
+  /// ```
+  /// # use grb::prelude::*;
+  /// let mut model = Model::new("")?;
+  /// let x = add_ctsvar!(model)?;
+  /// let c = model.add_constr("", c!(x <= 1))?;
+  /// model.set_obj_attr(attr::VarName, &x, "x".to_string())?;
+  /// model.set_obj_attr(attr::ConstrName, &c, "c".to_string())?;
+  ///
+  /// let error = model.set_obj_attr(attr::ConstrName, &x, "c".to_string()).unwrap();
+  /// println!("{:?}", error);
+  /// panic!();
+  /// // assert!(matches!(error, Err(grb::Error::FromAPI(_, _))));
+  /// # Ok::<(), grb::Error>(())
+  /// ```
   pub fn set_obj_attr<A, E>(&self, attr: A, elem: &E, value: A::Value) -> Result<()>
     where
       A: Attr,
@@ -801,7 +886,8 @@ impl Model {
     unsafe { attr.set_element(self.ptr, index, value) }.map_err(|code| self.env.error_from_api(code))
   }
 
-  /// Set an attribute of multiple Model objects (Const, Var, etc)
+  /// Set an attribute of multiple Model objects (Const, Var, etc).   Attributes (objects with the `Attr` trait) can be
+  /// found in the [`attr`] module.
   pub fn set_obj_attr_batch<A, E>(&self, attr: A, elem: &[E], values: &[A::Value]) -> Result<()>
     where
       A: Attr,
@@ -814,10 +900,29 @@ impl Model {
     unsafe { attr.set_elements(self.ptr, &indices, values) }.map_err(|code| self.env.error_from_api(code))
   }
 
+
+  /// Set a model parameter.  Parameters (objects with the `Param` trait) can be found in the [`param`] module.
+  ///
+  /// # Example
+  /// ```
+  /// # use grb::prelude::*;
+  /// let mut model = Model::new("")?;
+  /// model.set_param(param::OutputFlag, 0)?;
+  /// # Ok::<(), grb::Error>(())
+  /// ```
   pub fn set_param<P: Param>(&mut self, param: P, value: P::Value) -> Result<()> {
     self.get_env_mut().set(param, value)
   }
 
+  /// Query a model parameter.  Parameters (objects with the `Param` trait) can be found in the [`param`] module.
+  ///
+  /// # Example
+  /// ```
+  /// # use grb::prelude::*;
+  /// let mut model = Model::new("")?;
+  /// assert_eq!(model.get_param(param::LazyConstraints)?, 0);
+  /// # Ok::<(), grb::Error>(())
+  /// ```
   pub fn get_param<P: Param>(&self, param: P) -> Result<P::Value> {
     self.get_env().get(param)
   }
@@ -973,7 +1078,7 @@ impl Model {
 
   impl_object_list_getter!(get_sos, SOS, sos, "SOS constraints");
 
-  /// Remove a variable from the model.
+  /// Remove a variable or constraint from the model.
   pub fn remove<O: ModelObject>(&mut self, item: O) -> Result<()> {
     let lazy = self.update_mode_lazy()?;
     let im = O::idx_manager_mut(self);

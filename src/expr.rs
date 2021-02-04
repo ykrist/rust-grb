@@ -1,4 +1,6 @@
 #![allow(clippy::many_single_char_names)]
+//! Algebraic expressions involving variables used to construct constraints and a helper trait for pretty-printing.
+
 use std::ops::{Add, Sub, Mul, Neg};
 use std::iter::{Sum};
 use std::fmt;
@@ -36,6 +38,7 @@ impl Expr {
     }
   }
 
+  /// Returns false if quadratic terms are present.
   pub fn is_linear(&self) -> bool {
     !matches!(self, Expr::QTerm(..) | Expr::Quad(..))
   }
@@ -120,11 +123,17 @@ macro_rules! impl_all_primitives {
 
 
 impl LinExpr {
-  /// Create an empty linear expression.
+  /// Create new an empty linear expression.
   pub fn new() -> Self {
     LinExpr::default()
   }
 
+  /// Does this expression evaluate (close to) `0.0f64`?
+  ///
+  /// # Example
+  /// ```
+  /// assert!(grb::expr::LinExpr::new().is_empty());
+  /// ```
   pub fn is_empty(&self) -> bool {
     self.offset.abs() < f64::EPSILON && self.coeff.is_empty()
   }
@@ -176,24 +185,32 @@ impl LinExpr {
     self
   }
 
+  /// Remove variable terms whose coefficients are less than or equal to [`f64::EPSILON`].
   pub fn sparsify(&mut self) {
     self.coeff.retain(|_, a| a.abs() > f64::EPSILON);
   }
 }
 
 impl QuadExpr {
+  /// Create a new empty quadratic expression
   pub fn new() -> Self {
     QuadExpr::default()
   }
 
+  /// Does this expression evaluate (close to) `0.0f64`?
   pub fn is_empty(&self) -> bool {
     self.qcoeffs.is_empty() && self.linexpr.is_empty()
   }
 
   #[allow(clippy::type_complexity)]
+  /// Decompose the expression into the quadratic terms and the remaining linear expression.
+  ///
+  /// The quadratic terms are returned in a hashmap mapping the non-linear term to its coefficient.
+  /// The terms are simplified so the hashmap contains at most one of `(x,y)` and `(y,x)`.
   pub fn into_parts(self) -> (FnvHashMap<(Var, Var), f64>, LinExpr) {
     (self.qcoeffs, self.linexpr)
   }
+
   /// Add a linear term into the expression.
   pub fn add_term(&mut self, coeff: f64, var: Var) -> &mut Self {
     self.linexpr.add_term(coeff, var);
@@ -262,6 +279,7 @@ impl QuadExpr {
   /// Returns an iterator over the terms excluding the offset (item type is `(&Var, &f64)`)
   pub fn iter_qterms(&self) -> std::collections::hash_map::Iter<(Var, Var), f64> { self.qcoeffs.iter() }
 
+  /// Remove variable terms whose coefficients are less than or equal to [`f64::EPSILON`].
   pub fn sparsify(&mut self) {
     self.linexpr.sparsify();
     self.qcoeffs.retain(|_, a| a.abs() > f64::EPSILON);
@@ -544,6 +562,7 @@ impl Neg for Expr {
   }
 }
 
+
 impl<A: Into<Expr>> Sum<A> for Expr {
   fn sum<I>(mut iter: I) -> Expr where I: Iterator<Item=A> {
     let mut total = iter.next().map_or(Expr::Constant(0.0), |x| x.into());
@@ -555,26 +574,120 @@ impl<A: Into<Expr>> Sum<A> for Expr {
 }
 
 
-/// Convenience trait for summing over iterators to produce a concrete type.
-/// Analogous to `collect_vec` from the `itertools` crate.
+/// Convenience trait for summing over iterators to produce a single `Expr`.
+///
+/// The [`c!`](c) macro uses `Expr::from` to convert inputs to `Expr` objects.
+/// Because [`Sum`] is generic over the iterator item type, this code
+/// ```compile_fail
+/// # use grb::prelude::*;
+/// let mut model = Model::new("")?;
+/// let x = add_binvar!(model)?;
+/// let y = add_binvar!(model)?;
+/// let z = add_binvar!(model)?;
+/// let vars = [x, y, z];
+/// let constraint = c!( vars.iter().sum() == 1 );
+/// # Ok::<(), grb::Error>(())
+/// ```
+/// produces a compilation error:
+/// ```console
+///   | let constraint = c!( vars.iter().sum() == 1 );
+///   |                      ^^^^ cannot infer type for enum `Expr`
+/// ```
+/// `GurobiSum` specialises the type parameter to work around this, so the following compile:
+/// ```
+/// # use grb::prelude::*;
+/// # let mut model = Model::new("")?;
+/// # let x = add_binvar!(model)?;
+/// # let y = add_binvar!(model)?;
+/// # let z = add_binvar!(model)?;
+/// # let vars = [x, y, z];
+/// let constraint = c!( vars.iter().grb_sum() == 1 );
+/// # Ok::<(), grb::Error>(())
+/// ```
+/// Note that unlike [`Sum`] the iterator bound is [`IntoIterator`] rather than
+/// [`Iterator`], so the `.iter()` call above can be replaced with a borrow:
+/// ```
+/// # use grb::prelude::*;
+/// # let mut model = Model::new("")?;
+/// # let x = add_binvar!(model)?;
+/// # let y = add_binvar!(model)?;
+/// # let z = add_binvar!(model)?;
+/// # let vars = [x, y, z];
+/// let constraint = c!( (&vars).grb_sum() == 1 );
+/// # Ok::<(), grb::Error>(())
+/// ```
+/// This may or may not be more ergonomic.
+///
+/// TLDR: Use `.grb_sum()` instead of `sum()` when summing over variable expression.
 pub trait GurobiSum {
+  /// Additively combine an iterator (or container) of one or more expressions into a single expression.
   fn grb_sum(self) -> Expr;
 }
 
 impl<T,I> GurobiSum for I where
     T: Into<Expr>,
-    I: Iterator<Item=T>
+    I: IntoIterator<Item=T>
 {
-  fn grb_sum(self) -> Expr { self.sum() }
+  fn grb_sum(self) -> Expr { self.into_iter().sum() }
 }
 
-
+/// A helper struct for pretty-printing variables, expressions and constraints
+/// (see the [`AttachModel`] trait)
 pub struct Attached<'a, T> {
-  inner: &'a T,
-  model: &'a Model,
+  pub(crate) inner: &'a T,
+  pub(crate) model: &'a Model,
 }
 
+/// A convenvience trait for displaying variable names with the [`Debug`] trait.
+///
+/// Variable names are not stored inside [`Var`] objects, but instead are queried from the
+/// Gurobi C API.  This means the printing an expression with `println!("{:?}", &expr)`
+/// will give some rather ugly output
+/// ```
+/// # use grb::prelude::*;
+/// let mut model = Model::new("")?;
+/// let x: Vec<_> = (0..5)
+/// .map(|i| add_ctsvar!(model, name: &format!("x[{}]", i)).unwrap() )
+/// .collect();
+///
+/// println!("{:?}", x[0]);
+/// # Ok::<(), grb::Error>(())
+/// ```
+/// Output:
+/// ```shell
+/// Var { id: 0, model_id: 0 }
+/// ```
+/// Printing [`Expr`] and constraints this way quickly gets unreadable.
+///
+/// The `AttachModel` trait provides an `.attach(&model)` method, with simply bundles a `&`[`Model`] with
+/// a reference to the object. The [`Debug`] trait is implemented for this bundled type ([`Attached`])
+/// and properly queries the model for variable names. Because querying the `VarName` of a variable can fail
+/// (for example if the model hasn't been updated since the variable was added or the `.attach(...)` was
+/// called with the wrong model), a formatting error can occur.
+///
+///
+/// ```
+/// # use grb::prelude::*;
+/// # let mut model = Model::new("")?;
+/// # let x: Vec<_> = (0..5)
+/// # .map(|i| add_ctsvar!(model, name: &format!("x[{}]", i)).unwrap() )
+/// # .collect();
+/// model.update()?; // Important! Otherwise, the formatter will panic.
+/// println!("{:?}", x[0].attach(&model));
+/// println!("{:?}", (x[0] + x[1]).attach(&model));
+/// println!("{:?}", c!( x[1..].grb_sum() >= x[0] ).attach(&model));
+/// println!("{:?}", c!( x.grb_sum() in 0..1 ).attach(&model));
+/// # Ok::<(), grb::Error>(())
+/// ```
+/// Output:
+/// ```console
+/// x[0]
+/// x[1] + x[0]
+/// x[4] + x[1] + x[3] + x[2] ≥ x[0]
+/// x[4] + x[1] + x[0] + x[3] + x[2] ∈ [0, 1]
+/// ```
 pub trait AttachModel {
+  /// Attach a model reference to this object for formatting with [`Debug`]
   fn attach<'a>(&'a self, model: &'a Model) -> Attached<'a, Self> where Self: Sized {
     Attached{ inner: self, model }
   }
@@ -583,6 +696,7 @@ pub trait AttachModel {
 impl AttachModel for LinExpr {}
 impl AttachModel for QuadExpr {}
 impl AttachModel for Expr {}
+impl AttachModel for Var {}
 
 fn float_fmt_helper(x: f64, ignore_val: f64) -> (Option<f64>, bool) {
   let positive = x > -f64::EPSILON;
@@ -703,6 +817,11 @@ impl fmt::Debug for Attached<'_, Expr> {
   }
 }
 
+impl fmt::Debug for Attached<'_, Var> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    Expr::from(self.inner).attach(self.model).fmt(f)
+  }
+}
 
 #[allow(unused_variables)]
 #[cfg(test)]

@@ -33,8 +33,9 @@ pub trait ModelObject: ModelObjectPrivate + Debug {
 
 
 macro_rules! create_model_obj_ty {
-    ($t:ident, $model_attr:ident, $delfunc:path) => {
+    ($t:ident, $model_attr:ident, $delfunc:path, $doc:literal) => {
       #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+      #[doc = $doc]
       pub struct $t {
         pub(crate) id : u32,
         pub(crate) model_id: u32,
@@ -67,10 +68,26 @@ macro_rules! create_model_obj_ty {
     };
 }
 
-create_model_obj_ty!(Var, vars, ffi::GRBdelvars);
-create_model_obj_ty!(Constr, constrs, ffi::GRBdelconstrs);
-create_model_obj_ty!(QConstr, qconstrs, ffi::GRBdelqconstrs);
-create_model_obj_ty!(SOS, sos, ffi::GRBdelsos);
+create_model_obj_ty!(Var, vars, ffi::GRBdelvars,
+  "A Gurobi variable.
+
+  To interact with the attributes of a variable, use [`Model::get_obj_attr`] and [`Model::set_obj_attr`]"
+  );
+create_model_obj_ty!(Constr, constrs, ffi::GRBdelconstrs,
+  "A linear constraint added to a [`Model`]
+
+  To interact with the attributes of a constraint, use [`Model::get_obj_attr`] and [`Model::set_obj_attr`]"
+);
+create_model_obj_ty!(QConstr, qconstrs, ffi::GRBdelqconstrs,
+"A quadratic constraint added to a [`Model`]
+
+  To interact with the attributes of a constraint, use [`Model::get_obj_attr`] and [`Model::set_obj_attr`]"
+);
+create_model_obj_ty!(SOS, sos, ffi::GRBdelsos,
+"An SOS constraint added to a [`Model`]
+
+ To interact with the attributes of a constraint, use [`Model::get_obj_attr`] and [`Model::set_obj_attr`]"
+);
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum IdxState {
@@ -111,7 +128,7 @@ pub struct IdxManager<T: Hash + Eq> {
 impl<T: ModelObject> IdxManager<T> {
   pub(crate) fn new_with_existing_obj(model_id: u32, nobj: usize) -> IdxManager<T> {
     let mut im = IdxManager::new(model_id);
-    for id in 0..nobj  {
+    for id in 0..nobj {
       let v = T::from_raw(id as u32, model_id);
       im.order.push(v);
       im.lookup.insert(v, IdxState::Present(id as i32));
@@ -274,7 +291,6 @@ impl<T: ModelObject> IdxManager<T> {
     self.update_model = false;
     self.update_action = UpdateAction::Noop;
   }
-
 }
 
 #[cfg(test)]
@@ -298,49 +314,47 @@ mod tests {
     proptest::collection::vec(s, ..num)
   }
 
-  fn state_machine(actions: Vec<Action>)  {
-      let mut update_mode_lazy = true;
-      let mut vars : Vec<Option<Var>> = vec![None; u8::MAX as usize + 1];
-      let mut idx_manager = IdxManager::new(0);
-      for a in actions {
-        match a {
-          Action::SwitchUpdateMode => {
-            update_mode_lazy = !update_mode_lazy;
-            if !update_mode_lazy {
-              idx_manager.update(); // purge old pending states
-            }
-          },
-          Action::AddVar(i) => {
-            let i = i as usize;
-            let v = vars[i];
-            match v {
-              Some(v) => {
-                if !update_mode_lazy {
-                  idx_manager.get_index_build(&v).unwrap();
-                }
-              },
-              None => {
-                vars[i] = Some(idx_manager.add_new(update_mode_lazy));
+  fn state_machine(actions: Vec<Action>) {
+    let mut update_mode_lazy = true;
+    let mut vars: Vec<Option<Var>> = vec![None; u8::MAX as usize + 1];
+    let mut idx_manager = IdxManager::new(0);
+    for a in actions {
+      match a {
+        Action::SwitchUpdateMode => {
+          update_mode_lazy = !update_mode_lazy;
+          if !update_mode_lazy {
+            idx_manager.update(); // purge old pending states
+          }
+        }
+        Action::AddVar(i) => {
+          let i = i as usize;
+          let v = vars[i];
+          match v {
+            Some(v) => {
+              if !update_mode_lazy {
+                idx_manager.get_index_build(&v).unwrap();
               }
             }
-          }
-          Action::RemoveVar(i) => {
-            let i = i as usize;
-            let v = vars[i];
-            match v {
-              Some(v) => {
-                match idx_manager.remove(v, update_mode_lazy) {
-                  Ok(()) => vars[i] = None,
-                  Err(e) => assert_eq!(e, Error::ModelObjectPending)
-                }
-
-              },
-              None => {}
+            None => {
+              vars[i] = Some(idx_manager.add_new(update_mode_lazy));
             }
           }
         }
+        Action::RemoveVar(i) => {
+          let i = i as usize;
+          let v = vars[i];
+          match v {
+            Some(v) => {
+              match idx_manager.remove(v, update_mode_lazy) {
+                Ok(()) => vars[i] = None,
+                Err(e) => assert_eq!(e, Error::ModelObjectPending)
+              }
+            }
+            None => {}
+          }
+        }
       }
-
+    }
   }
 
   proptest! {
@@ -356,6 +370,4 @@ mod tests {
     state_machine(vec![AddVar(4), SwitchUpdateMode, AddVar(4)]);
     state_machine(vec![AddVar(0), AddVar(1), AddVar(2), RemoveVar(1), SwitchUpdateMode, AddVar(1)]);
   }
-
-
 }

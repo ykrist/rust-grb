@@ -31,13 +31,15 @@ impl ToTokens for InequalityConstr {
   fn to_tokens(&self, tokens: &mut TokenStream2) {
     // let Self{ ref lhs, ref rhs, ref sense } = self;
     let lhs = self.lhs.as_ref();
+    let lhs = quote_spanned!{ lhs.span()=> grb::Expr::from(#lhs) };
     let rhs = self.rhs.as_ref();
+    let rhs = quote_spanned!{ rhs.span()=> grb::Expr::from(#rhs) };
     let sense = &self.sense;
     let ts = quote! {
       grb::constr::IneqExpr{
-        lhs: grb::Expr::from(#lhs),
+        lhs: #lhs,
         sense: #sense,
-        rhs: grb::Expr::from(#rhs),
+        rhs: #rhs,
       }
     };
     ts.to_tokens(tokens);

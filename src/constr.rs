@@ -3,16 +3,19 @@
 //! The structs themselves are usually constructed using the [`c!(...)`](crate::c) macro.
 use crate::prelude::*;
 use crate::Result;
-use crate::expr::{LinExpr, QuadExpr};
-
+use crate::expr::{LinExpr, QuadExpr, AttachModel, Attached};
+use std::fmt;
 /// A inequality constraint (linear or quadratic).  Creating this object does not automatically add the constraint to a model.
 /// Instead, it should be passed to [`Model::add_constr`](crate::Model::add_constr) or [`Model::add_constrs`](crate::Model::add_constrs).
 ///
 /// Usually created with an invocation of `c!(...)`.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct IneqExpr {
+  /// Left-hand side
   pub lhs : Expr,
+  /// Direction of the inequality, or if it the constraint is an equality
   pub sense: ConstrSense,
+  /// Right-hand side
   pub rhs : Expr,
 }
 
@@ -32,15 +35,32 @@ impl IneqExpr {
   }
 }
 
+impl AttachModel for IneqExpr {}
+
+impl fmt::Debug for Attached<'_, IneqExpr> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let cmp = match self.inner.sense {
+      ConstrSense::Less => "≤",
+      ConstrSense::Greater => "≥",
+      ConstrSense::Equal => "=",
+    };
+    f.write_fmt(format_args!("{:?} {} {:?}", self.inner.lhs.attach(self.model),
+                             cmp, self.inner.rhs.attach(self.model) ))
+  }
+}
+
 /// A linear range constraint expression.  Creating this object does not automatically add the constraint to a model.
 /// Instead, it should be passed to [`Model::add_range`](crate::Model::add_range) or [`Model::add_ranges`](crate::Model::add_ranges).
 ///
 /// Usually created with an invocation of `c!(...)`.
 /// Note that `expr` must be linear.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct RangeExpr {
+  /// The linear expression of variables to constrain
   pub expr: Expr,
+  /// The maximum value of the expression
   pub ub : f64,
+  /// The minimum value of the expression
   pub lb : f64,
 }
 
@@ -52,5 +72,14 @@ impl RangeExpr {
     ub -= offset;
     lb -= offset;
     Ok((expr, lb, ub))
+  }
+}
+
+
+impl AttachModel for RangeExpr {}
+
+impl fmt::Debug for Attached<'_, RangeExpr> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.write_fmt(format_args!("{:?} ∈ [{}, {}]", self.inner.expr.attach(self.model), self.inner.lb, self.inner.ub))
   }
 }

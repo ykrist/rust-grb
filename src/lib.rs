@@ -72,8 +72,9 @@
 //! ## Errors
 //! Due to the nature of C APIs, almost every Gurobi routine can return an error.  Unless otherwise stated,
 //! if a method or function returns a [`Result`], the error will be [`Error::FromAPI`].
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
+#![warn(missing_docs)]
+#![warn(missing_crate_level_docs)]
+#![warn(private_doc_tests)]
 
 /// Returns the version number of Gurobi
 pub fn version() -> (i32, i32, i32) {

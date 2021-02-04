@@ -3,6 +3,7 @@ use grb_sys::{c_char, c_int};
 // Constants defined by Gurobi API
 pub const GRB_MAX_STRLEN : usize = 512;
 pub const GRB_UNDEFINED : f64 = 1e101;
+/// A large constant used by Gurobi to represent numeric infinity.
 pub const GRB_INFINITY: f64 = 1e100;
 
 pub const ERROR_INVALID_ARGUMENT: c_int = 10003;
@@ -75,9 +76,10 @@ pub mod callback {
 }
 
 
-/// Type for new variable
+/// Gurobi variable types (see [manual](https://www.gurobi.com/documentation/9.1/refman/variables.html))
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[repr(u8)]
+#[allow(missing_docs)]
 pub enum VarType {
   Binary = b'B',
   Continuous = b'C',
@@ -110,8 +112,11 @@ impl Into<VarType> for c_char {
 #[derive(Debug, Copy, Clone)]
 #[repr(u8)]
 pub enum ConstrSense {
+  /// An equality constraint
   Equal = b'=',
+  /// A greater-than constraint (left-hand side greater than or equal to right-hand side)
   Greater = b'>',
+  /// A less-than constraint (left-hand side less than or equal to right-hand side)
   Less = b'<',
 }
 
@@ -120,11 +125,13 @@ impl Into<c_char> for ConstrSense {
 }
 
 
-/// Sense of new objective function
+/// Sense of objective function, aka direction of optimisation.
 #[derive(Debug, Copy, Clone)]
 #[repr(i32)]
 pub enum ModelSense {
+  /// Minimise the objective function
   Minimize = 1,
+  /// Maximise the objective function
   Maximize = -1,
 }
 
@@ -133,11 +140,13 @@ impl Into<i32> for ModelSense {
 }
 
 
-/// Type of new SOS constraint
+/// Type of [SOS constraint](https://www.gurobi.com/documentation/9.1/refman/constraints.html)
 #[derive(Debug, Copy, Clone)]
 #[repr(i32)]
 pub enum SOSType {
+  /// Type 1 SOS constraint
   Ty1 = 1,
+  /// Type 2 SOS constraint
   Ty2 = 2,
 }
 
@@ -151,23 +160,51 @@ impl Into<i32> for SOSType {
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(i32)]
 pub enum Status {
+  /// Model is loaded, but no solution information is available.
   Loaded = 1,
+  /// Model was solved to optimality (subject to tolerances), and an optimal solution is available.
   Optimal,
+  /// Model was proven to be infeasible.
   Infeasible,
+  /// Model was proven to be either infeasible or unbounded. To obtain a more definitive conclusion,
+  /// set the `DualReductions` parameter to 0 and reoptimize
   InfOrUnbd,
+  /// Model was proven to be unbounded.
+  ///
+  /// *Important note:* an unbounded status indicates the presence of an unbounded ray that allows
+  /// the objective to improve without limit. It says nothing about whether the model has a feasible
+  /// solution. If you require information on feasibility, you should set the objective to zero and
+  /// reoptimize.
   Unbounded,
+  /// Optimal objective for model was proven to be worse than the value specified in the Cutoff parameter.
+  /// No solution information is available.
   CutOff,
+  /// Optimization terminated because the total number of simplex iterations performed exceeded the value
+  /// specified in the `IterationLimit` parameter, or because the total number of barrier iterations
+  /// exceeded the value specified in the `BarIterLimit` parameter.
   IterationLimit,
+  /// Optimization terminated because the total number of branch-and-cut nodes explored exceeded
+  /// the value specified in the `NodeLimit` parameter.
   NodeLimit,
+  /// Optimization terminated because the time expended exceeded the value specified in the `TimeLimit` parameter.
   TimeLimit,
+  /// Optimization terminated because the number of solutions found reached the value specified in
+  /// the `SolutionLimit` parameter.
   SolutionLimit,
+  /// Optimization was terminated by the user.
   Interrupted,
+  /// Optimization was terminated due to unrecoverable numerical difficulties.
   Numeric,
+  /// Unable to satisfy optimality tolerances; a sub-optimal solution is available.
   SubOptimal,
+  /// An asynchronous optimization call was made, but the associated optimization run is not yet complete.
   InProgress,
+  /// User specified an objective limit (a bound on either the best objective or the best bound), and that
+  /// limit has been reached.
+  UserObjLimit
 }
 
-impl From<i32> for Status {
+impl From<i32> for Status { // TODO remove
   fn from(val: i32) -> Status {
     match val {
       1..=14 => unsafe { std::mem::transmute(val) },

@@ -24,14 +24,12 @@
 //! For details on each handle type and its available methods, see the `*Ctx` structs in this module.
 //!
 //! Callbacks can be defined using the [`Callback`] trait on an object, or using a closure.
-//! See [`Model::optimize_with_callback`] for details.
 //!
 //! # Examples
 //! ## Using closures
 //! Because of Rust's lifetime requirements on closures, if you are using large lookup structures within your
 //! callbacks, you should wrap them in a [`std::rc::Rc`]`<`[`std::cell::RefCell`]`<_>>`.  This can be a little
-//! tedious, so if you need to use a stateful callback, so implementing the `Callback` trait is preferred for
-//! callbacks which require state.
+//! tedious, so if you need to use a stateful callback, so implementing the `Callback` trait is preferred.
 //! ```
 //! use grb::prelude::*;
 //! use std::{rc::Rc, cell::RefCell};
@@ -74,7 +72,6 @@
 //! ```
 //! use grb::prelude::*;
 //! use grb::callback::CbResult;
-//! use std::{rc::Rc, cell::RefCell};
 //!
 //! #[derive(Default)]
 //! struct MyCallbackStats {
@@ -96,13 +93,11 @@
 //! let y = add_intvar!(m, bounds: 0..100)?;
 //! m.add_constr("c0", c!(x <= y - 0.5 ))?;
 //!
-//! // Need to put `stats` behind a Rc<RefCell<_>> because of closure lifetimes.
 //! let mut stats = MyCallbackStats::default();
 //! m.optimize_with_callback(&mut stats)?;
 //!
 //! # Ok::<(), grb::Error>(())
 //! ```
-//!
 
 use grb_sys as ffi;
 use std::ptr::null;
@@ -150,7 +145,8 @@ pub type CbResult = anyhow::Result<()>;
 ///   }
 /// }
 /// ```
-/// This example shows how to cache lazy cuts for later use (perhaps added them as hard constraints)
+/// This example shows how to cache lazy cuts for later use (perhaps adding them as hard constraints with
+/// [`Model::add_constrs`] once optimisation has finished)
 /// ```
 /// use grb::prelude::*;
 /// use grb::constr::IneqExpr;
@@ -337,6 +333,8 @@ impl<'a> MIPSolCtx<'a> {
   /// Add a new (linear) cutting plane to the MIP model.
   pub fn add_cut(&self, constr: IneqExpr) -> Result<()> { self.0.add_cut(constr) }
 
+  /// Retrieve the new (integer) solution values for the given variables.  This will query the solution for ALL
+  /// variables, and return the subset provided, so you should avoid calling this method multiple times per callback.
   pub fn get_solution<I, V>(&self, vars: I) -> Result<Vec<f64>> where
     V: Borrow<Var>,
     I: IntoIterator<Item=V>
@@ -357,11 +355,14 @@ impl<'a> MIPSolCtx<'a> {
 /// Callback context object during [`MIPNODE`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct MIPNodeCtx<'a>(CbCtx<'a>);
 impl<'a> MIPNodeCtx<'a> {
-  // Optimization status of current MIP node
+  /// Optimization status of current MIP node. This will query the solution for ALL
+  /// variables, and return the subset provided, so you should avoid calling this method
+  /// multiple times per callback.
   pub fn status(&self) -> Result<Status> {
     self.0.get_int(MIPNODE, MIPNODE_STATUS).map(Status::from)
   }
 
+  /// Get the optimal solution to this MIP node relaxation.
   pub fn get_solution<I,V>(&self, vars: I) -> Result<Vec<f64>> where
     V: Borrow<Var>,
     I: IntoIterator<Item=V>
@@ -414,6 +415,7 @@ impl<'a> BarrierCtx<'a> {
 }
 
 /// The argument given to callbacks.
+#[allow(missing_docs)]
 pub enum Where<'a> {
   Polling(PollingCtx<'a>),
   PreSolve(PreSolveCtx<'a>),

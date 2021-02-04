@@ -5,6 +5,7 @@ edition = "2018"
 license = "MIT"
 homepage = "https://github.com/ykrist/rust-grb/"
 repository = "https://github.com/ykrist/rust-grb/"
+description = "Procedural macros for the grb crate."
 
 [lib]
 proc-macro = true

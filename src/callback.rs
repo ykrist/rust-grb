@@ -104,7 +104,7 @@
 //! ```
 //!
 
-use gurobi_sys as ffi;
+use grb_sys as ffi;
 use std::ptr::null;
 use std::os::raw;
 use std::iter::{Iterator, IntoIterator};

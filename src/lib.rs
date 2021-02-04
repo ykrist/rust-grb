@@ -77,8 +77,8 @@
 
 /// Returns the version number of Gurobi
 pub fn version() -> (i32, i32, i32) {
-  let (mut major, mut minor, mut technical) = (0, 0, 0);
-  unsafe { gurobi_sys::GRBversion(&mut major, &mut minor, &mut technical) };
+  let (mut major, mut minor, mut technical) = (-1, -1, -1);
+  unsafe { grb_sys::GRBversion(&mut major, &mut minor, &mut technical) };
   (major, minor, technical)
 }
 

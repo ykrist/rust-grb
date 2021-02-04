@@ -2,7 +2,7 @@ use std::ffi::CString;
 use std::ptr::null_mut;
 use std::rc::Rc;
 
-use gurobi_sys as ffi;
+use grb_sys as ffi;
 use crate::error::{Error, Result};
 use crate::param::Param;
 use crate::util;

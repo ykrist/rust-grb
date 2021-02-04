@@ -1,5 +1,5 @@
 use std::ffi::CStr;
-use gurobi_sys as ffi;
+use grb_sys as ffi;
 
 /// Copy a raw C-string into a String
 ///

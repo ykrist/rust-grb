@@ -1,5 +1,5 @@
 [package]
-name = "gurobi-sys"
+name = "grb-sys"
 version = "0.5.0"
 edition = "2018"
 build = "build.rs"

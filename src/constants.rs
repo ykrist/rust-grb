@@ -1,4 +1,4 @@
-use gurobi_sys::{c_char, c_int};
+use grb_sys::{c_char, c_int};
 
 // Constants defined by Gurobi API
 pub const GRB_MAX_STRLEN : usize = 512;

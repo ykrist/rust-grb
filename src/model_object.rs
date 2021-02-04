@@ -2,7 +2,7 @@ use std::hash::Hash;
 use fnv::FnvHashMap;
 use std::fmt::Debug;
 
-use gurobi_sys as ffi;
+use grb_sys as ffi;
 use crate::Model;
 use crate::{Error, Result};
 

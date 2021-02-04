@@ -4,8 +4,8 @@ use std::ptr::{null, null_mut};
 use std::sync::atomic::{Ordering, AtomicU32};
 use std::borrow::Borrow;
 
-use gurobi_sys as ffi;
-use gurobi_sys::GRBmodel;
+use grb_sys as ffi;
+use grb_sys::GRBmodel;
 
 use crate::prelude::*;
 use crate::param::Param;

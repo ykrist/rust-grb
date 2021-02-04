@@ -168,7 +168,7 @@ impl ToTokens for ConstrExpr {
 /// `LHS` and `RHS` should be valid algebraic expressions involving `Var` objects and numeric constants.
 /// For example, if `x`, `y` and `z` are `Var` objects and `vars` is an `Vec<Var>` objects, these are valid:
 /// ```
-/// # use grb::*;
+/// # use grb::prelude::*;
 /// # fn f(x: Var, y: Var, z: Var, vars: Vec<Var>){
 ///   c!(vars.iter().grb_sum() == x );
 ///   c!( x + 1/2 == 1.4*y - 2*z );
@@ -187,13 +187,12 @@ impl ToTokens for ConstrExpr {
 /// ```
 /// The macro expands `c!( LHS == RHS )` to:
 /// ```
-/// # use grb::*;
 /// # let LHS = 0;
 /// # let RHS = 0;
-/// constr::IneqExpr {
-///   lhs: Expr::from(LHS),
-///   sense: ConstrSense::Equal,
-///   rhs: Expr::from(RHS),
+/// grb::constr::IneqExpr {
+///   lhs: grb::Expr::from(LHS),
+///   sense: grb::ConstrSense::Equal,
+///   rhs: grb::Expr::from(RHS),
 /// };
 /// ```
 ///
@@ -211,7 +210,7 @@ impl ToTokens for ConstrExpr {
 /// `LB` and `UB` can be any expression that evaluates to type that can be cast to a `f64` using
 /// the `as` operator. For example, the following are valid (variables have the meaning as above):
 /// ```
-/// # use grb::*;
+/// # use grb::prelude::*;
 /// # fn f(x: Var, y: Var, z: Var, vars: Vec<Var>){
 ///   c!( x - y + 2*z in 0..200 );
 ///   c!( x - y + 2*z in 1.. );
@@ -425,12 +424,12 @@ specialised_addvar!(AddIntVarInput, quote!{ grb::VarType::Integer }, add_intvar,
 /// [`Model::add_var`]: struct.Model.html#method.add_var
 /// [`VarType`]: enum.VarType.html
 /// ```
-/// use grb::*;
+/// use grb::prelude::*;
 /// let mut model = Model::new("Model").unwrap();
 /// add_var!(model, Continuous, name: "name", obj: 0.0, bounds: -10..10)?;
 /// add_var!(model, Integer, bounds: 0..)?;
 /// add_var!(model, Continuous, name: &format!("X[{}]", 42))?;
-/// # Ok::<(), Error>(())
+/// # Ok::<(), grb::Error>(())
 /// ```
 ///
 #[proc_macro]

@@ -1,5 +1,5 @@
 #![allow(clippy::missing_safety_doc)]
-use gurobi_sys as ffi;
+use grb_sys as ffi;
 use std::ffi::CString;
 
 use std::result::Result as StdResult;

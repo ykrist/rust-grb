@@ -12,3 +12,5 @@ changes.txt
 *.grbr
 watch_docs.sh
 set_doc_window_id.sh
+src/attribute/attr_enums.rs
+src/parameter/param_enums.rs

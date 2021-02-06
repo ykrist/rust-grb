@@ -23,7 +23,7 @@ fn main() {
 
         let c = {
           let constr = model.get_constrs().unwrap();
-          let iis = model.get_obj_attr_batch(attr::IISConstr, constr).unwrap();
+          let iis = model.get_obj_attr_batch(attr::IISConstr, constr.iter().copied()).unwrap();
 
 
           let iis_constrs: Vec<_> = constr.iter().zip(iis.iter()).filter_map(|(&c, &val)| if val == 1 { Some(c) } else { None }).collect();

@@ -38,12 +38,12 @@ pub fn make_model(env: &Env) -> grb::Result<Model> {
     let mut xshift = Vec::new();
     for (shift, &is_avail) in shifts.iter().zip(worker_avail) {
       let vname = format!("{}.{}", worker, shift);
-      xshift.push( add_binvar!(model, name: &vname, bounds: 0..is_avail)? );
+      xshift.push( add_binvar!(model, name: &vname, bounds: 0..is_avail, obj: pay)? );
     }
     x.push(xshift);
   }
   model.update()?;
-  model.set_attr(attr::ModelSense, Minimize.into())?;
+  model.set_attr(attr::ModelSense, Minimize)?;
 
   for (s, (shift, &requirement)) in shifts.iter().zip(shift_requirements.iter()).enumerate() {
     model.add_constr(format!("shift-{}", shift).as_str(),

@@ -21,3 +21,20 @@ fn conversion_must_succeed() {
   let s2 = unsafe { copy_c_str(cs.as_ptr()) };
   assert!(s1 == s2);
 }
+
+
+pub(crate) trait AsPtr {
+  type Raw;
+  /// Return the underlying Gurobi pointer for [`Model`] and [`Env`] objects
+  ///
+  /// # Safety
+  /// One of the following conditions must hold
+  /// - self is mutable
+  /// - the resulting pointer is passed only to Gurobi library routines
+  unsafe fn as_mut_ptr(&self) -> *mut Self::Raw;
+
+  /// Return the underling Gurobi pointer
+  fn as_ptr(&self) -> *const Self::Raw {
+    (unsafe { self.as_mut_ptr() }) as *const Self::Raw
+  }
+}

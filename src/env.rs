@@ -4,25 +4,10 @@ use std::rc::Rc;
 
 use grb_sys as ffi;
 use crate::error::{Error, Result};
-use crate::param::Param;
+use crate::parameter::{ParamSet, ParamGet};
 use crate::util;
 use ffi::GRBenv;
-
-
-pub(crate) trait AsPtr {
-  /// Return the underling Gurobi pointer
-  ///
-  /// # Safety
-  /// One of the following conditions must hold
-  /// - self is mutable
-  /// - the resulting pointer is passed only to Gurobi library routines
-  unsafe fn as_mut_ptr(&self) -> *mut GRBenv;
-
-  /// Return the underling Gurobi pointer
-  fn as_ptr(&self) -> *const GRBenv {
-    (unsafe { self.as_mut_ptr() }) as *const GRBenv
-  }
-}
+use util::AsPtr;
 
 /// Represents a User-Allocated Gurobi Env
 #[derive(Debug, Eq, PartialEq)]
@@ -31,6 +16,7 @@ pub(crate) struct UserAllocEnv {
 }
 
 impl AsPtr for UserAllocEnv {
+  type Raw = GRBenv;
   unsafe fn as_mut_ptr(&self) -> *mut GRBenv { self.ptr }
 }
 
@@ -57,6 +43,7 @@ pub struct Env{
 
 
 impl AsPtr for Env {
+  type Raw = GRBenv;
   unsafe fn as_mut_ptr(&self) -> *mut GRBenv {
     self.gurobi_allocated.unwrap_or_else(|| self.user_allocated.as_mut_ptr())
   }
@@ -83,12 +70,12 @@ pub struct EmptyEnv {
 
 impl EmptyEnv {
   /// Query a parameter value
-  pub fn get<P: Param>(&self, param : P) -> Result<P::Value> {
+  pub fn get<P: ParamGet<V>, V>(&self, param : P) -> Result<V> {
     self.env.get(param)
   }
 
   /// Set a parameter value
-  pub fn set<P: Param>(&mut self, param : P, value: P::Value) -> Result<&mut Self> {
+  pub fn set<P: ParamSet<V>, V>(&mut self, param : P, value: V) -> Result<&mut Self> {
     self.env.set(param, value)?;
     Ok(self)
   }
@@ -177,13 +164,13 @@ impl Env {
 
 
   /// Query the value of a parameter
-  pub fn get<P: Param>(&self, param: P) -> Result<P::Value> {
-    unsafe { param.get_param(self.as_mut_ptr()) }.map_err(|code| self.error_from_api(code))
+  pub fn get<P: ParamGet<V>, V>(&self, param: P) -> Result<V> {
+    param.get(self)
   }
 
   /// Set the value of a parameter
-  pub fn set<P: Param>(&mut self, param: P, value: P::Value) -> Result<()> {
-    unsafe { param.set_param(self.as_mut_ptr(), value) }.map_err(|code| self.error_from_api(code))
+  pub fn set<P: ParamSet<V>, V>(&mut self, param: P, value: V) -> Result<()> {
+    param.set(self, value)
   }
 
   /// Import a set of parameter values from a file

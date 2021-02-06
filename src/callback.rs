@@ -104,6 +104,7 @@ use std::ptr::null;
 use std::os::raw;
 use std::iter::{Iterator, IntoIterator};
 use std::borrow::Borrow;
+use std::convert::TryInto;
 
 use crate::{Error, Result, model::Model, Var, INFINITY, Status};
 use crate::util;
@@ -359,7 +360,7 @@ impl<'a> MIPNodeCtx<'a> {
   /// variables, and return the subset provided, so you should avoid calling this method
   /// multiple times per callback.
   pub fn status(&self) -> Result<Status> {
-    self.0.get_int(MIPNODE, MIPNODE_STATUS).map(Status::from)
+    self.0.get_int(MIPNODE, MIPNODE_STATUS).map(|s | s.try_into().unwrap())
   }
 
   /// Get the optimal solution to this MIP node relaxation.
@@ -517,7 +518,7 @@ impl<'a> CbCtx<'a> {
                     coeff.len() as ffi::c_int,
                     inds.as_ptr(),
                     coeff.as_ptr(),
-                    sense.into(),
+                    sense as ffi::c_char,
                     rhs)
     })
   }
@@ -531,7 +532,7 @@ impl<'a> CbCtx<'a> {
                      coeff.len() as ffi::c_int,
                      inds.as_ptr(),
                      coeff.as_ptr(),
-                     sense.into(),
+                     sense as ffi::c_char,
                      rhs)
     })
   }

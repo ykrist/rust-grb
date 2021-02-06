@@ -10,6 +10,7 @@ license = "MIT"
 name = "grb"
 repository = "https://github.com/ykrist/rust-grb"
 version = "0.1.0"
+build = "build/main.rs"
 
 [dependencies]
 fnv = "^1.0"
@@ -21,6 +22,12 @@ grb-proc-macro = {path= "./grb-proc-macro", version="0.1.0" }
 proptest = "^0.10"
 trybuild = "^1.0"
 gag = "^0.1"
+
+[build-dependencies]
+anyhow = "^1.0"
+codegen = "^0.1"
+csv = "^1.1"
+
 
 [[example]]
 name = "callback"

@@ -161,8 +161,7 @@ impl LinExpr {
   /// Get actual value of the expression.
   pub fn get_value(&self, model: &Model) -> Result<f64> {
     let coeff = self.coeff.values();
-    let vars : Vec<_> = self.coeff.keys().cloned().collect();
-    let vals = model.get_obj_attr_batch(attr::X, &vars)?;
+    let vals = model.get_obj_attr_batch(attr::X, self.coeff.keys().copied())?;
     let total = coeff.zip(vals.into_iter()).map(|(&a, x)| a*x).sum::<f64>() + self.offset;
     Ok(total)
   }
@@ -244,14 +243,8 @@ impl QuadExpr {
   /// Get actual value of the expression.
   pub fn get_value(&self, model: &Model) -> Result<f64> {
     let coeff = self.qcoeffs.values();
-    let mut rowvars = Vec::with_capacity(self.qcoeffs.len());
-    let mut colvars = Vec::with_capacity(self.qcoeffs.len());
-    for (x,y) in self.qcoeffs.keys().cloned() {
-      rowvars.push(x);
-      colvars.push(y);
-    }
-    let rowvals = model.get_obj_attr_batch(attr::X, &rowvars)?;
-    let colvals = model.get_obj_attr_batch(attr::X, &colvars)?;
+    let rowvals = model.get_obj_attr_batch(attr::X, self.qcoeffs.keys().map(|&(_,x)| x))?;
+    let colvals = model.get_obj_attr_batch(attr::X, self.qcoeffs.keys().map(|&(x,_)| x))?;
     let total = coeff.zip(rowvals.into_iter())
         .zip(colvals.into_iter())
         .map(|((&a, x), y)| a*x*y).sum::<f64>()  + self.linexpr.get_value(model)?;

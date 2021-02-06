@@ -1,4 +1,5 @@
 use grb_sys::{c_char, c_int};
+use std::convert::TryFrom;
 
 // Constants defined by Gurobi API
 pub const GRB_MAX_STRLEN : usize = 512;
@@ -6,9 +7,6 @@ pub const GRB_UNDEFINED : f64 = 1e101;
 /// A large constant used by Gurobi to represent numeric infinity.
 pub const GRB_INFINITY: f64 = 1e100;
 
-pub const ERROR_INVALID_ARGUMENT: c_int = 10003;
-pub const ERROR_UNKNOWN_ATTR: c_int = 10004;
-pub const ERROR_DATA_NOT_AVAILABLE: c_int = 10005;
 pub const ERROR_CALLBACK: c_int = 10011;
 
 pub mod callback {
@@ -92,17 +90,19 @@ impl Into<c_char> for VarType {
   fn into(self) -> c_char { self as u8 as c_char}
 }
 
-impl Into<VarType> for c_char {
-  fn into(self) -> VarType {
-    let ch = self as u8 as char;
-    match ch {
-      'B' => VarType::Binary,
-      'C' => VarType::Continuous,
-      'I' => VarType::Integer,
-      'S' => VarType::SemiCont,
-      'N' => VarType::SemiInt,
-      ch => panic!("unexpected value `{}` when converting to VarType", ch),
-    }
+impl TryFrom<c_char> for VarType {
+  type Error = String;
+  fn try_from(val: c_char) -> std::result::Result<VarType, String> {
+    let ch = val as u8;
+    let vt = match ch {
+      b'B' => VarType::Binary,
+      b'C' => VarType::Continuous,
+      b'I' => VarType::Integer,
+      b'S' => VarType::SemiCont,
+      b'N' => VarType::SemiInt,
+      _ => { return Err(format!("unexpected value {:?} when converting to VarType", ch)) },
+    };
+    Ok(vt)
   }
 }
 
@@ -120,8 +120,18 @@ pub enum ConstrSense {
   Less = b'<',
 }
 
-impl Into<c_char> for ConstrSense {
-  fn into(self) -> c_char {  self as u8 as c_char  }
+impl TryFrom<c_char> for ConstrSense {
+  type Error = String;
+  fn try_from(val: c_char) -> std::result::Result<ConstrSense, String> {
+    let ch = val as u8;
+    let vt = match ch {
+      b'=' => ConstrSense::Equal,
+      b'>' => ConstrSense::Greater,
+      b'<' => ConstrSense::Less,
+      _ => { return Err(format!("unexpected value {:?} when converting to ConstrSense", ch)) },
+    };
+    Ok(vt)
+  }
 }
 
 
@@ -135,8 +145,15 @@ pub enum ModelSense {
   Maximize = -1,
 }
 
-impl Into<i32> for ModelSense {
-  fn into(self) -> i32 { self as i32 }
+impl TryFrom<i32> for ModelSense {
+  type Error = String;
+  fn try_from(val: i32) -> std::result::Result<ModelSense, String> {
+    match val {
+      -1 => Ok(ModelSense::Maximize),
+      1 => Ok(ModelSense::Minimize),
+      _ => Err("Invalid ModelSense value, should be -1 or 1".to_string())
+    }
+  }
 }
 
 
@@ -149,11 +166,6 @@ pub enum SOSType {
   /// Type 2 SOS constraint
   Ty2 = 2,
 }
-
-impl Into<i32> for SOSType {
-  fn into(self) -> i32 { self as i32 }
-}
-
 
 
 /// Status of a model
@@ -204,11 +216,12 @@ pub enum Status {
   UserObjLimit
 }
 
-impl From<i32> for Status { // TODO remove
-  fn from(val: i32) -> Status {
+impl TryFrom<i32> for Status {
+  type Error = String;
+  fn try_from(val: i32) -> std::result::Result<Status, String> {
     match val {
-      1..=14 => unsafe { std::mem::transmute(val) },
-      _ => panic!("cannot convert to Status: {}", val)
+      1..=15 => Ok(unsafe { std::mem::transmute(val) }),
+      _ => Err("Invalid Status value, should be in [1,15]".to_string())
     }
   }
 }
@@ -229,9 +242,3 @@ pub enum RelaxType {
   /// ($penalty(s\_i) = w\_i \cdot [s\_i > 0]$)
   Cardinality = 2,
 }
-
-impl Into<i32> for RelaxType {
-  fn into(self) -> i32 { self as i32 }
-}
-
-

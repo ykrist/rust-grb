@@ -25,7 +25,7 @@
 //! ```
 //! use grb::prelude::*;
 //!
-//! let mut model = Model::new("model1").unwrap();
+//! let mut model = Model::new("model1")?;
 //!
 //! // add decision variables with no bounds
 //! let x1 = add_ctsvar!(model, name: "x1", bounds: ..)?;
@@ -36,14 +36,15 @@
 //! let c1 = model.add_constr("c1", c!(-4 * x1 - x2 <= -33))?;
 //! let c2 = model.add_constr("c2", c!(2* x1 <= 20 - x2))?;
 //!
-//! // set the objective function.
-//! model.set_objective(8*x1 + x2, Minimize)?;
-//!
 //! // model is lazily updated by default
 //! assert_eq!(model.get_obj_attr(attr::VarName, &x1).unwrap_err(), grb::Error::ModelObjectPending);
 //! assert_eq!(model.get_attr(attr::IsMIP)?, 0);
-//! model.update()?;
-//! assert_eq!(model.get_attr(attr::IsMIP)?, 1, "Model is not a MIP.");
+//!
+//! // set the objective function, which updates the model objects (variables and constraints).
+//! // One could also call `model.update()`
+//! model.set_objective(8*x1 + x2, Minimize)?;
+//! assert_eq!(model.get_obj_attr(attr::VarName, &x1)?, "x1");
+//! assert_eq!(model.get_attr(attr::IsMIP)?, 1);
 //!
 //! // write model to the file.
 //! model.write("logfile.lp")?;
@@ -60,7 +61,7 @@
 //! let x1_name = model.get_obj_attr(attr::VarName, &x1)?;
 //!
 //! // Querying an attribute for multiple model objects
-//! let val = model.get_obj_attr_batch(attr::X, &[x1, x2])?;
+//! let val = model.get_obj_attr_batch(attr::X, vec![x1, x2])?;
 //! assert_eq!(val, [6.5, 7.0]);
 //!
 //! // Querying variables by name
@@ -72,9 +73,9 @@
 //! ## Errors
 //! Due to the nature of C APIs, almost every Gurobi routine can return an error.  Unless otherwise stated,
 //! if a method or function returns a [`Result`], the error will be [`Error::FromAPI`].
-#![warn(missing_docs)]
-#![warn(missing_crate_level_docs)]
-#![warn(private_doc_tests)]
+// #![warn(missing_docs)]
+// #![warn(missing_crate_level_docs)]
+// #![warn(private_doc_tests)]
 
 /// Returns the version number of Gurobi
 pub fn version() -> (i32, i32, i32) {
@@ -88,15 +89,21 @@ pub fn version() -> (i32, i32, i32) {
 pub use grb_proc_macro::*;
 
 // public modules
-pub mod attr;
+pub mod attribute;
 pub mod callback;
 pub mod constr;
 pub mod expr;
-pub mod param;
+pub mod parameter;
 pub mod prelude;
 
 // Public re-exports
 pub use expr::Expr;
+#[doc(no_inline)]
+pub use attribute::attr;
+#[doc(no_inline)]
+pub use parameter::param;
+
+
 
 // private modules and their re-exports
 mod constants;

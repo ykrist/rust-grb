@@ -7,14 +7,13 @@
 use std::ptr::{null, null_mut};
 use std::ffi::CString;
 use std::iter::IntoIterator;
-use std::fmt;
 use std::convert::TryInto;
 
 use grb_sys::{c_int, c_char};
 
 use crate::model_object::*;
 use crate::{Result, Model, VarType, ModelSense, Status, ConstrSense};
-use crate::util::{AsPtr, copy_c_str};
+use crate::util::{AsPtr, copy_c_str, GurobiName};
 
 mod attr_enums;
 #[doc(inline)]
@@ -24,6 +23,7 @@ pub use attr_enums::variant_exports as attr;
 
 mod private {
   use super::*;
+  pub trait Attr {}
 
   pub trait IntAttr {}
   pub trait CharAttr {}
@@ -32,14 +32,6 @@ mod private {
 
   pub trait ObjAttr {
     type Obj: ModelObject;
-  }
-
-  pub trait AttrName: fmt::Debug {
-    fn name(&self) -> CString {
-      let s = format!("{:?}", &self);
-      // We know the debug repr of these enum variants won't contain nul bytes or non-ascii chars.
-      unsafe { CString::from_vec_unchecked(s.into_bytes()) }
-    }
   }
 }
 
@@ -52,7 +44,7 @@ pub trait StringLike: Into<Vec<u8>> {}
 impl StringLike for String {}
 impl<'a> StringLike for &'a str {}
 
-impl<T: ObjAttr + fmt::Debug> AttrName for T {}
+// impl<T: ObjAttr + fmt::Debug> AttrName for T {}
 
 pub trait ObjAttrGet<O, V> {
   fn get(&self, model: &Model, idx: i32) -> Result<V>;
@@ -158,46 +150,45 @@ macro_rules! impl_obj_get_custom {
 }
 
 impl<A> ObjAttrGet<A::Obj, i32> for A where
-  A: IntAttr + AttrName + ObjAttr,
+  A: IntAttr + GurobiName + ObjAttr,
 {
   impl_obj_get! { i32, i32::MIN, grb_sys::GRBgetintattrelement, grb_sys::GRBgetintattrlist }
 }
 
 
 impl<A> ObjAttrSet<A::Obj, i32> for A where
-  A: IntAttr + AttrName + ObjAttr,
+  A: IntAttr + GurobiName + ObjAttr,
 {
   impl_obj_set! { i32, i32::MIN, grb_sys::GRBsetintattrelement, grb_sys::GRBsetintattrlist }
 }
 
 impl<A> ObjAttrGet<A::Obj, f64> for A where
-  A: DoubleAttr + AttrName + ObjAttr,
+  A: DoubleAttr + GurobiName + ObjAttr,
 {
   impl_obj_get! { f64, f64::MIN, grb_sys::GRBgetdblattrelement, grb_sys::GRBgetdblattrlist }
 }
 
 
 impl<A> ObjAttrSet<A::Obj, f64> for A where
-  A: DoubleAttr + AttrName + ObjAttr,
+  A: DoubleAttr + GurobiName + ObjAttr,
 {
   impl_obj_set! { f64, f64::MIN, grb_sys::GRBsetdblattrelement, grb_sys::GRBsetdblattrlist }
 }
 
 
 impl<A> ObjAttrGet<A::Obj, c_char> for A where
-  A: CharAttr + AttrName + ObjAttr,
+  A: CharAttr + GurobiName + ObjAttr,
 {
   impl_obj_get! { c_char, 0i8, grb_sys::GRBgetcharattrelement, grb_sys::GRBgetcharattrlist }
 }
 
 
 impl<A> ObjAttrSet<A::Obj, c_char> for A where
-  A: CharAttr + AttrName + ObjAttr,
+  A: CharAttr + GurobiName + ObjAttr,
 {
   impl_obj_set! { c_char, 0i8, grb_sys::GRBsetcharattrelement, grb_sys::GRBsetcharattrlist }
 }
 
-impl AttrName for VarVTypeAttr {}
 impl ObjAttrSet<Var, c_char> for VarVTypeAttr {
   impl_obj_set! { c_char, 0i8, grb_sys::GRBsetcharattrelement, grb_sys::GRBsetcharattrlist }
 }
@@ -217,7 +208,6 @@ impl ObjAttrGet<Var, VarType> for VarVTypeAttr {
   impl_obj_get_custom!{ VarType, 0i8, grb_sys::GRBgetcharattrelement, grb_sys::GRBgetcharattrlist}
 }
 
-impl AttrName for ConstrSenseAttr {}
 impl ObjAttrSet<Constr, c_char> for ConstrSenseAttr {
   impl_obj_set! { c_char, 0i8, grb_sys::GRBsetcharattrelement, grb_sys::GRBsetcharattrlist }
 }
@@ -243,7 +233,7 @@ impl ObjAttrGet<Constr, ConstrSense> for ConstrSenseAttr {
 /// the next call to a Gurobi library routine. The user should also be careful to never modify the data pointed to
 /// by the returned character pointer.
 impl<A> ObjAttrGet<A::Obj, String> for A where
-  A: StrAttr + AttrName + ObjAttr,
+  A: StrAttr + GurobiName + ObjAttr,
 {
   fn get(&self, model: &Model, idx: i32) -> Result<String> {
     unsafe {
@@ -276,7 +266,7 @@ impl<A> ObjAttrGet<A::Obj, String> for A where
 
 
 impl<'a, A, T> ObjAttrSet<A::Obj, T> for A where
-  A: StrAttr + AttrName + ObjAttr,
+  A: StrAttr + GurobiName + ObjAttr,
   T: StringLike
 {
   fn set(&self, model: &Model, idx: i32, val: T) -> Result<()> {
@@ -324,7 +314,6 @@ pub trait ModelAttrSet<V> {
 
 macro_rules! impl_model_attr {
   ($target:path, $t:ty, $default:expr, $get:path, $set:path) => {
-    impl AttrName for $target {}
 
     impl ModelAttrGet<$t> for $target {
       fn get(&self, model: &Model) -> Result<$t> {
@@ -354,7 +343,6 @@ macro_rules! impl_model_attr {
 impl_model_attr! { ModelIntAttr, i32, i32::MIN, grb_sys::GRBgetintattr, grb_sys::GRBsetintattr }
 impl_model_attr! { ModelDoubleAttr, f64, f64::NAN, grb_sys::GRBgetdblattr, grb_sys::GRBsetdblattr }
 
-impl AttrName for ModelStrAttr {}
 
 impl ModelAttrGet<String> for ModelStrAttr {
   fn get(&self, model: &Model) -> Result<String> {
@@ -379,7 +367,7 @@ impl<T: Into<Vec<u8>>> ModelAttrSet<T> for ModelStrAttr {
   }
 }
 
-impl AttrName for ModelModelSenseAttr {}
+
 impl ModelAttrGet<ModelSense> for ModelModelSenseAttr {
   fn get(&self, model: &Model) -> Result<ModelSense> {
     let mut val = i32::MIN;
@@ -408,8 +396,6 @@ impl ModelAttrSet<ModelSense> for ModelModelSenseAttr {
     self.set(model, val as i32)
   }
 }
-
-impl AttrName for ModelStatusAttr {}
 
 impl ModelAttrGet<Status> for ModelStatusAttr {
   fn get(&self, model: &Model) -> Result<Status> {

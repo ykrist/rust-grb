@@ -7,7 +7,7 @@ use std::ffi::CString;
 
 use crate::Result;
 use crate::env::Env;
-use crate::util::{AsPtr, copy_c_str};
+use crate::util::{AsPtr, copy_c_str, GurobiName};
 
 mod param_enums;
 
@@ -16,19 +16,6 @@ pub use param_enums::enum_exports::*;
 pub use param_enums::variant_exports as param;
 
 use crate::constants::GRB_MAX_STRLEN;
-
-pub trait ParamName: std::fmt::Debug {
-  fn name(&self) -> CString {
-    let s = format!("{:?}", &self);
-    // We know the debug repr of these enum variants won't contain nul bytes or non-ascii chars.
-    unsafe { CString::from_vec_unchecked(s.into_bytes()) }
-  }
-}
-
-impl ParamName for IntParam {}
-impl ParamName for StrParam {}
-impl ParamName for DoubleParam {}
-
 
 pub trait ParamGet<V> {
   /// This paramter's value type (string, double, int, char)
@@ -87,39 +74,29 @@ impl ParamSet<f64> for DoubleParam {
   impl_param_set! { f64, ffi::GRBsetdblparam }
 }
 
-macro_rules! impl_string_param_set {
-  () => {
-    fn set(&self, env: &mut Env, value: String) -> Result<()> {
-      let value = CString::new(value)?;
-      unsafe {
-        env.check_apicall(grb_sys::GRBsetstrparam(
-          env.as_mut_ptr(), self.name().as_ptr(), value.as_ptr()
-        ))
-      }
-    }
-  };
-}
-
-macro_rules! impl_string_param_get {
-  () => {
-    fn get(&self, env: &Env) -> Result<String> {
-      let mut buf = [0i8; GRB_MAX_STRLEN];
-      unsafe {
-        env.check_apicall(grb_sys::GRBgetstrparam(
-          env.as_mut_ptr(), self.name().as_ptr(), buf.as_mut_ptr()
-        ))?;
-        Ok(copy_c_str(buf.as_ptr()))
-      }
-    }
-  };
-}
 
 impl ParamGet<String> for StrParam {
-  impl_string_param_get!{}
+  fn get(&self, env: &Env) -> Result<String> {
+    let mut buf = [0i8; GRB_MAX_STRLEN];
+    unsafe {
+      env.check_apicall(grb_sys::GRBgetstrparam(
+        env.as_mut_ptr(), self.name().as_ptr(), buf.as_mut_ptr()
+      ))?;
+      Ok(copy_c_str(buf.as_ptr()))
+    }
+  }
 }
 
+
 impl ParamSet<String> for StrParam {
-  impl_string_param_set!{}
+  fn set(&self, env: &mut Env, value: String) -> Result<()> {
+    let value = CString::new(value)?;
+    unsafe {
+      env.check_apicall(grb_sys::GRBsetstrparam(
+        env.as_mut_ptr(), self.name().as_ptr(), value.as_ptr()
+      ))
+    }
+  }
 }
 
 /// Support for querying and seeting undocumented Gurobi parameters.
@@ -149,7 +126,7 @@ impl ParamSet<String> for StrParam {
 /// m.set_param(&undocumented_parameter, 10)?;
 /// # Ok::<(), grb::Error>(())
 /// ```
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct Undocumented {
   name: CString
 }
@@ -160,7 +137,8 @@ impl Undocumented {
   }
 }
 
-impl ParamName for Undocumented {
+// not strictly necessary, since we can use self.name directly
+impl GurobiName for Undocumented {
   fn name(&self) -> CString {
     self.name.clone()
   }
@@ -183,9 +161,24 @@ impl ParamSet<f64> for &Undocumented {
 }
 
 impl ParamGet<String> for &Undocumented {
-  impl_string_param_get!{}
+  fn get(&self, env: &Env) -> Result<String> {
+    let mut buf = [0i8; GRB_MAX_STRLEN];
+    unsafe {
+      env.check_apicall(grb_sys::GRBgetstrparam(
+        env.as_mut_ptr(), self.name.as_ptr(), buf.as_mut_ptr()
+      ))?;
+      Ok(copy_c_str(buf.as_ptr()))
+    }
+  }
 }
 
 impl ParamSet<String> for Undocumented {
-  impl_string_param_set!{}
+  fn set(&self, env: &mut Env, value: String) -> Result<()> {
+    let value = CString::new(value)?;
+    unsafe {
+      env.check_apicall(grb_sys::GRBsetstrparam(
+        env.as_mut_ptr(), self.name.as_ptr(), value.as_ptr()
+      ))
+    }
+  }
 }

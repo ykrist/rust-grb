@@ -1,6 +1,6 @@
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use grb_sys as ffi;
-
+use std::fmt;
 /// Copy a raw C-string into a String
 ///
 /// To quote the Gurobi docs:
@@ -36,5 +36,23 @@ pub(crate) trait AsPtr {
   /// Return the underling Gurobi pointer
   fn as_ptr(&self) -> *const Self::Raw {
     (unsafe { self.as_mut_ptr() }) as *const Self::Raw
+  }
+}
+
+/// Marker trait needed for unsafe in GurobiName blanket impl
+pub trait GurobiNameMarker {}
+
+pub trait GurobiName {
+  fn name(&self) -> CString;
+}
+
+impl<T> GurobiName for T
+  where
+    T: GurobiNameMarker + fmt::Debug
+{
+  fn name(&self) -> CString {
+    let s = format!("{:?}", &self);
+    // We know the debug repr of these enum variants won't contain nul bytes or non-ascii chars
+    unsafe { CString::from_vec_unchecked(s.into_bytes()) }
   }
 }

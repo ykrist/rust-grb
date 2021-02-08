@@ -1,5 +1,5 @@
 [package]
-name = "grb-proc-macro"
+name = "grb-macro"
 version = "0.1.0"
 edition = "2018"
 license = "MIT"

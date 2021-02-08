@@ -86,7 +86,7 @@ pub fn version() -> (i32, i32, i32) {
 
 // external re-exports
 #[doc(inline)]
-pub use grb_proc_macro::*;
+pub use grb_macro::*;
 
 // public modules
 pub mod attribute;

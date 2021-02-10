@@ -24,8 +24,10 @@ use private_traits::ModelObjectPrivate;
 /// Each `ModelObject` is associated with a particular model, and can only be used with that model.
 /// Each `ModelObject` also has a unique, fixed 32-bit ID.  Gurobi itself uses an `i32` to index objects
 /// (only positive indices are used), so the 32-bit limitation is already there.  Note that IDs are only
-/// guaranteed to be unique if the concrete types of the `ModelObject` are the sane and the objects
-/// belong to the same model.
+/// guaranteed to be unique if the concrete types of the `ModelObject` are the same and the objects
+/// belong to the same model.  For example, if `v` is a `Var` and `c` is a `Constr`, then `v` and `c` may
+/// have the same ID.  Additionally, if `s` is also a `Var`, but doesn't belong to the same `Model` as `v`,
+/// `s` and `v` may have the same ID.
 pub trait ModelObject: ModelObjectPrivate + Debug {
   /// Retrieve the object's ID.
   fn id(&self) -> u32;

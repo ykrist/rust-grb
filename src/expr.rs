@@ -38,7 +38,7 @@ impl Expr {
     }
   }
 
-  /// Returns false if quadratic terms are present.
+  /// Returns `false` if quadratic terms are present.
   pub fn is_linear(&self) -> bool {
     !matches!(self, Expr::QTerm(..) | Expr::Quad(..))
   }
@@ -52,7 +52,7 @@ impl Expr {
     }
   }
 
-  /// Transform into a [`QuadExpr`], possibly with no quadratic terms)
+  /// Transform into a [`LinExpr`], possible with no linear terms (just a constant)
   ///
   /// # Errors
   /// Returns an [`Error::AlgebraicError`] if `Expr` is not linear.
@@ -170,7 +170,7 @@ impl LinExpr {
   pub fn into_parts(self) -> (FnvHashMap<Var, f64>, f64) { (self.coeff, self.offset) }
 
   /// number of linear terms in the expression (excluding the constant)
-  pub fn n_terms(&self) -> usize { self.coeff.len() }
+  pub fn num_terms(&self) -> usize { self.coeff.len() }
 
   /// Returns an iterator over the terms excluding the offset (item type is `(&Var, &f64)`)
   pub fn iter_terms(&self) -> std::collections::hash_map::Iter<Var, f64> {
@@ -259,7 +259,7 @@ impl QuadExpr {
   }
 
   /// number of linear terms in the expression (excluding the constant)
-  pub fn n_terms(&self) -> usize { self.linexpr.n_terms() }
+  pub fn num_terms(&self) -> usize { self.linexpr.num_terms() }
 
   /// Returns an iterator over the terms excluding the offset (item type is `(&Var, &f64)`)
   pub fn iter_terms(&self) -> std::collections::hash_map::Iter<Var, f64> {
@@ -267,7 +267,7 @@ impl QuadExpr {
   }
 
   /// number of quadtratic terms in the expression
-  pub fn n_qterms(&self) -> usize { self.qcoeffs.len() }
+  pub fn num_qterms(&self) -> usize { self.qcoeffs.len() }
 
   /// Returns an iterator over the terms excluding the offset (item type is `(&Var, &f64)`)
   pub fn iter_qterms(&self) -> std::collections::hash_map::Iter<(Var, Var), f64> { self.qcoeffs.iter() }

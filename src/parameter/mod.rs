@@ -9,7 +9,7 @@ use crate::Result;
 use crate::env::Env;
 use crate::util::{AsPtr, copy_c_str, GurobiName};
 
-mod param_enums;
+mod param_enums; // generated code - see build/main.rs
 
 #[doc(inline)]
 pub use param_enums::enum_exports::*;
@@ -17,13 +17,14 @@ pub use param_enums::variant_exports as param;
 
 use crate::constants::GRB_MAX_STRLEN;
 
+/// A queryable Gurobi parameter for a [`Model`](crate::Model) or [`Env`](crate::Env)
 pub trait ParamGet<V> {
-  /// This paramter's value type (string, double, int, char)
+  /// This parameter's value type (string, double, int, char)
   /// Query a parameter from an environment
   fn get(&self, env: &Env) -> Result<V>;
 }
 
-
+/// A modifiable Gurobi parameter for a [`Model`](crate::Model) or [`Env`](crate::Env)
 pub trait ParamSet<V> {
   /// Set a parameter on an environment
   fn set(&self, env: &mut Env, value: V) -> Result<()>;
@@ -99,13 +100,16 @@ impl ParamSet<String> for StrParam {
   }
 }
 
-/// Support for querying and seeting undocumented Gurobi parameters.
+/// Support for querying and seting undocumented Gurobi parameters.
+///
+/// Use an instance of this type to set or query parameters using the [`Model::get_param`](crate::Model::get_param)
+/// or [`Model::set_param`](crate::Model::set_param) methods.
 ///
 /// Current (very short) list of undocumented parameters:
 ///
 /// | Name | Type | Default | Description |
 /// | --- | --- | --- | --- |
-/// | `GURO_PAR_MINBPFORBID` | integer | `2000000000` |Minimum `BranchPriority` a variable must have to stop it being removed during presolve |
+/// | `GURO_PAR_MINBPFORBID` | `i32` | `2000000000` |Minimum `BranchPriority` a variable must have to stop it being removed during presolve |
 ///
 /// # Example
 /// ```
@@ -132,6 +136,11 @@ pub struct Undocumented {
 }
 
 impl Undocumented {
+  /// Declare a new `Undocumented` parameter.
+  ///
+  /// # Errors
+  /// Will return an [`Error::NulError`](crate::Error) if the string given cannot be converted into a
+  /// C-style string.
   pub fn new(string: impl Into<Vec<u8>>) -> Result<Undocumented> {
     Ok(Undocumented { name: CString::new(string)? })
   }
@@ -172,7 +181,7 @@ impl ParamGet<String> for &Undocumented {
   }
 }
 
-impl ParamSet<String> for Undocumented {
+impl ParamSet<String> for &Undocumented {
   fn set(&self, env: &mut Env, value: String) -> Result<()> {
     let value = CString::new(value)?;
     unsafe {

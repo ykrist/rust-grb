@@ -15,7 +15,7 @@ use crate::model_object::*;
 use crate::{Result, Model, VarType, ModelSense, Status, ConstrSense};
 use crate::util::{AsPtr, copy_c_str, GurobiName};
 
-mod attr_enums;
+mod attr_enums; // generated code - see build/main.rs
 #[doc(inline)]
 pub use attr_enums::enum_exports::*;
 #[doc(inline)]
@@ -38,21 +38,25 @@ mod private {
 use private::*;
 
 
-/// A marker trait used to implement [`ObjAttrSet`] for both [`String`] and `&str`
+/// A marker trait for internal blanket implementations.
 pub trait StringLike: Into<Vec<u8>> {}
 
 impl StringLike for String {}
 impl<'a> StringLike for &'a str {}
 
-// impl<T: ObjAttr + fmt::Debug> AttrName for T {}
-
+/// A queryable [`ModelObject`] attribute (eg [`Var`] or [`Constr`])
 pub trait ObjAttrGet<O, V> {
+  /// Get the value for this attribute
   fn get(&self, model: &Model, idx: i32) -> Result<V>;
+  /// Get multiple values for this attribute at once
   fn get_batch<I: IntoIterator<Item=Result<i32>>>(&self, model: &Model, idx: I) -> Result<Vec<V>>;
 }
 
+/// A modifiable [`ModelObject`] attribute (eg [`Var`] or [`Constr`])
 pub trait ObjAttrSet<O, V> {
+  /// Set the value for this attribute
   fn set(&self, model: &Model, idx: i32, val: V) -> Result<()>;
+  /// Set multiple values for this attribute at once
   fn set_batch<I: IntoIterator<Item=(Result<i32>, V)>>(&self, model: &Model, idx_val_pairs: I) -> Result<()>;
 }
 
@@ -302,12 +306,15 @@ impl<'a, A, T> ObjAttrSet<A::Obj, T> for A where
   }
 }
 
-
+/// A queryable [`Model`] attribute
 pub trait ModelAttrGet<V> {
+  /// Query the value for this attribute
   fn get(&self, model: &Model) -> Result<V>;
 }
 
+/// A modifiable [`Model`] attribute
 pub trait ModelAttrSet<V> {
+  /// Set a new value for this attribute
   fn set(&self, model: &Model, val: V) -> Result<()>;
 }
 

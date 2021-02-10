@@ -62,14 +62,44 @@ impl Model {
       self.sos.model_update_needed()
   }
 
-  #[inline]
-  pub(crate) fn get_index<O: ModelObject>(&self, item: &O) -> Result<i32> {
-    O::idx_manager(&self).get_index(item)
+  fn build_idx_arrays_obj_obj<O1, O2, T>(&self, iter: impl Iterator<Item=(O1, O2, T)>) -> Result<(Vec<i32>, Vec<i32>, Vec<T>)>
+    where
+      O1: ModelObject,
+      O2: ModelObject,
+  {
+    let n = iter.size_hint().0;
+    let mut ov1 = Vec::with_capacity(n);
+    let mut ov2 = Vec::with_capacity(n);
+    let mut tv = Vec::with_capacity(n);
+
+    for (o1, o2, t) in iter {
+      ov1.push(self.get_index_build(&o1)?);
+      ov2.push(self.get_index_build(&o2)?);
+      tv.push(t);
+    }
+
+    Ok((ov1, ov2, tv))
+  }
+
+  fn build_idx_arrays_obj<O, T>(&self, iter: impl Iterator<Item=(O, T)>) -> Result<(Vec<i32>, Vec<T>)>
+    where
+      O: ModelObject,
+  {
+    let n = iter.size_hint().0;
+    let mut ov = Vec::with_capacity(n);
+    let mut tv = Vec::with_capacity(n);
+
+    for (o, t) in iter {
+      ov.push(self.get_index_build(&o)?);
+      tv.push(t);
+    }
+
+    Ok((ov, tv))
   }
 
   #[inline]
-  pub(crate) fn get_indices(&self, items: &[impl ModelObject]) -> Result<Vec<i32>> {
-    items.iter().map(|item| self.get_index(item)).collect()
+  pub(crate) fn get_index<O: ModelObject>(&self, item: &O) -> Result<i32> {
+    O::idx_manager(&self).get_index(item)
   }
 
   #[inline]
@@ -78,13 +108,8 @@ impl Model {
   }
 
   #[inline]
-  pub(crate) fn get_indices_build(&self, items: &[impl ModelObject]) -> Result<Vec<i32>> {
-    items.iter().map(|item| self.get_index_build(item)).collect()
-  }
-
-  #[inline]
   pub(crate) fn get_coeffs_indices_build(&self, expr: &LinExpr) -> Result<(Vec<i32>, Vec<f64>)> {
-    let nterms = expr.n_terms();
+    let nterms = expr.num_terms();
     let mut inds = Vec::with_capacity(nterms);
     let mut coeff = Vec::with_capacity(nterms);
     for (x, &c) in expr.iter_terms() {
@@ -96,7 +121,7 @@ impl Model {
 
   #[inline]
   pub(crate) fn get_qcoeffs_indices_build(&self, expr: &QuadExpr) -> Result<(Vec<i32>, Vec<i32>, Vec<f64>)> {
-    let nqterms = expr.n_qterms();
+    let nqterms = expr.num_qterms();
     let mut rowinds = Vec::with_capacity(nqterms);
     let mut colinds = Vec::with_capacity(nqterms);
     let mut coeff = Vec::with_capacity(nqterms);
@@ -354,19 +379,24 @@ impl Model {
   ///
   /// The [`add_var!`](crate::add_var) macro and its friends are usually easier to use.
   #[allow(clippy::too_many_arguments)]
-  pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64, lb: f64, ub: f64, colconstrs: &[Constr],
-                 colvals: &[f64])
+  pub fn add_var(&mut self, name: &str, vtype: VarType, obj: f64, lb: f64, ub: f64, col_coeff: impl IntoIterator<Item=(Constr, f64)>)
                  -> Result<Var> {
-    if colconstrs.len() != colvals.len() {
-      return Err(Error::InconsistentDims);
-    }
-    let colconstrs = self.get_indices(colconstrs)?;
+
     let name = CString::new(name)?;
+    let mut col_coeff = col_coeff.into_iter().peekable();
+    let (numnz, _vind, _vval, vind, vval) = if col_coeff.peek().is_some() {
+      let (constrs, vals) = self.build_idx_arrays_obj(col_coeff)?;
+      let c_ptr = constrs.as_ptr();
+      let v_ptr = vals.as_ptr();
+      (constrs.len() as c_int, Some(constrs), Some(vals), c_ptr, v_ptr)
+    } else {
+      (0, None, None, std::ptr::null(), std::ptr::null())
+    };
     self.check_apicall(unsafe {
       grb_sys::GRBaddvar(self.ptr,
-                     colvals.len() as grb_sys::c_int,
-                     colconstrs.as_ptr(),
-                     colvals.as_ptr(),
+                     numnz,
+                     vind,
+                     vval,
                      obj,
                      lb,
                      ub,
@@ -708,22 +738,27 @@ impl Model {
   /// - [`Error::ModelObjectMismatch`] if some variables are from a different model.
   /// - [`Error::InconsistentDims`] if `vars` and `weights` have different lengths.
   /// - [`Error::FromAPI`] if a Gurobi API error occurs.
-  pub fn add_sos(&mut self, vars: &[Var], weights: &[f64], sostype: SOSType) -> Result<SOS> { // Fixme - use iterator
-    if vars.len() != weights.len() {
-      return Err(Error::InconsistentDims);
+  pub fn add_sos(&mut self, var_weight_pairs: impl IntoIterator<Item=(Var, f64)>, sostype: SOSType) -> Result<SOS> {
+    let var_weight_pairs = var_weight_pairs.into_iter();
+    let n = var_weight_pairs.size_hint().0;
+    let mut ind = Vec::with_capacity(n);
+    let mut weight = Vec::with_capacity(n);
+
+    for (var, w) in var_weight_pairs {
+      ind.push(self.get_index(&var)?);
+      weight.push(w)
     }
 
-    let vars = self.get_indices(vars)?;
     let beg = 0;
     let sostype = sostype as c_int;
     self.check_apicall(unsafe {
       grb_sys::GRBaddsos(self.ptr,
                      1,
-                     vars.len() as grb_sys::c_int,
+                     ind.len() as grb_sys::c_int,
                      &sostype,
                      &beg,
-                     vars.as_ptr(),
-                     weights.as_ptr())
+                     ind.as_ptr(),
+                     weight.as_ptr())
     })?;
 
     Ok(self.sos.add_new(self.update_mode_lazy()?))
@@ -820,8 +855,8 @@ impl Model {
     attr.get(self)
   }
 
-  /// Query a model object attribute (Constr, Var, etc). [`ModelObject`] Attributes (objects with the [`ModelObjAttr`] trait) can be found
-  /// in the [`attr`] module.
+  /// Query a model object attribute (Constr, Var, etc).  Available attributes can be found
+  /// in the [`attr`] module, which is imported in the [prelude](crate::prelude).
   pub fn get_obj_attr<A,O,V>(&self, attr: A, obj: &O) -> Result<V>
     where
       A: ObjAttrGet<O, V>,
@@ -830,8 +865,8 @@ impl Model {
     attr.get(self, self.get_index(obj)?)
   }
 
-  /// Query an attribute of multiple model objects.   [`ModelObject`] Attributes (objects with the [`ModelObjAttr`] trait) can be found
-  //   /// in the [`attr`] module.
+  /// Query an attribute of multiple model objects.   Available attributes can be found
+  /// in the [`attr`] module, which is imported in the [prelude](crate::prelude).
   pub fn get_obj_attr_batch<A,I,O,V>(&self, attr: A, objs: I) -> Result<Vec<V>>
     where
       A: ObjAttrGet<O, V>,
@@ -926,85 +961,89 @@ impl Model {
 
   /// Modify the model to create a feasibility relaxation.
   ///
+  /// Given a `Model` whose objective function is $f(x)$, the feasibility relaxation seeks to minimise
   /// $$
-  ///   \text{minimize}\quad f(x) + \sum_{i \in IIS} penalty_i(s_i)
+  ///   \text{min}\quad f(x) + \sum_{j} w_j \cdot p(s_j)
   /// $$
-  /// where $s\_i > 0$ is the slack variable of $i$ -th constraint.
+  /// where $s\_j > 0$ is the slack variable of $j$ -th constraint or bound, $w_j$ is the $j$-th weight
+  /// and $p(s)$ is the penalty function.
   ///
-  /// This method will modify the model.
-  /// If you don't want to modify the model, copy the model before invoking
+  /// The `ty` argument sets the penalty function:
+  ///
+  /// | [`RelaxType`] variant | Penalty function                                                                    |
+  /// | --------------------- | ----------------------------------------------------------------------------------- |
+  /// | `Quadratic`           | $ p(s) = {s}^2 $                                                                    |
+  /// | `Linear`              | $ p(s) = {s} $                                                                      |
+  /// | `Cardinality`         | $ p(s) = \begin{cases} 1 & \text{if } s > 0 \\\\ 0 & \text{otherwise} \end{cases} $ |
+  ///
+  /// This method will modify the model - if this is not desired copy the model before invoking
   /// this method with [`Model::try_clone()`].
   ///
   /// ## Arguments
-  /// * `relaxtype` : The type of cost function used when finding the minimum cost relaxation.
-  ///   See also [`RelaxType`](enum.RelaxType.html).
-  /// * `minrelax` : The type of feasibility relaxation to perform.
-  /// * `vars` : Variables whose bounds are allowed to be violated.
-  /// * `lbpen` / `ubpen` : Penalty for violating a variable lower/upper bound.
-  ///   `INFINITY` means that the bounds doesn't allow to be violated.
-  /// * `constrs` : Linear constraints that are allowed to be violated.
-  /// * `rhspen` : Penalty for violating a linear constraint.
-  ///   `INFINITY` means that the bounds doesn't allow to be violated.
+  /// * `ty` : The type of cost function used when finding the minimum cost relaxation.
+  /// * `minrelax` : How the objective should be minimised.
+  ///
+  ///   If `false`, optimizing the returned model gives a solution that minimizes the cost of the
+  ///   violation. If `true`, optimizing the returned model finds a solution that minimizes the original objective,
+  ///   but only from among those solutions that minimize the cost of the violation. Note that this method must solve an
+  ///   optimization problem to find the minimum possible relaxation when set to `true`, which can be quite expensive.
+  ///
+  /// * `lb_pen` : Variables whose lower bounds are allowed to be violated, and their penalty weights.
+  /// * `ub_pen` : Variables whose upper bounds are allowed to be violated, and their penalty weights.
+  /// * `constr_pen` :  Constraints which are allowed to be violated, and their penalty weights.
   ///
   /// ## Returns
   /// * The objective value for the relaxation performed (if `minrelax` is `true`).
   /// * Slack variables for relaxation and related linear/quadratic constraints.
   #[allow(clippy::type_complexity)]
   #[allow(clippy::too_many_arguments)]
-  pub fn feas_relax(&mut self, relaxtype: RelaxType, minrelax: bool, vars: &[Var], lbpen: &[f64], ubpen: &[f64],
-                    constrs: &[Constr], rhspen: &[f64])
-                    -> Result<(f64, Vec<Var>, Vec<Constr>, Vec<QConstr>)> {
-    if vars.len() != lbpen.len() || vars.len() != ubpen.len() {
-      return Err(Error::InconsistentDims);
-    }
-
-    if constrs.len() != rhspen.len() {
-      return Err(Error::InconsistentDims);
-    }
+  pub fn feas_relax(&mut self,
+                    ty: RelaxType,
+                    minrelax: bool,
+                    lb_pen: impl IntoIterator<Item=(Var, f64)>,
+                    ub_pen: impl IntoIterator<Item=(Var, f64)>,
+                    constr_pen: impl IntoIterator<Item=(Constr, f64)>,
+                    )
+                    -> Result<(Option<f64>, Vec<Var>, Vec<Constr>, Vec<QConstr>)> {
 
     self.update()?;
     let n_old_vars = self.get_attr(attr::NumVars)? as usize;
     let n_old_constr = self.get_attr(attr::NumConstrs)? as usize;
     let n_old_qconstr = self.get_attr(attr::NumQConstrs)? as usize;
 
-
-    let (pen_lb, pen_ub) = if vars.is_empty() {
-      // Gurobi API spec allows for this optimisation
-      (std::ptr::null(), std::ptr::null())
-    } else {
-      let mut pen_lb = vec![super::INFINITY; n_old_vars];
-      let mut pen_ub = vec![super::INFINITY; n_old_vars];
-      for (v, (&lb, &ub)) in vars.iter().zip(lbpen.iter().zip(ubpen)) {
-        let idx = self.get_index(v)? as usize;
-        pen_lb[idx] = lb;
-        pen_ub[idx] = ub;
+    fn build_array<T, O>(model: &Model, iter: T, buf_size: usize) -> Result<(Option<Vec<f64>>, *const f64)>
+      where
+        T: IntoIterator<Item=(O, f64)>,
+        O: ModelObject
+    {
+      let mut iter = iter.into_iter().peekable();
+      if iter.peek().is_some() {
+        let mut vec = vec![super::INFINITY; buf_size];
+        for (obj, weight) in iter {
+          vec[model.get_index(&obj)? as usize] = weight;
+        }
+        let ptr = vec.as_ptr();
+        Ok((Some(vec), ptr))
+      } else {
+        Ok((None, std::ptr::null()))
       }
-      (pen_lb.as_ptr(), pen_ub.as_ptr())
-    };
+    }
 
-    let pen_rhs = if constrs.is_empty() {
-      std::ptr::null()
-    } else {
-      let mut pen_rhs = vec![super::INFINITY; n_old_constr];
-      for (c, &rhs) in constrs.iter().zip(rhspen) {
-        let idx = self.get_index(c)? as usize;
-        pen_rhs[idx] = rhs;
-      }
-      pen_rhs.as_ptr()
-    };
+    let (_lbpen, lbpen) = build_array(self, lb_pen, n_old_vars)?;
+    let (_ubpen, ubpen) = build_array(self, ub_pen, n_old_vars)?;
+    let (_rhspen, rhspen) = build_array(self, constr_pen, n_old_constr)?;
 
-    let minrelax = if minrelax { 1 } else { 0 };
-
-    let feasobj = 0f64;
+    let mut feasobj = crate::constants::GRB_UNDEFINED;
     self.check_apicall(unsafe {
       grb_sys::GRBfeasrelax(self.ptr,
-                        relaxtype as c_int,
-                        minrelax,
-                        pen_lb,
-                        pen_ub,
-                        pen_rhs,
-                        &feasobj)
+                        ty as c_int,
+                        minrelax as c_int,
+                        lbpen,
+                        ubpen,
+                        rhspen,
+                        &mut feasobj)
     })?;
+    let feasobj = if minrelax { Some(feasobj) } else { None };
     self.update()?;
 
     let lazy = self.update_mode_lazy()?;
@@ -1021,15 +1060,14 @@ impl Model {
     assert!(n_qcons >= n_old_qconstr);
     let new_qcons = (0..n_cons - n_old_constr).map(|_| self.qconstrs.add_new(lazy)).collect();
 
-    // FIXME: are SOS added here? are QConstr ever added?
-
     Ok((feasobj, new_vars, new_cons, new_qcons))
   }
 
   /// Set a piecewise-linear objective function for the variable.
   /// 
-  /// The piecewise-linear objective function $f(x)$ is defined as follows:
-  /// \begin{align}
+  /// Given a sequence of points $(x_1, y_1), \dots, (x_n, y_n)$, the piecewise-linear objective function
+  /// $f(x)$ is defined as follows:
+  /// $$
   ///   f(x) = 
   ///   \begin{cases}
   ///     y_1 + \dfrac{y_2 - y_1}{x_2 - x_1} \\, (x - x_1)         & \text{if $x \leq x_1$}, \\\\
@@ -1038,27 +1076,28 @@ impl Model {
   ///   \\\\
   ///     y_n + \dfrac{y_n - y_{n-1}}{x_n-x_{n-1}} \\, (x - x_n)   & \text{if $x \geq x_n$},
   ///   \end{cases}
-  /// \end{align}
-  /// where $\bm{x} = \\{ x_1, ..., x_n \\}$, $\bm{y} = \\{ y_1, ..., y_n \\}$ is the points.
+  /// $$
   ///
-  /// The attribute `Obj` will be set to 0.
-  /// To delete the piecewise-linear function on the variable, set the value of `Obj` attribute to non-zero.
+  /// The `Obj` attribute of the [`Var`] object will be set to 0.   To delete the piecewise-linear function on the
+  /// variable, set the value of `Obj` attribute to non-zero.
   ///
-  /// # Arguments
-  /// * `var` :
-  /// * `x` : $n$-points from domain of the variable. The order of entries should be
-  /// non-decreasing.
-  /// * `y` : $n$-points of objective values at each point $x_i$
-  pub fn set_pwl_obj(&mut self, var: &Var, x: &[f64], y: &[f64]) -> Result<()> {
-    if x.len() != y.len() {
-      return Err(Error::InconsistentDims);
+  /// The `points` argument contains the pairs $(x_i,y_i)$ and must satisfy $x_i < x_{i+1}$.
+  pub fn set_pwl_obj(&mut self, var: &Var, points: impl IntoIterator<Item=(f64, f64)>) -> Result<()> {
+    let points = points.into_iter();
+    let n = points.size_hint().0;
+    let mut xvals = Vec::with_capacity(n);
+    let mut yvals = Vec::with_capacity(n);
+    for (x,y) in points {
+      xvals.push(x);
+      yvals.push(y);
     }
+
     self.check_apicall(unsafe {
       grb_sys::GRBsetpwlobj(self.ptr,
                         self.get_index_build(var)?,
-                        x.len() as grb_sys::c_int,
-                        x.as_ptr(),
-                        y.as_ptr())
+                        xvals.len() as grb_sys::c_int,
+                        xvals.as_ptr(),
+                        yvals.as_ptr())
     })
   }
 
@@ -1101,20 +1140,14 @@ impl Model {
   }
 
   /// Change a set of constant matrix coefficients of the model.
-  pub fn set_coeffs(&mut self, vars: &[Var], constrs: &[Constr], values: &[f64]) -> Result<()> {
-    if vars.len() != values.len() || constrs.len() != values.len() {
-      return Err(Error::InconsistentDims);
-    }
-
-    let vars = self.get_indices_build(&vars)?;
-    let constrs = self.get_indices_build(&constrs)?;
-
+  pub fn set_coeffs(&mut self, coeffs: impl IntoIterator<Item=(Var, Constr, f64)>) -> Result<()> {
+    let (vind, cind, val) = self.build_idx_arrays_obj_obj(coeffs.into_iter())?;
     self.check_apicall(unsafe {
-      grb_sys::GRBchgcoeffs(self.ptr,
-                        vars.len() as grb_sys::c_int,
-                        constrs.as_ptr(),
-                        vars.as_ptr(),
-                        values.as_ptr())
+      grb_sys::GRBchgcoeffs(self.as_mut_ptr(),
+                        vind.len() as grb_sys::c_int,
+                        cind.as_ptr(),
+                        vind.as_ptr(),
+                        val.as_ptr())
     })
   }
 
@@ -1258,7 +1291,6 @@ impl AsyncModel {
   /// # Errors
   /// An `grb::Error::FromAPI` may occur.  In this case, the `Err` variant contains this error
   /// and gives back ownership of this `AsyncModel`.
-  ///
   ///
   /// # Examples
   /// ```

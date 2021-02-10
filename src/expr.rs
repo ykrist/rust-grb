@@ -820,12 +820,14 @@ impl fmt::Debug for Attached<'_, Var> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::prelude::*;
+  extern crate self as grb;
 
   macro_rules! make_model_with_vars {
     ($model:ident, $($var:ident),+) => {
       let mut $model = Model::new("test").unwrap();
       $(
-        let $var = $model.add_var(stringify!($var), Binary, 0.0, 0.0, 0.0, &[], &[]).unwrap();
+        let $var = add_binvar!($model, name: stringify!($var)).unwrap();
       )+
       $model.update().unwrap(); // necessary to retrieve variable attributes
     }

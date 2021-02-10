@@ -406,67 +406,6 @@ impl Model {
     Ok(self.vars.add_new(self.update_mode_lazy()?))
   }
 
-  /// Add multiple decision variables to the model in a single Gurobi API call.
-  pub fn add_vars(&mut self, names: &[&str], vtypes: &[VarType], objs: &[f64], lbs: &[f64], ubs: &[f64], colcoeff: &[Vec<(Constr, f64)>]) -> Result<Vec<Var>> {
-    if names.len() != vtypes.len() || vtypes.len() != objs.len() || objs.len() != lbs.len() || lbs.len() != colcoeff.len() {
-      return Err(Error::InconsistentDims);
-    }
-
-    let names = {
-      let mut buf = Vec::with_capacity(names.len());
-      for &name in names.iter() {
-        let name = CString::new(name)?;
-        buf.push(name.as_ptr());
-      }
-      buf
-    };
-
-    let vtypes = {
-      let mut buf = Vec::with_capacity(vtypes.len());
-      for &vtype in vtypes.iter() {
-        let vtype = vtype.into();
-        buf.push(vtype);
-      }
-      buf
-    };
-
-    let (beg, ind, val) = {
-      let len_ind = colcoeff.iter().map(|c| c.len()).sum();
-      let mut buf_beg = Vec::with_capacity(colcoeff.len());
-      let mut buf_ind = Vec::with_capacity(len_ind);
-      let mut buf_val: Vec<f64> = Vec::with_capacity(len_ind);
-
-      let mut beg = 0i32;
-      for coeff in colcoeff {
-        buf_beg.push(beg);
-        beg += coeff.len() as i32;
-
-        for (constr, c) in coeff.iter() {
-          buf_ind.push(self.get_index(constr)?);
-          buf_val.push(*c);
-        }
-      }
-      (buf_beg, buf_ind, buf_val)
-    };
-
-    self.check_apicall(unsafe {
-      grb_sys::GRBaddvars(self.ptr,
-                      names.len() as grb_sys::c_int,
-                      beg.len() as grb_sys::c_int,
-                      beg.as_ptr(),
-                      ind.as_ptr(),
-                      val.as_ptr(),
-                      objs.as_ptr(),
-                      lbs.as_ptr(),
-                      ubs.as_ptr(),
-                      vtypes.as_ptr(),
-                      names.as_ptr())
-    })?;
-
-    let lazy = self.update_mode_lazy()?;
-    Ok(vec![self.vars.add_new(lazy); names.len()])
-  }
-
 
   /// Add a Linear constraint to the model.
   ///

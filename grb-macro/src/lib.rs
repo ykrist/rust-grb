@@ -302,7 +302,7 @@ impl OptArgs {
       None => (quote!{ 0.0f64 }, quote!{ grb::INFINITY })
     };
 
-    quote!{ #model.add_var(#name, #vtype, #obj as f64, #lb, #ub, &[], &[]) }
+    quote!{ #model.add_var(#name, #vtype, #obj as f64, #lb, #ub, std::iter::empty() ) }
   }
 }
 

@@ -5,7 +5,7 @@ pub enum Error {
   FromAPI(String, i32),
   /// Conversion to a C-style null-termined string failed.  Contains the underlying [`std::ffi::NulError`].
   NulError(std::ffi::NulError),
-  /// Inconsistent argument dimensions
+  // /// Inconsistent argument dimensions
   InconsistentDims,
   /// Query/modifying a removed variable or constraint
   ModelObjectRemoved,

@@ -18,12 +18,10 @@ fn main() {
       let constrs = model.get_constrs().unwrap().to_vec();
       let slacks = {
         let (_, svars, _, _) = model.feas_relax(RelaxType::Linear,
-                      false,
-                      &[],
-                      &[],
-                      &[],
-                      &constrs,
-                      &vec![1.0; constrs.len()])
+                                                false,
+                                                std::iter::empty(),
+                                                std::iter::empty(),
+                                                constrs.iter().map(|&c| (c, 1.0)))
           .unwrap();
         svars
       };

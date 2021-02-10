@@ -11,10 +11,10 @@ fn main() -> grb::Result<()> {
   model.set_objective(2*x0 + x1 + x2, Maximize)?;
 
   // [x0 = 0] or [x1 = 0]
-  model.add_sos(&[x0, x1], &[1.0, 2.0], SOSType::Ty1)?;
+  model.add_sos([(x0, 1.0), (x1, 2.0)].iter().copied(), SOSType::Ty1)?;
 
   // [x0 = 0] or [x2 = 0]
-  model.add_sos(&[x0, x2], &[1.0, 2.0], SOSType::Ty1)?;
+  model.add_sos([(x0, 1.0), (x2, 2.0)].iter().copied(), SOSType::Ty1)?;
 
   model.optimize()?;
 

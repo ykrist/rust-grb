@@ -25,19 +25,16 @@ fn main() -> grb::Result<()> {
   let (lb, ub) = (0.0, 1.0);
 
   let pt_u: Vec<f64> = (0..n_points).map(|i| lb + (ub - lb) * (i as f64) / ((n_points as f64) - 1.0)).collect();
-  let pt_f: Vec<f64> = pt_u.iter().map(|&x| f(x)).collect();
-  let pt_g: Vec<f64> = pt_u.iter().map(|&z| g(z)).collect();
 
-  model.set_pwl_obj(&x, pt_u.as_slice(), pt_f.as_slice())?;
-  model.set_pwl_obj(&z, pt_u.as_slice(), pt_g.as_slice())?;
+  model.set_pwl_obj(&x, pt_u.iter().map(|&u| (u, f(u))))?;
+  model.set_pwl_obj(&z, pt_u.iter().map(|&u| (u, g(u))))?;
   model.set_obj_attr(attr::Obj, &y, -1.0)?;
 
   optimize_and_print_status(&mut model)?;
 
   // Negate piecewise-linear objective function for x.
   // And then the objective function becomes non-convex.
-  let pt_f: Vec<f64> = pt_f.into_iter().map(|f| -f).collect();
-  model.set_pwl_obj(&x, pt_u.as_slice(), pt_f.as_slice())?;
+  model.set_pwl_obj(&x, pt_u.iter().map(|&u| (u, -f(u))))?;
 
   optimize_and_print_status(&mut model)
 }

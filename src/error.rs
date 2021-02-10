@@ -5,8 +5,6 @@ pub enum Error {
   FromAPI(String, i32),
   /// Conversion to a C-style null-termined string failed.  Contains the underlying [`std::ffi::NulError`].
   NulError(std::ffi::NulError),
-  // /// Inconsistent argument dimensions
-  InconsistentDims,
   /// Query/modifying a removed variable or constraint
   ModelObjectRemoved,
   /// Model object hasn't been updated yet.  A call to [`Model::update`](crate::Model::update) is needed.
@@ -30,7 +28,6 @@ impl std::fmt::Display for Error {
   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
     match self {
       Error::FromAPI(message, code) => write!(f, "Error from API: {} ({})", message, code),
-      Error::InconsistentDims => write!(f, "Inconsistent argument dimensions"),
       Error::NulError(err) =>  f.write_fmt(format_args!("NulError: {}", err)),
       Error::ModelObjectRemoved => f.write_str("Variable or constraint has been removed from the model"),
       Error::ModelObjectPending => f.write_str("Variable or constraint is awaiting model update"),

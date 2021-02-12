@@ -820,12 +820,16 @@ impl fmt::Debug for Attached<'_, Var> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::prelude::*;
   extern crate self as grb;
 
   macro_rules! make_model_with_vars {
     ($model:ident, $($var:ident),+) => {
-      let mut $model = Model::new("test").unwrap();
+
+      let mut $model = {
+        let mut e = Env::empty().unwrap();
+        e.set(param::OutputFlag, 0).unwrap();
+        Model::with_env("test", &e.start().unwrap()).unwrap()
+       };
       $(
         let $var = add_binvar!($model, name: stringify!($var)).unwrap();
       )+

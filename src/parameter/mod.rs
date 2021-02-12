@@ -3,11 +3,11 @@
 //! [manual](https://www.gurobi.com/documentation/9.1/refman/parameters.html) for a list
 //! of parameters and their uses.
 use grb_sys as ffi;
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
 
 use crate::Result;
 use crate::env::Env;
-use crate::util::{AsPtr, copy_c_str, GurobiName};
+use crate::util::{AsPtr, copy_c_str};
 
 mod param_enums; // generated code - see build/main.rs
 
@@ -16,6 +16,7 @@ pub use param_enums::enum_exports::*;
 pub use param_enums::variant_exports as param;
 
 use crate::constants::GRB_MAX_STRLEN;
+use cstr_enum::AsCStr;
 
 /// A queryable Gurobi parameter for a [`Model`](crate::Model) or [`Env`](crate::Env)
 pub trait ParamGet<V> {
@@ -37,7 +38,7 @@ macro_rules! impl_param_get {
       let mut val = $default;
       unsafe {
         env.check_apicall($get(
-          env.as_mut_ptr(), self.name().as_ptr(), &mut val
+          env.as_mut_ptr(), self.as_cstr().as_ptr(), &mut val
         ))?;
       }
       Ok(val)
@@ -51,7 +52,7 @@ macro_rules! impl_param_set {
     fn set(&self, env: &mut Env, value: $t) -> Result<()> {
       unsafe {
         env.check_apicall($set(
-          env.as_mut_ptr(), self.name().as_ptr(), value
+          env.as_mut_ptr(), self.as_cstr().as_ptr(), value
         ))?;
       }
       Ok(())
@@ -81,7 +82,7 @@ impl ParamGet<String> for StrParam {
     let mut buf = [0i8; GRB_MAX_STRLEN];
     unsafe {
       env.check_apicall(grb_sys::GRBgetstrparam(
-        env.as_mut_ptr(), self.name().as_ptr(), buf.as_mut_ptr()
+        env.as_mut_ptr(), self.as_cstr().as_ptr(), buf.as_mut_ptr()
       ))?;
       Ok(copy_c_str(buf.as_ptr()))
     }
@@ -94,7 +95,7 @@ impl ParamSet<String> for StrParam {
     let value = CString::new(value)?;
     unsafe {
       env.check_apicall(grb_sys::GRBsetstrparam(
-        env.as_mut_ptr(), self.name().as_ptr(), value.as_ptr()
+        env.as_mut_ptr(), self.as_cstr().as_ptr(), value.as_ptr()
       ))
     }
   }
@@ -147,9 +148,9 @@ impl Undocumented {
 }
 
 // not strictly necessary, since we can use self.name directly
-impl GurobiName for Undocumented {
-  fn name(&self) -> CString {
-    self.name.clone()
+impl AsCStr for Undocumented {
+  fn as_cstr(&self) -> &CStr {
+    self.name.as_ref()
   }
 }
 
@@ -174,7 +175,7 @@ impl ParamGet<String> for &Undocumented {
     let mut buf = [0i8; GRB_MAX_STRLEN];
     unsafe {
       env.check_apicall(grb_sys::GRBgetstrparam(
-        env.as_mut_ptr(), self.name.as_ptr(), buf.as_mut_ptr()
+        env.as_mut_ptr(), self.as_cstr().as_ptr(), buf.as_mut_ptr()
       ))?;
       Ok(copy_c_str(buf.as_ptr()))
     }
@@ -186,7 +187,7 @@ impl ParamSet<String> for &Undocumented {
     let value = CString::new(value)?;
     unsafe {
       env.check_apicall(grb_sys::GRBsetstrparam(
-        env.as_mut_ptr(), self.name.as_ptr(), value.as_ptr()
+        env.as_mut_ptr(), self.as_cstr().as_ptr(), value.as_ptr()
       ))
     }
   }

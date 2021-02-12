@@ -127,7 +127,7 @@ fn parse_csv<K, V, P>(filename: &impl AsRef<Path>, row_parser: P) -> anyhow::Res
 }
 
 fn add_enum_derives(e: &mut Enum) {
-  for t in &["Debug", "Copy", "Clone", "Eq", "PartialEq", "Hash"] {
+  for t in &["Debug", "Copy", "Clone", "Eq", "PartialEq", "Hash", "FromCStr", "AsCStr"] {
     e.derive(t);
   }
 }
@@ -200,23 +200,17 @@ fn try_rustfmt_file(filename: &impl AsRef<OsStr>) {
     .output().unwrap();
 }
 
-const TRAIT_NAME_MARKER : &'static str = "GurobiNameMarker";
-const TRAIT_NAME_MARKER_PATH : &'static str = "crate::util";
 
-fn add_name_marker_trait_impl(scope: &mut codegen::Scope, ty: impl Into<codegen::Type>) {
-  let mut impl_nametrait = codegen::Impl::new(ty);
-  impl_nametrait.impl_trait("GurobiNameMarker");
-  scope.push_impl(impl_nametrait);
+
+fn add_shared_imports(scope: &mut codegen::Scope) {
+  scope.import("cstr_enum", "*");
 }
 
-fn add_name_marker_trait_import(scope: &mut codegen::Scope) {
-  scope.import(TRAIT_NAME_MARKER_PATH, TRAIT_NAME_MARKER);
-}
 
 
 fn generate_param_src_file(filename: &impl AsRef<Path>, grouped_params: Vec<(DataType, Vec<String>)>) -> anyhow::Result<()> {
   let mut scope = codegen::Scope::new();
-  add_name_marker_trait_import(&mut scope);
+  add_shared_imports(&mut scope);
 
   let mut enums = Vec::new();
 
@@ -225,13 +219,11 @@ fn generate_param_src_file(filename: &impl AsRef<Path>, grouped_params: Vec<(Dat
       for paramname in paramnames {
         let (name, enm) = make_custom_param_enum(&paramname);
         enums.push(name);
-        add_name_marker_trait_impl(&mut scope, enm.ty());
         scope.push_enum(enm);
       }
     } else {
       let (name, enm) = make_param_enum(d, &paramnames);
       enums.push(name);
-      add_name_marker_trait_impl(&mut scope, enm.ty());
       scope.push_enum(enm);
     }
   }
@@ -261,7 +253,7 @@ fn generate_param_src_file(filename: &impl AsRef<Path>, grouped_params: Vec<(Dat
 
 fn generate_attr_src_file(filename: &impl AsRef<Path>, grouped_attrs: Vec<((ObjType, DataType), Vec<String>)>) -> anyhow::Result<()> {
   let mut scope = codegen::Scope::new();
-  add_name_marker_trait_import(&mut scope);
+  add_shared_imports(&mut scope);
 
   let typetrait : HashMap<DataType, String> = {
     let mut m = HashMap::default();
@@ -289,7 +281,6 @@ fn generate_attr_src_file(filename: &impl AsRef<Path>, grouped_attrs: Vec<((ObjT
       for aname in attrnames {
         let (name, enm) = make_custom_attr_enum(o, &aname);
         scope.push_enum(enm);
-        add_name_marker_trait_impl(&mut scope, &name);
         enums.push(name);
       }
     } else {
@@ -302,8 +293,6 @@ fn generate_attr_src_file(filename: &impl AsRef<Path>, grouped_attrs: Vec<((ObjT
       impl_tytrait.impl_trait(&typetrait[&d]);
       scope.push_enum(enm);
       scope.push_impl(impl_tytrait);
-
-      add_name_marker_trait_impl(&mut scope, &enum_ty);
 
       if o != ObjType::Model {
         // Implement the model object marker trait

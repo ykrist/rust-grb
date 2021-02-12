@@ -16,7 +16,7 @@ pub(crate) struct UserAllocEnv {
 }
 
 impl AsPtr for UserAllocEnv {
-  type Raw = GRBenv;
+  type Ptr = GRBenv;
   unsafe fn as_mut_ptr(&self) -> *mut GRBenv { self.ptr }
 }
 
@@ -43,7 +43,7 @@ pub struct Env{
 
 
 impl AsPtr for Env {
-  type Raw = GRBenv;
+  type Ptr = GRBenv;
   unsafe fn as_mut_ptr(&self) -> *mut GRBenv {
     self.gurobi_allocated.unwrap_or_else(|| self.user_allocated.as_mut_ptr())
   }
@@ -54,11 +54,14 @@ impl AsPtr for Env {
 /// such as [`Record`](https://www.gurobi.com/documentation/9.1/refman/record.html)
 /// need to be set before the environment has been started.
 ///
+/// Setting [`param::OutputFlag`] to 0 on an `EmptyEnv` is useful for stopping the license info from
+/// being printed, since this happens on starting the environment.
+///
 /// # Examples
 /// ```
 /// use grb::*;
 /// let mut env = Env::empty()?;
-/// env.set(param::OutputFlag, 0)?
+/// env.set(param::OutputFlag, 0)? // license will not be printed when env starts
 ///   .set(param::UpdateMode, 1)?
 ///   .set(param::LogFile, "".to_string())?;
 /// let env : Env = env.start()?;

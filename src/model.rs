@@ -41,7 +41,7 @@ macro_rules! impl_object_list_getter {
 }
 
 impl AsPtr for Model {
-  type Raw = GRBmodel;
+  type Ptr = GRBmodel;
   unsafe fn as_mut_ptr(&self) -> *mut GRBmodel {
     self.ptr
   }

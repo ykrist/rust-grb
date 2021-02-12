@@ -9,11 +9,12 @@ use std::ffi::CString;
 use std::iter::IntoIterator;
 use std::convert::TryInto;
 
+use cstr_enum::AsCStr;
 use grb_sys::{c_int, c_char};
 
 use crate::model_object::*;
 use crate::{Result, Model, VarType, ModelSense, Status, ConstrSense};
-use crate::util::{AsPtr, copy_c_str, GurobiName};
+use crate::util::{AsPtr, copy_c_str};
 
 mod attr_enums; // generated code - see build/main.rs
 #[doc(inline)]
@@ -67,7 +68,7 @@ macro_rules! impl_obj_get {
       let mut val = $default;
       unsafe {
         let m = model.as_mut_ptr();
-        let code = $get(m, self.name().as_ptr(), idx, &mut val);
+        let code = $get(m, self.as_cstr().as_ptr(), idx, &mut val);
         model.check_apicall(code)?;
       }
       Ok(val)
@@ -80,7 +81,7 @@ macro_rules! impl_obj_get {
 
       unsafe {
         model.check_apicall($getbatch(
-          model.as_mut_ptr(), self.name().as_ptr(), inds.len() as c_int, inds.as_ptr(), vals.as_mut_ptr()
+          model.as_mut_ptr(), self.as_cstr().as_ptr(), inds.len() as c_int, inds.as_ptr(), vals.as_mut_ptr()
         ))?;
       }
 
@@ -95,7 +96,7 @@ macro_rules! impl_obj_set {
     fn set(&self, model: &Model, idx: i32, val: $t) -> Result<()> {
       unsafe {
         let m = model.as_mut_ptr();
-        let code = $set(m, self.name().as_ptr(), idx, val);
+        let code = $set(m, self.as_cstr().as_ptr(), idx, val);
         model.check_apicall(code)
       }
     }
@@ -113,7 +114,7 @@ macro_rules! impl_obj_set {
 
       unsafe {
         model.check_apicall($setbatch(
-          model.as_mut_ptr(), self.name().as_ptr(), inds.len() as c_int, inds.as_ptr(), vals.as_ptr()
+          model.as_mut_ptr(), self.as_cstr().as_ptr(), inds.len() as c_int, inds.as_ptr(), vals.as_ptr()
           ))?;
       }
 
@@ -130,7 +131,7 @@ macro_rules! impl_obj_get_custom {
       let mut val = $default;
       unsafe {
         let m = model.as_mut_ptr();
-        let code = $get(m, self.name().as_ptr(), idx, &mut val);
+        let code = $get(m, self.as_cstr().as_ptr(), idx, &mut val);
         model.check_apicall(code)?;
       }
       Ok(val.try_into().unwrap())
@@ -143,7 +144,7 @@ macro_rules! impl_obj_get_custom {
 
       unsafe {
         model.check_apicall($getbatch(
-          model.as_mut_ptr(), self.name().as_ptr(), inds.len() as c_int, inds.as_ptr(), vals.as_mut_ptr()
+          model.as_mut_ptr(), self.as_cstr().as_ptr(), inds.len() as c_int, inds.as_ptr(), vals.as_mut_ptr()
         ))?;
       }
 
@@ -154,41 +155,41 @@ macro_rules! impl_obj_get_custom {
 }
 
 impl<A> ObjAttrGet<A::Obj, i32> for A where
-  A: IntAttr + GurobiName + ObjAttr,
+  A: IntAttr +  ObjAttr + AsCStr,
 {
   impl_obj_get! { i32, i32::MIN, grb_sys::GRBgetintattrelement, grb_sys::GRBgetintattrlist }
 }
 
 
 impl<A> ObjAttrSet<A::Obj, i32> for A where
-  A: IntAttr + GurobiName + ObjAttr,
+  A: IntAttr + ObjAttr + AsCStr,
 {
   impl_obj_set! { i32, i32::MIN, grb_sys::GRBsetintattrelement, grb_sys::GRBsetintattrlist }
 }
 
 impl<A> ObjAttrGet<A::Obj, f64> for A where
-  A: DoubleAttr + GurobiName + ObjAttr,
+  A: DoubleAttr + ObjAttr + AsCStr,
 {
   impl_obj_get! { f64, f64::MIN, grb_sys::GRBgetdblattrelement, grb_sys::GRBgetdblattrlist }
 }
 
 
 impl<A> ObjAttrSet<A::Obj, f64> for A where
-  A: DoubleAttr + GurobiName + ObjAttr,
+  A: DoubleAttr + ObjAttr + AsCStr,
 {
   impl_obj_set! { f64, f64::MIN, grb_sys::GRBsetdblattrelement, grb_sys::GRBsetdblattrlist }
 }
 
 
 impl<A> ObjAttrGet<A::Obj, c_char> for A where
-  A: CharAttr + GurobiName + ObjAttr,
+  A: CharAttr + ObjAttr + AsCStr,
 {
   impl_obj_get! { c_char, 0i8, grb_sys::GRBgetcharattrelement, grb_sys::GRBgetcharattrlist }
 }
 
 
 impl<A> ObjAttrSet<A::Obj, c_char> for A where
-  A: CharAttr + GurobiName + ObjAttr,
+  A: CharAttr + ObjAttr + AsCStr,
 {
   impl_obj_set! { c_char, 0i8, grb_sys::GRBsetcharattrelement, grb_sys::GRBsetcharattrlist }
 }
@@ -237,13 +238,13 @@ impl ObjAttrGet<Constr, ConstrSense> for ConstrSenseAttr {
 /// the next call to a Gurobi library routine. The user should also be careful to never modify the data pointed to
 /// by the returned character pointer.
 impl<A> ObjAttrGet<A::Obj, String> for A where
-  A: StrAttr + GurobiName + ObjAttr,
+  A: StrAttr + AsCStr + ObjAttr,
 {
   fn get(&self, model: &Model, idx: i32) -> Result<String> {
     unsafe {
       let mut s: grb_sys::c_str = std::ptr::null();
       model.check_apicall(grb_sys::GRBgetstrattrelement(
-        model.as_mut_ptr(), self.name().as_ptr(), idx, &mut s,
+        model.as_mut_ptr(), self.as_cstr().as_ptr(), idx, &mut s,
       ))?;
       Ok(copy_c_str(s))
     }
@@ -256,7 +257,7 @@ impl<A> ObjAttrGet<A::Obj, String> for A where
     unsafe {
       let mut cstrings: Vec<*const c_char> = vec![std::ptr::null(); inds.len()];
       model.check_apicall(grb_sys::GRBgetstrattrlist(
-        model.as_mut_ptr(), self.name().as_ptr(), inds.len() as c_int,
+        model.as_mut_ptr(), self.as_cstr().as_ptr(), inds.len() as c_int,
         inds.as_ptr(), cstrings.as_mut_ptr(),
       ))?;
 
@@ -270,14 +271,14 @@ impl<A> ObjAttrGet<A::Obj, String> for A where
 
 
 impl<'a, A, T> ObjAttrSet<A::Obj, T> for A where
-  A: StrAttr + GurobiName + ObjAttr,
+  A: StrAttr + AsCStr + ObjAttr,
   T: StringLike
 {
   fn set(&self, model: &Model, idx: i32, val: T) -> Result<()> {
     let val = CString::new(val)?;
     unsafe {
       model.check_apicall(grb_sys::GRBsetstrattrelement(
-        model.as_mut_ptr(), self.name().as_ptr(), idx, val.as_ptr(),
+        model.as_mut_ptr(), self.as_cstr().as_ptr(), idx, val.as_ptr(),
       ))?
     }
     Ok(())
@@ -299,7 +300,7 @@ impl<'a, A, T> ObjAttrSet<A::Obj, T> for A where
 
     unsafe {
       model.check_apicall(grb_sys::GRBsetstrattrlist(
-        model.as_mut_ptr(), self.name().as_ptr(), inds.len() as c_int,
+        model.as_mut_ptr(), self.as_cstr().as_ptr(), inds.len() as c_int,
         inds.as_ptr(), cstr_ptrs.as_ptr(),
       ))
     }
@@ -327,7 +328,7 @@ macro_rules! impl_model_attr {
         let mut val = $default;
         unsafe {
           model.check_apicall($get(
-            model.as_mut_ptr(), self.name().as_ptr(), &mut val,
+            model.as_mut_ptr(), self.as_cstr().as_ptr(), &mut val,
           ))?
         }
         Ok(val)
@@ -338,7 +339,7 @@ macro_rules! impl_model_attr {
       fn set(&self, model: &Model, val: $t) -> Result<()> {
         unsafe {
           model.check_apicall($set(
-            model.as_mut_ptr(), self.name().as_ptr(), val,
+            model.as_mut_ptr(), self.as_cstr().as_ptr(), val,
           ))
         }
       }
@@ -356,7 +357,7 @@ impl ModelAttrGet<String> for ModelStrAttr {
     unsafe {
       let mut val: *const c_char = null_mut();
       model.check_apicall(grb_sys::GRBgetstrattr(
-        model.as_mut_ptr(), self.name().as_ptr(), &mut val,
+        model.as_mut_ptr(), self.as_cstr().as_ptr(), &mut val,
       ))?;
       Ok(copy_c_str(val))
     }
@@ -368,7 +369,7 @@ impl<T: Into<Vec<u8>>> ModelAttrSet<T> for ModelStrAttr {
     let val = CString::new(val)?;
     unsafe {
       model.check_apicall(grb_sys::GRBsetstrattr(
-        model.as_mut_ptr(), self.name().as_ptr(), val.as_ptr(),
+        model.as_mut_ptr(), self.as_cstr().as_ptr(), val.as_ptr(),
       ))
     }
   }
@@ -380,7 +381,7 @@ impl ModelAttrGet<ModelSense> for ModelModelSenseAttr {
     let mut val = i32::MIN;
     unsafe {
       model.check_apicall(grb_sys::GRBgetintattr(
-        model.as_mut_ptr(), self.name().as_ptr(), &mut val,
+        model.as_mut_ptr(), self.as_cstr().as_ptr(), &mut val,
       ))?
     }
     Ok(val.try_into().unwrap())
@@ -391,7 +392,7 @@ impl ModelAttrSet<i32> for ModelModelSenseAttr {
   fn set(&self, model: &Model, val: i32) -> Result<()> {
     unsafe {
       model.check_apicall(grb_sys::GRBsetintattr(
-        model.as_mut_ptr(), self.name().as_ptr(), val,
+        model.as_mut_ptr(), self.as_cstr().as_ptr(), val,
       ))
     }
   }
@@ -409,7 +410,7 @@ impl ModelAttrGet<Status> for ModelStatusAttr {
     let mut val = i32::MIN;
     unsafe {
       model.check_apicall(grb_sys::GRBgetintattr(
-        model.as_mut_ptr(), self.name().as_ptr(), &mut val,
+        model.as_mut_ptr(), self.as_cstr().as_ptr(), &mut val,
       ))?
     }
     Ok(val.try_into().unwrap())

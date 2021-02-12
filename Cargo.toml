@@ -18,6 +18,7 @@ rustdoc-args = [ "--html-in-header", "doc/katex-header.html" ]
 [dependencies]
 fnv = "^1.0"
 anyhow = "^1.0"
+cstr-enum = "^1.0"
 grb-sys = {path = "./grb-sys", version="0.1.0" }
 grb-macro = {path= "./grb-macro", version="0.1.0" }
 

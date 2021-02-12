@@ -8,7 +8,7 @@ use std::fmt;
 /// A inequality constraint (linear or quadratic).  Creating this object does not automatically add the constraint to a model.
 /// Instead, it should be passed to [`Model::add_constr`](crate::Model::add_constr) or [`Model::add_constrs`](crate::Model::add_constrs).
 ///
-/// Usually created with an invocation of `c!(...)`.
+/// Usually created with an invocation of [`c!`]`(...)`.
 #[derive(Debug, Clone)]
 pub struct IneqExpr {
   /// Left-hand side

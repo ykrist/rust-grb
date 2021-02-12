@@ -54,7 +54,7 @@ impl AsPtr for Env {
 /// such as [`Record`](https://www.gurobi.com/documentation/9.1/refman/record.html)
 /// need to be set before the environment has been started.
 ///
-/// Setting [`param::OutputFlag`] to 0 on an `EmptyEnv` is useful for stopping the license info from
+/// Setting [`param::OutputFlag`](crate::param::OutputFlag) to 0 on an `EmptyEnv` is useful for stopping the license info from
 /// being printed, since this happens on starting the environment.
 ///
 /// # Examples

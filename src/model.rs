@@ -675,7 +675,6 @@ impl Model {
   /// - [`Error::ModelObjectPending`] if some variables haven't yet been added to the model.
   /// - [`Error::ModelObjectRemoved`] if some variables have been removed from the model.
   /// - [`Error::ModelObjectMismatch`] if some variables are from a different model.
-  /// - [`Error::InconsistentDims`] if `vars` and `weights` have different lengths.
   /// - [`Error::FromAPI`] if a Gurobi API error occurs.
   pub fn add_sos(&mut self, var_weight_pairs: impl IntoIterator<Item=(Var, f64)>, sostype: SOSType) -> Result<SOS> {
     let var_weight_pairs = var_weight_pairs.into_iter();

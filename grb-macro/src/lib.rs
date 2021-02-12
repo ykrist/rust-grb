@@ -382,7 +382,7 @@ macro_rules! specialised_addvar {
         }
       }
 
-      #[doc= "Equivalent to calling [`add_var`]`(model, "]
+      #[doc= "Equivalent to calling [`add_var!`]`(model, "]
       #[doc= $docvtype]
       #[doc=", ...)`.\n\n"]
       #[proc_macro]

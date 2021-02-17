@@ -52,11 +52,10 @@ fn build_cycles(edges_used: impl IntoIterator<Item=(usize, usize)>) -> Vec<Vec<(
 
   while let Some(&start) = neighbours.keys().next() {
     let mut cycle = Vec::new();
-    // let start = *neighbours.keys().next().unwrap();
     let mut current = start;
     let mut neigh = neighbours.remove(&current).unwrap();
 
-    // here we move from the current node to a neighbour unvisited node.
+    // Here we move from the current node to an unvisited neighbouring node.
     // A node is unvisited if it still in the `neighbours` Map.
     loop {
       let n1 = neigh[0];
@@ -66,7 +65,7 @@ fn build_cycles(edges_used: impl IntoIterator<Item=(usize, usize)>) -> Vec<Vec<(
       let (next, next_neigh) = if let Some(next_neigh) = neighbours.remove(&n1) {
         (n1, next_neigh)
       } else {
-        // otherwise, move to n2
+        // otherwise,try to move to n2
         if let Some(next_neigh) = neighbours.remove(&n2) {
           (n2, next_neigh)
         } else {
@@ -80,6 +79,7 @@ fn build_cycles(edges_used: impl IntoIterator<Item=(usize, usize)>) -> Vec<Vec<(
       neigh = next_neigh;
       current = next;
     }
+
     cycles.push(cycle)
   }
   cycles
@@ -165,7 +165,7 @@ fn fmt_cycle(cycle: &Vec<(usize, usize)>) -> String {
 fn main() -> grb::Result<()> {
   let mut model = Model::new("TSP")?;
 
-  /// Define variables and node -> edges lookup
+  // Define variables and node -> edges lookup
   let mut edges_by_node = vec![vec![]; N];
   let mut x = FnvHashMap::default();
   for i in 0..N {
@@ -178,7 +178,7 @@ fn main() -> grb::Result<()> {
   let edge_by_node = edges_by_node;
   let x = x;
 
-  /// Define constraints (cover constraints)
+  // Define constraints (only need cover constraints)
   let cover_const: grb::Result<Vec<_>> = (0..N).map(|i| {
     model.add_constr(&format!("cover[{}]", i), c!(edge_by_node[i].iter().map(|edge| x[edge]).grb_sum() == 2))
   }).collect();
@@ -188,7 +188,7 @@ fn main() -> grb::Result<()> {
   model.update()?;
   model.write("tsp.lp")?;
 
-  /// needs to be set whenever working with lazy constraints
+  // needs to be set whenever working with lazy constraints
   model.set_param(param::LazyConstraints, 1)?;
 
   let mut callback = SubtourElimination::new(&x);

@@ -78,9 +78,9 @@
 
 /// Returns the version number of Gurobi
 pub fn version() -> (i32, i32, i32) {
-  let (mut major, mut minor, mut technical) = (-1, -1, -1);
-  unsafe { grb_sys::GRBversion(&mut major, &mut minor, &mut technical) };
-  (major, minor, technical)
+    let (mut major, mut minor, mut technical) = (-1, -1, -1);
+    unsafe { grb_sys::GRBversion(&mut major, &mut minor, &mut technical) };
+    (major, minor, technical)
 }
 
 // external re-exports
@@ -96,37 +96,28 @@ pub mod parameter;
 pub mod prelude;
 
 // Public re-exports
-pub use expr::Expr;
 #[doc(no_inline)]
 pub use attribute::attr;
+pub use expr::Expr;
 #[doc(no_inline)]
 pub use parameter::param;
-
-
 
 // private modules and their re-exports
 mod constants;
 pub use constants::{
-  VarType,
-  ModelSense,
-  SOSType,
-  Status,
-  RelaxType,
-  ConstrSense,
-  GRB_INFINITY as INFINITY
+    ConstrSense, ModelSense, RelaxType, SOSType, Status, VarType, GRB_INFINITY as INFINITY,
 };
 
 mod env;
-pub use env::{Env, EmptyEnv};
+pub use env::{EmptyEnv, Env};
 
 mod error;
 pub use error::{Error, Result};
 
 mod model;
-pub use model::{Model, AsyncModel, AsyncHandle};
+pub use model::{AsyncHandle, AsyncModel, Model};
 
 mod model_object;
-pub use model_object::{Var, QConstr, Constr, SOS, ModelObject};
+pub use model_object::{Constr, ModelObject, QConstr, Var, SOS};
 
 mod util;
-

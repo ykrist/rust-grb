@@ -5,9 +5,9 @@
 use grb_sys as ffi;
 use std::ffi::{CStr, CString};
 
-use crate::Result;
 use crate::env::Env;
-use crate::util::{AsPtr, copy_c_str};
+use crate::util::{copy_c_str, AsPtr};
+use crate::Result;
 
 mod param_enums; // generated code - see build/main.rs
 
@@ -20,85 +20,83 @@ use cstr_enum::AsCStr;
 
 /// A queryable Gurobi parameter for a [`Model`](crate::Model) or [`Env`](crate::Env)
 pub trait ParamGet<V> {
-  /// This parameter's value type (string, double, int, char)
-  /// Query a parameter from an environment
-  fn get(&self, env: &Env) -> Result<V>;
+    /// This parameter's value type (string, double, int, char)
+    /// Query a parameter from an environment
+    fn get(&self, env: &Env) -> Result<V>;
 }
 
 /// A modifiable Gurobi parameter for a [`Model`](crate::Model) or [`Env`](crate::Env)
 pub trait ParamSet<V> {
-  /// Set a parameter on an environment
-  fn set(&self, env: &mut Env, value: V) -> Result<()>;
+    /// Set a parameter on an environment
+    fn set(&self, env: &mut Env, value: V) -> Result<()>;
 }
 
 macro_rules! impl_param_get {
-  ($t:ty,  $default:expr, $get:path) => {
-    #[inline]
-    fn get(&self, env: &Env) -> Result<$t> {
-      let mut val = $default;
-      unsafe {
-        env.check_apicall($get(
-          env.as_mut_ptr(), self.as_cstr().as_ptr(), &mut val
-        ))?;
-      }
-      Ok(val)
-    }
-  }
+    ($t:ty,  $default:expr, $get:path) => {
+        #[inline]
+        fn get(&self, env: &Env) -> Result<$t> {
+            let mut val = $default;
+            unsafe {
+                env.check_apicall($get(env.as_mut_ptr(), self.as_cstr().as_ptr(), &mut val))?;
+            }
+            Ok(val)
+        }
+    };
 }
 
 macro_rules! impl_param_set {
-  ($t:ty,  $set:path) => {
-    #[inline]
-    fn set(&self, env: &mut Env, value: $t) -> Result<()> {
-      unsafe {
-        env.check_apicall($set(
-          env.as_mut_ptr(), self.as_cstr().as_ptr(), value
-        ))?;
-      }
-      Ok(())
-    }
-  }
+    ($t:ty,  $set:path) => {
+        #[inline]
+        fn set(&self, env: &mut Env, value: $t) -> Result<()> {
+            unsafe {
+                env.check_apicall($set(env.as_mut_ptr(), self.as_cstr().as_ptr(), value))?;
+            }
+            Ok(())
+        }
+    };
 }
 
 impl ParamGet<i32> for IntParam {
-  impl_param_get!{ i32, i32::MIN, grb_sys::GRBgetintparam }
+    impl_param_get! { i32, i32::MIN, grb_sys::GRBgetintparam }
 }
 
 impl ParamSet<i32> for IntParam {
-  impl_param_set! { i32, grb_sys::GRBsetintparam }
+    impl_param_set! { i32, grb_sys::GRBsetintparam }
 }
 
 impl ParamGet<f64> for DoubleParam {
-  impl_param_get! { f64, f64::NAN, ffi::GRBgetdblparam }
+    impl_param_get! { f64, f64::NAN, ffi::GRBgetdblparam }
 }
 
 impl ParamSet<f64> for DoubleParam {
-  impl_param_set! { f64, ffi::GRBsetdblparam }
+    impl_param_set! { f64, ffi::GRBsetdblparam }
 }
-
 
 impl ParamGet<String> for StrParam {
-  fn get(&self, env: &Env) -> Result<String> {
-    let mut buf = [0i8; GRB_MAX_STRLEN];
-    unsafe {
-      env.check_apicall(grb_sys::GRBgetstrparam(
-        env.as_mut_ptr(), self.as_cstr().as_ptr(), buf.as_mut_ptr()
-      ))?;
-      Ok(copy_c_str(buf.as_ptr()))
+    fn get(&self, env: &Env) -> Result<String> {
+        let mut buf = [0i8; GRB_MAX_STRLEN];
+        unsafe {
+            env.check_apicall(grb_sys::GRBgetstrparam(
+                env.as_mut_ptr(),
+                self.as_cstr().as_ptr(),
+                buf.as_mut_ptr(),
+            ))?;
+            Ok(copy_c_str(buf.as_ptr()))
+        }
     }
-  }
 }
 
-
 impl ParamSet<String> for StrParam {
-  fn set(&self, env: &mut Env, value: String) -> Result<()> {
-    let value = CString::new(value)?;
-    unsafe {
-      env.check_apicall(grb_sys::GRBsetstrparam(
-        env.as_mut_ptr(), self.as_cstr().as_ptr(), value.as_ptr()
-      ))
+    fn set(&self, env: &mut Env, value: String) -> Result<()> {
+        let value = CString::new(value)?;
+        unsafe {
+            env.check_apicall(grb_sys::GRBsetstrparam(
+                env.as_mut_ptr(),
+                self.as_cstr().as_ptr(),
+                value.as_ptr(),
+            ))
+        }
     }
-  }
 }
 
 /// Support for querying and seting undocumented Gurobi parameters.
@@ -133,62 +131,68 @@ impl ParamSet<String> for StrParam {
 /// ```
 #[derive(Clone, Eq, PartialEq)]
 pub struct Undocumented {
-  name: CString
+    name: CString,
 }
 
 impl Undocumented {
-  /// Declare a new `Undocumented` parameter.
-  ///
-  /// # Errors
-  /// Will return an [`Error::NulError`](crate::Error) if the string given cannot be converted into a
-  /// C-style string.
-  pub fn new(string: impl Into<Vec<u8>>) -> Result<Undocumented> {
-    Ok(Undocumented { name: CString::new(string)? })
-  }
+    /// Declare a new `Undocumented` parameter.
+    ///
+    /// # Errors
+    /// Will return an [`Error::NulError`](crate::Error) if the string given cannot be converted into a
+    /// C-style string.
+    pub fn new(string: impl Into<Vec<u8>>) -> Result<Undocumented> {
+        Ok(Undocumented {
+            name: CString::new(string)?,
+        })
+    }
 }
 
 // not strictly necessary, since we can use self.name directly
 impl AsCStr for Undocumented {
-  fn as_cstr(&self) -> &CStr {
-    self.name.as_ref()
-  }
+    fn as_cstr(&self) -> &CStr {
+        self.name.as_ref()
+    }
 }
 
 impl ParamGet<i32> for &Undocumented {
-  impl_param_get!{ i32, i32::MIN, grb_sys::GRBgetintparam }
+    impl_param_get! { i32, i32::MIN, grb_sys::GRBgetintparam }
 }
 
 impl ParamSet<i32> for &Undocumented {
-  impl_param_set! { i32, grb_sys::GRBsetintparam }
+    impl_param_set! { i32, grb_sys::GRBsetintparam }
 }
 
 impl ParamGet<f64> for &Undocumented {
-  impl_param_get! { f64, f64::NAN, ffi::GRBgetdblparam }
+    impl_param_get! { f64, f64::NAN, ffi::GRBgetdblparam }
 }
 
 impl ParamSet<f64> for &Undocumented {
-  impl_param_set! { f64, ffi::GRBsetdblparam }
+    impl_param_set! { f64, ffi::GRBsetdblparam }
 }
 
 impl ParamGet<String> for &Undocumented {
-  fn get(&self, env: &Env) -> Result<String> {
-    let mut buf = [0i8; GRB_MAX_STRLEN];
-    unsafe {
-      env.check_apicall(grb_sys::GRBgetstrparam(
-        env.as_mut_ptr(), self.as_cstr().as_ptr(), buf.as_mut_ptr()
-      ))?;
-      Ok(copy_c_str(buf.as_ptr()))
+    fn get(&self, env: &Env) -> Result<String> {
+        let mut buf = [0i8; GRB_MAX_STRLEN];
+        unsafe {
+            env.check_apicall(grb_sys::GRBgetstrparam(
+                env.as_mut_ptr(),
+                self.as_cstr().as_ptr(),
+                buf.as_mut_ptr(),
+            ))?;
+            Ok(copy_c_str(buf.as_ptr()))
+        }
     }
-  }
 }
 
 impl ParamSet<String> for &Undocumented {
-  fn set(&self, env: &mut Env, value: String) -> Result<()> {
-    let value = CString::new(value)?;
-    unsafe {
-      env.check_apicall(grb_sys::GRBsetstrparam(
-        env.as_mut_ptr(), self.as_cstr().as_ptr(), value.as_ptr()
-      ))
+    fn set(&self, env: &mut Env, value: String) -> Result<()> {
+        let value = CString::new(value)?;
+        unsafe {
+            env.check_apicall(grb_sys::GRBsetstrparam(
+                env.as_mut_ptr(),
+                self.as_cstr().as_ptr(),
+                value.as_ptr(),
+            ))
+        }
     }
-  }
 }

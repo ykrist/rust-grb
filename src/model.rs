@@ -1164,6 +1164,32 @@ impl AsyncHandle {
     let errors = self.0.check_apicall(unsafe { grb_sys::GRBsync(self.0.ptr) });
     (AsyncModel(self.0), errors)
   }
+
+  /// Send a request to Gurobi to terminate optimization.  Optimization may not finish immediately.
+  ///
+  /// # Example
+  /// ```
+  /// # use grb::prelude::*;
+  /// use grb::AsyncModel;
+  /// let e = Env::new("")?;
+  /// let m = Model::with_env("async", e)?;
+  /// # /*
+  ///   ...
+  /// # */
+  /// let m = AsyncModel::new(m);
+  /// // discard `AsyncModel` on failure and panic
+  /// let handle = m.optimize().map_err(|(_, e)| e).unwrap();
+  /// # /*
+  ///   ...
+  /// # */
+  /// handle.terminate();
+  /// # let (m, errors) = handle.join();
+  /// # errors?;
+  /// # Ok::<(), grb::Error>(())
+  /// ```
+  pub fn terminate(&self) {
+    self.0.terminate()
+  }
 }
 
 /// A wrapper around [`Model`] that supports async optimisation in the background.
@@ -1202,6 +1228,15 @@ impl AsyncModel {
   /// let mut m = Model::with_env("model", &env)?;
   /// drop(env);
   /// let mut m =  AsyncModel::new(m); // ok
+  /// # Ok::<(), grb::Error>(())
+  /// ```
+  /// You can also pass an owned `Env` to `Model::with_env`:
+  /// ```
+  /// # use grb::prelude::*;
+  /// # use grb::AsyncModel;
+  /// # let env = Env::new("")?;
+  /// let mut m = Model::with_env("model", env)?;
+  /// let mut m =  AsyncModel::new(m); // also ok
   /// # Ok::<(), grb::Error>(())
   /// ```
   /// This example panics because `m` uses the default `Env`, which is also stored globally.

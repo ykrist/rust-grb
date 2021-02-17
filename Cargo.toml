@@ -80,3 +80,7 @@ path = "examples/workforce2.rs"
 [[example]]
 name = "workforce3"
 path = "examples/workforce3.rs"
+
+[[example]]
+name = "tsp_lazy_constraints"
+path = "examples/tsp_lazy_constraints.rs"

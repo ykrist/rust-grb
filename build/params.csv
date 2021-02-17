@@ -1,4 +1,4 @@
-attr,dtype
+param,dtype
 SolutionLimit,int
 Method,int
 ScaleFlag,int

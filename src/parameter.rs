@@ -9,7 +9,13 @@ use crate::env::Env;
 use crate::util::{copy_c_str, AsPtr};
 use crate::Result;
 
-mod param_enums; // generated code - see build/main.rs
+
+#[allow(missing_docs)]
+mod param_enums {
+    include!(concat!(env!("OUT_DIR"), "/param_enums.rs"));
+    // generated code - see build/main.rs
+}
+
 
 #[doc(inline)]
 pub use param_enums::enum_exports::*;

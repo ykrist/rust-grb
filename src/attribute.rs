@@ -17,7 +17,11 @@ use crate::model_object::*;
 use crate::util::{copy_c_str, AsPtr};
 use crate::{ConstrSense, Model, ModelSense, Result, Status, VarType};
 
-mod attr_enums; // generated code - see build/main.rs
+#[allow(missing_docs)]
+mod attr_enums {
+    include!(concat!(env!("OUT_DIR"), "/attr_enums.rs"));
+    // generated code - see build/main.rs
+}
 #[doc(inline)]
 pub use attr_enums::enum_exports::*;
 #[doc(inline)]

@@ -1,92 +1,8 @@
-//! # The Build Script
-//!
-//! This build script is responsible for generating the enums containing Gurobi Attributes and Parameters.
-//! The inputs are two CSV files in this directory.
-//!
-//! `attrs.csv` has the following format:
-//! ```text
-//! attr,dtype,otype
-//! ```
-//! where `attr` is the Gurobi attribute name (case sensitive), `dtype` is the datatype which governs the marker trait used for blanket impls.
-//! The allowed values for `dtype` are described below:
-//!
-//! | `dtype`  | Description                                      |
-//! | -------- | ------------------------------------------------ |
-//! | `dbl`    | `f64`,  marker trait `DoubleAttr`                |
-//! | `int`    | `i32`,  marker trait `IntAttr`                   |
-//! | `chr`   | `c_char`, marker trait `CharAttr`                |
-//! | `str`    | `String`,  marker trait `StrAttr`                |
-//! | `custom` | Custom datatype, no marker traits will be added. |
-//!
-//! The `otype` is the object type to which this attribute belongs (`Model`, `Var`, `Constr`, etc).
-//! The allowed values for `otype` are listed below.
-//!
-//! | `otype`   | Description                          |
-//! | --------- | ------------------------------------ |
-//! | `model`   | no marker trait                      |
-//! | `var`     | marker trait `ObjAttr<Obj=Var>`      |
-//! | `constr`  | marker trait `ObjAttr<Obj=Constr>`   |
-//! | `qconstr` | marker trait `ObjAttr<Obj=QConstr>`  |
-//! | `sos`     | marker trait `ObjAttr<Obj=SOS>`      |
-//!
-//! This build script will group attributes by `otype` and `dtype`, and generate enums as needed.  For example,
-//! for `otype = "constr"` and `dtype = "str"` the following code is generated:
-//! ```
-//! /// String Gurobi attributes for [`Constr`](crate::Constr) objects.
-//! #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, FromCStr, AsCStr)]
-//! pub enum ConstrStrAttr {
-//!   CTag,
-//!   ConstrName,
-//! }
-//!
-//! impl StrAttr for ConstrStrAttr {
-//! }
-//!
-//! impl ObjAttr for ConstrStrAttr {
-//!   type Obj = Constr;
-//! }
-//! ```
-//! Note the two marker traits.  The latter would not be implemented if `otype = "model"`
-//!
-//!
-//! `params.csv` has the format similar format,
-//! ```text
-//! param,dtype
-//! ```
-//! where `param` is the Gurobi parameter name (case sensitive) and `dtype` has the same meaning as above.
-//! Note that there are currently no `char` parameters implemented in Gurobi.
-//!
-//! Below is example output for `dtype = "str"`
-//! ```
-//! /// String Gurobi parameters
-//! #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, FromCStr, AsCStr)]
-//! pub enum StrParam {
-//!     LogFile,
-//!     NodefileDir,
-//!     ResultFile,
-//!     WorkerPool,
-//!     WorkerPassword,
-//!     Dummy,
-//! }
-//! ```
-//!
-//! Finally, in both cases, the enums are added to a module called `enum_exports`, and the variants of the enums are added to a module called `variant_exports`:
-//! ```
-//! pub(super) mod enum_exports {
-//!   pub use super::{ModelDoubleAttr, ModelIntAttr, ...};
-//! }
-//!
-//! pub mod variant_exports {
-//!   pub use super::ModelDoubleAttr::*;
-//!   pub use super::ModelIntAttr::*;
-//!   ...
-//! }
-//! ```
+//! See the readme.md in this directory for an overview of this build script.
 use anyhow::Context;
 use codegen;
 use csv;
 use std::collections::HashMap;
-use std::ffi::OsStr;
 use std::fmt;
 use std::fs;
 use std::hash::Hash;
@@ -235,14 +151,42 @@ fn add_enum_derives(e: &mut codegen::Enum) {
     }
 }
 
+fn help_url(item: &str) -> String {
+    format!("https://www.gurobi.com/documentation/9.1/refman/{}.html", item.to_lowercase())
+}
+
+fn make_attr_enum_doc(o: ObjType, d: DataType, members: &[String]) -> String {
+    if d == DataType::Custom {
+        let member = &members[0];
+        format!("Gurobi [`{0}`]({1}) attribute for [`{2:?}`](crate::{2:?}) objects.", member, help_url(member), o)
+    } else {
+        let variant_docs : Vec<_> = members.iter().map(
+            |m| format!(" - [`{}`]({})", m, help_url(m))
+        ).collect();
+        let variant_docs = variant_docs.join("\n");
+
+        let d = match d {
+            DataType::Char => "Char",
+            DataType::Int => "Integer",
+            DataType::Double => "Float",
+            DataType::Str => "String",
+            _ => unreachable!(),
+        };
+
+        format!(
+            "{0} Gurobi attributes for [`{1:?}`](crate::{1:?}) objects.\n\
+            \n\
+            This enum contains the following Gurobi attributes:\n\
+            {2}", d, o, variant_docs
+        )
+    }
+}
+
 fn make_custom_attr_enum(o: ObjType, member: &String) -> (String, codegen::Enum) {
     let name = format!("{:?}{}Attr", o, member);
     let mut e = codegen::Enum::new(&name);
     e.vis("pub");
-    e.doc(&format!(
-        "Gurobi `{}` attribute for [`{:?}`](crate::{:?}) objects.",
-        &member, o, o
-    ));
+    e.doc(&make_attr_enum_doc(o, DataType::Custom, std::slice::from_ref(member)));
     add_enum_derives(&mut e);
     e.new_variant(member);
     (name, e)
@@ -252,30 +196,49 @@ fn make_attr_enum(o: ObjType, d: DataType, members: &Vec<String>) -> (String, co
     let name = format!("{:?}{:?}Attr", o, d);
     let mut e = codegen::Enum::new(&name);
     e.vis("pub");
-    e.doc(&format!(
-        "{} Gurobi attributes for [`{:?}`](crate::{:?}) objects.",
-        match d {
+    e.doc(&make_attr_enum_doc(o, d, members));
+    add_enum_derives(&mut e);
+    for m in members {
+        e.new_variant(m);
+        // TODO add link to Gurobi reference manual using url https://www.gurobi.com/documentation/9.1/refman/{ATTR_NAME}.html
+        //  Could also scrape HTML and use that.
+    }
+    (name, e)
+}
+
+
+fn make_param_enum_doc(d: DataType, members: &[String]) -> String {
+    if d == DataType::Custom {
+        let member = &members[0];
+        format!("Gurobi parameter [`{}`]({}).", member, help_url(member))
+    } else {
+        let variant_docs : Vec<_> = members.iter().map(
+            |m| format!(" - [`{}`]({})", m, help_url(m))
+        ).collect();
+        let variant_docs = variant_docs.join("\n");
+
+        let d = match d {
             DataType::Char => "Char",
             DataType::Int => "Integer",
             DataType::Double => "Float",
             DataType::Str => "String",
             _ => unreachable!(),
-        },
-        o,
-        o
-    ));
-    add_enum_derives(&mut e);
-    for m in members {
-        e.new_variant(m);
+        };
+
+        format!(
+            "{} Gurobi parameters.\n\
+            \n\
+            This enum contains the following Gurobi parameters:\n\
+            {}", d, variant_docs
+        )
     }
-    (name, e)
 }
 
 fn make_custom_param_enum(paramname: &String) -> (String, codegen::Enum) {
     let name = format!("{}Param", paramname);
     let mut e = codegen::Enum::new(&name);
     e.vis("pub");
-    e.doc(&format!("Gurobi parameter `{}`", &paramname));
+    e.doc(&make_param_enum_doc(DataType::Custom, std::slice::from_ref(paramname)));
     add_enum_derives(&mut e);
     e.new_variant(paramname);
     (name, e)
@@ -285,29 +248,12 @@ fn make_param_enum(d: DataType, members: &Vec<String>) -> (String, codegen::Enum
     let name = format!("{:?}Param", d);
     let mut e = codegen::Enum::new(&name);
     e.vis("pub");
-    e.doc(&format!(
-        "{} Gurobi parameters",
-        match d {
-            DataType::Char => "Char",
-            DataType::Int => "Integer",
-            DataType::Double => "Float",
-            DataType::Str => "String",
-            _ => unreachable!(),
-        },
-    ));
+    e.doc(&make_param_enum_doc(d, members));
     add_enum_derives(&mut e);
     for m in members {
         e.new_variant(m);
     }
     (name, e)
-}
-
-fn try_rustfmt_file(filename: &impl AsRef<OsStr>) {
-    #![allow(unused_must_use)]
-    std::process::Command::new("rustfmt")
-        .arg(&filename)
-        .output()
-        .unwrap();
 }
 
 fn add_shared_imports(scope: &mut codegen::Scope) {
@@ -465,7 +411,5 @@ fn main() -> anyhow::Result<()> {
     let param_groups = parse_csv(&PARAM_DATA, parse_param_row)?;
     generate_param_src_file(&PARAM_SRC_FILE, param_groups)?;
 
-    try_rustfmt_file(&ATTR_SRC_FILE);
-    try_rustfmt_file(&PARAM_SRC_FILE);
     Ok(())
 }

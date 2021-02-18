@@ -1,3 +1,4 @@
+//! See the [`grb`](https://docs.rs/grb) crate for documentation.
 use proc_macro2::{TokenStream as TokenStream2, TokenTree, Ident, Span};
 use quote::{ToTokens, quote, quote_spanned, TokenStreamExt};
 use syn::{Token, Result, Error, Expr};
@@ -29,7 +30,6 @@ impl Parse for InequalityConstr {
 
 impl ToTokens for InequalityConstr {
   fn to_tokens(&self, tokens: &mut TokenStream2) {
-    // let Self{ ref lhs, ref rhs, ref sense } = self;
     let lhs = self.lhs.as_ref();
     let lhs = quote_spanned!{ lhs.span()=> grb::Expr::from(#lhs) };
     let rhs = self.rhs.as_ref();

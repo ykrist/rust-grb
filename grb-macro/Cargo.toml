@@ -3,17 +3,16 @@ name = "grb-macro"
 version = "0.1.0"
 edition = "2018"
 license = "MIT"
+authors = ["Yannik Rist <yannik.rist@uqconnect.edu.au>"]
+description = "Procedural macros for the grb crate."
 homepage = "https://github.com/ykrist/rust-grb/"
 repository = "https://github.com/ykrist/rust-grb/"
-description = "Procedural macros for the grb crate."
+readme = "../README.md"
 
 [lib]
 proc-macro = true
 
 [dependencies]
-syn = { version = "^1.0", features = ["full", "extra-traits", "printing", "parsing"] }
+syn = { version = "^1.0", features=["full", "parsing", "printing", "derive", "proc-macro", "clone-impls"], default-features=false }
 quote = "^1.0"
-proc-macro2 = "*"
-
-[dev-dependencies]
-grb = { path="../" }
+proc-macro2 = "^1.0"

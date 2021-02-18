@@ -1122,7 +1122,7 @@ impl Model {
 
     /// Retrieve the status of the model.
     pub fn status(&self) -> Result<Status> {
-        self.get_attr(attr::Status).map(|val| val.into())
+        self.get_attr(attr::Status)
     }
 
     impl_object_list_getter!(get_vars, Var, vars, "variables");

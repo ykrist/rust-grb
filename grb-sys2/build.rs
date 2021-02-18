@@ -59,11 +59,16 @@ fn get_version_triple(gurobi_home: &PathBuf) -> (i32, i32, i32) {
 }
 
 fn main() {
-  let gurobi_home = locate_gurobi();
-  let (major, minor, _) = get_version_triple(&gurobi_home);
-  let libpath: PathBuf = gurobi_home.join("lib");
+  println!("cargo:rerun-if-env-changed=DOCS_RS");
+  if let Ok(_) = std::env::var("DOCS_RS") {
+    return;
+  }
 
+  let gurobi_home = locate_gurobi();
+  let libpath: PathBuf = gurobi_home.join("lib");
+  let (major, minor, _) = get_version_triple(&gurobi_home);
   let libname = format!("gurobi{}{}", major, minor);
+
   println!("cargo:rustc-link-search=native={}", libpath.display());
   println!("cargo:rustc-link-lib={}", libname);
 }

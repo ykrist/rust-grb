@@ -4,7 +4,7 @@ use std::hash::Hash;
 
 use crate::Model;
 use crate::{Error, Result};
-use grb_sys as ffi;
+use grb_sys2 as ffi;
 
 mod private_traits {
     use super::*;

@@ -2,7 +2,7 @@
 //! Gurobi parameters for [`Env`](crate::Env)  and [`Model`](crate::Model) objects.  See the
 //! [manual](https://www.gurobi.com/documentation/9.1/refman/parameters.html) for a list
 //! of parameters and their uses.
-use grb_sys as ffi;
+use grb_sys2 as ffi;
 use std::ffi::{CStr, CString};
 
 use crate::env::Env;
@@ -57,11 +57,11 @@ macro_rules! impl_param_set {
 }
 
 impl ParamGet<i32> for IntParam {
-    impl_param_get! { i32, i32::MIN, grb_sys::GRBgetintparam }
+    impl_param_get! { i32, i32::MIN, ffi::GRBgetintparam }
 }
 
 impl ParamSet<i32> for IntParam {
-    impl_param_set! { i32, grb_sys::GRBsetintparam }
+    impl_param_set! { i32, ffi::GRBsetintparam }
 }
 
 impl ParamGet<f64> for DoubleParam {
@@ -76,7 +76,7 @@ impl ParamGet<String> for StrParam {
     fn get(&self, env: &Env) -> Result<String> {
         let mut buf = [0i8; GRB_MAX_STRLEN];
         unsafe {
-            env.check_apicall(grb_sys::GRBgetstrparam(
+            env.check_apicall(ffi::GRBgetstrparam(
                 env.as_mut_ptr(),
                 self.as_cstr().as_ptr(),
                 buf.as_mut_ptr(),
@@ -90,7 +90,7 @@ impl ParamSet<String> for StrParam {
     fn set(&self, env: &mut Env, value: String) -> Result<()> {
         let value = CString::new(value)?;
         unsafe {
-            env.check_apicall(grb_sys::GRBsetstrparam(
+            env.check_apicall(ffi::GRBsetstrparam(
                 env.as_mut_ptr(),
                 self.as_cstr().as_ptr(),
                 value.as_ptr(),
@@ -155,11 +155,11 @@ impl AsCStr for Undocumented {
 }
 
 impl ParamGet<i32> for &Undocumented {
-    impl_param_get! { i32, i32::MIN, grb_sys::GRBgetintparam }
+    impl_param_get! { i32, i32::MIN, ffi::GRBgetintparam }
 }
 
 impl ParamSet<i32> for &Undocumented {
-    impl_param_set! { i32, grb_sys::GRBsetintparam }
+    impl_param_set! { i32, ffi::GRBsetintparam }
 }
 
 impl ParamGet<f64> for &Undocumented {
@@ -174,7 +174,7 @@ impl ParamGet<String> for &Undocumented {
     fn get(&self, env: &Env) -> Result<String> {
         let mut buf = [0i8; GRB_MAX_STRLEN];
         unsafe {
-            env.check_apicall(grb_sys::GRBgetstrparam(
+            env.check_apicall(ffi::GRBgetstrparam(
                 env.as_mut_ptr(),
                 self.as_cstr().as_ptr(),
                 buf.as_mut_ptr(),
@@ -188,7 +188,7 @@ impl ParamSet<String> for &Undocumented {
     fn set(&self, env: &mut Env, value: String) -> Result<()> {
         let value = CString::new(value)?;
         unsafe {
-            env.check_apicall(grb_sys::GRBsetstrparam(
+            env.check_apicall(ffi::GRBsetstrparam(
                 env.as_mut_ptr(),
                 self.as_cstr().as_ptr(),
                 value.as_ptr(),

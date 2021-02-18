@@ -1,4 +1,4 @@
-use grb_sys as ffi;
+use grb_sys2 as ffi;
 use std::ffi::CStr;
 
 /// Copy a raw C-string into a String

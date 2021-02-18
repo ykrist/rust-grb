@@ -68,10 +68,12 @@
 #![warn(missing_docs)]
 #![warn(missing_crate_level_docs)]
 
+use grb_sys2 as ffi;
+
 /// Returns the version number of Gurobi
 pub fn version() -> (i32, i32, i32) {
     let (mut major, mut minor, mut technical) = (-1, -1, -1);
-    unsafe { grb_sys::GRBversion(&mut major, &mut minor, &mut technical) };
+    unsafe { ffi::GRBversion(&mut major, &mut minor, &mut technical) };
     (major, minor, technical)
 }
 

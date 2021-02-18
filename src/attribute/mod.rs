@@ -10,7 +10,8 @@ use std::iter::IntoIterator;
 use std::ptr::{null, null_mut};
 
 use cstr_enum::AsCStr;
-use grb_sys::{c_char, c_int};
+use grb_sys2::{c_char, c_int};
+use grb_sys2 as ffi;
 
 use crate::model_object::*;
 use crate::util::{copy_c_str, AsPtr};
@@ -190,46 +191,46 @@ impl<A> ObjAttrGet<A::Obj, i32> for A
 where
     A: IntAttr + ObjAttr + AsCStr,
 {
-    impl_obj_get! { i32, i32::MIN, grb_sys::GRBgetintattrelement, grb_sys::GRBgetintattrlist }
+    impl_obj_get! { i32, i32::MIN, ffi::GRBgetintattrelement, ffi::GRBgetintattrlist }
 }
 
 impl<A> ObjAttrSet<A::Obj, i32> for A
 where
     A: IntAttr + ObjAttr + AsCStr,
 {
-    impl_obj_set! { i32, i32::MIN, grb_sys::GRBsetintattrelement, grb_sys::GRBsetintattrlist }
+    impl_obj_set! { i32, i32::MIN, ffi::GRBsetintattrelement, ffi::GRBsetintattrlist }
 }
 
 impl<A> ObjAttrGet<A::Obj, f64> for A
 where
     A: DoubleAttr + ObjAttr + AsCStr,
 {
-    impl_obj_get! { f64, f64::MIN, grb_sys::GRBgetdblattrelement, grb_sys::GRBgetdblattrlist }
+    impl_obj_get! { f64, f64::MIN, ffi::GRBgetdblattrelement, ffi::GRBgetdblattrlist }
 }
 
 impl<A> ObjAttrSet<A::Obj, f64> for A
 where
     A: DoubleAttr + ObjAttr + AsCStr,
 {
-    impl_obj_set! { f64, f64::MIN, grb_sys::GRBsetdblattrelement, grb_sys::GRBsetdblattrlist }
+    impl_obj_set! { f64, f64::MIN, ffi::GRBsetdblattrelement, ffi::GRBsetdblattrlist }
 }
 
 impl<A> ObjAttrGet<A::Obj, c_char> for A
 where
     A: CharAttr + ObjAttr + AsCStr,
 {
-    impl_obj_get! { c_char, 0i8, grb_sys::GRBgetcharattrelement, grb_sys::GRBgetcharattrlist }
+    impl_obj_get! { c_char, 0i8, ffi::GRBgetcharattrelement, ffi::GRBgetcharattrlist }
 }
 
 impl<A> ObjAttrSet<A::Obj, c_char> for A
 where
     A: CharAttr + ObjAttr + AsCStr,
 {
-    impl_obj_set! { c_char, 0i8, grb_sys::GRBsetcharattrelement, grb_sys::GRBsetcharattrlist }
+    impl_obj_set! { c_char, 0i8, ffi::GRBsetcharattrelement, ffi::GRBsetcharattrlist }
 }
 
 impl ObjAttrSet<Var, c_char> for VarVTypeAttr {
-    impl_obj_set! { c_char, 0i8, grb_sys::GRBsetcharattrelement, grb_sys::GRBsetcharattrlist }
+    impl_obj_set! { c_char, 0i8, ffi::GRBsetcharattrelement, ffi::GRBsetcharattrlist }
 }
 
 impl ObjAttrSet<Var, VarType> for VarVTypeAttr {
@@ -251,11 +252,11 @@ impl ObjAttrSet<Var, VarType> for VarVTypeAttr {
 }
 
 impl ObjAttrGet<Var, VarType> for VarVTypeAttr {
-    impl_obj_get_custom! { VarType, 0i8, grb_sys::GRBgetcharattrelement, grb_sys::GRBgetcharattrlist}
+    impl_obj_get_custom! { VarType, 0i8, ffi::GRBgetcharattrelement, ffi::GRBgetcharattrlist}
 }
 
 impl ObjAttrSet<Constr, c_char> for ConstrSenseAttr {
-    impl_obj_set! { c_char, 0i8, grb_sys::GRBsetcharattrelement, grb_sys::GRBsetcharattrlist }
+    impl_obj_set! { c_char, 0i8, ffi::GRBsetcharattrelement, ffi::GRBsetcharattrlist }
 }
 
 impl ObjAttrSet<Constr, ConstrSense> for ConstrSenseAttr {
@@ -277,7 +278,7 @@ impl ObjAttrSet<Constr, ConstrSense> for ConstrSenseAttr {
 }
 
 impl ObjAttrGet<Constr, ConstrSense> for ConstrSenseAttr {
-    impl_obj_get_custom! { ConstrSense, 0i8, grb_sys::GRBgetcharattrelement, grb_sys::GRBgetcharattrlist}
+    impl_obj_get_custom! { ConstrSense, 0i8, ffi::GRBgetcharattrelement, ffi::GRBgetcharattrlist}
 }
 
 /// From the Gurobi manual regarding string attributes:
@@ -292,8 +293,8 @@ where
 {
     fn get(&self, model: &Model, idx: i32) -> Result<String> {
         unsafe {
-            let mut s: grb_sys::c_str = std::ptr::null();
-            model.check_apicall(grb_sys::GRBgetstrattrelement(
+            let mut s: ffi::c_str = std::ptr::null();
+            model.check_apicall(ffi::GRBgetstrattrelement(
                 model.as_mut_ptr(),
                 self.as_cstr().as_ptr(),
                 idx,
@@ -313,7 +314,7 @@ where
 
         unsafe {
             let mut cstrings: Vec<*const c_char> = vec![std::ptr::null(); inds.len()];
-            model.check_apicall(grb_sys::GRBgetstrattrlist(
+            model.check_apicall(ffi::GRBgetstrattrlist(
                 model.as_mut_ptr(),
                 self.as_cstr().as_ptr(),
                 inds.len() as c_int,
@@ -335,7 +336,7 @@ where
     fn set(&self, model: &Model, idx: i32, val: T) -> Result<()> {
         let val = CString::new(val)?;
         unsafe {
-            model.check_apicall(grb_sys::GRBsetstrattrelement(
+            model.check_apicall(ffi::GRBsetstrattrelement(
                 model.as_mut_ptr(),
                 self.as_cstr().as_ptr(),
                 idx,
@@ -364,7 +365,7 @@ where
         }
 
         unsafe {
-            model.check_apicall(grb_sys::GRBsetstrattrlist(
+            model.check_apicall(ffi::GRBsetstrattrlist(
                 model.as_mut_ptr(),
                 self.as_cstr().as_ptr(),
                 inds.len() as c_int,
@@ -413,14 +414,14 @@ macro_rules! impl_model_attr {
     };
 }
 
-impl_model_attr! { ModelIntAttr, i32, i32::MIN, grb_sys::GRBgetintattr, grb_sys::GRBsetintattr }
-impl_model_attr! { ModelDoubleAttr, f64, f64::NAN, grb_sys::GRBgetdblattr, grb_sys::GRBsetdblattr }
+impl_model_attr! { ModelIntAttr, i32, i32::MIN, ffi::GRBgetintattr, ffi::GRBsetintattr }
+impl_model_attr! { ModelDoubleAttr, f64, f64::NAN, ffi::GRBgetdblattr, ffi::GRBsetdblattr }
 
 impl ModelAttrGet<String> for ModelStrAttr {
     fn get(&self, model: &Model) -> Result<String> {
         unsafe {
             let mut val: *const c_char = null_mut();
-            model.check_apicall(grb_sys::GRBgetstrattr(
+            model.check_apicall(ffi::GRBgetstrattr(
                 model.as_mut_ptr(),
                 self.as_cstr().as_ptr(),
                 &mut val,
@@ -434,7 +435,7 @@ impl<T: Into<Vec<u8>>> ModelAttrSet<T> for ModelStrAttr {
     fn set(&self, model: &Model, val: T) -> Result<()> {
         let val = CString::new(val)?;
         unsafe {
-            model.check_apicall(grb_sys::GRBsetstrattr(
+            model.check_apicall(ffi::GRBsetstrattr(
                 model.as_mut_ptr(),
                 self.as_cstr().as_ptr(),
                 val.as_ptr(),
@@ -447,7 +448,7 @@ impl ModelAttrGet<ModelSense> for ModelModelSenseAttr {
     fn get(&self, model: &Model) -> Result<ModelSense> {
         let mut val = i32::MIN;
         unsafe {
-            model.check_apicall(grb_sys::GRBgetintattr(
+            model.check_apicall(ffi::GRBgetintattr(
                 model.as_mut_ptr(),
                 self.as_cstr().as_ptr(),
                 &mut val,
@@ -460,7 +461,7 @@ impl ModelAttrGet<ModelSense> for ModelModelSenseAttr {
 impl ModelAttrSet<i32> for ModelModelSenseAttr {
     fn set(&self, model: &Model, val: i32) -> Result<()> {
         unsafe {
-            model.check_apicall(grb_sys::GRBsetintattr(
+            model.check_apicall(ffi::GRBsetintattr(
                 model.as_mut_ptr(),
                 self.as_cstr().as_ptr(),
                 val,
@@ -479,7 +480,7 @@ impl ModelAttrGet<Status> for ModelStatusAttr {
     fn get(&self, model: &Model) -> Result<Status> {
         let mut val = i32::MIN;
         unsafe {
-            model.check_apicall(grb_sys::GRBgetintattr(
+            model.check_apicall(ffi::GRBgetintattr(
                 model.as_mut_ptr(),
                 self.as_cstr().as_ptr(),
                 &mut val,

@@ -4,7 +4,8 @@ use std::mem::transmute;
 use std::ptr::{null, null_mut};
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use grb_sys::{c_int, GRBmodel};
+use grb_sys2::{c_int, GRBmodel};
+use grb_sys2 as ffi;
 
 use crate::attribute::{ModelAttrGet, ModelAttrSet, ObjAttrGet, ObjAttrSet};
 use crate::callback::{callback_wrapper, UserCallbackData};
@@ -158,7 +159,7 @@ impl Model {
     /// which frees the `GRBModel` and triggers the drop of a `Env`, which in turn
     /// frees the `GRBEnv`.  The `*copies_env` tests in this module validate this assumption.
     fn from_raw(env: &Env, model: *mut GRBmodel) -> Result<Model> {
-        let env_ptr = unsafe { grb_sys::GRBgetenv(model) };
+        let env_ptr = unsafe { ffi::GRBgetenv(model) };
         if env_ptr.is_null() {
             return Err(Error::FromAPI(
                 "Failed to retrieve GRBenv from given model".to_owned(),
@@ -214,7 +215,7 @@ impl Model {
         let modelname = CString::new(modelname)?;
         let mut model = null_mut();
         env.check_apicall(unsafe {
-            grb_sys::GRBnewmodel(
+            ffi::GRBnewmodel(
                 env.as_mut_ptr(),
                 &mut model,
                 modelname.as_ptr(),
@@ -245,7 +246,7 @@ impl Model {
             return Err(Error::ModelUpdateNeeded);
         }
 
-        let copied = unsafe { grb_sys::GRBcopymodel(self.ptr) };
+        let copied = unsafe { ffi::GRBcopymodel(self.ptr) };
         if copied.is_null() {
             return Err(Error::FromAPI(
                 "Failed to create a copy of the model".to_owned(),
@@ -261,7 +262,7 @@ impl Model {
         let filename = CString::new(filename)?;
         let mut model = null_mut();
         env.check_apicall(unsafe {
-            grb_sys::GRBreadmodel(env.as_mut_ptr(), filename.as_ptr(), &mut model)
+            ffi::GRBreadmodel(env.as_mut_ptr(), filename.as_ptr(), &mut model)
         })?;
         Self::from_raw(env, model)
     }
@@ -272,7 +273,7 @@ impl Model {
     /// each integer variable is fixed to the value that it takes in the current MIP solution.
     pub fn fixed(&mut self) -> Result<Model> {
         let mut fixed: *mut GRBmodel = null_mut();
-        self.check_apicall(unsafe { grb_sys::GRBfixmodel(self.ptr, &mut fixed) })?;
+        self.check_apicall(unsafe { ffi::GRBfixmodel(self.ptr, &mut fixed) })?;
         debug_assert!(!fixed.is_null());
         Model::from_raw(&self.env, fixed)
     }
@@ -309,7 +310,7 @@ impl Model {
         self.constrs.update();
         self.qconstrs.update();
         self.sos.update();
-        self.check_apicall(unsafe { grb_sys::GRBupdatemodel(self.ptr) })?;
+        self.check_apicall(unsafe { ffi::GRBupdatemodel(self.ptr) })?;
         Ok(())
     }
 
@@ -323,7 +324,7 @@ impl Model {
     /// Optimize the model synchronously.  This method will always trigger a [`Model::update`].
     pub fn optimize(&mut self) -> Result<()> {
         self.update()?;
-        self.check_apicall(unsafe { grb_sys::GRBoptimize(self.ptr) })
+        self.check_apicall(unsafe { ffi::GRBoptimize(self.ptr) })
     }
 
     /// Optimize the model with a callback.  The callback is any type that implements the
@@ -343,13 +344,13 @@ impl Model {
         };
 
         unsafe {
-            self.check_apicall(grb_sys::GRBsetcallbackfunc(
+            self.check_apicall(ffi::GRBsetcallbackfunc(
                 self.ptr,
                 Some(callback_wrapper),
                 transmute(&mut usrdata),
             ))?;
-            self.check_apicall(grb_sys::GRBoptimize(self.ptr))?;
-            self.check_apicall(grb_sys::GRBsetcallbackfunc(self.ptr, None, null_mut()))?
+            self.check_apicall(ffi::GRBoptimize(self.ptr))?;
+            self.check_apicall(ffi::GRBsetcallbackfunc(self.ptr, None, null_mut()))?
         }
 
         Ok(())
@@ -357,33 +358,33 @@ impl Model {
 
     /// Compute an Irreducible Inconsistent Subsystem (IIS) of the model.
     pub fn compute_iis(&mut self) -> Result<()> {
-        self.check_apicall(unsafe { grb_sys::GRBcomputeIIS(self.ptr) })
+        self.check_apicall(unsafe { ffi::GRBcomputeIIS(self.ptr) })
     }
 
     /// Send a request to the model to terminate the current optimization process.
     pub fn terminate(&self) {
-        unsafe { grb_sys::GRBterminate(self.ptr) }
+        unsafe { ffi::GRBterminate(self.ptr) }
     }
 
     /// Reset the model to an unsolved state.
     ///
     /// All solution information previously computed are discarded.
     pub fn reset(&self) -> Result<()> {
-        self.check_apicall(unsafe { grb_sys::GRBresetmodel(self.ptr) })
+        self.check_apicall(unsafe { ffi::GRBresetmodel(self.ptr) })
     }
 
     /// Perform an automated search for parameter settings that improve performance on the model.
-    /// See also references [on ogrb_syscial
+    /// See also references [on official
     /// manual](https://www.gurobi.com/documentation/6.5/refman/parameter_tuning_tool.html#sec:Tuning).
     pub fn tune(&self) -> Result<()> {
-        self.check_apicall(unsafe { grb_sys::GRBtunemodel(self.ptr) })
+        self.check_apicall(unsafe { ffi::GRBtunemodel(self.ptr) })
     }
 
     /// Prepare to retrieve the results of `tune()`.
     /// See also references [on official
     /// manual](https://www.gurobi.com/documentation/6.5/refman/parameter_tuning_tool.html#sec:Tuning).
     pub fn get_tune_result(&self, n: i32) -> Result<()> {
-        self.check_apicall(unsafe { grb_sys::GRBgettuneresult(self.ptr, n) })
+        self.check_apicall(unsafe { ffi::GRBgettuneresult(self.ptr, n) })
     }
 
     /// Insert a message into log file.
@@ -396,13 +397,13 @@ impl Model {
     /// Import optimization data of the model from a file.
     pub fn read(&mut self, filename: &str) -> Result<()> {
         let filename = CString::new(filename)?;
-        self.check_apicall(unsafe { grb_sys::GRBread(self.ptr, filename.as_ptr()) })
+        self.check_apicall(unsafe { ffi::GRBread(self.ptr, filename.as_ptr()) })
     }
 
     /// Export optimization data of the model to a file.
     pub fn write(&self, filename: &str) -> Result<()> {
         let filename = CString::new(filename)?;
-        self.check_apicall(unsafe { grb_sys::GRBwrite(self.ptr, filename.as_ptr()) })
+        self.check_apicall(unsafe { ffi::GRBwrite(self.ptr, filename.as_ptr()) })
     }
 
     /// Add a decision variable to the model.  This method allows the user to give the entire column (constraint coefficients).
@@ -435,7 +436,7 @@ impl Model {
             (0, None, None, std::ptr::null(), std::ptr::null())
         };
         self.check_apicall(unsafe {
-            grb_sys::GRBaddvar(
+            ffi::GRBaddvar(
                 self.ptr,
                 numnz,
                 vind,
@@ -468,12 +469,12 @@ impl Model {
         let constrname = CString::new(name)?;
         let (vinds, cval) = self.get_coeffs_indices_build(&lhs)?;
         self.check_apicall(unsafe {
-            grb_sys::GRBaddconstr(
+            ffi::GRBaddconstr(
                 self.ptr,
-                cval.len() as grb_sys::c_int,
+                cval.len() as ffi::c_int,
                 vinds.as_ptr(),
                 cval.as_ptr(),
-                sense as grb_sys::c_char,
+                sense as ffi::c_char,
                 rhs,
                 constrname.as_ptr(),
             )
@@ -537,7 +538,7 @@ impl Model {
             names.push(n);
             let (lhs, sense, r) = c.into_normalised_linear()?;
             rhs.push(r);
-            senses.push(sense as grb_sys::c_char);
+            senses.push(sense as ffi::c_char);
 
             let (var_coeff, _) = lhs.into_parts();
             let nterms = var_coeff.len();
@@ -553,10 +554,10 @@ impl Model {
         }
 
         self.check_apicall(unsafe {
-            grb_sys::GRBaddconstrs(
+            ffi::GRBaddconstrs(
                 self.ptr,
-                cnames.len() as grb_sys::c_int,
-                cbeg.len() as grb_sys::c_int,
+                cnames.len() as ffi::c_int,
+                cbeg.len() as ffi::c_int,
                 cbeg.as_ptr(),
                 cind.as_ptr(),
                 cval.as_ptr(),
@@ -603,9 +604,9 @@ impl Model {
         let (expr, lb, ub) = expr.into_normalised()?;
         let (inds, coeff) = self.get_coeffs_indices_build(&expr)?;
         self.check_apicall(unsafe {
-            grb_sys::GRBaddrangeconstr(
+            ffi::GRBaddrangeconstr(
                 self.ptr,
-                coeff.len() as grb_sys::c_int,
+                coeff.len() as ffi::c_int,
                 inds.as_ptr(),
                 coeff.as_ptr(),
                 lb,
@@ -668,10 +669,10 @@ impl Model {
         }
 
         self.check_apicall(unsafe {
-            grb_sys::GRBaddrangeconstrs(
+            ffi::GRBaddrangeconstrs(
                 self.ptr,
-                cnames.len() as grb_sys::c_int,
-                cbeg.len() as grb_sys::c_int,
+                cnames.len() as ffi::c_int,
+                cbeg.len() as ffi::c_int,
                 cbeg.as_ptr(),
                 cind.as_ptr(),
                 cval.as_ptr(),
@@ -703,16 +704,16 @@ impl Model {
         let (_, lexpr) = lhs.into_parts();
         let (lvar, lval) = self.get_coeffs_indices_build(&lexpr)?;
         self.check_apicall(unsafe {
-            grb_sys::GRBaddqconstr(
+            ffi::GRBaddqconstr(
                 self.ptr,
-                lval.len() as grb_sys::c_int,
+                lval.len() as ffi::c_int,
                 lvar.as_ptr(),
                 lval.as_ptr(),
-                qval.len() as grb_sys::c_int,
+                qval.len() as ffi::c_int,
                 qrow.as_ptr(),
                 qcol.as_ptr(),
                 qval.as_ptr(),
-                sense as grb_sys::c_char,
+                sense as ffi::c_char,
                 rhs,
                 cname.as_ptr(),
             )
@@ -747,10 +748,10 @@ impl Model {
         let beg = 0;
         let sostype = sostype as c_int;
         self.check_apicall(unsafe {
-            grb_sys::GRBaddsos(
+            ffi::GRBaddsos(
                 self.ptr,
                 1,
-                ind.len() as grb_sys::c_int,
+                ind.len() as ffi::c_int,
                 &sostype,
                 &beg,
                 ind.as_ptr(),
@@ -820,7 +821,7 @@ impl Model {
         }
         let n = CString::new(name)?;
         let mut idx = i32::min_value();
-        self.check_apicall(unsafe { grb_sys::GRBgetconstrbyname(self.ptr, n.as_ptr(), &mut idx) })?;
+        self.check_apicall(unsafe { ffi::GRBgetconstrbyname(self.ptr, n.as_ptr(), &mut idx) })?;
         if idx < 0 {
             Ok(None)
         } else {
@@ -842,7 +843,7 @@ impl Model {
         }
         let n = CString::new(name)?;
         let mut idx = i32::min_value();
-        self.check_apicall(unsafe { grb_sys::GRBgetvarbyname(self.ptr, n.as_ptr(), &mut idx) })?;
+        self.check_apicall(unsafe { ffi::GRBgetvarbyname(self.ptr, n.as_ptr(), &mut idx) })?;
         if idx < 0 {
             Ok(None)
         } else {
@@ -1039,7 +1040,7 @@ impl Model {
 
         let mut feasobj = crate::constants::GRB_UNDEFINED;
         self.check_apicall(unsafe {
-            grb_sys::GRBfeasrelax(
+            ffi::GRBfeasrelax(
                 self.ptr,
                 ty as c_int,
                 minrelax as c_int,
@@ -1109,10 +1110,10 @@ impl Model {
         }
 
         self.check_apicall(unsafe {
-            grb_sys::GRBsetpwlobj(
+            ffi::GRBsetpwlobj(
                 self.ptr,
                 self.get_index_build(var)?,
-                xvals.len() as grb_sys::c_int,
+                xvals.len() as ffi::c_int,
                 xvals.as_ptr(),
                 yvals.as_ptr(),
             )
@@ -1145,7 +1146,7 @@ impl Model {
     pub fn get_coeff(&self, var: &Var, constr: &Constr) -> Result<f64> {
         let mut value = 0.0;
         self.check_apicall(unsafe {
-            grb_sys::GRBgetcoeff(
+            ffi::GRBgetcoeff(
                 self.ptr,
                 self.get_index_build(constr)?,
                 self.get_index_build(var)?,
@@ -1158,7 +1159,7 @@ impl Model {
     /// Change a single constant matrix coefficient of the model.
     pub fn set_coeff(&mut self, var: &Var, constr: &Constr, value: f64) -> Result<()> {
         self.check_apicall(unsafe {
-            grb_sys::GRBchgcoeffs(
+            ffi::GRBchgcoeffs(
                 self.ptr,
                 1,
                 &self.get_index_build(constr)?,
@@ -1175,9 +1176,9 @@ impl Model {
     ) -> Result<()> {
         let (vind, cind, val) = self.build_idx_arrays_obj_obj(coeffs.into_iter())?;
         self.check_apicall(unsafe {
-            grb_sys::GRBchgcoeffs(
+            ffi::GRBchgcoeffs(
                 self.as_mut_ptr(),
-                vind.len() as grb_sys::c_int,
+                vind.len() as ffi::c_int,
                 cind.as_ptr(),
                 vind.as_ptr(),
                 val.as_ptr(),
@@ -1188,9 +1189,9 @@ impl Model {
     // add quadratic terms of objective function.
     fn add_qpterms(&mut self, qrow: &[i32], qcol: &[i32], qval: &[f64]) -> Result<()> {
         self.check_apicall(unsafe {
-            grb_sys::GRBaddqpterms(
+            ffi::GRBaddqpterms(
                 self.ptr,
-                qrow.len() as grb_sys::c_int,
+                qrow.len() as ffi::c_int,
                 qrow.as_ptr(),
                 qcol.as_ptr(),
                 qval.as_ptr(),
@@ -1200,10 +1201,10 @@ impl Model {
 
     // remove quadratic terms of objective function.
     fn del_qpterms(&mut self) -> Result<()> {
-        self.check_apicall(unsafe { grb_sys::GRBdelq(self.ptr) })
+        self.check_apicall(unsafe { ffi::GRBdelq(self.ptr) })
     }
 
-    pub(crate) fn check_apicall(&self, error: grb_sys::c_int) -> Result<()> {
+    pub(crate) fn check_apicall(&self, error: ffi::c_int) -> Result<()> {
         if error != 0 {
             return Err(self.env.error_from_api(error));
         }
@@ -1215,7 +1216,7 @@ impl Drop for Model {
     fn drop(&mut self) {
         // Note: This method runs *before* the `drop()` method on the env inside the model
         // so we free the GRBModel before the GRBEnv, as per the Gurobi docs.
-        unsafe { grb_sys::GRBfreemodel(self.ptr) };
+        unsafe { ffi::GRBfreemodel(self.ptr) };
     }
 }
 
@@ -1260,7 +1261,7 @@ impl AsyncHandle {
     pub fn join(self) -> (AsyncModel, Result<()>) {
         let errors = self
             .0
-            .check_apicall(unsafe { grb_sys::GRBsync(self.0.ptr) });
+            .check_apicall(unsafe { ffi::GRBsync(self.0.ptr) });
         (AsyncModel(self.0), errors)
     }
 
@@ -1389,7 +1390,7 @@ impl AsyncModel {
     pub fn optimize(mut self) -> std::result::Result<AsyncHandle, (Self, Error)> {
         match self.0.update().and_then(|_| {
             self.0
-                .check_apicall(unsafe { grb_sys::GRBoptimizeasync(self.0.ptr) })
+                .check_apicall(unsafe { ffi::GRBoptimizeasync(self.0.ptr) })
         }) {
             Ok(()) => Ok(AsyncHandle(self.0)),
             Err(e) => Err((self, e)),

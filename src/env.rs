@@ -5,8 +5,8 @@ use std::rc::Rc;
 use crate::error::{Error, Result};
 use crate::parameter::{ParamGet, ParamSet};
 use crate::util;
-use ffi::GRBenv;
-use grb_sys as ffi;
+use grb_sys2 as ffi;
+use grb_sys2::GRBenv;
 use util::AsPtr;
 
 /// Represents a User-Allocated Gurobi Env

@@ -99,7 +99,7 @@
 //! # Ok::<(), grb::Error>(())
 //! ```
 
-use grb_sys as ffi;
+use grb_sys2 as ffi;
 use std::borrow::Borrow;
 use std::convert::TryInto;
 use std::iter::{IntoIterator, Iterator};

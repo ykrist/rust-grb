@@ -8,7 +8,7 @@ keywords = ["optimization", "linear", "integer", "math", "mip", "solver"]
 license = "MIT"
 name = "grb"
 repository = "https://github.com/ykrist/rust-grb"
-version = "0.1.0"
+version = "1.0.0"
 build = "build/main.rs"
 readme = "README.md"
 

@@ -640,7 +640,7 @@ impl<A: Into<Expr>> Sum<A> for Expr {
 /// let constraint = c!( vars.iter().grb_sum() == 1 );
 /// # Ok::<(), grb::Error>(())
 /// ```
-/// Note that unlike [`Sum`] the iterator bound is [`IntoIterator`] rather than
+/// Note that unlike [`Sum`], the iterator bound is [`IntoIterator`] rather than
 /// [`Iterator`], so the `.iter()` call above can be replaced with a borrow:
 /// ```
 /// # use grb::prelude::*;
@@ -654,7 +654,7 @@ impl<A: Into<Expr>> Sum<A> for Expr {
 /// ```
 /// This may or may not be more ergonomic.
 ///
-/// TLDR: Use `.grb_sum()` instead of `sum()` when summing over variable expression.
+/// TLDR: Use `.grb_sum()` instead of `sum()` when summing over an iterator of variables or variable expressions.
 pub trait GurobiSum {
     /// Additively combine an iterator (or container) of one or more expressions into a single expression.
     fn grb_sum(self) -> Expr;

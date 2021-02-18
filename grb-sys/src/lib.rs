@@ -360,4 +360,3 @@ extern "C" {
   pub fn GRBgetBasisHead(model: *mut GRBmodel, bhead: *mut c_int) -> c_int;
 }
 
-// vim: set foldmethod=syntax :

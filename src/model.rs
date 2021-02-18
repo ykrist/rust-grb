@@ -17,6 +17,8 @@ use crate::util::AsPtr;
 use crate::{Error, Result};
 
 /// Gurobi Model object.
+///
+/// This will be where the bulk of interactions with Gurobi occur.
 pub struct Model {
     ptr: *mut GRBmodel,
     #[allow(dead_code)]

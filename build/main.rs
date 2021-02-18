@@ -152,17 +152,26 @@ fn add_enum_derives(e: &mut codegen::Enum) {
 }
 
 fn help_url(item: &str) -> String {
-    format!("https://www.gurobi.com/documentation/9.1/refman/{}.html", item.to_lowercase())
+    format!(
+        "https://www.gurobi.com/documentation/9.1/refman/{}.html",
+        item.to_lowercase()
+    )
 }
 
 fn make_attr_enum_doc(o: ObjType, d: DataType, members: &[String]) -> String {
     if d == DataType::Custom {
         let member = &members[0];
-        format!("Gurobi [`{0}`]({1}) attribute for [`{2:?}`](crate::{2:?}) objects.", member, help_url(member), o)
+        format!(
+            "Gurobi [`{0}`]({1}) attribute for [`{2:?}`](crate::{2:?}) objects.",
+            member,
+            help_url(member),
+            o
+        )
     } else {
-        let variant_docs : Vec<_> = members.iter().map(
-            |m| format!(" - [`{}`]({})", m, help_url(m))
-        ).collect();
+        let variant_docs: Vec<_> = members
+            .iter()
+            .map(|m| format!(" - [`{}`]({})", m, help_url(m)))
+            .collect();
         let variant_docs = variant_docs.join("\n");
 
         let d = match d {
@@ -177,7 +186,8 @@ fn make_attr_enum_doc(o: ObjType, d: DataType, members: &[String]) -> String {
             "{0} Gurobi attributes for [`{1:?}`](crate::{1:?}) objects.\n\
             \n\
             This enum contains the following Gurobi attributes:\n\
-            {2}", d, o, variant_docs
+            {2}",
+            d, o, variant_docs
         )
     }
 }
@@ -186,7 +196,11 @@ fn make_custom_attr_enum(o: ObjType, member: &String) -> (String, codegen::Enum)
     let name = format!("{:?}{}Attr", o, member);
     let mut e = codegen::Enum::new(&name);
     e.vis("pub");
-    e.doc(&make_attr_enum_doc(o, DataType::Custom, std::slice::from_ref(member)));
+    e.doc(&make_attr_enum_doc(
+        o,
+        DataType::Custom,
+        std::slice::from_ref(member),
+    ));
     add_enum_derives(&mut e);
     e.new_variant(member);
     (name, e)
@@ -206,15 +220,15 @@ fn make_attr_enum(o: ObjType, d: DataType, members: &Vec<String>) -> (String, co
     (name, e)
 }
 
-
 fn make_param_enum_doc(d: DataType, members: &[String]) -> String {
     if d == DataType::Custom {
         let member = &members[0];
         format!("Gurobi parameter [`{}`]({}).", member, help_url(member))
     } else {
-        let variant_docs : Vec<_> = members.iter().map(
-            |m| format!(" - [`{}`]({})", m, help_url(m))
-        ).collect();
+        let variant_docs: Vec<_> = members
+            .iter()
+            .map(|m| format!(" - [`{}`]({})", m, help_url(m)))
+            .collect();
         let variant_docs = variant_docs.join("\n");
 
         let d = match d {
@@ -229,7 +243,8 @@ fn make_param_enum_doc(d: DataType, members: &[String]) -> String {
             "{} Gurobi parameters.\n\
             \n\
             This enum contains the following Gurobi parameters:\n\
-            {}", d, variant_docs
+            {}",
+            d, variant_docs
         )
     }
 }
@@ -238,7 +253,10 @@ fn make_custom_param_enum(paramname: &String) -> (String, codegen::Enum) {
     let name = format!("{}Param", paramname);
     let mut e = codegen::Enum::new(&name);
     e.vis("pub");
-    e.doc(&make_param_enum_doc(DataType::Custom, std::slice::from_ref(paramname)));
+    e.doc(&make_param_enum_doc(
+        DataType::Custom,
+        std::slice::from_ref(paramname),
+    ));
     add_enum_derives(&mut e);
     e.new_variant(paramname);
     (name, e)

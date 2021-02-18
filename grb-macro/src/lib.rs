@@ -397,7 +397,7 @@ specialised_addvar!(AddCtsVarInput, quote!{ grb::VarType::Continuous }, add_ctsv
 specialised_addvar!(AddIntVarInput, quote!{ grb::VarType::Integer }, add_intvar, "Integer");
 
 
-/// Convienence wrapper around [`Model::add_var`] Add a new variable to a `Model` object.  The macro keyword arguments are
+/// Convienence wrapper around [`Model::add_var`]; adds a new variable to a `Model` object.  The macro keyword arguments are
 /// optional.
 ///
 /// # Syntax

@@ -5,23 +5,15 @@
 //! * Before using this crate, you should install Gurobi and obtain a [license](http://www.gurobi.com/downloads/licenses/license-center).
 //!
 //! * Make sure that the environment variable `GUROBI_HOME` is set to the installation path of Gurobi
-//!   (like `C:\gurobi652\win64`, `/opt/gurobi652/linux64`).  If using the Conda package from the Gurobi
-//!   channel, set `GUROBI_HOME=${CONDA_PREFIX}`.
+//!   (like `C:\gurobi652\win64` or `/opt/gurobi652/linux64`).  If you are using the Conda package
+//!   from the Gurobi channel, the build script will fall back to `GUROBI_HOME=${CONDA_PREFIX}`, so you
+//!   should not set `GUROBI_HOME`.
 //!
-//! * On Windows, the toolchain should be MSVC ABI (it also requires Visual Studio or
-//!   Visual C++ Build Tools).
-//!   If you want to use GNU ABI with MinGW-w64/MSYS2 toolchain, you should create the import
-//!   library for Gurobi runtime DLL (e.g. `gurobi65.dll`) and put it into `GUROBI_HOME/lib`.
-//!   Procedure of creating import library is as follows:
+//! ## Quick Start
+//! The example below sets up and solves a MIP.  Additional examples covering the more specific aspects of this crate's API can
+//! be found [here](https://github.com/ykrist/rust-grb/tree/master/examples).
 //!
-//!   ```shell-session
-//!   $ pacman -S mingw-w64-x86_64-tools-git
-//!   $ gendef - $(cygpath $GUROBI_HOME)/bin/gurobi65.dll > gurobi65.def
-//!   $ dlltool --dllname gurobi65.dll --def gurobi65.def --output-lib $(cygpath $GUROBI}HOME)/lib/libgurobi65.dll.a
-//!   ```
-//!
-//! ## Examples
-//!
+//! The documention for [`Model`] contains most of the details for defining, solving and querying models.
 //! ```
 //! use grb::prelude::*;
 //!
@@ -31,7 +23,7 @@
 //! let x1 = add_ctsvar!(model, name: "x1", bounds: ..)?;
 //! let x2 = add_intvar!(model, name: "x2", bounds: ..)?;
 //!
-//! // add a linear constraints
+//! // add linear constraints
 //! let c0 = model.add_constr("c0", c!(x1 + 2*x2 >= -14))?;
 //! let c1 = model.add_constr("c1", c!(-4 * x1 - x2 <= -33))?;
 //! let c2 = model.add_constr("c2", c!(2* x1 <= 20 - x2))?;
@@ -47,7 +39,7 @@
 //! assert_eq!(model.get_attr(attr::IsMIP)?, 1);
 //!
 //! // write model to the file.
-//! model.write("logfile.lp")?;
+//! model.write("model.lp")?;
 //!
 //! // optimize the model
 //! model.optimize()?;

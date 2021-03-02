@@ -428,11 +428,12 @@ fn get_output_path(name: &str) -> PathBuf {
 
 
 fn main() -> anyhow::Result<()> {
+    println!("cargo:rerun-if-changed=build/params.csv");
+    println!("cargo:rerun-if-changed=build/main.rs");
+    println!("cargo:rerun-if-changed=build/attrs.csv");
+
     let attr_data = get_data_path("attrs.csv");
     let param_data = get_data_path("params.csv");
-    println!("cargo:rerun-if-changed={:?}", &attr_data);
-    println!("cargo:rerun-if-changed={:?}", &param_data);
-    println!("cargo:rerun-if-changed={}", "build/main.rs");
 
     let attr_groups = parse_csv(&attr_data, parse_attr_row)?;
     generate_attr_src_file(&get_output_path("attr_enums.rs"), attr_groups)?;

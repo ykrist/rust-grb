@@ -786,9 +786,10 @@ impl Model {
             expr
         };
 
-        let (coeff_map, _) = expr.into_parts();
+        let (coeff_map, obj_cons) = expr.into_parts();
 
         self.set_obj_attr_batch(attr::Obj, coeff_map)?;
+        self.set_attr(attr::ObjCon, obj_cons)?;
         self.set_attr(attr::ModelSense, sense)
     }
 
@@ -1708,6 +1709,16 @@ mod tests {
         let m2 = Model::with_env("", m1.get_env())?;
 
         assert_ne!(m1.get_env().as_ptr(), m2.get_env().as_ptr());
+        Ok(())
+    }
+
+    #[test]
+    fn objective_constant() -> Result<()> {
+        let mut m = Model::new("")?;
+        let x = add_ctsvar!(m)?;
+        m.set_objective(x + 1, Minimize)?; // x has ub of 0
+        m.optimize()?;
+        assert_eq!(m.get_attr(attr::ObjVal)?.round() as usize, 1); // obj = x^* + 1 = 0 + 1
         Ok(())
     }
 }

@@ -9,7 +9,7 @@ license = "MIT"
 name = "grb"
 repository = "https://github.com/ykrist/rust-grb"
 homepage = "https://github.com/ykrist/rust-grb"
-version = "1.0.2"
+version = "1.0.3"
 build = "build/main.rs"
 readme = "README.md"
 

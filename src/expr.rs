@@ -8,6 +8,7 @@ use std::iter::Sum;
 use std::ops::{Add, Mul, Neg, Sub};
 
 use crate::prelude::*;
+use crate::constr::{IneqExpr, RangeExpr};
 use crate::{Error, Result};
 
 /// An algbraic expression of variables.
@@ -610,6 +611,78 @@ impl<A: Into<Expr>> Sum<A> for Expr {
     }
 }
 
+/// Deprecated trait for pretty-printing constraints.  Use [`NameMapped`] instead, whose
+/// `with_names` accepts a wider variety of types instead of just [`Model`]
+#[deprecated]
+pub trait AttachModel {
+    /// Attach a model reference to this object for formatting with [`Debug`]
+    /// This trait is deprecated, use [`NameMapped`] instead.
+    #[deprecated]
+    fn attach<'a>(&'a self, model: &'a Model) -> Attached<'a, Self>
+    where
+        Self: Sized,
+    {
+        Attached { inner: self, model }
+    }
+}
+
+#[allow(deprecated)]
+impl<T: AttachVarNames> AttachModel for T {}
+
+fn float_fmt_helper(x: f64, ignore_val: f64) -> (Option<f64>, bool) {
+    let positive = x > -f64::EPSILON;
+    if (x - ignore_val).abs() < f64::EPSILON {
+        (None, positive)
+    } else if positive {
+        (Some(x), positive)
+    } else {
+        (Some(-x), positive)
+    }
+}
+
+/// A helper trait for using [`AttachVarNames`] trait.  Any type that implements `QueryVarName` may be
+/// used with [`AttachVarNames::with_names`].
+pub trait QueryVarName {
+  /// Write the name of the supplied `var` to the given formatter.
+  fn write_name(&self, var: &Var, f: &mut fmt::Formatter<'_>) -> fmt::Result;
+}
+
+impl<V, S> QueryVarName for std::collections::HashMap<Var, V, S>
+  where
+    S: std::hash::BuildHasher,
+    V: AsRef<str>,
+{
+  fn write_name(&self, var: &Var, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let name = self.get(var).ok_or(fmt::Error)?.as_ref();
+    f.write_str(name)
+  }
+}
+
+impl QueryVarName for Model
+{
+  fn write_name(&self, var: &Var, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let name = self.get_obj_attr(attr::VarName, var).map_err(|_| fmt::Error)?;
+    f.write_str(&name)
+  }
+}
+
+impl<F> QueryVarName for F
+  where
+    F: Fn(&Var, &mut fmt::Formatter<'_>) -> fmt::Result
+{
+  fn write_name(&self, var: &Var, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    self(var, f)
+  }
+}
+
+/// A helper struct for pretty-printing variables, expressions and constraints
+/// (see the [`AttachVarNames`] trait)
+pub struct NameMapped<'a, T: ?Sized, N> {
+  writer: &'a N,
+  inner: &'a T
+}
+
+
 /// Convenience trait for summing over iterators to produce a single `Expr`.
 ///
 /// The [`c!`](c) macro uses `Expr::from` to convert inputs to `Expr` objects.
@@ -656,26 +729,27 @@ impl<A: Into<Expr>> Sum<A> for Expr {
 ///
 /// TLDR: Use `.grb_sum()` instead of `sum()` when summing over an iterator of variables or variable expressions.
 pub trait GurobiSum {
-    /// Additively combine an iterator (or container) of one or more expressions into a single expression.
-    fn grb_sum(self) -> Expr;
+  /// Additively combine an iterator (or container) of one or more expressions into a single expression.
+  fn grb_sum(self) -> Expr;
 }
 
 impl<T, I> GurobiSum for I
-where
+  where
     T: Into<Expr>,
     I: IntoIterator<Item = T>,
 {
-    fn grb_sum(self) -> Expr {
-        self.into_iter().sum()
-    }
+  fn grb_sum(self) -> Expr {
+    self.into_iter().sum()
+  }
 }
 
 /// A helper struct for pretty-printing variables, expressions and constraints
 /// (see the [`AttachModel`] trait)
 pub struct Attached<'a, T> {
-    pub(crate) inner: &'a T,
-    pub(crate) model: &'a Model,
+  pub(crate) inner: &'a T,
+  pub(crate) model: &'a Model,
 }
+
 
 /// A convenvience trait for displaying variable names with the [`Debug`] trait.
 ///
@@ -698,24 +772,27 @@ pub struct Attached<'a, T> {
 /// ```
 /// Printing [`Expr`] and constraints this way quickly gets unreadable.
 ///
-/// The `AttachModel` trait provides an `.attach(&model)` method, with simply bundles a `&`[`Model`] with
-/// a reference to the object. The [`Debug`] trait is implemented for this bundled type ([`Attached`])
-/// and properly queries the model for variable names. Because querying the `VarName` of a variable can fail
-/// (for example if the model hasn't been updated since the variable was added or the `.attach(...)` was
-/// called with the wrong model), a formatting error can occur.
+/// The `AttachVarNames` trait provides an `.with_names(&names)` method, with bundles the `&names` with
+/// a reference to the object. The [`Debug`] trait is implemented for this bundled type ([`NameMapped`])
+/// and properly queries `&names`. for variable names.  How variable names are queried is governed by
+/// the [`QueryVarName`] trait.  [`QueryVarName`] is implemented for [`Model`], `HashMap<Var, String>`
+/// and anything that implements `Fn(&Var, &mut std::fmt::Formatter<'_>) -> std::fmt::Result`.
 ///
-///
+/// Because querying the `VarName` from a `Model` of a variable can fail
+/// (for example if the model hasn't been updated since the variable was
+/// added or the `.with_names(...)` was  called with the wrong model), a formatting error can occur which
+/// will cause a panic.
 /// ```
 /// # use grb::prelude::*;
-/// # let mut model = Model::new("")?;
-/// # let x: Vec<_> = (0..5)
-/// # .map(|i| add_ctsvar!(model, name: &format!("x[{}]", i)).unwrap() )
-/// # .collect();
+/// let mut model = Model::new("")?;
+/// let x: Vec<_> = (0..5)
+///   .map(|i| add_ctsvar!(model, name: &format!("x[{}]", i)).unwrap() )
+///   .collect();
 /// model.update()?; // Important! Otherwise, the formatter will panic.
-/// println!("{:?}", x[0].attach(&model));
-/// println!("{:?}", (x[0] + x[1]).attach(&model));
-/// println!("{:?}", c!( x[1..].grb_sum() >= x[0] ).attach(&model));
-/// println!("{:?}", c!( x.grb_sum() in 0..1 ).attach(&model));
+/// println!("{:?}", x[0].with_names(&model));
+/// println!("{:?}", (x[0] + x[1]).with_names(&model));
+/// println!("{:?}", c!( x[1..].grb_sum() >= x[0] ).with_names(&model));
+/// println!("{:?}", c!( x.grb_sum() in 0..1 ).with_names(&model));
 /// # Ok::<(), grb::Error>(())
 /// ```
 /// Output:
@@ -725,31 +802,215 @@ pub struct Attached<'a, T> {
 /// x[4] + x[1] + x[3] + x[2] ≥ x[0]
 /// x[4] + x[1] + x[0] + x[3] + x[2] ∈ [0, 1]
 /// ```
-pub trait AttachModel {
-    /// Attach a model reference to this object for formatting with [`Debug`]
-    fn attach<'a>(&'a self, model: &'a Model) -> Attached<'a, Self>
-    where
-        Self: Sized,
-    {
-        Attached { inner: self, model }
-    }
+/// Using different variable names stored in a `HashMap`:
+/// ```
+/// # use grb::prelude::*;
+/// # let mut model = Model::new("")?;
+/// # let x: Vec<_> = (0..5)
+/// # .map(|i| add_ctsvar!(model).unwrap())
+/// # .collect();
+/// use std::collections::HashMap;
+/// let names = ["apple", "bacon", "cat", "dog", "egg"];
+/// let names : HashMap<_, _> = x.iter().copied().zip(names.iter()).collect();
+/// # model.update()?;
+/// println!("{:?}", x[0].with_names(&names));
+/// println!("{:?}", (x[0] + x[1]).with_names(&names));
+/// println!("{:?}", c!( x[1..].grb_sum() >= x[0] ).with_names(&names));
+/// println!("{:?}", c!( x.grb_sum() in 0..1 ).with_names(&names));
+/// # Ok::<(), grb::Error>(())
+/// ```
+/// Output:
+/// ```console
+/// apple
+/// bacon + apple
+/// egg + bacon + dog + cat ≥ apple
+/// egg + bacon + apple + dog + cat ∈ [0, 1]
+/// ```
+/// Using a closure which references the `names` hashmap above:
+/// ```
+/// # use grb::prelude::*;
+/// # let mut model = Model::new("")?;
+/// # let x: Vec<_> = (0..5)
+/// # .map(|i| add_ctsvar!(model).unwrap())
+/// # .collect();
+/// # use std::collections::HashMap;
+/// # let names = ["apple", "bacon", "cat", "dog", "egg"];
+/// # let names : HashMap<_, _> = x.iter().copied().zip(names.iter()).collect();
+/// // Note the type annotations for the closure arguments are required
+/// let name_map = |var: &Var, f: &mut std::fmt::Formatter<'_>| {
+///  f.write_str(&names[var].to_uppercase())
+/// };
+/// # model.update()?;
+/// println!("{:?}", x[0].with_names(&name_map));
+/// println!("{:?}", (x[0] + x[1]).with_names(&name_map));
+/// println!("{:?}", c!( x[1..].grb_sum() >= x[0] ).with_names(&name_map));
+/// println!("{:?}", c!( x.grb_sum() in 0..1 ).with_names(&name_map));
+/// # Ok::<(), grb::Error>(())
+/// ```
+/// Output:
+/// ```console
+/// APPLE
+/// BACON + APPLE
+/// EGG + BACON + DOG + CAT ≥ APPLE
+/// EGG + BACON + APPLE + DOG + CAT ∈ [0, 1]
+/// ```
+pub trait AttachVarNames {
+  /// Attach the variables names (by reference) to this object, enabling pretty-printing.
+  /// `name_map` must by a type which implements [`QueryVarName`], such as [`Model`] or `HashMap<Var, String>`.
+  fn with_names<'a, N: QueryVarName>(&'a self, name_map: &'a N) -> NameMapped<'a, Self, N> {
+    NameMapped { inner: &self, writer: name_map }
+  }
 }
 
-impl AttachModel for LinExpr {}
-impl AttachModel for QuadExpr {}
-impl AttachModel for Expr {}
-impl AttachModel for Var {}
+impl AttachVarNames for LinExpr {}
+impl AttachVarNames for QuadExpr {}
+impl AttachVarNames for Expr {}
+impl AttachVarNames for Var {}
+impl AttachVarNames for IneqExpr {}
+impl AttachVarNames for RangeExpr {}
 
-fn float_fmt_helper(x: f64, ignore_val: f64) -> (Option<f64>, bool) {
-    let positive = x > -f64::EPSILON;
-    if (x - ignore_val).abs() < f64::EPSILON {
-        (None, positive)
-    } else if positive {
-        (Some(x), positive)
+
+impl<W: QueryVarName> fmt::Debug for NameMapped<'_, Var, W> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    self.writer.write_name(self.inner, f)
+  }
+}
+
+impl<W> fmt::Debug for NameMapped<'_, LinExpr, W>
+  where
+    W: QueryVarName
+{
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    if self.inner.is_empty() {
+      return f.write_str("<empty LinExpr>");
+    }
+
+    let (offset, positive) = float_fmt_helper(self.inner.get_offset(), 0.0);
+
+    let mut is_first_term = false;
+    if let Some(offset) = offset {
+      f.write_fmt(format_args!("{}", if positive { offset } else { -offset }))?;
     } else {
-        (Some(-x), positive)
+      is_first_term = true;
     }
+
+    for (var, &coeff) in self.inner.iter_terms() {
+      let (coeff, positive) = float_fmt_helper(coeff, 1.0);
+
+      // write the operator with the previous term
+      if !is_first_term {
+        f.write_str(if positive { " + " } else { " - " })?;
+      } else {
+        is_first_term = false;
+        if !positive {
+          f.write_char('-')?;
+        }
+      }
+      if let Some(coeff) = coeff {
+        f.write_fmt(format_args!("{} ", coeff))?;
+      }
+      self.writer.write_name(var, f)?;
+    }
+    Ok(())
+  }
 }
+
+
+impl<W: QueryVarName> fmt::Debug for NameMapped<'_, QuadExpr, W> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    if self.inner.is_empty() {
+      return f.write_str("<empty QuadExpr>");
+    }
+
+    let mut is_first_term = false;
+    if self.inner.linexpr.is_empty() {
+      is_first_term = true
+    } else {
+      self.inner.linexpr.with_names(self.writer).fmt(f)?;
+    }
+
+    for ((x, y), &coeff) in &self.inner.qcoeffs {
+      let (coeff, positive) = float_fmt_helper(coeff, 1.0);
+      if is_first_term {
+        is_first_term = false;
+        if !positive {
+          f.write_char('-')?;
+        }
+      } else {
+        f.write_str(if positive { " + " } else { " - " })?;
+      }
+      if let Some(coeff) = coeff {
+        f.write_fmt(format_args!("{} ", coeff))?;
+      }
+      self.writer.write_name(x, f)?;
+      f.write_char('*')?;
+      self.writer.write_name(y, f)?;
+    }
+    Ok(())
+  }
+}
+
+impl<W: QueryVarName> fmt::Debug for NameMapped<'_, Expr, W> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    use Expr::*;
+    match &self.inner {
+      Constant(a) => {
+        f.write_fmt(format_args!("{}", a))?;
+      },
+      Term(a, x) => {
+        if (a - 1.0).abs() > f64::EPSILON {
+          f.write_fmt(format_args!("{} ", a))?;
+        }
+        self.writer.write_name(x, f)?;
+      }
+      QTerm(a, x, y) => {
+        if (a - 1.0).abs() > f64::EPSILON {
+          f.write_fmt(format_args!("{} ", a))?;
+        }
+        self.writer.write_name(x, f)?;
+        f.write_char('*')?;
+        self.writer.write_name(y, f)?;
+      }
+      Linear(e) => {
+        e.with_names(self.writer).fmt(f)?;
+      },
+      Quad(e) => {
+        e.with_names(self.writer).fmt(f)?;
+      },
+    }
+    Ok(())
+  }
+}
+
+
+impl<W: QueryVarName> fmt::Debug for NameMapped<'_, IneqExpr, W> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    use crate::ConstrSense::*;
+    let cmp = match self.inner.sense {
+      Less => "≤",
+      Greater => "≥",
+      Equal => "=",
+    };
+
+    self.inner.lhs.with_names(self.writer).fmt(f)?;
+    f.write_fmt(format_args!(" {} ", cmp))?;
+    self.inner.rhs.with_names(self.writer).fmt(f)?;
+    Ok(())
+  }
+}
+
+
+impl<W: QueryVarName> fmt::Debug for NameMapped<'_, RangeExpr, W> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    self.inner.expr.with_names(self.writer).fmt(f)?;
+    f.write_fmt(format_args!(
+      " ∈ [{}, {}]",
+      self.inner.lb,
+      self.inner.ub
+    ))
+  }
+}
+
 
 impl From<Error> for fmt::Error {
     fn from(err: Error) -> fmt::Error {
@@ -758,112 +1019,20 @@ impl From<Error> for fmt::Error {
     }
 }
 
-impl fmt::Debug for Attached<'_, LinExpr> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.inner.is_empty() {
-            return f.write_str("<empty LinExpr>");
+macro_rules! impl_debug_attached {
+    ($($t:path),*) => {
+      $(
+        impl fmt::Debug for Attached<'_, $t> {
+          fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            self.inner.with_names(self.model).fmt(f)
+          }
         }
-
-        let (offset, positive) = float_fmt_helper(self.inner.get_offset(), 0.0);
-
-        let mut is_first_term = false;
-        if let Some(offset) = offset {
-            f.write_fmt(format_args!("{}", if positive { offset } else { -offset }))?;
-        } else {
-            is_first_term = true;
-        }
-
-        for (var, &coeff) in self.inner.iter_terms() {
-            let varname = self.model.get_obj_attr(attr::VarName, var)?;
-            let (coeff, positive) = float_fmt_helper(coeff, 1.0);
-
-            // write the operator with the previous term
-            if !is_first_term {
-                f.write_str(if positive { " + " } else { " - " })?;
-            } else {
-                is_first_term = false;
-                if !positive {
-                    f.write_char('-')?;
-                }
-            }
-            if let Some(coeff) = coeff {
-                f.write_fmt(format_args!("{} {}", coeff, varname))?;
-            } else {
-                f.write_str(&varname)?;
-            }
-        }
-        Ok(())
-    }
+      )*
+    };
 }
 
-impl fmt::Debug for Attached<'_, QuadExpr> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.inner.is_empty() {
-            return f.write_str("<empty QuadExpr>");
-        }
+impl_debug_attached!(Expr, RangeExpr, IneqExpr, Var, LinExpr, QuadExpr);
 
-        let mut is_first_term = false;
-        if self.inner.linexpr.is_empty() {
-            is_first_term = true
-        } else {
-            self.inner.linexpr.attach(self.model).fmt(f)?;
-        }
-
-        for ((x, y), &coeff) in &self.inner.qcoeffs {
-            let xname = self.model.get_obj_attr(attr::VarName, x)?;
-            let yname = self.model.get_obj_attr(attr::VarName, y)?;
-            let (coeff, positive) = float_fmt_helper(coeff, 1.0);
-            if is_first_term {
-                is_first_term = false;
-                if !positive {
-                    f.write_char('-')?;
-                }
-            } else {
-                f.write_str(if positive { " + " } else { " - " })?;
-            }
-            if let Some(coeff) = coeff {
-                f.write_fmt(format_args!("{} {}*{}", coeff, xname, yname))?;
-            } else {
-                f.write_fmt(format_args!("{}*{}", xname, yname))?;
-            }
-        }
-        Ok(())
-    }
-}
-
-impl fmt::Debug for Attached<'_, Expr> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use self::Expr::*;
-        match &self.inner {
-            Constant(a) => f.write_fmt(format_args!("{}", a)),
-            Term(a, x) => {
-                let varname = self.model.get_obj_attr(attr::VarName, x)?;
-                if (a - 1.0).abs() < f64::EPSILON {
-                    f.write_fmt(format_args!("{}", varname))
-                } else {
-                    f.write_fmt(format_args!("{} {}", a, varname))
-                }
-            }
-            QTerm(a, x, y) => {
-                let xname = self.model.get_obj_attr(attr::VarName, x)?;
-                let yname = self.model.get_obj_attr(attr::VarName, y)?;
-                if (a - 1.0).abs() < f64::EPSILON {
-                    f.write_fmt(format_args!("{}*{}", xname, yname))
-                } else {
-                    f.write_fmt(format_args!("{} {}*{}", a, xname, yname))
-                }
-            }
-            Linear(e) => e.attach(self.model).fmt(f),
-            Quad(e) => e.attach(self.model).fmt(f),
-        }
-    }
-}
-
-impl fmt::Debug for Attached<'_, Var> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Expr::from(self.inner).attach(self.model).fmt(f)
-    }
-}
 
 #[allow(unused_variables)]
 #[cfg(test)]
@@ -904,7 +1073,7 @@ mod tests {
         make_model_with_vars!(model, x, y, z);
         let _ = x - y;
         let e = y * x - x * y;
-        dbg!(e.attach(&model));
+        dbg!(e.with_names(&model));
         let mut e = e.into_quadexpr();
         assert!(!e.is_empty());
         e.sparsify();
@@ -964,7 +1133,7 @@ mod tests {
             panic!("{:?}", y);
         }
         let q = -(x.clone() * x.clone());
-        eprintln!("{:?}", q.attach(&model));
+        eprintln!("{:?}", q.with_names(&model));
     }
 
     #[test]
@@ -986,10 +1155,10 @@ mod tests {
     fn linexpr_debug_fmt() {
         make_model_with_vars!(m, x, y);
         let e = 2usize * y;
-        let s = format!("{:?}", e.attach(&m));
+        let s = format!("{:?}", e.with_names(&m));
         assert_eq!("2 y", s.to_string());
         eprintln!("{}", s);
         let e = x * y - 2.0f64 * (x * x);
-        eprintln!("{:?}", e.attach(&m));
+        eprintln!("{:?}", e.with_names(&m));
     }
 }

@@ -1,10 +1,10 @@
 //! This module contains the structs passed to the [`Model::add_constr(s)`](crate::Model::add_constr) and [`Model::add_range(s)`](crate::Model::add_constr) methods.
 //!
 //! The structs themselves are usually constructed using the [`c!(...)`](crate::c) macro.
-use crate::expr::{AttachModel, Attached, LinExpr, QuadExpr};
+use crate::expr::{LinExpr, QuadExpr};
 use crate::prelude::*;
 use crate::Result;
-use std::fmt;
+
 /// A inequality constraint (linear or quadratic).  Creating this object does not automatically add the constraint to a model.
 /// Instead, it should be passed to [`Model::add_constr`](crate::Model::add_constr) or [`Model::add_constrs`](crate::Model::add_constrs).
 ///
@@ -35,23 +35,6 @@ impl IneqExpr {
     }
 }
 
-impl AttachModel for IneqExpr {}
-
-impl fmt::Debug for Attached<'_, IneqExpr> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let cmp = match self.inner.sense {
-            ConstrSense::Less => "≤",
-            ConstrSense::Greater => "≥",
-            ConstrSense::Equal => "=",
-        };
-        f.write_fmt(format_args!(
-            "{:?} {} {:?}",
-            self.inner.lhs.attach(self.model),
-            cmp,
-            self.inner.rhs.attach(self.model)
-        ))
-    }
-}
 
 /// A linear range constraint expression.  Creating this object does not automatically add the constraint to a model.
 /// Instead, it should be passed to [`Model::add_range`](crate::Model::add_range) or [`Model::add_ranges`](crate::Model::add_ranges).
@@ -80,18 +63,5 @@ impl RangeExpr {
         ub -= offset;
         lb -= offset;
         Ok((expr, lb, ub))
-    }
-}
-
-impl AttachModel for RangeExpr {}
-
-impl fmt::Debug for Attached<'_, RangeExpr> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!(
-            "{:?} ∈ [{}, {}]",
-            self.inner.expr.attach(self.model),
-            self.inner.lb,
-            self.inner.ub
-        ))
     }
 }

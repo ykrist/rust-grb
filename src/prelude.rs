@@ -9,11 +9,10 @@ pub use crate::{
     attr,
     c,
     callback::{Callback, Where},
-    expr::{AttachModel, Expr, GurobiSum},
+    expr::{Expr, GurobiSum, AttachVarNames},
     param,
     Constr,
     ConstrSense,
-    // ----------
     Env,
     Model,
     ModelObject,
@@ -28,6 +27,9 @@ pub use crate::{
     INFINITY,
     SOS,
 };
+
+#[allow(deprecated)]
+pub use crate::expr::AttachModel;
 
 pub use ModelSense::*;
 pub use VarType::*;

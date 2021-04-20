@@ -281,7 +281,12 @@ impl QuadExpr {
         self
     }
 
-    /// number of linear terms in the expression (excluding the constant)
+    /// Return a reference to the linear + constant part of the expression
+    pub fn affine_part(&self) -> &LinExpr {
+      &self.linexpr
+    }
+
+    /// number of **linear** terms in the expression (excluding the constant)
     pub fn num_terms(&self) -> usize {
         self.linexpr.num_terms()
     }

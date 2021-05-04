@@ -5,6 +5,7 @@ use crate::expr::{LinExpr, QuadExpr};
 use crate::prelude::*;
 use crate::Result;
 use std::collections::HashMap;
+use std::hash::BuildHasher;
 
 /// A inequality constraint (linear or quadratic).  Creating this object does not automatically add the constraint to a model.
 /// Instead, it should be passed to [`Model::add_constr`](crate::Model::add_constr) or [`Model::add_constrs`](crate::Model::add_constrs).
@@ -40,7 +41,7 @@ impl IneqExpr {
     ///
     /// # Panics
     /// This function will panic if a variable in the expression is missing from the `var_values` map.
-    pub fn evaluate<V: Copy + Into<f64>>(&self, var_values: &HashMap<Var, V>) -> (f64, f64) {
+    pub fn evaluate<V: Copy + Into<f64>, S: BuildHasher>(&self, var_values: &HashMap<Var, V, S>) -> (f64, f64) {
         (self.lhs.evaluate(var_values), self.rhs.evaluate(var_values))
     }
 }
@@ -79,7 +80,7 @@ impl RangeExpr {
     ///
     /// # Panics
     /// This function will panic if a variable in the expression is missing from the `var_values` map.
-    pub fn evaluate<V: Copy + Into<f64>>(&self, var_values: &HashMap<Var, V>) -> f64 {
+    pub fn evaluate<V: Copy + Into<f64>, S: BuildHasher>(&self, var_values: &HashMap<Var, V, S>) -> f64 {
         self.expr.evaluate(var_values)
     }
 }

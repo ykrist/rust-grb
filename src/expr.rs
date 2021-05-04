@@ -10,6 +10,7 @@ use std::ops::{Add, Mul, Neg, Sub};
 use crate::prelude::*;
 use crate::{Error, Result};
 use std::collections::HashMap;
+use std::hash::BuildHasher;
 
 /// An algbraic expression of variables.
 #[derive(Debug, Clone)]
@@ -75,7 +76,7 @@ impl Expr {
     ///
     /// # Panics
     /// This function will panic if a variable in the expression is missing from the `var_values` map.
-    pub fn evaluate<V: Copy + Into<f64>>(&self, var_values: &HashMap<Var, V>) -> f64 {
+    pub fn evaluate<V: Copy + Into<f64>, S: BuildHasher>(&self, var_values: &HashMap<Var, V, S>) -> f64 {
       use Expr::*;
 
       match self {
@@ -226,7 +227,7 @@ impl LinExpr {
     ///
     /// # Panics
     /// This function will panic if a variable in the expression is missing from the `var_values` map.
-    pub fn evaluate<V: Copy + Into<f64>>(&self, var_values: &HashMap<Var, V>) -> f64 {
+    pub fn evaluate<V: Copy + Into<f64>, S: BuildHasher>(&self, var_values: &HashMap<Var, V, S>) -> f64 {
       self.iter_terms()
         .map(|(var, coeff)| var_values[var].into() * coeff)
         .sum::<f64>() + self.offset
@@ -344,7 +345,7 @@ impl QuadExpr {
     ///
     /// # Panics
     /// This function will panic if a variable in the expression is missing from the `var_values` map.
-    pub fn evaluate<V: Copy + Into<f64>>(&self, var_values: &HashMap<Var, V>) -> f64 {
+    pub fn evaluate<V: Copy + Into<f64>, S: BuildHasher>(&self, var_values: &HashMap<Var, V, S>) -> f64 {
       self.iter_qterms()
         .map(|((v1, v2), &coeff)| var_values[v1].into() * var_values[v2].into() * coeff)
         .sum::<f64>() + self.linexpr.evaluate(var_values)
@@ -912,7 +913,9 @@ impl fmt::Debug for Attached<'_, Var> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    extern crate self as grb;
+  use std::hash::BuildHasher;
+
+  extern crate self as grb;
 
     macro_rules! make_model_with_vars {
     ($model:ident, $($var:ident),+) => {
@@ -1040,7 +1043,7 @@ mod tests {
     #[test]
     fn expr_eval() {
         make_model_with_vars!(m, x, y);
-        let mut var_values = HashMap::default();
+        let mut var_values = HashMap::new();
         var_values.insert(x, 2);
         var_values.insert(y, 4);
 
@@ -1067,9 +1070,18 @@ mod tests {
     #[should_panic]
     fn expr_eval_missing_vars() {
         make_model_with_vars!(m, x, y);
-        let mut var_values = HashMap::default();
+        let mut var_values = HashMap::new();
         var_values.insert(x, 1);
         let e : Expr = x + y;
         e.evaluate(&var_values);
+    }
+
+    #[test]
+    fn expr_generic_hashmap() {
+      fn inner<S: BuildHasher>(var_values: HashMap<Var, f64, S>) {
+        Expr::from(0.0).evaluate(&var_values);
+      }
+
+      inner(HashMap::new());
     }
 }

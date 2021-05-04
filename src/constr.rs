@@ -4,6 +4,7 @@
 use crate::expr::{LinExpr, QuadExpr};
 use crate::prelude::*;
 use crate::Result;
+use std::collections::HashMap;
 
 /// A inequality constraint (linear or quadratic).  Creating this object does not automatically add the constraint to a model.
 /// Instead, it should be passed to [`Model::add_constr`](crate::Model::add_constr) or [`Model::add_constrs`](crate::Model::add_constrs).
@@ -32,6 +33,15 @@ impl IneqExpr {
         let mut lhs = (lhs - rhs).into_quadexpr();
         let rhs = -lhs.set_offset(0.0);
         (lhs, sense, rhs)
+    }
+
+    /// Evaluate the LHS and RHS of the constraint, given an assignment of variable values.
+    /// Returns a tuple `(lhs, rhs)`.
+    ///
+    /// # Panics
+    /// This function will panic if a variable in the expression is missing from the `var_values` map.
+    pub fn evaluate<V: Copy + Into<f64>>(&self, var_values: &HashMap<Var, V>) -> (f64, f64) {
+        (self.lhs.evaluate(var_values), self.rhs.evaluate(var_values))
     }
 }
 
@@ -63,5 +73,13 @@ impl RangeExpr {
         ub -= offset;
         lb -= offset;
         Ok((expr, lb, ub))
+    }
+
+    /// Evaluate the LHS of the range constraint, given an assignment of variable values.
+    ///
+    /// # Panics
+    /// This function will panic if a variable in the expression is missing from the `var_values` map.
+    pub fn evaluate<V: Copy + Into<f64>>(&self, var_values: &HashMap<Var, V>) -> f64 {
+        self.expr.evaluate(var_values)
     }
 }

@@ -10,6 +10,7 @@ use std::ops::{Add, Mul, Neg, Sub};
 use crate::prelude::*;
 use crate::constr::{IneqExpr, RangeExpr};
 use crate::{Error, Result};
+use std::collections::HashMap;
 
 /// An algbraic expression of variables.
 #[derive(Debug, Clone)]
@@ -69,6 +70,22 @@ impl Expr {
             Linear(e) => Ok(e),
             other => other.into_higher_order().into_linexpr(),
         }
+    }
+
+    /// Evaluate the expression, given an assignment of variable values.
+    ///
+    /// # Panics
+    /// This function will panic if a variable in the expression is missing from the `var_values` map.
+    pub fn evaluate<V: Copy + Into<f64>>(&self, var_values: &HashMap<Var, V>) -> f64 {
+      use Expr::*;
+
+      match self {
+        Constant(c) => *c,
+        Term(a, x) => *a * var_values[x].into(),
+        QTerm(a, x, y) => *a * var_values[x].into() * var_values[y].into(),
+        Linear(e) => e.evaluate(var_values),
+        Quad(e) => e.evaluate(var_values),
+      }
     }
 }
 
@@ -204,6 +221,17 @@ impl LinExpr {
     pub fn sparsify(&mut self) {
         self.coeff.retain(|_, a| a.abs() > f64::EPSILON);
     }
+
+
+    /// Evaluate the expression, given an assignment of variable values.
+    ///
+    /// # Panics
+    /// This function will panic if a variable in the expression is missing from the `var_values` map.
+    pub fn evaluate<V: Copy + Into<f64>>(&self, var_values: &HashMap<Var, V>) -> f64 {
+      self.iter_terms()
+        .map(|(var, coeff)| var_values[var].into() * coeff)
+        .sum::<f64>() + self.offset
+    }
 }
 
 impl QuadExpr {
@@ -311,6 +339,16 @@ impl QuadExpr {
     pub fn sparsify(&mut self) {
         self.linexpr.sparsify();
         self.qcoeffs.retain(|_, a| a.abs() > f64::EPSILON);
+    }
+
+    /// Evaluate the expression, given an assignment of variable values.
+    ///
+    /// # Panics
+    /// This function will panic if a variable in the expression is missing from the `var_values` map.
+    pub fn evaluate<V: Copy + Into<f64>>(&self, var_values: &HashMap<Var, V>) -> f64 {
+      self.iter_qterms()
+        .map(|((v1, v2), &coeff)| var_values[v1].into() * var_values[v2].into() * coeff)
+        .sum::<f64>() + self.linexpr.evaluate(var_values)
     }
 }
 
@@ -1165,5 +1203,42 @@ mod tests {
         eprintln!("{}", s);
         let e = x * y - 2.0f64 * (x * x);
         eprintln!("{:?}", e.with_names(&m));
+    }
+
+
+    #[test]
+    fn expr_eval() {
+        make_model_with_vars!(m, x, y);
+        let mut var_values = HashMap::default();
+        var_values.insert(x, 2);
+        var_values.insert(y, 4);
+
+        let e = Expr::from(1);
+        assert_eq!(e.evaluate(&var_values), 1 as f64);
+
+        let e = x * y;
+        assert!((e.evaluate(&var_values) - 8.) <= 1e-8);
+
+        let e : Expr = 2 * (x * y);
+        assert!((e.evaluate(&var_values) - 16.) <= 1e-8);
+
+        let e : Expr = 2 * x;
+        assert!((e.evaluate(&var_values) - 4.) <= 1e-8);
+
+        let e: Expr = 2 + x + 3*y;
+        assert!((e.evaluate(&var_values) - 16.) <= 1e-8);
+
+        let e: Expr = x + 3*(y*x) + 1;
+        assert!((e.evaluate(&var_values) - 27.) <= 1e-8);
+    }
+
+    #[test]
+    #[should_panic]
+    fn expr_eval_missing_vars() {
+        make_model_with_vars!(m, x, y);
+        let mut var_values = HashMap::default();
+        var_values.insert(x, 1);
+        let e : Expr = x + y;
+        e.evaluate(&var_values);
     }
 }

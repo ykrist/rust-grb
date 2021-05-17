@@ -109,7 +109,8 @@ use std::ptr::null;
 use crate::constants::{callback::*, ERROR_CALLBACK, GRB_UNDEFINED};
 use crate::constr::IneqExpr;
 use crate::util;
-use crate::{model::Model, Error, Result, Status, Var, INFINITY}; // used for setting a partial solution in a callback
+use crate::{model::Model, Error, Result, Status, Var, INFINITY};
+use std::cell::{RefCell, Ref};
 
 /// The return type for callbacks, an alias of [`anyhow::Result`].
 ///
@@ -460,6 +461,7 @@ struct CbCtx<'a> {
     cbdata: *mut ffi::c_void,
     model: &'a Model,
     nvars: usize,
+    solution: RefCell<Option<Vec<f64>>>,
 }
 
 impl<'a> CbCtx<'a> {
@@ -474,6 +476,7 @@ impl<'a> CbCtx<'a> {
             where_raw,
             model,
             nvars,
+            solution: RefCell::new(None),
         }
     }
 
@@ -485,10 +488,11 @@ impl<'a> CbCtx<'a> {
     {
         // memo: only MIPNode && status == Optimal
         // note that this MUST be after a call to model.update(), so the indices in model.vars are Added and the unwrap() is ok
-        let vals = self.get_double_array_vars(MIPNODE, MIPNODE_REL)?;
+        let vals = self.get_solution_vec(MIPNODE)?;
         vars.into_iter()
             .map(|v| Ok(vals[self.model.get_index(v.borrow())? as usize]))
             .collect()
+
     }
 
     /// Retrieve values from the current solution vector.
@@ -497,7 +501,7 @@ impl<'a> CbCtx<'a> {
         V: Borrow<Var>,
         I: IntoIterator<Item = V>,
     {
-        let vals = self.get_double_array_vars(MIPSOL, MIPSOL_SOL)?;
+        let vals = self.get_solution_vec(MIPSOL)?;
         vars.into_iter()
             .map(|v| Ok(vals[self.model.get_index(v.borrow())? as usize]))
             .collect()
@@ -591,17 +595,27 @@ impl<'a> CbCtx<'a> {
         .and(Ok(buf))
     }
 
-    fn get_double_array_vars(&self, where_: i32, what: i32) -> Result<Vec<f64>> {
+    fn get_solution_vec<'b>(&'b self, where_: i32) -> Result<Ref<'_, Vec<f64>>> {
+        let what = match where_ {
+          MIPNODE => MIPNODE_REL,
+          MIPSOL => MIPSOL_SOL,
+          _ => unreachable!(),
+        };
+
+      if self.solution.borrow().is_none() {
         let mut buf = vec![0.0; self.nvars];
         self.check_apicall(unsafe {
-            ffi::GRBcbget(
-                self.cbdata,
-                where_,
-                what,
-                buf.as_mut_ptr() as *mut raw::c_void,
-            )
-        })
-        .and(Ok(buf))
+          ffi::GRBcbget(
+            self.cbdata,
+            where_,
+            what,
+            buf.as_mut_ptr() as *mut raw::c_void,
+          )
+        })?;
+        *self.solution.borrow_mut() = Some(buf);
+      }
+
+      Ok(Ref::map(self.solution.borrow(), |x| x.as_ref().unwrap()))
     }
 
     fn get_string(&self, where_: i32, what: i32) -> Result<String> {

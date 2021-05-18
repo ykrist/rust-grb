@@ -331,6 +331,9 @@ impl Model {
     /// [`Callback`] trait.  Closures, and anything else that implements `FnMut(CbCtx) -> Result<()>`
     /// implement the `Callback` trait automatically.   This method will always trigger a [`Model::update`].
     /// See [`crate::callback`] for details on how to use callbacks.
+    ///
+    /// # Panics
+    /// This function panics if Gurobi errors on clearing the callback.
     pub fn optimize_with_callback<F>(&mut self, callback: &mut F) -> Result<()>
     where
         F: Callback,
@@ -344,16 +347,17 @@ impl Model {
         };
 
         unsafe {
-            self.check_apicall(ffi::GRBsetcallbackfunc(
-                self.ptr,
-                Some(callback_wrapper),
-                transmute(&mut usrdata),
-            ))?;
-            self.check_apicall(ffi::GRBoptimize(self.ptr))?;
-            self.check_apicall(ffi::GRBsetcallbackfunc(self.ptr, None, null_mut()))?
+          let res =
+            self.check_apicall(
+              ffi::GRBsetcallbackfunc(self.ptr, Some(callback_wrapper), transmute(&mut usrdata), )
+            ).and_then(|()| self.check_apicall(
+              ffi::GRBoptimize(self.ptr))
+          );
+          self.check_apicall(
+            ffi::GRBsetcallbackfunc(self.ptr, None, null_mut())
+          ).expect("failed to clear callback function");
+          res
         }
-
-        Ok(())
     }
 
     /// Compute an Irreducible Inconsistent Subsystem (IIS) of the model.

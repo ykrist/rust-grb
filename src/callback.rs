@@ -197,8 +197,8 @@ pub(crate) extern "C" fn callback_wrapper(
     usrdata: *mut ffi::c_void,
 ) -> ffi::c_int {
     use std::panic::{catch_unwind, AssertUnwindSafe};
-    let usrdata = unsafe { &mut *(usrdata as *mut UserCallbackData) };
-    let (cb_obj, model, nvars) = (&mut usrdata.cb_obj, usrdata.model, usrdata.nvars);
+    let u = unsafe { &mut *(usrdata as *mut UserCallbackData) };
+    let (cb_obj, model, nvars) = (&mut u.cb_obj, u.model, u.nvars);
     let where_ = Where::new(CbCtx::new(cbdata, where_, model, nvars));
 
     let callback_result = catch_unwind(AssertUnwindSafe(|| {

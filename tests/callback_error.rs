@@ -25,7 +25,7 @@ fn run(mut cb: impl Callback) -> grb::Result<()> {
     Err(e) => panic!("unexpected error: {}", e),
     Ok(()) => panic!("expected error"),
   }
-  m.write("callback_error.lp")?;
+  m.optimize()?;
   Ok(())
 }
 

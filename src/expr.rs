@@ -5,10 +5,11 @@ use fnv::FnvHashMap;
 use std::fmt;
 use std::fmt::Write;
 use std::iter::Sum;
-use std::ops::{Add, Mul, Neg, Sub};
+use std::ops::{Add, Mul, Neg, Sub, AddAssign};
 
 use crate::prelude::*;
 use crate::{Error, Result};
+
 
 /// An algbraic expression of variables.
 #[derive(Debug, Clone)]
@@ -36,7 +37,7 @@ impl Expr {
                 linexpr: e,
                 qcoeffs: FnvHashMap::default(),
             }
-            .into(),
+                .into(),
             Quad(_) => unreachable!(),
         }
     }
@@ -283,7 +284,7 @@ impl QuadExpr {
 
     /// Return a reference to the linear + constant part of the expression
     pub fn affine_part(&self) -> &LinExpr {
-      &self.linexpr
+        &self.linexpr
     }
 
     /// number of **linear** terms in the expression (excluding the constant)
@@ -312,6 +313,7 @@ impl QuadExpr {
         self.qcoeffs.retain(|_, a| a.abs() > f64::EPSILON);
     }
 }
+
 
 impl Add for Expr {
     type Output = Self;
@@ -416,6 +418,177 @@ macro_rules! impl_from_prim_for_expr {
 }
 
 impl_all_primitives!(impl_from_prim_for_expr; );
+
+macro_rules! impl_expr_add_assign_primitive {
+    ($t:ty) => {
+        impl AddAssign< $ t> for Expr {
+            fn add_assign(&mut self, rhs: $t) {
+                use Expr::*;
+                let rhs = rhs as f64;
+                match self {
+                    Constant(a) => {
+                        *a += rhs;
+                    }
+                    Term(a, x) => {
+                        let mut e = LinExpr::new();
+                        e.add_constant(rhs);
+                        e.add_term(*a, *x);
+                        *self = e.into();
+                    }
+                    QTerm(a, x, y) => {
+                        let mut e = QuadExpr::new();
+                        e.add_constant(rhs);
+                        e.add_qterm(*a, *x, *y);
+                        *self = e.into();
+                    }
+                    Linear(e) => {
+                        e.add_constant(rhs);
+                    }
+                    Quad(e) => {
+                        e.add_constant(rhs);
+                    }
+                }
+            }
+        }
+    };
+}
+
+
+
+impl_all_primitives!(impl_expr_add_assign_primitive; );
+
+impl AddAssign<Var> for Expr {
+    fn add_assign(&mut self, rhs: Var) {
+        use Expr::*;
+
+        match self {
+            Linear(e) => {
+                e.add_term(1.0, rhs);
+            }
+            Quad(e) => {
+                e.add_term(1.0, rhs);
+            }
+            Constant(a) => {
+                let mut e = LinExpr::new();
+                e.add_constant(*a);
+                e.add_term(1.0, rhs);
+                *self = e.into();
+            }
+            Term(a, x) => {
+                let mut e = LinExpr::new();
+                e.add_term(*a, *x);
+                e.add_term(1.0, rhs);
+                *self = e.into();
+            }
+            QTerm(a, x, y) => {
+                let mut e = QuadExpr::new();
+                e.add_qterm(*a, *x, *y);
+                e.add_term(1.0, rhs);
+                *self = e.into();
+            }
+        }
+    }
+}
+
+impl AddAssign<Expr> for Expr {
+    fn add_assign(&mut self, rhs: Expr) {
+        enum OutputTy<'a> {
+            // Contains the mutable value to be updated, and the rhs
+            Constant(&'a mut f64, f64),
+            // Contains the mutable value to be updated, or None if one must be created
+            Quad(Option<&'a mut QuadExpr>),
+            // Contains the mutable value to be updated, or None if one must be created
+            Linear(Option<&'a mut LinExpr>),
+        }
+
+        impl<'a> OutputTy<'a> {
+            fn determine(lhs: &'a mut Expr, rhs: &Expr) -> Self {
+                use Expr::*;
+                match (lhs, rhs) {
+                    (Constant(a), Constant(b)) => OutputTy::Constant(a, *b),
+                    (Quad(q), _) => OutputTy::Quad(Some(q)),
+                    (QTerm(..), _) => OutputTy::Quad(None),
+                    (_, QTerm(..)) => OutputTy::Quad(None),
+                    (_, Quad(..)) => OutputTy::Quad(None),
+                    (Linear(l), _) => OutputTy::Linear(Some(l)),
+                    _ => OutputTy::Linear(None),
+                }
+            }
+        }
+
+        fn add_to_linear(linexpr: &mut LinExpr, e: &Expr) {
+            match e {
+                Term(a, x) => {
+                    linexpr.add_term(*a, *x);
+                }
+                Constant(c) => {
+                    linexpr.add_constant(*c);
+                }
+                Linear(le) => {
+                    for (&x, &a) in le.iter_terms() {
+                        linexpr.add_term(a, x);
+                    }
+                    linexpr.add_constant(le.get_offset());
+                }
+                _ => unimplemented!()
+            }
+        }
+
+        fn add_to_quad(quadexpr: &mut QuadExpr, e: &Expr) {
+            match e {
+                QTerm(a, x, y) => {
+                    quadexpr.add_qterm(*a, *x, *y);
+                }
+                Term(a, x) => {
+                    quadexpr.add_term(*a, *x);
+                }
+                Constant(c) => {
+                    quadexpr.add_constant(*c);
+                }
+                Linear(le) => {
+                    for (&x, &a) in le.iter_terms() {
+                        quadexpr.add_term(a, x);
+                    }
+                    quadexpr.add_constant(le.get_offset());
+                }
+                Quad(q) => {
+                    for (&(x, y), &a) in q.iter_qterms() {
+                        quadexpr.add_qterm(a, x, y);
+                    }
+                    for (&x, &a) in q.iter_terms() {
+                        quadexpr.add_term(a, x);
+                    }
+                    quadexpr.add_constant(q.get_offset());
+                }
+            }
+        }
+
+        use Expr::*;
+
+        match OutputTy::determine(self, &rhs) {
+            OutputTy::Linear(Some(l)) => {
+                add_to_linear(l, &rhs);
+            }
+            OutputTy::Quad(Some(q)) => {
+                add_to_quad(q, &rhs)
+            }
+            OutputTy::Linear(None) => {
+                let mut l = rhs.into_linexpr().unwrap();
+                add_to_linear(&mut l, self);
+                *self = Linear(l);
+            }
+            OutputTy::Quad(None) => {
+                let mut q = rhs.into_quadexpr();
+                add_to_quad(&mut q, self);
+                *self = Quad(q);
+            }
+            OutputTy::Constant(a, b) => {
+                *a += b;
+            }
+        }
+    }
+}
+
 
 impl From<LinExpr> for Expr {
     fn from(val: LinExpr) -> Expr {
@@ -604,8 +777,8 @@ impl Neg for Expr {
 
 impl<A: Into<Expr>> Sum<A> for Expr {
     fn sum<I>(mut iter: I) -> Expr
-    where
-        I: Iterator<Item = A>,
+        where
+            I: Iterator<Item=A>,
     {
         let mut total = iter.next().map_or(Expr::Constant(0.0), |x| x.into());
         for x in iter {
@@ -666,9 +839,9 @@ pub trait GurobiSum {
 }
 
 impl<T, I> GurobiSum for I
-where
-    T: Into<Expr>,
-    I: IntoIterator<Item = T>,
+    where
+        T: Into<Expr>,
+        I: IntoIterator<Item=T>,
 {
     fn grb_sum(self) -> Expr {
         self.into_iter().sum()
@@ -733,16 +906,19 @@ pub struct Attached<'a, T> {
 pub trait AttachModel {
     /// Attach a model reference to this object for formatting with [`Debug`]
     fn attach<'a>(&'a self, model: &'a Model) -> Attached<'a, Self>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         Attached { inner: self, model }
     }
 }
 
 impl AttachModel for LinExpr {}
+
 impl AttachModel for QuadExpr {}
+
 impl AttachModel for Expr {}
+
 impl AttachModel for Var {}
 
 fn float_fmt_helper(x: f64, ignore_val: f64) -> (Option<f64>, bool) {
@@ -874,6 +1050,7 @@ impl fmt::Debug for Attached<'_, Var> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     extern crate self as grb;
 
     macro_rules! make_model_with_vars {
@@ -934,6 +1111,38 @@ mod tests {
     }
 
     #[test]
+    fn add_assign() {
+        make_model_with_vars!(model, w, x, y, z);
+        let mut e = Expr::from(0);
+        e += 0;
+        e += 1.4;
+        e += x;
+        e += y * z;
+        e += y * z + x;
+        e += x + y;
+        println!("{:?}", &e);
+        assert!(!e.is_linear());
+
+        let mut e: Expr = 2 * x;
+        e += 4;
+        e += x * y;
+        println!("{:?}", &e);
+        assert!(!e.is_linear());
+
+        let mut e: Expr = 2 * (x * y);
+        e += 4;
+        e += x;
+        println!("{:?}", &e);
+        assert!(!e.is_linear());
+
+        let mut e: Expr = 2 * x;
+        e += 4;
+        e += y + z + 3;
+        println!("{:?}", &e);
+        assert!(e.is_linear());
+    }
+
+    #[test]
     fn subtraction() {
         make_model_with_vars!(model, x, y);
         let e = 2 - x;
@@ -975,7 +1184,7 @@ mod tests {
     #[test]
     fn summation() {
         make_model_with_vars!(model, x, y, z);
-        let vars = [x.clone(), y.clone(), z.clone(), x.clone()];
+        let vars = [x, y, z, x];
         let e: Expr = vars.iter().cloned().sum();
         eprintln!("{:?}", &e);
         let e = e.into_linexpr().unwrap();

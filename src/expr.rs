@@ -5,13 +5,14 @@ use fnv::FnvHashMap;
 use std::fmt;
 use std::fmt::Write;
 use std::iter::Sum;
-use std::ops::{Add, Mul, Neg, Sub};
+use std::ops::{Add, Mul, Neg, Sub, AddAssign};
 
 use crate::prelude::*;
 use crate::constr::{IneqExpr, RangeExpr};
 use crate::{Error, Result};
 use std::collections::HashMap;
 use std::hash::BuildHasher;
+
 
 /// An algbraic expression of variables.
 #[derive(Debug, Clone)]
@@ -39,7 +40,7 @@ impl Expr {
                 linexpr: e,
                 qcoeffs: FnvHashMap::default(),
             }
-            .into(),
+                .into(),
             Quad(_) => unreachable!(),
         }
     }
@@ -78,15 +79,15 @@ impl Expr {
     /// # Panics
     /// This function will panic if a variable in the expression is missing from the `var_values` map.
     pub fn evaluate<V: Copy + Into<f64>, S: BuildHasher>(&self, var_values: &HashMap<Var, V, S>) -> f64 {
-      use Expr::*;
+        use Expr::*;
 
-      match self {
-        Constant(c) => *c,
-        Term(a, x) => *a * var_values[x].into(),
-        QTerm(a, x, y) => *a * var_values[x].into() * var_values[y].into(),
-        Linear(e) => e.evaluate(var_values),
-        Quad(e) => e.evaluate(var_values),
-      }
+        match self {
+            Constant(c) => *c,
+            Term(a, x) => *a * var_values[x].into(),
+            QTerm(a, x, y) => *a * var_values[x].into() * var_values[y].into(),
+            Linear(e) => e.evaluate(var_values),
+            Quad(e) => e.evaluate(var_values),
+        }
     }
 }
 
@@ -229,9 +230,9 @@ impl LinExpr {
     /// # Panics
     /// This function will panic if a variable in the expression is missing from the `var_values` map.
     pub fn evaluate<V: Copy + Into<f64>, S: BuildHasher>(&self, var_values: &HashMap<Var, V, S>) -> f64 {
-      self.iter_terms()
-        .map(|(var, coeff)| var_values[var].into() * coeff)
-        .sum::<f64>() + self.offset
+        self.iter_terms()
+            .map(|(var, coeff)| var_values[var].into() * coeff)
+            .sum::<f64>() + self.offset
     }
 }
 
@@ -313,7 +314,7 @@ impl QuadExpr {
 
     /// Return a reference to the linear + constant part of the expression
     pub fn affine_part(&self) -> &LinExpr {
-      &self.linexpr
+        &self.linexpr
     }
 
     /// number of **linear** terms in the expression (excluding the constant)
@@ -347,11 +348,12 @@ impl QuadExpr {
     /// # Panics
     /// This function will panic if a variable in the expression is missing from the `var_values` map.
     pub fn evaluate<V: Copy + Into<f64>, S: BuildHasher>(&self, var_values: &HashMap<Var, V, S>) -> f64 {
-      self.iter_qterms()
-        .map(|((v1, v2), &coeff)| var_values[v1].into() * var_values[v2].into() * coeff)
-        .sum::<f64>() + self.linexpr.evaluate(var_values)
+        self.iter_qterms()
+            .map(|((v1, v2), &coeff)| var_values[v1].into() * var_values[v2].into() * coeff)
+            .sum::<f64>() + self.linexpr.evaluate(var_values)
     }
 }
+
 
 impl Add for Expr {
     type Output = Self;
@@ -456,6 +458,177 @@ macro_rules! impl_from_prim_for_expr {
 }
 
 impl_all_primitives!(impl_from_prim_for_expr; );
+
+macro_rules! impl_expr_add_assign_primitive {
+    ($t:ty) => {
+        impl AddAssign< $ t> for Expr {
+            fn add_assign(&mut self, rhs: $t) {
+                use Expr::*;
+                let rhs = rhs as f64;
+                match self {
+                    Constant(a) => {
+                        *a += rhs;
+                    }
+                    Term(a, x) => {
+                        let mut e = LinExpr::new();
+                        e.add_constant(rhs);
+                        e.add_term(*a, *x);
+                        *self = e.into();
+                    }
+                    QTerm(a, x, y) => {
+                        let mut e = QuadExpr::new();
+                        e.add_constant(rhs);
+                        e.add_qterm(*a, *x, *y);
+                        *self = e.into();
+                    }
+                    Linear(e) => {
+                        e.add_constant(rhs);
+                    }
+                    Quad(e) => {
+                        e.add_constant(rhs);
+                    }
+                }
+            }
+        }
+    };
+}
+
+
+
+impl_all_primitives!(impl_expr_add_assign_primitive; );
+
+impl AddAssign<Var> for Expr {
+    fn add_assign(&mut self, rhs: Var) {
+        use Expr::*;
+
+        match self {
+            Linear(e) => {
+                e.add_term(1.0, rhs);
+            }
+            Quad(e) => {
+                e.add_term(1.0, rhs);
+            }
+            Constant(a) => {
+                let mut e = LinExpr::new();
+                e.add_constant(*a);
+                e.add_term(1.0, rhs);
+                *self = e.into();
+            }
+            Term(a, x) => {
+                let mut e = LinExpr::new();
+                e.add_term(*a, *x);
+                e.add_term(1.0, rhs);
+                *self = e.into();
+            }
+            QTerm(a, x, y) => {
+                let mut e = QuadExpr::new();
+                e.add_qterm(*a, *x, *y);
+                e.add_term(1.0, rhs);
+                *self = e.into();
+            }
+        }
+    }
+}
+
+impl AddAssign<Expr> for Expr {
+    fn add_assign(&mut self, rhs: Expr) {
+        enum OutputTy<'a> {
+            // Contains the mutable value to be updated, and the rhs
+            Constant(&'a mut f64, f64),
+            // Contains the mutable value to be updated, or None if one must be created
+            Quad(Option<&'a mut QuadExpr>),
+            // Contains the mutable value to be updated, or None if one must be created
+            Linear(Option<&'a mut LinExpr>),
+        }
+
+        impl<'a> OutputTy<'a> {
+            fn determine(lhs: &'a mut Expr, rhs: &Expr) -> Self {
+                use Expr::*;
+                match (lhs, rhs) {
+                    (Constant(a), Constant(b)) => OutputTy::Constant(a, *b),
+                    (Quad(q), _) => OutputTy::Quad(Some(q)),
+                    (QTerm(..), _) => OutputTy::Quad(None),
+                    (_, QTerm(..)) => OutputTy::Quad(None),
+                    (_, Quad(..)) => OutputTy::Quad(None),
+                    (Linear(l), _) => OutputTy::Linear(Some(l)),
+                    _ => OutputTy::Linear(None),
+                }
+            }
+        }
+
+        fn add_to_linear(linexpr: &mut LinExpr, e: &Expr) {
+            match e {
+                Term(a, x) => {
+                    linexpr.add_term(*a, *x);
+                }
+                Constant(c) => {
+                    linexpr.add_constant(*c);
+                }
+                Linear(le) => {
+                    for (&x, &a) in le.iter_terms() {
+                        linexpr.add_term(a, x);
+                    }
+                    linexpr.add_constant(le.get_offset());
+                }
+                _ => unimplemented!()
+            }
+        }
+
+        fn add_to_quad(quadexpr: &mut QuadExpr, e: &Expr) {
+            match e {
+                QTerm(a, x, y) => {
+                    quadexpr.add_qterm(*a, *x, *y);
+                }
+                Term(a, x) => {
+                    quadexpr.add_term(*a, *x);
+                }
+                Constant(c) => {
+                    quadexpr.add_constant(*c);
+                }
+                Linear(le) => {
+                    for (&x, &a) in le.iter_terms() {
+                        quadexpr.add_term(a, x);
+                    }
+                    quadexpr.add_constant(le.get_offset());
+                }
+                Quad(q) => {
+                    for (&(x, y), &a) in q.iter_qterms() {
+                        quadexpr.add_qterm(a, x, y);
+                    }
+                    for (&x, &a) in q.iter_terms() {
+                        quadexpr.add_term(a, x);
+                    }
+                    quadexpr.add_constant(q.get_offset());
+                }
+            }
+        }
+
+        use Expr::*;
+
+        match OutputTy::determine(self, &rhs) {
+            OutputTy::Linear(Some(l)) => {
+                add_to_linear(l, &rhs);
+            }
+            OutputTy::Quad(Some(q)) => {
+                add_to_quad(q, &rhs)
+            }
+            OutputTy::Linear(None) => {
+                let mut l = rhs.into_linexpr().unwrap();
+                add_to_linear(&mut l, self);
+                *self = Linear(l);
+            }
+            OutputTy::Quad(None) => {
+                let mut q = rhs.into_quadexpr();
+                add_to_quad(&mut q, self);
+                *self = Quad(q);
+            }
+            OutputTy::Constant(a, b) => {
+                *a += b;
+            }
+        }
+    }
+}
+
 
 impl From<LinExpr> for Expr {
     fn from(val: LinExpr) -> Expr {
@@ -644,8 +817,8 @@ impl Neg for Expr {
 
 impl<A: Into<Expr>> Sum<A> for Expr {
     fn sum<I>(mut iter: I) -> Expr
-    where
-        I: Iterator<Item = A>,
+        where
+            I: Iterator<Item=A>,
     {
         let mut total = iter.next().map_or(Expr::Constant(0.0), |x| x.into());
         for x in iter {
@@ -663,8 +836,8 @@ pub trait AttachModel {
     /// This trait is deprecated, use [`NameMapped`] instead.
     #[deprecated]
     fn attach<'a>(&'a self, model: &'a Model) -> Attached<'a, Self>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         Attached { inner: self, model }
     }
@@ -687,43 +860,43 @@ fn float_fmt_helper(x: f64, ignore_val: f64) -> (Option<f64>, bool) {
 /// A helper trait for using [`AttachVarNames`] trait.  Any type that implements `QueryVarName` may be
 /// used with [`AttachVarNames::with_names`].
 pub trait QueryVarName {
-  /// Write the name of the supplied `var` to the given formatter.
-  fn write_name(&self, var: &Var, f: &mut fmt::Formatter<'_>) -> fmt::Result;
+    /// Write the name of the supplied `var` to the given formatter.
+    fn write_name(&self, var: &Var, f: &mut fmt::Formatter<'_>) -> fmt::Result;
 }
 
 impl<V, S> QueryVarName for std::collections::HashMap<Var, V, S>
-  where
-    S: std::hash::BuildHasher,
-    V: AsRef<str>,
+    where
+        S: std::hash::BuildHasher,
+        V: AsRef<str>,
 {
-  fn write_name(&self, var: &Var, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let name = self.get(var).ok_or(fmt::Error)?.as_ref();
-    f.write_str(name)
-  }
+    fn write_name(&self, var: &Var, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let name = self.get(var).ok_or(fmt::Error)?.as_ref();
+        f.write_str(name)
+    }
 }
 
 impl QueryVarName for Model
 {
-  fn write_name(&self, var: &Var, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let name = self.get_obj_attr(attr::VarName, var).map_err(|_| fmt::Error)?;
-    f.write_str(&name)
-  }
+    fn write_name(&self, var: &Var, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let name = self.get_obj_attr(attr::VarName, var).map_err(|_| fmt::Error)?;
+        f.write_str(&name)
+    }
 }
 
 impl<F> QueryVarName for F
-  where
-    F: Fn(&Var, &mut fmt::Formatter<'_>) -> fmt::Result
+    where
+        F: Fn(&Var, &mut fmt::Formatter<'_>) -> fmt::Result
 {
-  fn write_name(&self, var: &Var, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    self(var, f)
-  }
+    fn write_name(&self, var: &Var, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self(var, f)
+    }
 }
 
 /// A helper struct for pretty-printing variables, expressions and constraints
 /// (see the [`AttachVarNames`] trait)
 pub struct NameMapped<'a, T: ?Sized, N> {
-  writer: &'a N,
-  inner: &'a T
+    writer: &'a N,
+    inner: &'a T,
 }
 
 
@@ -773,25 +946,25 @@ pub struct NameMapped<'a, T: ?Sized, N> {
 ///
 /// TLDR: Use `.grb_sum()` instead of `sum()` when summing over an iterator of variables or variable expressions.
 pub trait GurobiSum {
-  /// Additively combine an iterator (or container) of one or more expressions into a single expression.
-  fn grb_sum(self) -> Expr;
+    /// Additively combine an iterator (or container) of one or more expressions into a single expression.
+    fn grb_sum(self) -> Expr;
 }
 
 impl<T, I> GurobiSum for I
-  where
-    T: Into<Expr>,
-    I: IntoIterator<Item = T>,
+    where
+        T: Into<Expr>,
+        I: IntoIterator<Item=T>,
 {
-  fn grb_sum(self) -> Expr {
-    self.into_iter().sum()
-  }
+    fn grb_sum(self) -> Expr {
+        self.into_iter().sum()
+    }
 }
 
 /// A helper struct for pretty-printing variables, expressions and constraints
 /// (see the [`AttachModel`] trait)
 pub struct Attached<'a, T> {
-  pub(crate) inner: &'a T,
-  pub(crate) model: &'a Model,
+    pub(crate) inner: &'a T,
+    pub(crate) model: &'a Model,
 }
 
 
@@ -899,160 +1072,165 @@ pub struct Attached<'a, T> {
 /// EGG + BACON + APPLE + DOG + CAT ∈ [0, 1]
 /// ```
 pub trait AttachVarNames {
-  /// Attach the variables names (by reference) to this object, enabling pretty-printing.
-  /// `name_map` must by a type which implements [`QueryVarName`], such as [`Model`] or `HashMap<Var, String>`.
-  fn with_names<'a, N: QueryVarName>(&'a self, name_map: &'a N) -> NameMapped<'a, Self, N> {
-    NameMapped { inner: &self, writer: name_map }
-  }
+    /// Attach the variables names (by reference) to this object, enabling pretty-printing.
+    /// `name_map` must by a type which implements [`QueryVarName`], such as [`Model`] or `HashMap<Var, String>`.
+    fn with_names<'a, N: QueryVarName>(&'a self, name_map: &'a N) -> NameMapped<'a, Self, N> {
+        NameMapped { inner: &self, writer: name_map }
+    }
 }
 
 impl AttachVarNames for LinExpr {}
+
 impl AttachVarNames for QuadExpr {}
+
 impl AttachVarNames for Expr {}
+
 impl AttachVarNames for Var {}
+
 impl AttachVarNames for IneqExpr {}
+
 impl AttachVarNames for RangeExpr {}
 
 
 impl<W: QueryVarName> fmt::Debug for NameMapped<'_, Var, W> {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    self.writer.write_name(self.inner, f)
-  }
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.writer.write_name(self.inner, f)
+    }
 }
 
 impl<W> fmt::Debug for NameMapped<'_, LinExpr, W>
-  where
-    W: QueryVarName
+    where
+        W: QueryVarName
 {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    if self.inner.is_empty() {
-      return f.write_str("<empty LinExpr>");
-    }
-
-    let (offset, positive) = float_fmt_helper(self.inner.get_offset(), 0.0);
-
-    let mut is_first_term = false;
-    if let Some(offset) = offset {
-      f.write_fmt(format_args!("{}", if positive { offset } else { -offset }))?;
-    } else {
-      is_first_term = true;
-    }
-
-    for (var, &coeff) in self.inner.iter_terms() {
-      let (coeff, positive) = float_fmt_helper(coeff, 1.0);
-
-      // write the operator with the previous term
-      if !is_first_term {
-        f.write_str(if positive { " + " } else { " - " })?;
-      } else {
-        is_first_term = false;
-        if !positive {
-          f.write_char('-')?;
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.inner.is_empty() {
+            return f.write_str("<empty LinExpr>");
         }
-      }
-      if let Some(coeff) = coeff {
-        f.write_fmt(format_args!("{} ", coeff))?;
-      }
-      self.writer.write_name(var, f)?;
+
+        let (offset, positive) = float_fmt_helper(self.inner.get_offset(), 0.0);
+
+        let mut is_first_term = false;
+        if let Some(offset) = offset {
+            f.write_fmt(format_args!("{}", if positive { offset } else { -offset }))?;
+        } else {
+            is_first_term = true;
+        }
+
+        for (var, &coeff) in self.inner.iter_terms() {
+            let (coeff, positive) = float_fmt_helper(coeff, 1.0);
+
+            // write the operator with the previous term
+            if !is_first_term {
+                f.write_str(if positive { " + " } else { " - " })?;
+            } else {
+                is_first_term = false;
+                if !positive {
+                    f.write_char('-')?;
+                }
+            }
+            if let Some(coeff) = coeff {
+                f.write_fmt(format_args!("{} ", coeff))?;
+            }
+            self.writer.write_name(var, f)?;
+        }
+        Ok(())
     }
-    Ok(())
-  }
 }
 
 
 impl<W: QueryVarName> fmt::Debug for NameMapped<'_, QuadExpr, W> {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    if self.inner.is_empty() {
-      return f.write_str("<empty QuadExpr>");
-    }
-
-    let mut is_first_term = false;
-    if self.inner.linexpr.is_empty() {
-      is_first_term = true
-    } else {
-      self.inner.linexpr.with_names(self.writer).fmt(f)?;
-    }
-
-    for ((x, y), &coeff) in &self.inner.qcoeffs {
-      let (coeff, positive) = float_fmt_helper(coeff, 1.0);
-      if is_first_term {
-        is_first_term = false;
-        if !positive {
-          f.write_char('-')?;
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.inner.is_empty() {
+            return f.write_str("<empty QuadExpr>");
         }
-      } else {
-        f.write_str(if positive { " + " } else { " - " })?;
-      }
-      if let Some(coeff) = coeff {
-        f.write_fmt(format_args!("{} ", coeff))?;
-      }
-      self.writer.write_name(x, f)?;
-      f.write_char('*')?;
-      self.writer.write_name(y, f)?;
+
+        let mut is_first_term = false;
+        if self.inner.linexpr.is_empty() {
+            is_first_term = true
+        } else {
+            self.inner.linexpr.with_names(self.writer).fmt(f)?;
+        }
+
+        for ((x, y), &coeff) in &self.inner.qcoeffs {
+            let (coeff, positive) = float_fmt_helper(coeff, 1.0);
+            if is_first_term {
+                is_first_term = false;
+                if !positive {
+                    f.write_char('-')?;
+                }
+            } else {
+                f.write_str(if positive { " + " } else { " - " })?;
+            }
+            if let Some(coeff) = coeff {
+                f.write_fmt(format_args!("{} ", coeff))?;
+            }
+            self.writer.write_name(x, f)?;
+            f.write_char('*')?;
+            self.writer.write_name(y, f)?;
+        }
+        Ok(())
     }
-    Ok(())
-  }
 }
 
 impl<W: QueryVarName> fmt::Debug for NameMapped<'_, Expr, W> {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    use Expr::*;
-    match &self.inner {
-      Constant(a) => {
-        f.write_fmt(format_args!("{}", a))?;
-      },
-      Term(a, x) => {
-        if (a - 1.0).abs() > f64::EPSILON {
-          f.write_fmt(format_args!("{} ", a))?;
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Expr::*;
+        match &self.inner {
+            Constant(a) => {
+                f.write_fmt(format_args!("{}", a))?;
+            }
+            Term(a, x) => {
+                if (a - 1.0).abs() > f64::EPSILON {
+                    f.write_fmt(format_args!("{} ", a))?;
+                }
+                self.writer.write_name(x, f)?;
+            }
+            QTerm(a, x, y) => {
+                if (a - 1.0).abs() > f64::EPSILON {
+                    f.write_fmt(format_args!("{} ", a))?;
+                }
+                self.writer.write_name(x, f)?;
+                f.write_char('*')?;
+                self.writer.write_name(y, f)?;
+            }
+            Linear(e) => {
+                e.with_names(self.writer).fmt(f)?;
+            }
+            Quad(e) => {
+                e.with_names(self.writer).fmt(f)?;
+            }
         }
-        self.writer.write_name(x, f)?;
-      }
-      QTerm(a, x, y) => {
-        if (a - 1.0).abs() > f64::EPSILON {
-          f.write_fmt(format_args!("{} ", a))?;
-        }
-        self.writer.write_name(x, f)?;
-        f.write_char('*')?;
-        self.writer.write_name(y, f)?;
-      }
-      Linear(e) => {
-        e.with_names(self.writer).fmt(f)?;
-      },
-      Quad(e) => {
-        e.with_names(self.writer).fmt(f)?;
-      },
+        Ok(())
     }
-    Ok(())
-  }
 }
 
 
 impl<W: QueryVarName> fmt::Debug for NameMapped<'_, IneqExpr, W> {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    use crate::ConstrSense::*;
-    let cmp = match self.inner.sense {
-      Less => "≤",
-      Greater => "≥",
-      Equal => "=",
-    };
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use crate::ConstrSense::*;
+        let cmp = match self.inner.sense {
+            Less => "≤",
+            Greater => "≥",
+            Equal => "=",
+        };
 
-    self.inner.lhs.with_names(self.writer).fmt(f)?;
-    f.write_fmt(format_args!(" {} ", cmp))?;
-    self.inner.rhs.with_names(self.writer).fmt(f)?;
-    Ok(())
-  }
+        self.inner.lhs.with_names(self.writer).fmt(f)?;
+        f.write_fmt(format_args!(" {} ", cmp))?;
+        self.inner.rhs.with_names(self.writer).fmt(f)?;
+        Ok(())
+    }
 }
 
 
 impl<W: QueryVarName> fmt::Debug for NameMapped<'_, RangeExpr, W> {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    self.inner.expr.with_names(self.writer).fmt(f)?;
-    f.write_fmt(format_args!(
-      " ∈ [{}, {}]",
-      self.inner.lb,
-      self.inner.ub
-    ))
-  }
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.inner.expr.with_names(self.writer).fmt(f)?;
+        f.write_fmt(format_args!(
+            " ∈ [{}, {}]",
+            self.inner.lb,
+            self.inner.ub
+        ))
+    }
 }
 
 
@@ -1082,9 +1260,9 @@ impl_debug_attached!(Expr, RangeExpr, IneqExpr, Var, LinExpr, QuadExpr);
 #[cfg(test)]
 mod tests {
     use super::*;
-  use std::hash::BuildHasher;
+    use std::hash::BuildHasher;
 
-  extern crate self as grb;
+    extern crate self as grb;
 
     macro_rules! make_model_with_vars {
     ($model:ident, $($var:ident),+) => {
@@ -1144,6 +1322,38 @@ mod tests {
     }
 
     #[test]
+    fn add_assign() {
+        make_model_with_vars!(model, w, x, y, z);
+        let mut e = Expr::from(0);
+        e += 0;
+        e += 1.4;
+        e += x;
+        e += y * z;
+        e += y * z + x;
+        e += x + y;
+        println!("{:?}", &e);
+        assert!(!e.is_linear());
+
+        let mut e: Expr = 2 * x;
+        e += 4;
+        e += x * y;
+        println!("{:?}", &e);
+        assert!(!e.is_linear());
+
+        let mut e: Expr = 2 * (x * y);
+        e += 4;
+        e += x;
+        println!("{:?}", &e);
+        assert!(!e.is_linear());
+
+        let mut e: Expr = 2 * x;
+        e += 4;
+        e += y + z + 3;
+        println!("{:?}", &e);
+        assert!(e.is_linear());
+    }
+
+    #[test]
     fn subtraction() {
         make_model_with_vars!(model, x, y);
         let e = 2 - x;
@@ -1185,7 +1395,7 @@ mod tests {
     #[test]
     fn summation() {
         make_model_with_vars!(model, x, y, z);
-        let vars = [x.clone(), y.clone(), z.clone(), x.clone()];
+        let vars = [x, y, z, x];
         let e: Expr = vars.iter().cloned().sum();
         eprintln!("{:?}", &e);
         let e = e.into_linexpr().unwrap();
@@ -1222,16 +1432,16 @@ mod tests {
         let e = x * y;
         assert!((e.evaluate(&var_values) - 8.) <= 1e-8);
 
-        let e : Expr = 2 * (x * y);
+        let e: Expr = 2 * (x * y);
         assert!((e.evaluate(&var_values) - 16.) <= 1e-8);
 
-        let e : Expr = 2 * x;
+        let e: Expr = 2 * x;
         assert!((e.evaluate(&var_values) - 4.) <= 1e-8);
 
-        let e: Expr = 2 + x + 3*y;
+        let e: Expr = 2 + x + 3 * y;
         assert!((e.evaluate(&var_values) - 16.) <= 1e-8);
 
-        let e: Expr = x + 3*(y*x) + 1;
+        let e: Expr = x + 3 * (y * x) + 1;
         assert!((e.evaluate(&var_values) - 27.) <= 1e-8);
     }
 
@@ -1241,16 +1451,16 @@ mod tests {
         make_model_with_vars!(m, x, y);
         let mut var_values = HashMap::new();
         var_values.insert(x, 1);
-        let e : Expr = x + y;
+        let e: Expr = x + y;
         e.evaluate(&var_values);
     }
 
     #[test]
     fn expr_generic_hashmap() {
-      fn inner<S: BuildHasher>(var_values: HashMap<Var, f64, S>) {
-        Expr::from(0.0).evaluate(&var_values);
-      }
+        fn inner<S: BuildHasher>(var_values: HashMap<Var, f64, S>) {
+            Expr::from(0.0).evaluate(&var_values);
+        }
 
-      inner(HashMap::new());
+        inner(HashMap::new());
     }
 }

@@ -356,16 +356,15 @@ impl<'a> MIPSolCtx<'a> {
 /// Callback context object during [`MIPNODE`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct MIPNodeCtx<'a>(CbCtx<'a>);
 impl<'a> MIPNodeCtx<'a> {
-    /// Optimization status of current MIP node. This will query the solution for ALL
-    /// variables, and return the subset provided, so you should avoid calling this method
-    /// multiple times per callback.
+    /// Optimization status of current MIP node.
     pub fn status(&self) -> Result<Status> {
         self.0
             .get_int(MIPNODE, MIPNODE_STATUS)
             .map(|s| s.try_into().unwrap())
     }
 
-    /// Get the optimal solution to this MIP node relaxation.
+    /// Get the optimal solution to this MIP node relaxation.  This will query the solution for ALL variables, and
+    /// return the subset provided, so you should avoid calling this method multiple times per callback.
     pub fn get_solution<I, V>(&self, vars: I) -> Result<Vec<f64>>
     where
         V: Borrow<Var>,

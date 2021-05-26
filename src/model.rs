@@ -1403,6 +1403,8 @@ impl AsyncModel {
     }
 }
 
+// TODO: check that multi-objective and scenario optimisation work/are usable
+
 impl std::convert::From<AsyncModel> for Model {
     fn from(model: AsyncModel) -> Model {
         model.0

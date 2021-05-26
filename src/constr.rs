@@ -95,3 +95,5 @@ impl fmt::Debug for Attached<'_, RangeExpr> {
         ))
     }
 }
+
+// TODO: support for general PWL constraints

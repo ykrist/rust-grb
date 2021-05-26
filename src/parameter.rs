@@ -8,7 +8,8 @@ use std::ffi::{CStr, CString};
 use crate::env::Env;
 use crate::util::{copy_c_str, AsPtr};
 use crate::Result;
-
+// TODO: Solution Pool parameters
+// TODO: PWL approximation
 
 #[allow(missing_docs)]
 mod param_enums {

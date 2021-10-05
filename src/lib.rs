@@ -10,7 +10,7 @@
 //!   should not set `GUROBI_HOME`.
 //!
 //! ## Quick Start
-//! The example below sets up and solves a MIP.  Additional examples covering the more specific aspects of this crate's API can
+//! The example below sets up and solves a Mixed Integer Program (MIP).  Additional examples covering the more specific aspects of this crate's API can
 //! be found [here](https://github.com/ykrist/rust-grb/tree/master/examples).
 //!
 //! The documention for [`Model`] contains most of the details for defining, solving and querying models.

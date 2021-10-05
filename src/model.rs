@@ -278,12 +278,12 @@ impl Model {
         Model::from_raw(&self.env, fixed)
     }
 
-    /// Get shared reference of the environment associated with the model.
+    /// Get shared reference to the environment associated with the model.
     pub fn get_env(&self) -> &Env {
         &self.env
     }
 
-    /// Get mutable reference of the environment associated with the model.
+    /// Get mutable reference to the environment associated with the model.
     pub fn get_env_mut(&mut self) -> &mut Env {
         &mut self.env
     }
@@ -360,7 +360,25 @@ impl Model {
         }
     }
 
-    /// Compute an Irreducible Inconsistent Subsystem (IIS) of the model.
+    /// Compute an Irreducible Inconsistent Subsystem (IIS) of the model.  The constraints in the IIS can be identified
+    /// by checking their `IISConstr` attribute
+    ///
+    /// # Example
+    /// ```
+    /// # use grb::prelude::*;
+    ///
+    /// fn compute_iis_constraints(m: &mut Model) -> grb::Result<Vec<Constr>> {
+    ///    m.compute_iis()?;
+    ///    let constrs = m.get_constrs()?; // all constraints in model
+    ///    let iis_constrs = m.get_obj_attr_batch(attr::IISConstr, constrs.iter().copied())?
+    ///     .into_iter()
+    ///     .zip(constrs)
+    ///     // IISConstr is 1 if constraint is in the IIS, 0 otherwise
+    ///     .filter_map(|(is_iis, c)| if is_iis > 0 { Some(*c)} else { None })
+    ///     .collect();
+    ///     Ok(iis_constrs)
+    /// }
+    /// ```
     pub fn compute_iis(&mut self) -> Result<()> {
         self.check_apicall(unsafe { ffi::GRBcomputeIIS(self.ptr) })
     }
@@ -393,18 +411,28 @@ impl Model {
 
     /// Insert a message into log file.
     ///
-    /// When **message** cannot convert to raw C string, a panic is occurred.
+    /// # Panics
+    /// Panics when `message` cannot be converted to a nul-terminated C string.
     pub fn message(&self, message: &str) {
         self.env.message(message);
     }
 
-    /// Import optimization data of the model from a file.
+    /// Import a model from a file. See [`Model::write`](Model::write) for details on valid file types.
     pub fn read(&mut self, filename: &str) -> Result<()> {
         let filename = CString::new(filename)?;
         self.check_apicall(unsafe { ffi::GRBread(self.ptr, filename.as_ptr()) })
     }
 
-    /// Export optimization data of the model to a file.
+    /// Export a model to a file.
+    ///
+    /// The file type is encoded in the file name suffix. Valid suffixes are `.mps`, `.rew`, `.lp`, or `.rlp` for
+    /// writing the model itself, `.ilp` for writing just the IIS associated with an infeasible model,
+    /// `.sol` for writing the current solution, `.mst` for writing
+    /// a start vector, `.hnt` for writing a hint file, `.bas` for writing an LP basis, `.prm` for writing modified
+    /// parameter settings, `.attr` for writing model attributes, or `.json` for writing solution information in
+    /// JSON format. If your system has compression utilities installed (e.g., 7z or zip for Windows, and gzip,
+    /// bzip2, or unzip for Linux or Mac OS), then the files can be compressed, so additional suffixes of `.gz`,
+    /// `.bz2`, or `.7z` are accepted.
     pub fn write(&self, filename: &str) -> Result<()> {
         let filename = CString::new(filename)?;
         self.check_apicall(unsafe { ffi::GRBwrite(self.ptr, filename.as_ptr()) })

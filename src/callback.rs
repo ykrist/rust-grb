@@ -328,9 +328,12 @@ impl<'a> MIPCtx<'a> {
 /// Callback context object during [`MIPSOL`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct MIPSolCtx<'a>(CbCtx<'a>);
 impl<'a> MIPSolCtx<'a> {
-    /// Add a new (linear) cutting plane to the MIP model.
-    pub fn add_cut(&self, constr: IneqExpr) -> Result<()> {
-        self.0.add_cut(constr)
+    /// This method is a no-op. It was added to this type by mistake but is kept for backwards-compatibility.
+    #[doc(hidden)]
+    #[deprecated(note="This method does nothing, use `MIPNodeCtx::add_cut` instead.")]
+    pub fn add_cut(&self, _constr: IneqExpr) -> Result<()> {
+      eprintln!("MIPSolCtx::add_cut is a no-op, use MIPNodeCtx::add_cut instead.");
+      Ok(())
     }
 
     /// Retrieve the new (integer) solution values for the given variables.  This will query the solution for ALL
@@ -356,6 +359,11 @@ impl<'a> MIPSolCtx<'a> {
 /// Callback context object during [`MIPNODE`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct MIPNodeCtx<'a>(CbCtx<'a>);
 impl<'a> MIPNodeCtx<'a> {
+    /// Add a new (linear) cutting plane to the MIP model.
+    pub fn add_cut(&self, constr: IneqExpr) -> Result<()> {
+      self.0.add_cut(constr)
+    }
+
     /// Optimization status of current MIP node.
     pub fn status(&self) -> Result<Status> {
         self.0

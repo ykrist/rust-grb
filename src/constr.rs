@@ -84,3 +84,5 @@ impl RangeExpr {
         self.expr.evaluate(var_values)
     }
 }
+
+// TODO: support for general PWL constraints

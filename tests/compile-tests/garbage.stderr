@@ -1,16 +1,20 @@
 error[E0277]: the trait bound `Expr: From<bool>` is not satisfied
- --> $DIR/garbage.rs:7:6
-  |
-7 |   c!(x + y + 2*z + 1 <= 0 in 1..0);
-  |      ^ the trait `From<bool>` is not implemented for `Expr`
-  |
-  = help: the following implementations were found:
-            <Expr as From<&T>>
-            <Expr as From<LinExpr>>
-            <Expr as From<QuadExpr>>
-            <Expr as From<Var>>
-          and 12 others
-  = note: required by `from`
+   --> $DIR/garbage.rs:7:6
+    |
+7   |   c!(x + y + 2*z + 1 <= 0 in 1..0);
+    |      ^^^^^^^^^^^^^^^^^^^^ the trait `From<bool>` is not implemented for `Expr`
+    |
+    = help: the following implementations were found:
+              <Expr as From<&T>>
+              <Expr as From<LinExpr>>
+              <Expr as From<QuadExpr>>
+              <Expr as From<Var>>
+            and 12 others
+note: required by `from`
+   --> $DIR/mod.rs:371:5
+    |
+371 |     fn from(_: T) -> Self;
+    |     ^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0605]: non-primitive cast: `Var` as `f64`
  --> $DIR/garbage.rs:8:18

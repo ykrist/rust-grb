@@ -220,7 +220,7 @@ mod tests {
       })
       .collect();
 
-    let mut model = crate::Model::new("test")?;
+    let model = crate::Model::new("test")?;
     for (param, ty) in params {
       let param = Undocumented::new(param).unwrap();
       match ty.as_str() {

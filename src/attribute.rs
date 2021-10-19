@@ -510,8 +510,6 @@ mod tests {
 
   impl<T> Attribute<T> {
     pub fn new(s: String) -> Self {
-      let mut s = s;
-      // s.push_str("_fofooooo");
       Attribute(CString::new(s).unwrap(), PhantomData)
     }
   }
@@ -574,32 +572,6 @@ mod tests {
   }
 
 
-  struct Helper<O> {
-    obj: Attribute<O>,
-  }
-
-  macro_rules! helper {
-    (
-      $model:ident, $attrname:ident, $a:expr, $b:expr;
-      $($ty_str:literal, $obj_str:literal, $obj:ident);+$(;)?
-    ) => {
-      match ($a, $b) {
-        $(
-          ($ty_str, $obj_str) => $model.get_obj_attr::<_, _, helper!(@VAL_TY $ty_str)>(Attribute::<helper!(@OBJ_TY $obj_str)>::new($attrname), &$obj).err(),
-        )*
-        _ => None,
-      }
-    };
-
-    (@VAL_TY "dbl") => { f64 };
-    (@VAL_TY "int") => { i32 };
-    (@VAL_TY "str") => { String };
-
-    (@OBJ_TY "var") => { Var };
-    (@OBJ_TY "qcons") => { QConstr };
-    (@OBJ_TY "cons") => { Constr };
-    (@OBJ_TY "sos") => { SOS };
-  }
 
   #[test]
   fn attribute_names() -> crate::Result<()> {
@@ -616,9 +588,9 @@ mod tests {
       })
       .collect();
 
+
     let mut model = crate::Model::new("test")?;
     let var = crate::add_ctsvar!(model)?;
-
     let x = crate::add_binvar!(model)?;
     let y = crate::add_binvar!(model)?;
     let constraint = model.add_constr("", crate::c!(var >= 1))?;

@@ -304,6 +304,7 @@ where
                 idx,
                 &mut s,
             ))?;
+            if s.is_null() { return Ok(String::new()) }
             Ok(copy_c_str(s))
         }
     }

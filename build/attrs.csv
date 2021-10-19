@@ -74,7 +74,7 @@ PoolObjVal,dbl,model
 Runtime,dbl,model
 ScenNObjBound,dbl,model
 ScenNObjVal,dbl,model
-ScenNX,dbl,model
+ScenNX,dbl,var
 BarIterCount,int,model
 BoundSVioIndex,int,model
 BoundVioIndex,int,model

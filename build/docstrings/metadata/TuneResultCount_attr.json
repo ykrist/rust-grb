@@ -1,0 +1,7 @@
+{
+  "name": "TuneResultCount",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/tuneresultcount.html",
+  "dtype": "int",
+  "otype": "model",
+  "modifiable": false
+}

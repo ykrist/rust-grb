@@ -1,0 +1,1 @@
+The number of decision variables in the model.

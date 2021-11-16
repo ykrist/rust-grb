@@ -1,0 +1,1 @@
+Maximum matrix coefficient (in absolute value) in the linear constraint matrix.

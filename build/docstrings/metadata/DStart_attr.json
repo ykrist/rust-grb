@@ -1,0 +1,7 @@
+{
+  "name": "DStart",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/dstart.html",
+  "dtype": "dbl",
+  "otype": "constr",
+  "modifiable": true
+}

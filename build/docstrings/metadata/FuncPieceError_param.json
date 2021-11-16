@@ -1,0 +1,8 @@
+{
+  "name": "FuncPieceError",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/funcpieceerror2.html",
+  "dtype": "dbl",
+  "default": "1e-3",
+  "min": "1e-6",
+  "max": "1e+6"
+}

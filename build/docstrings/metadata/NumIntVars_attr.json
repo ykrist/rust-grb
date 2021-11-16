@@ -1,0 +1,7 @@
+{
+  "name": "NumIntVars",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/numintvars.html",
+  "dtype": "int",
+  "otype": "model",
+  "modifiable": false
+}

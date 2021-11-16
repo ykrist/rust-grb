@@ -1,0 +1,7 @@
+{
+  "name": "RHS",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/rhs.html",
+  "dtype": "dbl",
+  "otype": "constr",
+  "modifiable": true
+}

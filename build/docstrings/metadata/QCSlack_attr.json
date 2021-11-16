@@ -1,0 +1,7 @@
+{
+  "name": "QCSlack",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/qcslack.html",
+  "dtype": "dbl",
+  "otype": "qconstr",
+  "modifiable": false
+}

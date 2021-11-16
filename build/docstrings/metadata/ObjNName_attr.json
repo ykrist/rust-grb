@@ -1,0 +1,7 @@
+{
+  "name": "ObjNName",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/objnname.html",
+  "dtype": "str",
+  "otype": "model",
+  "modifiable": true
+}

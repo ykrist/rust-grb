@@ -1,0 +1,6 @@
+{
+  "name": "NodefileDir",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/nodefiledir.html",
+  "dtype": "str",
+  "default": "\".\""
+}

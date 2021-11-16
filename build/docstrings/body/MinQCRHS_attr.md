@@ -1,0 +1,1 @@
+Minimum (non-zero) quadratic constraint right-hand side value (in absolute value).

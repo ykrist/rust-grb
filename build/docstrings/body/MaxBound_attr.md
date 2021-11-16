@@ -1,0 +1,1 @@
+Maximum (finite) variable bound.

@@ -1,0 +1,1 @@
+Number of simplex iterations performed during the most recent optimization.

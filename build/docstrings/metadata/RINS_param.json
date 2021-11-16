@@ -1,0 +1,8 @@
+{
+  "name": "RINS",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/rins.html",
+  "dtype": "int",
+  "default": "-1",
+  "min": "-1",
+  "max": "MAXINT"
+}

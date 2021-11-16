@@ -1,0 +1,7 @@
+{
+  "name": "ObjVal",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/objval.html",
+  "dtype": "dbl",
+  "otype": "model",
+  "modifiable": false
+}

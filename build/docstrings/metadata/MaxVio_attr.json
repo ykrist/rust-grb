@@ -1,0 +1,7 @@
+{
+  "name": "MaxVio",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/maxvio.html",
+  "dtype": "dbl",
+  "otype": "model",
+  "modifiable": false
+}

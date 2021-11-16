@@ -1,0 +1,1 @@
+Current optimization status for the model. `Status` values are described in the `Status` Code section.

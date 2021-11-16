@@ -1,0 +1,6 @@
+{
+  "name": "CSAppName",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/csappname.html",
+  "dtype": "str",
+  "default": "\"\""
+}

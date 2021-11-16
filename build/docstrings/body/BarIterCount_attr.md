@@ -1,0 +1,1 @@
+Number of barrier iterations performed during the most recent optimization.

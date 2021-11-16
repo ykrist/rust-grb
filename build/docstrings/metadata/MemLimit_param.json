@@ -1,0 +1,8 @@
+{
+  "name": "MemLimit",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/memlimit.html",
+  "dtype": "dbl",
+  "default": "Infinity",
+  "min": "0",
+  "max": "Infinity"
+}

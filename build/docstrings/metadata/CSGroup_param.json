@@ -1,0 +1,6 @@
+{
+  "name": "CSGroup",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/csgroup.html",
+  "dtype": "str",
+  "default": "\"\""
+}

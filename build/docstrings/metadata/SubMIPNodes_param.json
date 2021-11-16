@@ -1,0 +1,8 @@
+{
+  "name": "SubMIPNodes",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/submipnodes.html",
+  "dtype": "int",
+  "default": "500",
+  "min": "0",
+  "max": "MAXINT"
+}

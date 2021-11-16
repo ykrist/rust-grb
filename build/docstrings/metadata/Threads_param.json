@@ -1,0 +1,8 @@
+{
+  "name": "Threads",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/threads.html",
+  "dtype": "int",
+  "default": "0",
+  "min": "0",
+  "max": "The number of virtual processors available to the\nprocess running Gurobi"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "WorkerPool",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/workerpool.html",
+  "dtype": "str",
+  "default": "\"\""
+}

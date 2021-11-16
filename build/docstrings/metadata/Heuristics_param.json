@@ -1,0 +1,8 @@
+{
+  "name": "Heuristics",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/heuristics.html",
+  "dtype": "dbl",
+  "default": "0.05",
+  "min": "0",
+  "max": "1"
+}

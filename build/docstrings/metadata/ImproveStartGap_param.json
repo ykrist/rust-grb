@@ -1,0 +1,8 @@
+{
+  "name": "ImproveStartGap",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/improvestartgap.html",
+  "dtype": "dbl",
+  "default": "0.0",
+  "min": "0.0",
+  "max": "Infinity"
+}

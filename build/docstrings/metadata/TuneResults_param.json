@@ -1,0 +1,8 @@
+{
+  "name": "TuneResults",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/tuneresults.html",
+  "dtype": "int",
+  "default": "-1",
+  "min": "-1",
+  "max": "MAXINT"
+}

@@ -1,0 +1,8 @@
+{
+  "name": "TuneOutput",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/tuneoutput.html",
+  "dtype": "int",
+  "default": "2",
+  "min": "0",
+  "max": "3"
+}

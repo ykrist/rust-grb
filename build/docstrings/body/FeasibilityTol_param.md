@@ -1,0 +1,2 @@
+All constraints must be satisfied to a tolerance of FeasibilityTol. Tightening this tolerance can produce smaller
+constraint violations, but for numerically challenging models it can sometimes lead to much larger iteration counts.

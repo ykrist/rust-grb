@@ -1,0 +1,7 @@
+{
+  "name": "IISSOS",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/iissos.html",
+  "dtype": "int",
+  "otype": "sos",
+  "modifiable": false
+}

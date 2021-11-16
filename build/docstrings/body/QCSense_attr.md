@@ -1,0 +1,1 @@
+Quadratic constraint sense ('<', '>', or '=').

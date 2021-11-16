@@ -1,0 +1,7 @@
+{
+  "name": "FarkasProof",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/farkasproof.html",
+  "dtype": "dbl",
+  "otype": "model",
+  "modifiable": false
+}

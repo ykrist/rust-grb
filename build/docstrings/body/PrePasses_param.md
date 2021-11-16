@@ -1,0 +1,2 @@
+Limits the number of passes performed by presolve. The default setting (-1) chooses the number of passes automatically.
+You should experiment with this parameter when you find that presolve is consuming a large fraction of total solve time.

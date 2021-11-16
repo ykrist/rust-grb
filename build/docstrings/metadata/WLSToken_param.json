@@ -1,0 +1,6 @@
+{
+  "name": "WLSToken",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/wlstoken.html",
+  "dtype": "str",
+  "default": "\"\""
+}

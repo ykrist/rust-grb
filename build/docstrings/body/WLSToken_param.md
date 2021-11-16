@@ -1,0 +1,2 @@
+If you are using a WLS license and have retrieved your own token through the WLS REST API, use this parameter to pass
+that token to the library. If you do this, you don't need to set any other WLS-related parameters.

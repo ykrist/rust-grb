@@ -1,445 +1,522 @@
 //! See the readme.md in this directory for an overview of this build script.
 use anyhow::Context;
-use codegen;
+
 use csv;
 use std::collections::HashMap;
 use std::fmt;
-use std::fs;
 use std::hash::Hash;
-use std::io::{self, Write};
 use std::path::{PathBuf, Path};
 use std::str::FromStr;
+use proc_macro2::{
+  TokenStream,
+  Ident,
+};
+use quote::{quote, format_ident};
+use serde::{Serialize, Deserialize};
+use serde::de::DeserializeOwned;
+use std::fmt::Write;
+use std::collections::hash_map::Entry;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 enum ParseError {
-    Dtype(String),
-    Otype(String),
-    CsvFile(Option<csv::Position>),
+  Dtype(String),
+  Otype(String),
+  CsvFile(Option<csv::Position>),
 }
 
 impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseError::Dtype(s) => f.write_fmt(format_args!("error parsing data type: {}", s)),
-            ParseError::Otype(s) => f.write_fmt(format_args!("error parsing object type: {}", s)),
-            ParseError::CsvFile(Some(pos)) => f.write_fmt(format_args!(
-                "error parsing CSV record {} (line {}, byte {})",
-                pos.record(),
-                pos.line(),
-                pos.byte()
-            )),
-            ParseError::CsvFile(None) => f.write_fmt(format_args!("error parsing CSV")),
-        }
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    match self {
+      ParseError::Dtype(s) => f.write_fmt(format_args!("error parsing data type: {}", s)),
+      ParseError::Otype(s) => f.write_fmt(format_args!("error parsing object type: {}", s)),
+      ParseError::CsvFile(Some(pos)) => f.write_fmt(format_args!(
+        "error parsing CSV record {} (line {}, byte {})",
+        pos.record(),
+        pos.line(),
+        pos.byte()
+      )),
+      ParseError::CsvFile(None) => f.write_fmt(format_args!("error parsing CSV")),
     }
+  }
 }
 
 impl std::error::Error for ParseError {}
 
-#[derive(Hash, Debug, Eq, PartialEq, Copy, Clone, Ord, PartialOrd)]
+#[derive(Hash, Debug, Eq, PartialEq, Copy, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 enum DataType {
-    Double,
-    Int,
-    Char,
-    Str,
-    Custom,
+  #[serde(rename = "dbl")]
+  Double,
+  #[serde(rename = "int")]
+  Int,
+  #[serde(rename = "chr")]
+  Char,
+  #[serde(rename = "str")]
+  Str,
+  #[serde(rename = "custom")]
+  Custom,
 }
 
 impl FromStr for DataType {
-    type Err = ParseError;
-    fn from_str(s: &str) -> Result<DataType, Self::Err> {
-        let dt = match s {
-            "custom" => DataType::Custom,
-            "int" => DataType::Int,
-            "chr" => DataType::Char,
-            "str" => DataType::Str,
-            "dbl" => DataType::Double,
-            _ => {
-                return Err(ParseError::Dtype(
-                    "expected `custom`, `int`, `chr`, `str` or `dbl`".to_string(),
-                ))
-            }
-        };
-        Ok(dt)
-    }
+  type Err = ParseError;
+  fn from_str(s: &str) -> Result<DataType, Self::Err> {
+    let dt = match s {
+      "custom" => DataType::Custom,
+      "int" => DataType::Int,
+      "chr" => DataType::Char,
+      "str" => DataType::Str,
+      "dbl" => DataType::Double,
+      _ => {
+        return Err(ParseError::Dtype(
+          "expected `custom`, `int`, `chr`, `str` or `dbl`".to_string(),
+        ));
+      }
+    };
+    Ok(dt)
+  }
 }
 
-#[derive(Hash, Debug, Eq, PartialEq, Copy, Clone, Ord, PartialOrd)]
+
+impl DataType {
+  fn ident_fragment(&self) -> Option<&'static str> {
+    use DataType::*;
+    match self {
+      Double => Some("Double"),
+      Int => Some("Int"),
+      Char => Some("Char"),
+      Str => Some("Str"),
+      Custom => None,
+    }
+  }
+
+  fn doc_description(&self) -> Option<&'static str> {
+    use DataType::*;
+    match self {
+      Double => Some("double (`f64`)"),
+      Int => Some("integer (`i32`)"),
+      Char => Some("`char`"),
+      Str => Some("string (`String`)"),
+      Custom => None,
+    }
+  }
+}
+
+
+#[derive(Hash, Debug, Eq, PartialEq, Copy, Clone, Ord, PartialOrd, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 enum ObjType {
-    Model,
-    Var,
-    Constr,
-    QConstr,
-    SOS,
+  Model,
+  Var,
+  Constr,
+  QConstr,
+  SOS,
 }
 
 impl FromStr for ObjType {
-    type Err = ParseError;
-    fn from_str(s: &str) -> Result<ObjType, Self::Err> {
-        let dt = match s {
-            "model" => ObjType::Model,
-            "var" => ObjType::Var,
-            "constr" => ObjType::Constr,
-            "qconstr" => ObjType::QConstr,
-            "sos" => ObjType::SOS,
-            _ => {
-                return Err(ParseError::Otype(
-                    "expected `model`, `var`, `constr`, `qconstr` or `sos`".to_string(),
-                ))
-            }
-        };
-        Ok(dt)
-    }
+  type Err = ParseError;
+  fn from_str(s: &str) -> Result<ObjType, Self::Err> {
+    let dt = match s {
+      "model" => ObjType::Model,
+      "var" => ObjType::Var,
+      "constr" => ObjType::Constr,
+      "qconstr" => ObjType::QConstr,
+      "sos" => ObjType::SOS,
+      _ => {
+        return Err(ParseError::Otype(
+          "expected `model`, `var`, `constr`, `qconstr` or `sos`".to_string(),
+        ));
+      }
+    };
+    Ok(dt)
+  }
 }
 
-fn parse_attr_row(row: &csv::StringRecord) -> anyhow::Result<((ObjType, DataType), String)> {
-    if row.len() != 3 {
-        anyhow::bail!("row should have 3 fields");
-    }
-    let obj: ObjType = row[2].parse()?;
-    let dtype: DataType = row[1].parse()?;
-    let name = row[0].to_string();
-    Ok(((obj, dtype), name))
+impl ObjType {
+  fn obj_ident(&self) -> Ident {
+    format_ident!("{}", format!("{:?}", self))
+  }
+
+  fn needs_objattr_impl(&self) -> bool {
+    !matches!(self, ObjType::Model)
+  }
 }
 
-fn parse_param_row(row: &csv::StringRecord) -> anyhow::Result<(DataType, String)> {
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct ParameterMeta {
+  url: String,
+  name: String,
+  dtype: DataType,
+  default: String,
+  min: Option<String>,
+  max: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct AttributeMeta {
+  url: String,
+  name: String,
+  modifiable: bool,
+  otype: ObjType,
+  dtype: DataType,
+}
+
+fn load_json<T: DeserializeOwned>(path: impl AsRef<Path>) -> anyhow::Result<T> {
+  let path = path.as_ref();
+  let reader = std::io::BufReader::new(
+    std::fs::File::open(path).with_context(|| format!("unable to read {:?}", path))?
+  );
+  let val = serde_json::from_reader(reader)?;
+  Ok(val)
+}
+
+fn get_docstring_body(name: &str, suffix: &str) -> anyhow::Result<String> {
+  let path = format!("build/docstrings/body/{}_{}.md", name, suffix);
+  let body = std::fs::read_to_string(&path)
+    .with_context(|| format!("unable to read {:?}", &path))?;
+  Ok(body)
+}
+
+
+fn parse_csv<T, P>(
+  filename: &impl AsRef<Path>,
+  row_parser: P,
+) -> anyhow::Result<Vec<T>>
+  where
+    P: Fn(&csv::StringRecord) -> anyhow::Result<T>
+{
+  // Build the CSV reader and iterate over each record.
+  let mut rdr = csv::Reader::from_path(filename)?;
+  let mut values = Vec::new();
+  for result in rdr.records() {
+    let row = result?;
+    let val = row_parser(&row).with_context(|| ParseError::CsvFile(row.position().cloned()))?;
+    values.push(val);
+  }
+  Ok(values)
+}
+
+
+pub fn str_to_ident(s: &str) -> Ident {
+  Ident::new(s, proc_macro2::Span::call_site())
+}
+
+pub fn docstring_filepath(name: &str) -> String {
+  let path = format!("build/docstrings/final/{}.md", name);
+  eprintln!("{}", path);
+  Path::new(&path)
+    .canonicalize()
+    .unwrap_or_else(|_| Path::new("build/docstrings/missing.md").canonicalize().unwrap())
+    .into_os_string()
+    .into_string()
+    .unwrap()
+}
+
+type ParameterEnums = HashMap<Ident, (DataType, Vec<String>)>;
+type AttributeEnums = HashMap<Ident, (ObjType, DataType, Vec<String>)>;
+
+
+mod param {
+  use super::*;
+  pub(crate) fn parse_csv_row(row: &csv::StringRecord) -> anyhow::Result<(DataType, String)> {
     if row.len() != 2 {
-        anyhow::bail!("row should have 2 fields");
+      anyhow::bail!("row should have 2 fields");
     }
     let dtype: DataType = row[1].parse()?;
     let name = row[0].to_string();
     Ok((dtype, name))
-}
+  }
 
-fn parse_csv<K, V, P>(
-    filename: &impl AsRef<Path>,
-    row_parser: P,
-) -> anyhow::Result<Vec<(K, Vec<V>)>>
-where
-    K: Hash + Eq + Ord,
-    V: Ord,
-    P: Fn(&csv::StringRecord) -> anyhow::Result<(K, V)>,
-{
-    // Build the CSV reader and iterate over each record.
-    let mut rdr = csv::Reader::from_path(filename)?;
-    let mut grouped: HashMap<_, Vec<V>> = HashMap::default();
+  fn get_metadata(name: &str) -> anyhow::Result<ParameterMeta> {
+    load_json(format!("build/docstrings/metadata/{}_param.json", name))
+  }
 
-    for result in rdr.records() {
-        let row = result?;
-        let (k, v) =
-            row_parser(&row).with_context(|| ParseError::CsvFile(row.position().cloned()))?;
-        grouped.entry(k).or_default().push(v);
-    }
+  fn build_docstring(name: &str) -> anyhow::Result<String> {
+    let body = get_docstring_body(name, "param");
+    if let Ok(body) = body {
+      let meta = get_metadata(name)?;
+      let mut docstring = String::new();
 
-    let mut grouped: Vec<_> = grouped.into_iter().collect();
-    grouped.sort();
+      if let Some(val) = meta.dtype.doc_description() {
+        writeln!(docstring, "- __Type:__ {}", val)?;
+      }
+      writeln!(docstring, "- __Default:__ {}", &meta.default)?;
+      if let Some(val) = &meta.min {
+        writeln!(docstring, "- __Minimum:__ {}", val)?;
+      }
+      if let Some(val) = &meta.max {
+        writeln!(docstring, "- __Maximum:__ {}", val)?;
+      }
 
-    Ok(grouped)
-}
-
-fn add_enum_derives(e: &mut codegen::Enum) {
-    for t in &[
-        "Debug",
-        "Copy",
-        "Clone",
-        "Eq",
-        "PartialEq",
-        "Hash",
-        "FromCStr",
-        "AsCStr",
-    ] {
-        e.derive(t);
-    }
-}
-
-fn help_url(item: &str) -> String {
-    format!(
-        "https://www.gurobi.com/documentation/9.1/refman/{}.html",
-        item.to_lowercase()
-    )
-}
-
-fn make_attr_enum_doc(o: ObjType, d: DataType, members: &[String]) -> String {
-    if d == DataType::Custom {
-        let member = &members[0];
-        format!(
-            "Gurobi [`{0}`]({1}) attribute for [`{2:?}`](crate::{2:?}) objects.",
-            member,
-            help_url(member),
-            o
-        )
+      docstring.push_str("\n\n");
+      docstring.push_str(&body);
+      docstring.push_str("\n\n");
+      writeln!(docstring, "[Reference manual]({}).", &meta.url)?;
+      Ok(docstring)
     } else {
-        let variant_docs: Vec<_> = members
-            .iter()
-            .map(|m| format!(" - [`{}`]({})", m, help_url(m)))
-            .collect();
-        let variant_docs = variant_docs.join("\n");
-
-        let d = match d {
-            DataType::Char => "Char",
-            DataType::Int => "Integer",
-            DataType::Double => "Float",
-            DataType::Str => "String",
-            _ => unreachable!(),
-        };
-
-        format!(
-            "{0} Gurobi attributes for [`{1:?}`](crate::{1:?}) objects.\n\
-            \n\
-            This enum contains the following Gurobi attributes:\n\
-            {2}",
-            d, o, variant_docs
-        )
+      // body?;
+      let fallback = std::fs::read_to_string("build/docstrings/missing.md")?;
+      Ok(fallback)
     }
-}
+  }
 
-fn make_custom_attr_enum(o: ObjType, member: &String) -> (String, codegen::Enum) {
-    let name = format!("{:?}{}Attr", o, member);
-    let mut e = codegen::Enum::new(&name);
-    e.vis("pub");
-    e.doc(&make_attr_enum_doc(
-        o,
-        DataType::Custom,
-        std::slice::from_ref(member),
-    ));
-    add_enum_derives(&mut e);
-    e.new_variant(member);
-    (name, e)
-}
-
-fn make_attr_enum(o: ObjType, d: DataType, members: &Vec<String>) -> (String, codegen::Enum) {
-    let name = format!("{:?}{:?}Attr", o, d);
-    let mut e = codegen::Enum::new(&name);
-    e.vis("pub");
-    e.doc(&make_attr_enum_doc(o, d, members));
-    add_enum_derives(&mut e);
-    for m in members {
-        e.new_variant(m);
-        // TODO add link to Gurobi reference manual using url https://www.gurobi.com/documentation/9.1/refman/{ATTR_NAME}.html
-        //  Could also scrape HTML and use that.
+  fn gen_variant(name: &str) -> TokenStream {
+    let ident = str_to_ident(name);
+    let docstring = build_docstring(name).unwrap();
+    quote! {
+      #[doc=#docstring]
+      #ident
     }
-    (name, e)
-}
+  }
 
-fn make_param_enum_doc(d: DataType, members: &[String]) -> String {
-    if d == DataType::Custom {
-        let member = &members[0];
-        format!("Gurobi parameter [`{}`]({}).", member, help_url(member))
-    } else {
-        let variant_docs: Vec<_> = members
-            .iter()
-            .map(|m| format!(" - [`{}`]({})", m, help_url(m)))
-            .collect();
-        let variant_docs = variant_docs.join("\n");
+  fn gen_type(ts: &mut TokenStream, ident: &Ident, members: &[String]) -> anyhow::Result<()> {
+    let members = members.iter().map(|s| gen_variant(&*s));
 
-        let d = match d {
-            DataType::Char => "Char",
-            DataType::Int => "Integer",
-            DataType::Double => "Float",
-            DataType::Str => "String",
-            _ => unreachable!(),
-        };
-
-        format!(
-            "{} Gurobi parameters.\n\
-            \n\
-            This enum contains the following Gurobi parameters:\n\
-            {}",
-            d, variant_docs
-        )
-    }
-}
-
-fn make_custom_param_enum(paramname: &String) -> (String, codegen::Enum) {
-    let name = format!("{}Param", paramname);
-    let mut e = codegen::Enum::new(&name);
-    e.vis("pub");
-    e.doc(&make_param_enum_doc(
-        DataType::Custom,
-        std::slice::from_ref(paramname),
-    ));
-    add_enum_derives(&mut e);
-    e.new_variant(paramname);
-    (name, e)
-}
-
-fn make_param_enum(d: DataType, members: &Vec<String>) -> (String, codegen::Enum) {
-    let name = format!("{:?}Param", d);
-    let mut e = codegen::Enum::new(&name);
-    e.vis("pub");
-    e.doc(&make_param_enum_doc(d, members));
-    add_enum_derives(&mut e);
-    for m in members {
-        e.new_variant(m);
-    }
-    (name, e)
-}
-
-fn add_shared_imports(scope: &mut codegen::Scope) {
-    scope.import("cstr_enum", "*");
-}
-
-fn generate_param_src_file(
-    filename: &impl AsRef<Path>,
-    grouped_params: Vec<(DataType, Vec<String>)>,
-) -> anyhow::Result<()> {
-    let mut scope = codegen::Scope::new();
-    add_shared_imports(&mut scope);
-
-    let mut enums = Vec::new();
-
-    for (d, paramnames) in grouped_params {
-        if d == DataType::Custom {
-            for paramname in paramnames {
-                let (name, enm) = make_custom_param_enum(&paramname);
-                enums.push(name);
-                scope.push_enum(enm);
-            }
-        } else {
-            let (name, enm) = make_param_enum(d, &paramnames);
-            enums.push(name);
-            scope.push_enum(enm);
-        }
-    }
-
-    let enum_exports = scope.new_module("enum_exports").vis("pub(super)").scope();
-    for ename in &enums {
-        enum_exports.import("super", ename).vis("pub");
-    }
-    let variant_exports = scope.new_module("variant_exports").vis("pub").scope();
-    for ename in &enums {
-        variant_exports
-            .import(&format!("super::{}", ename), "*")
-            .vis("pub");
-    }
-
-    let mut output = io::BufWriter::new(
-        fs::OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .create(true)
-            .open(filename)?,
-    );
-
-    let doc = "// This file is automatically generated - do not edit it.  \
-    To add new Gurobi paramteters, edit the params.csv file instead.\n\n";
-
-    write!(&mut output, "{}", doc)?;
-    write!(&mut output, "{}", scope.to_string())?;
+    let decl = quote! {
+      #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, FromCStr, AsCStr)]
+      pub enum #ident {
+        #(
+          #members
+        ),*
+      }
+    };
+    ts.extend(decl);
     Ok(())
-}
+  }
 
-fn generate_attr_src_file(
-    filename: &impl AsRef<Path>,
-    grouped_attrs: Vec<((ObjType, DataType), Vec<String>)>,
-) -> anyhow::Result<()> {
-    let mut scope = codegen::Scope::new();
-    add_shared_imports(&mut scope);
 
-    let typetrait: HashMap<DataType, String> = {
-        let mut m = HashMap::default();
-
-        let mut add_trait = |d, name: &str| {
-            scope.import("super", name);
-            m.insert(d, name.to_string());
-        };
-
-        add_trait(DataType::Int, "IntAttr");
-        add_trait(DataType::Char, "CharAttr");
-        add_trait(DataType::Str, "StrAttr");
-        add_trait(DataType::Double, "DoubleAttr");
-        m
+  pub(super) fn generate_src(path: impl AsRef<Path>, enums: &ParameterEnums) -> anyhow::Result<()> {
+    let mut ts = quote! {
+      use cstr_enum::*;
     };
 
-    let objtrait = "ObjAttr";
-    scope.import("super", objtrait);
-
-    let mut enums = Vec::new();
-
-    for ((o, d), attrnames) in grouped_attrs {
-        if d == DataType::Custom {
-            for aname in attrnames {
-                let (name, enm) = make_custom_attr_enum(o, &aname);
-                scope.push_enum(enm);
-                enums.push(name);
-            }
-        } else {
-            let (name, enm) = make_attr_enum(o, d, &attrnames);
-            enums.push(name);
-            let enum_ty = enm.ty().clone();
-
-            // Implement the datatype marker trait
-            let mut impl_tytrait = codegen::Impl::new(&enum_ty);
-            impl_tytrait.impl_trait(&typetrait[&d]);
-            scope.push_enum(enm);
-            scope.push_impl(impl_tytrait);
-
-            if o != ObjType::Model {
-                // Implement the model object marker trait
-                let mut impl_otrait = codegen::Impl::new(&enum_ty);
-                impl_otrait.impl_trait(objtrait);
-                let obj_ty = format!("{:?}", o);
-                scope.import("super", &obj_ty);
-                impl_otrait.associate_type("Obj", &obj_ty);
-                scope.push_impl(impl_otrait);
-            }
-        }
+    for (ident, (_, members)) in enums {
+      gen_type(&mut ts, ident, members)?;
     }
 
-    let enum_exports = scope.new_module("enum_exports").vis("pub(super)").scope();
-    for ename in &enums {
-        enum_exports.import("super", ename).vis("pub");
-    }
-    let variant_exports = scope.new_module("variant_exports").vis("pub").scope();
-    for ename in &enums {
-        variant_exports
-            .import(&format!("super::{}", ename), "*")
-            .vis("pub");
-    }
+    let exports : Vec<_> = enums.keys().collect();
+    ts.extend(quote! {
+      pub(super) mod enum_exports {
+        #(
+          pub use super::#exports;
+        )*
+      }
 
-    let mut output = io::BufWriter::new(
-        fs::OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .create(true)
-            .open(filename)?,
-    );
+      pub mod variant_exports {
+        #(
+          #[doc(inline)]
+          pub use super::#exports::*;
+        )*
+      }
+    });
 
-    let doc = "// This file is automatically generated - do not edit it.  \
-    To add new Gurobi attributes, edit the attrs.csv file instead.\n\n";
-
-    write!(&mut output, "{}", doc)?;
-    write!(&mut output, "{}", scope.to_string())?;
+    std::fs::write(path, ts.to_string())?;
     Ok(())
+  }
+
+
+  pub(crate) fn group_into_enums(attrs: impl IntoIterator<Item=(DataType, String)>) -> ParameterEnums {
+    let mut map = ParameterEnums::new();
+    for (dt, name) in attrs {
+      let ident = dt.ident_fragment()
+        .map(|dt| format_ident!("{}Param", dt))
+        .expect("not implemented");
+
+      match map.entry(ident) {
+        Entry::Occupied(mut e) => {
+          let (_, members) = e.get_mut();
+          members.push(name);
+        },
+        Entry::Vacant(e) => {
+          e.insert((dt, vec![name]));
+        }
+      }
+    }
+    map
+  }
+}
+
+
+mod attrs {
+  use super::*;
+  pub(crate) fn parse_csv_row(row: &csv::StringRecord) -> anyhow::Result<(ObjType, DataType, String)> {
+    if row.len() != 3 {
+      anyhow::bail!("row should have 3 fields");
+    }
+    let obj: ObjType = row[2].parse()?;
+    let dtype: DataType = row[1].parse()?;
+    let name = row[0].to_string();
+    Ok((obj, dtype, name))
+  }
+
+  fn get_metadata(name: &str) -> anyhow::Result<AttributeMeta> {
+    load_json(format!("build/docstrings/metadata/{}_attr.json", name))
+  }
+
+  fn build_docstring(name: &str) -> anyhow::Result<String> {
+    let body = get_docstring_body(name, "attr");
+    if let Ok(body) = body {
+      let meta = get_metadata(name)?;
+      let mut docstring = String::new();
+
+      writeln!(docstring, "- __Modifiable:__ {}", if meta.modifiable { "Yes" } else { "No" })?;
+      if let Some(val) = meta.dtype.doc_description() {
+        writeln!(docstring, "- __Type:__ {}", val)?;
+      }
+
+      docstring.push_str("\n\n");
+      docstring.push_str(&body);
+      docstring.push_str("\n\n");
+      writeln!(docstring, "[Reference manual]({}).", &meta.url)?;
+      Ok(docstring)
+    } else {
+      body?;
+      let fallback = std::fs::read_to_string("build/docstrings/missing.md")?;
+      Ok(fallback)
+    }
+  }
+
+  fn gen_variant(name: &str) -> TokenStream {
+    let ident = str_to_ident(name);
+    let docstring = build_docstring(name).unwrap();
+    quote! {
+      #[doc=#docstring]
+      #ident
+    }
+  }
+
+  fn add_dtype_marker_impl(ts: &mut TokenStream, target: &Ident, d: DataType) {
+    let ident = format_ident!("{}Attr", d.ident_fragment().unwrap());
+    ts.extend(quote! {
+      impl #ident for #target {}
+    })
+  }
+
+  fn add_otype_marker_impl(ts: &mut TokenStream, target: &Ident, o: ObjType) {
+    let ident = o.obj_ident();
+    ts.extend(quote! {
+      impl ObjAttr for #target {
+        type Obj = #ident;
+      }
+    })
+  }
+
+  fn gen_type(ts: &mut TokenStream, ident: &Ident, d: DataType, o: ObjType, members: &[String]) -> anyhow::Result<()> {
+    let variants = members.iter().map(|s| gen_variant(&*s));
+    ts.extend(quote! {
+      #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, FromCStr, AsCStr)]
+      pub enum #ident {
+        #(
+          #variants
+        ),*
+      }
+    });
+
+    if !matches!(d, DataType::Custom) {
+      add_dtype_marker_impl(ts, &ident, d);
+    } else {
+      assert_eq!(members.len(), 1);
+    }
+
+    if o.needs_objattr_impl() {
+      add_otype_marker_impl(ts, &ident, o);
+    }
+
+    Ok(())
+  }
+
+  pub(super) fn generate_src(path: impl AsRef<Path>, enums: &AttributeEnums) -> anyhow::Result<()> {
+    let mut ts = quote! {
+      use cstr_enum::*;
+      use super::{IntAttr, CharAttr, StrAttr, DoubleAttr, ObjAttr, Var, Constr, QConstr, SOS};
+    };
+
+    for (ident, (o, d, members)) in enums {
+      gen_type(&mut ts, ident, *d, *o, members)?;
+    }
+
+    let exports : Vec<_> = enums.keys().collect();
+    ts.extend(quote! {
+      pub(super) mod enum_exports {
+        #(
+          pub use super::{#exports};
+        )*
+      }
+
+      pub mod variant_exports {
+        #(
+          pub use super::#exports::*;
+        )*
+      }
+    });
+
+    std::fs::write(path, ts.to_string())?;
+    Ok(())
+  }
+
+
+  pub(crate) fn group_into_enums(attrs: impl IntoIterator<Item=(ObjType, DataType, String)>) -> AttributeEnums {
+    let mut map = AttributeEnums::new();
+    for (ot, dt, name) in attrs {
+      let ident = dt.ident_fragment()
+        .map(|dt| format_ident!("{}{}Attr", ot.obj_ident(), dt))
+        .unwrap_or_else(|| format_ident!("{}{}Attr", ot.obj_ident(), &name));
+
+      match map.entry(ident) {
+        Entry::Occupied(mut e) => {
+          let (_, _, members) = e.get_mut();
+          members.push(name);
+        },
+        Entry::Vacant(e) => {
+          e.insert((ot, dt, vec![name]));
+        }
+      }
+    }
+    map
+  }
+}
+
+#[allow(dead_code)]
+fn debug_src_code(src: &TokenStream) -> anyhow::Result<()> {
+  std::fs::write("build/debug.rs", src.to_string())?;
+  std::process::Command::new("rustfmt")
+    .arg("build/debug.rs")
+    .output()?;
+  Ok(())
 }
 
 
 fn get_data_path(name: &str) -> PathBuf {
-    let mut p = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
-    p.push("build");
-    p.push(name);
-    p
+  let mut p = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
+  p.push("build");
+  p.push(name);
+  p
 }
 
 fn get_output_path(name: &str) -> PathBuf {
-    let mut p = PathBuf::from_str(&std::env::var("OUT_DIR").unwrap()).unwrap();
-    p.push(name);
-    p
+  let mut p = PathBuf::from_str(&std::env::var("OUT_DIR").unwrap()).unwrap();
+  p.push(name);
+  p
 }
 
 
 fn main() -> anyhow::Result<()> {
-    println!("cargo:rerun-if-changed=build/params.csv");
-    println!("cargo:rerun-if-changed=build/main.rs");
-    println!("cargo:rerun-if-changed=build/attrs.csv");
+  println!("cargo:rerun-if-changed=build/params.csv");
+  println!("cargo:rerun-if-changed=build/main.rs");
+  println!("cargo:rerun-if-changed=build/attrs.csv");
+  println!("cargo:rerun-if-changed=build/docstrings");
 
-    let attr_data = get_data_path("attrs.csv");
-    let param_data = get_data_path("params.csv");
+  let attr_data = get_data_path("attrs.csv");
+  let param_data = get_data_path("params.csv");
+  let param_list = parse_csv(&param_data, param::parse_csv_row)
+    .context("failed to read parameter CSV")?;
+  let enums = param::group_into_enums(param_list);
+  param::generate_src(get_output_path("param_enums.rs"), &enums)?;
 
-    let attr_groups = parse_csv(&attr_data, parse_attr_row)?;
-    generate_attr_src_file(&get_output_path("attr_enums.rs"), attr_groups)?;
+  let attr_list = parse_csv(&attr_data, attrs::parse_csv_row)
+    .context("failed to read attribute CSV")?;
+  let enums = attrs::group_into_enums(attr_list);
+  attrs::generate_src(get_output_path("attr_enums.rs"), &enums)?;
 
-    let param_groups = parse_csv(&param_data, parse_param_row)?;
-    generate_param_src_file(&get_output_path("param_enums.rs"), param_groups)?;
 
-    Ok(())
+  Ok(())
 }

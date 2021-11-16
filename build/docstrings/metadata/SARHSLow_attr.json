@@ -1,0 +1,7 @@
+{
+  "name": "SARHSLow",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/sarhslow.html",
+  "dtype": "dbl",
+  "otype": "constr",
+  "modifiable": false
+}

@@ -1,0 +1,8 @@
+{
+  "name": "LogToConsole",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/logtoconsole.html",
+  "dtype": "int",
+  "default": "1",
+  "min": "0",
+  "max": "1"
+}

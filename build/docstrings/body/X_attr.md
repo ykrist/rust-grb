@@ -1,0 +1,1 @@
+Variable value in the current solution.

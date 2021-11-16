@@ -1,0 +1,1 @@
+The number of Special Ordered Set (SOS) constraints in the model.

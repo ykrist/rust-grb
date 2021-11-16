@@ -1,0 +1,8 @@
+{
+  "name": "StartNodeLimit",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/startnodelimit.html",
+  "dtype": "int",
+  "default": "-1",
+  "min": "-3",
+  "max": "MAXINT"
+}

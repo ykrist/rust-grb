@@ -1,0 +1,8 @@
+{
+  "name": "ConcurrentJobs",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/concurrentjobs.html",
+  "dtype": "int",
+  "default": "0",
+  "min": "0",
+  "max": "MAXINT"
+}

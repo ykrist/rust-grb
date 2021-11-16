@@ -1,0 +1,7 @@
+{
+  "name": "BranchPriority",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/branchpriority.html",
+  "dtype": "int",
+  "otype": "var",
+  "modifiable": true
+}

@@ -1,0 +1,7 @@
+{
+  "name": "ObjNWeight",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/objnweight.html",
+  "dtype": "dbl",
+  "otype": "model",
+  "modifiable": true
+}

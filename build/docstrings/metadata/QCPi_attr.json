@@ -1,0 +1,7 @@
+{
+  "name": "QCPi",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/qcpi.html",
+  "dtype": "dbl",
+  "otype": "qconstr",
+  "modifiable": false
+}

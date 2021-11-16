@@ -1,0 +1,2 @@
+The number of variables in the model with piecewise-linear objective functions. You can query the function for a
+specific variable using the appropriate getPWLObj method for your language (in C, C++, C#, Java, and Python).

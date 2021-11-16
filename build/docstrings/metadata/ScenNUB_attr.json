@@ -1,0 +1,7 @@
+{
+  "name": "ScenNUB",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/scennub.html",
+  "dtype": "dbl",
+  "otype": "model",
+  "modifiable": true
+}

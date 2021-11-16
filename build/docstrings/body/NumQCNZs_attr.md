@@ -1,0 +1,1 @@
+The number of non-zero coefficients in the quadratic constraints.

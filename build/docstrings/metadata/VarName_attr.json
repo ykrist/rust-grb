@@ -1,0 +1,7 @@
+{
+  "name": "VarName",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/varname.html",
+  "dtype": "str",
+  "otype": "var",
+  "modifiable": true
+}

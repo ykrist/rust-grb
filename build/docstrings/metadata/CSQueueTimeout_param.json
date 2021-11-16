@@ -1,0 +1,8 @@
+{
+  "name": "CSQueueTimeout",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/csqueuetimeout.html",
+  "dtype": "dbl",
+  "default": "-1",
+  "min": "-1",
+  "max": "Infinity"
+}

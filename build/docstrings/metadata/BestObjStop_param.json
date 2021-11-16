@@ -1,0 +1,8 @@
+{
+  "name": "BestObjStop",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/bestobjstop.html",
+  "dtype": "dbl",
+  "default": "-Infinity",
+  "min": "-Infinity",
+  "max": "Infinity"
+}

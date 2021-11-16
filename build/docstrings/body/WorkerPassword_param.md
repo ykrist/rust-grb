@@ -1,0 +1,2 @@
+When using a distributed algorithm (distributed MIP, distributed concurrent, or distributed tuning), this parameter
+allows you to specify the password for the distributed worker cluster provided in the `WorkerPool` parameter.

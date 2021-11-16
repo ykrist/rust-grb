@@ -1,0 +1,7 @@
+{
+  "name": "ObjNPriority",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/objnpriority.html",
+  "dtype": "int",
+  "otype": "model",
+  "modifiable": true
+}

@@ -1,0 +1,7 @@
+{
+  "name": "BoundSVioSum",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/boundsviosum.html",
+  "dtype": "dbl",
+  "otype": "model",
+  "modifiable": false
+}

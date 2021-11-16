@@ -1,0 +1,7 @@
+{
+  "name": "QCName",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/qcname.html",
+  "dtype": "str",
+  "otype": "qconstr",
+  "modifiable": true
+}

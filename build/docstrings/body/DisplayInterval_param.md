@@ -1,0 +1,1 @@
+Determines the frequency at which log lines are printed (in seconds).

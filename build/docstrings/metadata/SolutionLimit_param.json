@@ -1,0 +1,8 @@
+{
+  "name": "SolutionLimit",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/solutionlimit.html",
+  "dtype": "int",
+  "default": "MAXINT",
+  "min": "1",
+  "max": "MAXINT"
+}

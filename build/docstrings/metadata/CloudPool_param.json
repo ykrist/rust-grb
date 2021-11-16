@@ -1,0 +1,6 @@
+{
+  "name": "CloudPool",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/cloudpool.html",
+  "dtype": "str",
+  "default": "\"\""
+}

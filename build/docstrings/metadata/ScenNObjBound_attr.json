@@ -1,0 +1,7 @@
+{
+  "name": "ScenNObjBound",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/scennobjbound.html",
+  "dtype": "dbl",
+  "otype": "model",
+  "modifiable": false
+}

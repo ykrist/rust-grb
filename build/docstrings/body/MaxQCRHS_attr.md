@@ -1,0 +1,1 @@
+Maximum (finite) quadratic constraint right-hand side value (in absolute value).

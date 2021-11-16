@@ -1,0 +1,1 @@
+Minimum (non-zero) linear objective coefficient (in absolute value).

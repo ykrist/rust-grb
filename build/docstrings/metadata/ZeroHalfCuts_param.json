@@ -1,0 +1,8 @@
+{
+  "name": "ZeroHalfCuts",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/zerohalfcuts.html",
+  "dtype": "int",
+  "default": "-1",
+  "min": "-1",
+  "max": "2"
+}

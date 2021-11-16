@@ -1,0 +1,7 @@
+{
+  "name": "CBasis",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/cbasis.html",
+  "dtype": "int",
+  "otype": "constr",
+  "modifiable": true
+}

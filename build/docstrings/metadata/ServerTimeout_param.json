@@ -1,0 +1,8 @@
+{
+  "name": "ServerTimeout",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/servertimeout.html",
+  "dtype": "int",
+  "default": "60",
+  "min": "1",
+  "max": "MAXINT"
+}

@@ -1,0 +1,8 @@
+{
+  "name": "NodeMethod",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/nodemethod.html",
+  "dtype": "int",
+  "default": "-1",
+  "min": "-1",
+  "max": "2"
+}

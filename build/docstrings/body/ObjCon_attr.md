@@ -1,0 +1,1 @@
+A constant value that is added into the model objective. The default value is 0.

@@ -1,0 +1,7 @@
+{
+  "name": "NumNZs",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/numnzs.html",
+  "dtype": "int",
+  "otype": "model",
+  "modifiable": false
+}

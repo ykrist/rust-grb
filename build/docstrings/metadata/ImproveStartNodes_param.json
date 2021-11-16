@@ -1,0 +1,8 @@
+{
+  "name": "ImproveStartNodes",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/improvestartnodes.html",
+  "dtype": "dbl",
+  "default": "Infinity",
+  "min": "0.0",
+  "max": "Infinity"
+}

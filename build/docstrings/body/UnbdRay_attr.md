@@ -1,0 +1,2 @@
+Unbounded ray (for unbounded linear models only). Provides a vector that, when added to any feasible solution, yields a
+new solution that is also feasible but improves the objective. Only available when parameter InfUnbdInfo is set to 1.

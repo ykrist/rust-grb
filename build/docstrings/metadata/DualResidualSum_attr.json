@@ -1,0 +1,7 @@
+{
+  "name": "DualResidualSum",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/dualresidualsum.html",
+  "dtype": "dbl",
+  "otype": "model",
+  "modifiable": false
+}

@@ -9,7 +9,8 @@ use std::ffi::CStr;
 /// different data structure before the next call to a Gurobi library routine. The user should
 /// also be careful to never modify the data pointed to by the returned character pointer.
 pub(crate) unsafe fn copy_c_str(s: ffi::c_str) -> String {
-    CStr::from_ptr(s).to_string_lossy().into_owned() // to_string_lossy().into_owned() ALWAYS clones
+  debug_assert!(!s.is_null());
+  CStr::from_ptr(s).to_string_lossy().into_owned() // to_string_lossy().into_owned() ALWAYS clones
 }
 
 #[test]

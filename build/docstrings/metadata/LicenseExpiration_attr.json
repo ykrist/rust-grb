@@ -1,0 +1,7 @@
+{
+  "name": "LicenseExpiration",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/licenseexpiration.html",
+  "dtype": "int",
+  "otype": "model",
+  "modifiable": false
+}

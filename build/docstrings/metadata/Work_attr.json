@@ -1,0 +1,7 @@
+{
+  "name": "Work",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/work.html",
+  "dtype": "dbl",
+  "otype": "model",
+  "modifiable": false
+}

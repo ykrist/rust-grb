@@ -1,0 +1,7 @@
+{
+  "name": "Server",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/server.html",
+  "dtype": "str",
+  "otype": "model",
+  "modifiable": false
+}

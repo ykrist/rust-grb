@@ -1,0 +1,1 @@
+The number of quadratic constraints in the model.

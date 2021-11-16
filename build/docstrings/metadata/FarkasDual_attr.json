@@ -1,0 +1,7 @@
+{
+  "name": "FarkasDual",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/farkasdual.html",
+  "dtype": "dbl",
+  "otype": "constr",
+  "modifiable": false
+}

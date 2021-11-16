@@ -1,0 +1,7 @@
+{
+  "name": "MaxQObjCoeff",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/maxqobjcoeff.html",
+  "dtype": "dbl",
+  "otype": "model",
+  "modifiable": false
+}

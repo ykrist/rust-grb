@@ -304,6 +304,7 @@ where
                 idx,
                 &mut s,
             ))?;
+            if s.is_null() { return Ok(String::new()) }
             Ok(copy_c_str(s))
         }
     }
@@ -430,6 +431,7 @@ impl ModelAttrGet<String> for ModelStrAttr {
                 self.as_cstr().as_ptr(),
                 &mut val,
             ))?;
+            if val.is_null() { return Ok(String::new()) }
             Ok(copy_c_str(val))
         }
     }
@@ -492,4 +494,157 @@ impl ModelAttrGet<Status> for ModelStatusAttr {
         }
         Ok(val.try_into().unwrap())
     }
+}
+
+
+#[cfg(test)]
+mod tests {
+  use crate as grb;
+  use super::*;
+  use std::ffi::CStr;
+  use std::marker::PhantomData;
+  use crate::SOSType;
+
+  #[derive(Debug, Clone)]
+  struct Attribute<T>(CString, PhantomData<T>);
+
+  impl<T> Attribute<T> {
+    pub fn new(s: String) -> Self {
+      Attribute(CString::new(s).unwrap(), PhantomData)
+    }
+  }
+
+  impl<T: ModelObject> Attribute<T> {
+    pub fn get<V>(self, model: &Model, obj: &T) -> Option<crate::Error>
+    where Self: ObjAttrGet<T, V>
+    {
+      model.get_obj_attr::<_, _, V>(self, obj).err()
+    }
+  }
+
+  impl Attribute<Model> {
+    pub fn get_model<V>(self, model: &Model) -> Option<crate::Error>
+    where Self: ModelAttrGet<V>
+    {
+      model.get_attr::<_, V>(self).err()
+    }
+  }
+
+  impl<T> AsCStr for Attribute<T> {
+    fn as_cstr(&self) -> &CStr { &self.0 }
+  }
+
+  impl<T> IntAttr for Attribute<T> {}
+  impl<T> DoubleAttr for Attribute<T> {}
+  impl<T> StrAttr for Attribute<T> {}
+  impl<T> CharAttr for Attribute<T> {}
+
+  impl ObjAttr for Attribute<Var> {
+    type Obj = Var;
+  }
+
+  impl ObjAttr for Attribute<Constr> {
+    type Obj = Constr;
+  }
+  impl ObjAttr for Attribute<QConstr> {
+    type Obj = QConstr;
+  }
+  impl ObjAttr for Attribute<SOS> {
+    type Obj = SOS;
+  }
+
+  impl_model_attr! { Attribute<Model>, i32, i32::MIN, ffi::GRBgetintattr, ffi::GRBsetintattr }
+  impl_model_attr! { Attribute<Model>, f64, f64::NAN, ffi::GRBgetdblattr, ffi::GRBsetdblattr }
+
+  impl ModelAttrGet<String> for Attribute<Model> {
+    fn get(&self, model: &Model) -> Result<String> {
+      unsafe {
+        let mut val: *const c_char = null_mut();
+        model.check_apicall(ffi::GRBgetstrattr(
+          model.as_mut_ptr(),
+          self.as_cstr().as_ptr(),
+          &mut val,
+        ))?;
+        if val.is_null() { return Ok(String::new()) }
+        Ok(copy_c_str(val))
+      }
+    }
+  }
+
+
+
+  #[test]
+  fn attribute_names() -> crate::Result<()> {
+    let params : Vec<_> = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/build/attrs.csv")).unwrap()
+      .lines()
+      .skip(1)
+      .map(|line| {
+        let mut line = line.split(",");
+        let param = line.next().unwrap();
+        let ty = line.next().unwrap();
+        let obj = line.next().unwrap();
+        assert_eq!(line.next(), None);
+        (param.to_string(), ty.to_string(), obj.to_string())
+      })
+      .collect();
+
+
+    let mut model = crate::Model::new("test")?;
+    let var = crate::add_ctsvar!(model)?;
+    let x = crate::add_binvar!(model)?;
+    let y = crate::add_binvar!(model)?;
+    let constraint = model.add_constr("", crate::c!(var >= 1))?;
+    let qconstraint = model.add_qconstr("", crate::c!(var*var >= 1))?;
+
+    let sos = model.add_sos(vec![(x, 1.0), (y, 1.0)], SOSType::Ty1)?;
+    model.optimize()?;
+
+    for (a, ty, obj) in params {
+      let ty = ty.as_str();
+      let obj = obj.as_str();
+
+      // Oh boy, this is ugly
+      eprintln!("{}", &a);
+      let err = match (ty, obj) {
+        ("dbl", "var") => Attribute::new(a).get::<f64>(&model, &var),
+        ("int", "var") => Attribute::new(a).get::<i32>(&model, &var),
+        ("str", "var") => Attribute::new(a).get::<String>(&model, &var),
+
+        ("dbl", "constr") => Attribute::new(a).get::<f64>(&model, &constraint),
+        ("int", "constr") => Attribute::new(a).get::<i32>(&model, &constraint),
+        ("str", "constr") => Attribute::new(a).get::<String>(&model, &constraint),
+
+        ("dbl", "qconstr") => Attribute::new(a).get::<f64>(&model, &qconstraint),
+        ("int", "qconstr") => Attribute::new(a).get::<i32>(&model, &qconstraint),
+        ("str", "qconstr") => Attribute::new(a).get::<String>(&model, &qconstraint),
+        ("chr", "qconstr") => Attribute::new(a).get::<c_char>(&model, &qconstraint),
+
+        ("dbl", "sos") => Attribute::new(a).get::<f64>(&model, &sos),
+        ("int", "sos") => Attribute::new(a).get::<i32>(&model, &sos),
+        ("str", "sos") => Attribute::new(a).get::<String>(&model, &sos),
+
+        ("dbl", "model") => Attribute::new(a).get_model::<f64>(&model),
+        ("int", "model") => Attribute::new(a).get_model::<i32>(&model),
+        ("str", "model") => Attribute::new(a).get_model::<String>(&model),
+
+        ("custom", _) => None,
+
+        _ => panic!("missing test for: {} {}", ty, obj),
+      };
+
+      if let Some(err) = err {
+        match err {
+          // Unable to retrieve attribute
+          crate::Error::FromAPI(_, 10005) => {},
+          // It isn't a multi-objective model
+          crate::Error::FromAPI(_, 10008) => {},
+          err => return Err(err)
+        }
+      }
+
+    }
+
+    Ok(())
+  }
+
 }

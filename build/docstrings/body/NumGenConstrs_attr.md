@@ -1,0 +1,1 @@
+The number of general constraints in the model.

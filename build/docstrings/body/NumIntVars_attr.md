@@ -1,0 +1,1 @@
+The number of integer variables in the model. This includes both binary variables and general integer variables.

@@ -1,0 +1,7 @@
+{
+  "name": "IsMultiObj",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/ismultiobj.html",
+  "dtype": "int",
+  "otype": "model",
+  "modifiable": false
+}

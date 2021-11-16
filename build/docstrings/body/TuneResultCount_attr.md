@@ -1,0 +1,2 @@
+After the tuning tool has been run, this attribute reports the number of parameter sets that were stored. This value
+will be zero if no improving parameter sets were found, and its upper bound is determined by the TuneResults parameter.

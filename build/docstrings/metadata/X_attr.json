@@ -1,0 +1,7 @@
+{
+  "name": "X",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/x.html",
+  "dtype": "dbl",
+  "otype": "var",
+  "modifiable": false
+}

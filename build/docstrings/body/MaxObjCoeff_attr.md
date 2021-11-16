@@ -1,0 +1,1 @@
+Maximum linear objective coefficient (in absolute value).

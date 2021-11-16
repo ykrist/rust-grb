@@ -1,0 +1,7 @@
+{
+  "name": "ConstrSVioIndex",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/constrsvioindex.html",
+  "dtype": "int",
+  "otype": "model",
+  "modifiable": false
+}

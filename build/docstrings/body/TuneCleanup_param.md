@@ -1,0 +1,2 @@
+Enables a cleanup phase at the end of tuning. The parameter indicates the percentage of total tuning time to devote to
+this phase, with a goal of reducing the number of parameter changes required to achieve the best tuning result.

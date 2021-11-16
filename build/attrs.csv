@@ -74,7 +74,7 @@ PoolObjVal,dbl,model
 Runtime,dbl,model
 ScenNObjBound,dbl,model
 ScenNObjVal,dbl,model
-ScenNX,dbl,model
+ScenNX,dbl,var
 BarIterCount,int,model
 BoundSVioIndex,int,model
 BoundVioIndex,int,model
@@ -157,3 +157,13 @@ VBasis,int,var
 VarHintPri,int,var
 VTag,str,var
 VarName,str,var
+ConcurrentWinMethod,int,model
+IISConstrForce,int,constr
+IISLBForce,int,var
+IISQConstrForce,int,qconstr
+IISSOSForce,int,sos
+IISUBForce,int,var
+MaxVio,dbl,model
+OpenNodeCount,dbl,model
+PoolIgnore,int,var
+Work,dbl,model

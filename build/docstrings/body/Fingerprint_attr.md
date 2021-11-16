@@ -1,0 +1,2 @@
+A hash value computed on model data and attributes that can influence the optimization process. The intent is that
+models that differ in any meaningful way will have different fingerprints (almost always).

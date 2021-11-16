@@ -1,0 +1,7 @@
+{
+  "name": "MinQCRHS",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/minqcrhs.html",
+  "dtype": "dbl",
+  "otype": "model",
+  "modifiable": false
+}

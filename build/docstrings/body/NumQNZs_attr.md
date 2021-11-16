@@ -1,0 +1,1 @@
+The number of terms in the lower triangle of the Q matrix in the quadratic objective.

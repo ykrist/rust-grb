@@ -1,0 +1,8 @@
+{
+  "name": "PerturbValue",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/perturbvalue.html",
+  "dtype": "dbl",
+  "default": "0.0002",
+  "min": "0",
+  "max": "Infinity"
+}

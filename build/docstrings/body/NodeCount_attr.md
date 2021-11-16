@@ -1,0 +1,1 @@
+Number of branch-and-cut nodes explored in the most recent optimization.

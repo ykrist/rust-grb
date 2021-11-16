@@ -1,0 +1,7 @@
+{
+  "name": "ScenNName",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/scennname.html",
+  "dtype": "str",
+  "otype": "model",
+  "modifiable": true
+}

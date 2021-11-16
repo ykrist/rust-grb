@@ -1,0 +1,1 @@
+Minimum non-zero matrix coefficient (in absolute value) in the linear constraint matrix.

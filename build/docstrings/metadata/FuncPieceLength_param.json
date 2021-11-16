@@ -1,0 +1,8 @@
+{
+  "name": "FuncPieceLength",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/funcpiecelength2.html",
+  "dtype": "dbl",
+  "default": "1e-2",
+  "min": "1e-5",
+  "max": "1e+6"
+}

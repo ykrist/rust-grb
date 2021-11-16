@@ -1,0 +1,7 @@
+{
+  "name": "VType",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/vtype.html",
+  "dtype": "chr",
+  "otype": "var",
+  "modifiable": true
+}

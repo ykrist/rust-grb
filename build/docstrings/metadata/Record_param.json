@@ -1,0 +1,8 @@
+{
+  "name": "Record",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/record.html",
+  "dtype": "int",
+  "default": "0",
+  "min": "0",
+  "max": "1"
+}

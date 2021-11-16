@@ -1,0 +1,8 @@
+{
+  "name": "FeasibilityTol",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/feasibilitytol.html",
+  "dtype": "dbl",
+  "default": "1e-6",
+  "min": "1e-9",
+  "max": "1e-2"
+}

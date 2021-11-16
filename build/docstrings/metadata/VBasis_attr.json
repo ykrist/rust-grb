@@ -1,0 +1,7 @@
+{
+  "name": "VBasis",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/vbasis.html",
+  "dtype": "int",
+  "otype": "var",
+  "modifiable": true
+}

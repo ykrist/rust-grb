@@ -1,0 +1,7 @@
+{
+  "name": "ScenNLB",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/scennlb.html",
+  "dtype": "dbl",
+  "otype": "model",
+  "modifiable": true
+}

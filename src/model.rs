@@ -773,7 +773,7 @@ impl Model {
         let mut weight = Vec::with_capacity(n);
 
         for (var, w) in var_weight_pairs {
-            ind.push(self.get_index(&var)?);
+            ind.push(self.get_index_build(&var)?);
             weight.push(w)
         }
 

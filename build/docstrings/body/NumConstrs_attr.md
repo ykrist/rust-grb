@@ -1,0 +1,1 @@
+The number of linear constraints in the model.

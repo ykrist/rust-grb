@@ -1,0 +1,1 @@
+Constraint sense ('<', '>', or '=').

@@ -1,0 +1,8 @@
+{
+  "name": "MIPGapAbs",
+  "url": "https://www.gurobi.com/documentation/9.5/refman/mipgapabs.html",
+  "dtype": "dbl",
+  "default": "1e-10",
+  "min": "0",
+  "max": "Infinity"
+}

@@ -1,0 +1,1 @@
+Maximum coefficient in the quadratic part of all quadratic constraint matrices (in absolute value).

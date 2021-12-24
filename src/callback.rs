@@ -252,6 +252,23 @@ macro_rules! impl_getter {
     };
 }
 
+macro_rules! impl_set_solution {
+    () => {
+        /// Provide a new feasible solution for a MIP model.  Not all variables need to be given.
+        ///
+        /// On success, if the solution was feasible the method returns the computed objective value,
+        /// otherwise returns `None`.
+        pub fn set_solution<I, V, T>(&self, solution: I) -> Result<Option<f64>>
+        where
+            V: Borrow<Var>,
+            T: Borrow<f64>,
+            I: IntoIterator<Item = (V, T)>,
+        {
+            self.0.set_solution(solution)
+        }
+    };
+}
+
 macro_rules! impl_runtime {
     () => {
         /// Retrieve the elapsed solver runtime in seconds.
@@ -346,6 +363,7 @@ impl<'a> MIPSolCtx<'a> {
         self.0.get_mip_solution(vars)
     }
 
+    impl_set_solution! {}
     impl_terminate! {}
     impl_runtime! {}
     impl_add_lazy! {}
@@ -381,19 +399,7 @@ impl<'a> MIPNodeCtx<'a> {
         self.0.get_node_rel(vars)
     }
 
-    /// Provide a new feasible solution for a MIP model.  Not all variables need to be given.
-    ///
-    /// On success, if the solution was feasible the method returns the computed objective value,
-    /// otherwise returns `None`.
-    pub fn set_solution<I, V, T>(&self, solution: I) -> Result<Option<f64>>
-    where
-        V: Borrow<Var>,
-        T: Borrow<f64>,
-        I: IntoIterator<Item = (V, T)>,
-    {
-        self.0.set_solution(solution)
-    }
-
+    impl_set_solution! {}
     impl_terminate! {}
     impl_runtime! {}
     impl_add_lazy! {}

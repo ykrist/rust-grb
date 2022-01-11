@@ -14,10 +14,9 @@ fn try_conda_env() -> Result<PathBuf, String> {
   Ok(PathBuf::from(path))
 }
 
-
 fn locate_gurobi() -> PathBuf {
   for f in &[try_gurobi_home, try_conda_env] {
-    match f()  {
+    match f() {
       Ok(path) => {
         if !path.exists() {
           eprintln!("path {:?} doesn't exist, ignoring", path.into_os_string());

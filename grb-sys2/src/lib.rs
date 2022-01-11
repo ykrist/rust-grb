@@ -29,9 +29,19 @@ extern "C" {
 
   pub fn GRBloadenv(envP: *mut *mut GRBenv, logfilename: c_str) -> c_int;
 
-  pub fn GRBloadclientenv(envP: *mut *mut GRBenv, logfilename: c_str, computeserver: c_str, port: c_int,
-                          password: c_str, priority: c_int, timeout: c_double)
-                          -> c_int;
+  pub fn GRBloadclientenv(
+    envP: *mut *mut GRBenv,
+    logfilename: c_str,
+    computeserver: c_str,
+    port: c_int,
+    password: c_str,
+    priority: c_int,
+    timeout: c_double,
+  ) -> c_int;
+
+  pub fn GRBgetmultiobjenv(model: *mut GRBmodel, num: c_int) -> *mut GRBenv;
+
+  pub fn GRBdiscardmultiobjenvs(model: *mut GRBmodel);
 
   pub fn GRBfreeenv(env: *mut GRBenv);
 
@@ -159,12 +169,21 @@ extern "C" {
 
   pub fn GRBgetvarbyname(model: *mut GRBmodel, name: c_str, varnumP: *mut c_int) -> c_int;
 
-  pub fn GRBgetvars(model: *mut GRBmodel, numnzP: *mut c_int, vbeg: *mut c_int, vind: *mut c_int,
-                    vval: *mut c_double, start: c_int, len: c_int)
-                    -> c_int;
+  pub fn GRBgetvars(
+    model: *mut GRBmodel,
+    numnzP: *mut c_int,
+    vbeg: *mut c_int,
+    vind: *mut c_int,
+    vval: *mut c_double,
+    start: c_int,
+    len: c_int,
+  ) -> c_int;
 
-// Xgetconstrs
-// Xgetvars
+  pub fn GRBsinglescenariomodel(model: *mut GRBmodel, singlescenarioP: *mut *mut GRBmodel)
+    -> c_int;
+
+  // Xgetconstrs
+  // Xgetvars
 }
 
 // Input/Output
@@ -340,6 +359,8 @@ extern "C" {
   pub fn GRBcbsolution(cbdata: *mut c_void, solution: *const c_double, obj_ptr: *mut c_double) -> c_int;
 
   pub fn GRBterminate(model: *mut GRBmodel);
+
+  pub fn GRBcbproceed(model: *mut GRBmodel);
 }
 
 // Error Handling

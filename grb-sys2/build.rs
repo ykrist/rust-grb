@@ -45,8 +45,10 @@ fn get_gurobi_cl(gurobi_home: &PathBuf) -> PathBuf {
 fn get_version_triple(gurobi_home: &PathBuf) -> (i32, i32, i32) {
   let gurobi_cl = get_gurobi_cl(gurobi_home);
 
-  let output = Command::new(&gurobi_cl).arg("--version").output()
-    .unwrap_or_else(|_| panic!(format!("failed to execute {:?}", &gurobi_cl)));
+  let output = Command::new(&gurobi_cl)
+    .arg("--version")
+    .output()
+    .unwrap_or_else(|_| panic!("failed to execute {:?}", &gurobi_cl));
   let verno: Vec<_> = String::from_utf8_lossy(&output.stdout)
     .into_owned()
     .split_whitespace()

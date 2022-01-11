@@ -108,7 +108,7 @@ use std::ptr::null;
 
 use crate::constants::{callback::*, ERROR_CALLBACK, GRB_UNDEFINED};
 use crate::constr::IneqExpr;
-use crate::util;
+use crate::util::{self, AsPtr};
 use crate::{model::Model, Error, Result, Status, Var, INFINITY}; // used for setting a partial solution in a callback
 
 /// The return type for callbacks, an alias of [`anyhow::Result`].
@@ -261,11 +261,20 @@ macro_rules! impl_runtime {
     };
 }
 
-macro_rules! impl_terminate {
+macro_rules! impl_common {
     () => {
         /// Signal Gurobi to terminate the optimisation.  Will not take effect immediately
         pub fn terminate(&self) {
             self.0.terminate()
+        }
+
+        /// Generate a request to proceed to the next phase of the computation. Note that the request is only accepted in
+        ///  a few phases of the algorithm, and it won't be acted upon immediately. 
+        /// 
+        /// In the current Gurobi version, this callback allows you to proceed from the NoRel heuristic to the standard MIP
+        ///  search. You can determine the current algorithm phase `ctx.proceed()` (in [`MIPCtx`], [`MIPNodeCtx`] and [`MIPSolCtx`]). 
+        pub fn proceed(&mut self) {
+            self.0.proceed()
         }
     };
 }
@@ -284,13 +293,13 @@ macro_rules! impl_add_lazy {
 /// Callback context object during [`POLLING`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct PollingCtx<'a>(CbCtx<'a>);
 impl<'a> PollingCtx<'a> {
-    impl_terminate! {}
+    impl_common! {}
 }
 
 /// Callback context object during [`PRESOLVE`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct PreSolveCtx<'a>(CbCtx<'a>);
 impl<'a> PreSolveCtx<'a> {
-    impl_terminate! {}
+    impl_common! {}
     impl_runtime! {}
     impl_getter! { col_del, i32, PRESOLVE, PRE_COLDEL, "Number of columns removed so far." }
     impl_getter! { row_del, i32, PRESOLVE, PRE_ROWDEL, "Number of rows removed so far." }
@@ -302,7 +311,7 @@ impl<'a> PreSolveCtx<'a> {
 /// Callback context object during [`SIMPLEX`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct SimplexCtx<'a>(CbCtx<'a>);
 impl<'a> SimplexCtx<'a> {
-    impl_terminate! {}
+    impl_common! {}
     impl_runtime! {}
     impl_getter! { iter_cnt, f64, SIMPLEX, SPX_ITRCNT, "Current simplex iteration count." }
     impl_getter! { obj_val, f64, SIMPLEX, SPX_OBJVAL, "Current simplex objective value." }
@@ -314,7 +323,7 @@ impl<'a> SimplexCtx<'a> {
 /// Callback context object during [`MIP`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct MIPCtx<'a>(CbCtx<'a>);
 impl<'a> MIPCtx<'a> {
-    impl_terminate! {}
+    impl_common! {}
     impl_runtime! {}
     impl_getter! { obj_best, f64, MIP, MIP_OBJBST, "Current best objective." }
     impl_getter! { obj_bnd, f64, MIP, MIP_OBJBND, "Current best objective bound." }
@@ -323,6 +332,11 @@ impl<'a> MIPCtx<'a> {
     impl_getter! { cut_cnt, i32, MIP, MIP_CUTCNT, "Current count of cutting planes applied." }
     impl_getter! { node_left, f64, MIP, MIP_NODLFT, "Current unexplored node count." }
     impl_getter! { iter_cnt, f64, MIP, MIP_ITRCNT, "Current simplex iteration count." }
+    
+    /// Current algorithmic phase in the MIP solution
+    pub fn phase(&self) -> Result<MipPhase> {
+        MipPhase::from_raw(self.0.get_int(MIP, MIP_PHASE)?)
+    }
 }
 
 /// Callback context object during [`MIPSOL`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
@@ -346,7 +360,7 @@ impl<'a> MIPSolCtx<'a> {
         self.0.get_mip_solution(vars)
     }
 
-    impl_terminate! {}
+    impl_common! {}
     impl_runtime! {}
     impl_add_lazy! {}
     impl_getter! { obj, f64, MIPSOL, MIPSOL_OBJ, "Objective value for the new solution." }
@@ -354,6 +368,11 @@ impl<'a> MIPSolCtx<'a> {
     impl_getter! { obj_bnd, f64, MIPSOL, MIPSOL_OBJBND, "Current best objective bound." }
     impl_getter! { node_cnt, f64, MIPSOL, MIPSOL_NODCNT, "Current explored node count." }
     impl_getter! { sol_cnt, i32, MIPSOL, MIPSOL_SOLCNT, "Current count of feasible solutions found." }
+
+    /// Current algorithmic phase in the MIP solution
+    pub fn phase(&self) -> Result<MipPhase> {
+        MipPhase::from_raw(self.0.get_int(MIPSOL, MIPSOL_PHASE)?)
+    }
 }
 
 /// Callback context object during [`MIPNODE`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
@@ -394,7 +413,12 @@ impl<'a> MIPNodeCtx<'a> {
         self.0.set_solution(solution)
     }
 
-    impl_terminate! {}
+    /// Current algorithmic phase in the MIP solution
+    pub fn phase(&self) -> Result<MipPhase> {
+        MipPhase::from_raw(self.0.get_int(MIPNODE, MIPNODE_PHASE)?)
+    }
+
+    impl_common! {}
     impl_runtime! {}
     impl_add_lazy! {}
     impl_getter! { obj_best, f64, MIPNODE, MIPNODE_OBJBST, "Current best objective." }
@@ -413,13 +437,13 @@ impl<'a> MessageCtx<'a> {
             .map(|s| s.trim().to_owned())
     }
 
-    impl_terminate! {}
+    impl_common! {}
 }
 
 /// Callback context object during [`BARRIER`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct BarrierCtx<'a>(CbCtx<'a>);
 impl<'a> BarrierCtx<'a> {
-    impl_terminate! {}
+    impl_common! {}
     impl_runtime! {}
     impl_getter! { iter_cnt, i32, BARRIER, BARRIER_ITRCNT, "Current simplex iteration count." }
     impl_getter! { prim_obj, f64, BARRIER, BARRIER_PRIMOBJ, "Primal objective value for current barrier iterate." }
@@ -461,6 +485,29 @@ impl Where<'_> {
     }
 }
 
+/// Possible values for `ctx.phase()`
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum MipPhase {
+    /// Currently in the `NoRel` heuristic
+    NoRel,
+    /// Standard MIP Search
+    Search,
+    /// Performing MIP improvement
+    Improve,
+}
+
+impl MipPhase {
+    fn from_raw(val: i32) -> Result<Self> {
+        match val {
+            0 => Ok(MipPhase::NoRel),
+            1 => Ok(MipPhase::Search),
+            2 => Ok(MipPhase::Improve),
+            _ => Err(Error::NotYetSupported("unknown phase".to_string())),
+        }
+    }
+}
+
 /// The context object for Gurobi callback.
 struct CbCtx<'a> {
     where_raw: i32,
@@ -481,6 +528,13 @@ impl<'a> CbCtx<'a> {
             where_raw,
             model,
             nvars,
+        }
+    }
+
+    pub fn proceed(&mut self) {
+        unsafe {
+            let model = self.model.as_mut_ptr();
+            ffi::GRBcbproceed(model);
         }
     }
 

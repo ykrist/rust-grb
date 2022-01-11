@@ -94,11 +94,7 @@ impl EmptyEnv {
 }
 
 impl Env {
-    thread_local!(pub(crate) static GLOBAL_DEFAULT : Env = Env::new("gurobi.log").unwrap());
-
-    fn ua_ref(&self) -> Rc<UserAllocEnv> {
-        self.user_allocated.clone()
-    }
+    thread_local!(pub(crate) static DEFAULT_ENV : Env = Env::new("gurobi.log").unwrap());
 
     pub(crate) fn is_shared(&self) -> bool {
         Rc::strong_count(&self.user_allocated) > 1 || Rc::weak_count(&self.user_allocated) > 0
@@ -123,7 +119,7 @@ impl Env {
     pub(crate) unsafe fn new_gurobi_allocated(original: &Env, ptr: *mut ffi::GRBenv) -> Env {
         debug_assert!(!ptr.is_null());
         Env {
-            user_allocated: original.ua_ref(),
+            user_allocated: Rc::clone(&original.user_allocated),
             gurobi_allocated: Some(ptr),
         }
     }
@@ -248,7 +244,7 @@ mod tests {
     fn default_env_created_once() -> Result<()> {
         let m1 = Model::new("m1")?;
         let m2 = Model::new("m2")?;
-        assert_eq!(m1.get_env().ua_ref(), m2.get_env().ua_ref());
+        assert_eq!(&m1.get_env().user_allocated, &m2.get_env().user_allocated);
         Ok(())
     }
 }

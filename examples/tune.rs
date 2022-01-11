@@ -8,7 +8,7 @@ fn main() {
     // set the number of improved parameter sets.
     env.set(param::TuneResults, 1).unwrap();
 
-    let mut model = load_model_file_from_clarg(&env);
+    let mut model = load_model_file_from_clarg();
 
     model.tune().unwrap();
 

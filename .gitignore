@@ -8,6 +8,7 @@ Cargo.lock
 *.prm
 gh-pages/
 .idea/
+.vscode/
 changes.txt
 *.grbr
 watch_docs.sh

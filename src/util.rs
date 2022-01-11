@@ -1,5 +1,6 @@
 use grb_sys2 as ffi;
-use std::ffi::CStr;
+use std::{ffi::{CStr, CString}, path::Path};
+use crate::{Error, Result};
 
 /// Copy a raw C-string into a String
 ///
@@ -36,4 +37,9 @@ pub(crate) trait AsPtr {
     fn as_ptr(&self) -> *const Self::Ptr {
         (unsafe { self.as_mut_ptr() }) as *const Self::Ptr
     }
+}
+
+pub(crate) fn path_to_cstring<P: AsRef<Path>>(p: P) -> Result<CString> {
+    let path = p.as_ref().to_string_lossy().into_owned().into_bytes();
+    CString::new(path).map_err(Error::NulError)
 }

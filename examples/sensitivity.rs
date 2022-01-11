@@ -4,9 +4,7 @@ mod example_utils;
 use example_utils::*;
 
 fn main() {
-    let env = Env::new("").unwrap();
-
-    let mut model = load_model_file_from_clarg(&env);
+    let mut model = load_model_file_from_clarg();
     assert!(
         model.get_attr(attr::IsMIP).unwrap() != 0,
         "Model is not a MIP"

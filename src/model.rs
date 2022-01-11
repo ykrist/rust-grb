@@ -3,7 +3,7 @@ use std::ffi::CString;
 use std::mem::transmute;
 use std::ptr::{null, null_mut};
 use std::sync::atomic::{AtomicU32, Ordering};
-
+use std::path::Path;
 use grb_sys2::{c_int, GRBmodel};
 use grb_sys2 as ffi;
 
@@ -232,7 +232,7 @@ impl Model {
 
     /// Create a new model with the default environment, which is lazily initialised.
     pub fn new(modelname: &str) -> Result<Model> {
-        Env::GLOBAL_DEFAULT.with(|env| Model::with_env(modelname, env))
+        Env::DEFAULT_ENV.with(|env| Model::with_env(modelname, env))
     }
 
     /// Create a copy of the model.  This method is fallible due to the lazy update approach and the underlying
@@ -257,9 +257,20 @@ impl Model {
         Model::from_raw(&self.env, copied)
     }
 
-    /// Read a model from a file.  See the [manual](https://www.gurobi.com/documentation/9.1/refman/c_readmodel.html) for accepted file formats.
+    #[deprecated(note="use `Model::from_file_with_env` instead")]
+    /// This function has been deprecated in favour of [`Model::from_file_with_env`] and [`Model::from_file`]
     pub fn read_from(filename: &str, env: &Env) -> Result<Model> {
-        let filename = CString::new(filename)?;
+        Model::from_file_with_env(filename, env)
+    }
+
+    /// Read a model from a file using the default `Env`.
+    pub fn from_file(filename: impl AsRef<Path>) -> Result<Model> {
+        Env::DEFAULT_ENV.with(|env| Model::from_file_with_env(filename, env))
+    }
+
+    /// Read a model from a file.  See the [manual](https://www.gurobi.com/documentation/9.1/refman/c_readmodel.html) for accepted file formats.
+    pub fn from_file_with_env(filename: impl AsRef<Path>, env: &Env) -> Result<Model> {
+        let filename = crate::util::path_to_cstring(filename)?;
         let mut model = null_mut();
         env.check_apicall(unsafe {
             ffi::GRBreadmodel(env.as_mut_ptr(), filename.as_ptr(), &mut model)
@@ -417,12 +428,19 @@ impl Model {
         self.env.message(message);
     }
 
-    /// Import a model from a file. See [`Model::write`](Model::write) for details on valid file types.
+    // FIXME: this should accept AsRef<Path> types (breaking change)
+    /// Import optimization data from a file. This routine is the general entry point for importing
+    /// data from a file into a model. It can be used to read start vectors for MIP models, 
+    /// basis files for LP models, or parameter settings. The type of data read is determined by the file suffix. 
+    /// File formats are described in the [manual](https://www.gurobi.com/documentation/9.1/refman/model_file_formats.html#sec:FileFormats).
+    /// 
+    /// If you wish to construct a model from an format like `MPS` or `LP`, use [`Model::from_file`].
     pub fn read(&mut self, filename: &str) -> Result<()> {
         let filename = CString::new(filename)?;
         self.check_apicall(unsafe { ffi::GRBread(self.ptr, filename.as_ptr()) })
     }
 
+    // FIXME: this should accept AsRef<Path> types (breaking change)
     /// Export a model to a file.
     ///
     /// The file type is encoded in the file name suffix. Valid suffixes are `.mps`, `.rew`, `.lp`, or `.rlp` for
@@ -1731,7 +1749,7 @@ mod tests {
         let m1 = Model::with_env("test", &env)?;
         let filename = "test_read_model_copies_env.lp";
         m1.write(filename)?;
-        let m2 = Model::read_from(filename, &env)?;
+        let m2 = Model::from_file_with_env(filename, &env)?;
         assert_ne!(m2.get_env().as_ptr(), m1.get_env().as_ptr());
         Ok(())
     }

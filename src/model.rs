@@ -159,6 +159,7 @@ impl Model {
     /// which frees the `GRBModel` and triggers the drop of a `Env`, which in turn
     /// frees the `GRBEnv`.  The `*copies_env` tests in this module validate this assumption.
     fn from_raw(env: &Env, model: *mut GRBmodel) -> Result<Model> {
+        assert!(!model.is_null());
         let env_ptr = unsafe { ffi::GRBgetenv(model) };
         if env_ptr.is_null() {
             return Err(Error::FromAPI(
@@ -285,7 +286,6 @@ impl Model {
     pub fn fixed(&mut self) -> Result<Model> {
         let mut fixed: *mut GRBmodel = null_mut();
         self.check_apicall(unsafe { ffi::GRBfixmodel(self.ptr, &mut fixed) })?;
-        debug_assert!(!fixed.is_null());
         Model::from_raw(&self.env, fixed)
     }
 
@@ -1126,6 +1126,19 @@ impl Model {
 
         Ok((feasobj, new_vars, new_cons, new_qcons))
     }
+
+
+    /// Capture a single scenario from a multi-scenario model. Use the ScenarioNumber parameter to indicate which 
+    /// scenario to capture. See the 
+    /// [manual](https://www.gurobi.com/documentation/9.5/refman/multiple_scenarios.html#sec:MultipleScenarios)
+    /// for details on multi-scenario models.
+    pub fn single_scenario_model(&mut self) -> Result<Model> {
+        let mut model_ptr: *mut GRBmodel = std::ptr::null_mut();
+        self.check_apicall(unsafe { ffi::GRBsinglescenariomodel(self.as_mut_ptr(), &mut model_ptr) })?;
+        assert!(!model_ptr.is_null());
+        Model::from_raw(self.get_env(), model_ptr)
+    }
+
 
     /// Set a piecewise-linear objective function for the variable.
     ///

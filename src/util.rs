@@ -14,15 +14,9 @@ pub(crate) unsafe fn copy_c_str(s: ffi::c_str) -> String {
   CStr::from_ptr(s).to_string_lossy().into_owned() // to_string_lossy().into_owned() ALWAYS clones
 }
 
-#[test]
-fn conversion_must_succeed() {
-    use std::ffi::CString;
-    let s1 = "mip1.log";
-    let cs = CString::new(s1).unwrap();
-    let s2 = unsafe { copy_c_str(cs.as_ptr()) };
-    assert!(s1 == s2);
-}
 
+// FIXME: this needs to be re-done, as_mut_ptr should take &mut self, 
+// but this will likely cause a bunch of breaking changes.
 pub(crate) trait AsPtr {
     type Ptr;
     /// Return the underlying Gurobi pointer for [`Model`] and [`Env`] objects
@@ -42,4 +36,14 @@ pub(crate) trait AsPtr {
 pub(crate) fn path_to_cstring<P: AsRef<Path>>(p: P) -> Result<CString> {
     let path = p.as_ref().to_string_lossy().into_owned().into_bytes();
     CString::new(path).map_err(Error::NulError)
+}
+
+
+#[test]
+fn conversion_must_succeed() {
+    use std::ffi::CString;
+    let s1 = "mip1.log";
+    let cs = CString::new(s1).unwrap();
+    let s2 = unsafe { copy_c_str(cs.as_ptr()) };
+    assert!(s1 == s2);
 }

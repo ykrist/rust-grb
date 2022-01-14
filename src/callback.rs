@@ -346,6 +346,7 @@ impl<'a> SimplexCtx<'a> {
 }
 
 /// Callback context object during [`MIP`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
+// TODO: add MIPNODE_OPENSCENARIOS
 pub struct MIPCtx<'a>(CbCtx<'a>);
 impl<'a> MIPCtx<'a> {
     impl_common! {}
@@ -367,6 +368,7 @@ impl<'a> MIPCtx<'a> {
 
 /// Callback context object during [`MIPSOL`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct MIPSolCtx<'a>(CbCtx<'a>);
+// TODO: add MIPNODE_OPENSCENARIOS
 impl<'a> MIPSolCtx<'a> {
     /// This method is a no-op. It was added to this type by mistake but is kept for backwards-compatibility.
     #[doc(hidden)]
@@ -403,6 +405,7 @@ impl<'a> MIPSolCtx<'a> {
 }
 
 /// Callback context object during [`MIPNODE`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
+// TODO: add MIPNODE_OPENSCENARIOS
 pub struct MIPNodeCtx<'a>(CbCtx<'a>);
 impl<'a> MIPNodeCtx<'a> {
     /// Add a new (linear) cutting plane to the MIP model.
@@ -468,6 +471,10 @@ impl<'a> BarrierCtx<'a> {
     impl_getter! { compl_viol, f64, BARRIER, BARRIER_COMPL, "Complementarity violation for current barrier iterate." }
 }
 
+
+/// FIXME: (urgent) mark as non-exhaustive
+/// TODO: (urgent) add IIS ctx
+/// TODO: (medium) add MultiObj ctx
 /// The argument given to callbacks.
 #[allow(missing_docs)]
 pub enum Where<'a> {
@@ -481,6 +488,7 @@ pub enum Where<'a> {
     Barrier(BarrierCtx<'a>),
 }
 
+// 
 impl Where<'_> {
     fn new<'a>(ctx: CbCtx<'a>) -> Result<Where<'a>> {
         let w = match ctx.where_raw {
@@ -553,7 +561,7 @@ impl<'a> CbCtx<'a> {
         }
     }
 
-    /// Retreive node relaxation solution values at the current node.
+    /// Retrieve node relaxation solution values at the current node.
     pub fn get_node_rel<I, V>(&self, vars: I) -> Result<Vec<f64>>
     where
         V: Borrow<Var>,

@@ -252,6 +252,31 @@ macro_rules! impl_getter {
     };
 }
 
+macro_rules! impl_set_solution {
+    () => {
+        /// Provide a new feasible solution for a MIP model.  Not all variables need to be given.
+        /// The return value on success has the following meaning, depending from on the callback context:
+        /// 
+        /// | Context | Possible Values | Meaning |
+        /// | --- | --- | --- |
+        /// | [`MIPNodeCtx`] | `None` | Suggested solution was not feasible. | 
+        /// |              | `Some(val)` | Suggested solution was feasible, has objective value of `val`. | 
+        /// | [`MIPSolCtx`] | `None` | No information | 
+        /// | [`MIPCtx`] | `None` | No information | 
+        /// 
+        /// On success, if the solution was feasible the method returns the computed objective value,
+        /// otherwise returns `None`.
+        pub fn set_solution<I, V, T>(&self, solution: I) -> Result<Option<f64>>
+        where
+            V: Borrow<Var>,
+            T: Borrow<f64>,
+            I: IntoIterator<Item = (V, T)>,
+        {
+            self.0.set_solution(solution)
+        }
+    };
+}
+
 macro_rules! impl_runtime {
     () => {
         /// Retrieve the elapsed solver runtime in seconds.
@@ -324,6 +349,7 @@ impl<'a> SimplexCtx<'a> {
 pub struct MIPCtx<'a>(CbCtx<'a>);
 impl<'a> MIPCtx<'a> {
     impl_common! {}
+    impl_set_solution! {}
     impl_runtime! {}
     impl_getter! { obj_best, f64, MIP, MIP_OBJBST, "Current best objective." }
     impl_getter! { obj_bnd, f64, MIP, MIP_OBJBND, "Current best objective bound." }
@@ -361,6 +387,7 @@ impl<'a> MIPSolCtx<'a> {
     }
 
     impl_common! {}
+    impl_set_solution! {}
     impl_runtime! {}
     impl_add_lazy! {}
     impl_getter! { obj, f64, MIPSOL, MIPSOL_OBJ, "Objective value for the new solution." }
@@ -400,24 +427,12 @@ impl<'a> MIPNodeCtx<'a> {
         self.0.get_node_rel(vars)
     }
 
-    /// Provide a new feasible solution for a MIP model.  Not all variables need to be given.
-    ///
-    /// On success, if the solution was feasible the method returns the computed objective value,
-    /// otherwise returns `None`.
-    pub fn set_solution<I, V, T>(&self, solution: I) -> Result<Option<f64>>
-    where
-        V: Borrow<Var>,
-        T: Borrow<f64>,
-        I: IntoIterator<Item = (V, T)>,
-    {
-        self.0.set_solution(solution)
-    }
-
     /// Current algorithmic phase in the MIP solution
     pub fn phase(&self) -> Result<MipPhase> {
         MipPhase::from_raw(self.0.get_int(MIPNODE, MIPNODE_PHASE)?)
     }
 
+    impl_set_solution! {}
     impl_common! {}
     impl_runtime! {}
     impl_add_lazy! {}
@@ -579,8 +594,13 @@ impl<'a> CbCtx<'a> {
         self.check_apicall(unsafe {
             ffi::GRBcbsolution(self.cbdata, soln.as_ptr(), &mut obj as *mut raw::c_double)
         })?;
+       
 
-        Ok(if obj == INFINITY { None } else { Some(obj) })
+        let obj = 
+            if obj == INFINITY || obj == GRB_UNDEFINED { None } 
+            else { Some(obj )};
+
+        Ok(obj)
     }
 
     /// Retrieve the elapsed solver runtime in seconds.

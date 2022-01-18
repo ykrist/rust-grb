@@ -136,7 +136,7 @@ fn main() -> grb::Result<()> {
                     writer.write_all(&[b'\n'])?;
                 }
 
-                _ => {},
+                _ => {}
             }
 
             Ok(())

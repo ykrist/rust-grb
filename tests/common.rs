@@ -12,7 +12,9 @@ pub fn test_instance(name: &str) -> grb::Result<Model> {
 #[allow(dead_code)]
 pub fn load_soln(m: &mut Model, name: &str) -> anyhow::Result<Vec<(Var, f64)>> {
     let path = format!("{}/tests/data/{}.sol", env!("CARGO_MANIFEST_DIR"), name);
-    let solfile = std::io::BufReader::new(std::fs::File::open(path)?).lines().skip(2);
+    let solfile = std::io::BufReader::new(std::fs::File::open(path)?)
+        .lines()
+        .skip(2);
     let mut sol = Vec::new();
 
     for line in solfile {

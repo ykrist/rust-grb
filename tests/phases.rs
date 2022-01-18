@@ -1,15 +1,14 @@
-use std::collections::HashSet;
 use grb::callback::*;
 use grb::prelude::*;
+use std::collections::HashSet;
 
 mod common;
 use common::*;
 
 #[derive(Default)]
 struct Cb {
-    phases: HashSet<MipPhase>
+    phases: HashSet<MipPhase>,
 }
-
 
 impl Callback for Cb {
     fn callback(&mut self, w: Where) -> CbResult {

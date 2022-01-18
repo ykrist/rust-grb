@@ -193,7 +193,6 @@ pub use grb_macro::add_intvar;
 #[doc(inline)]
 pub use grb_macro::c;
 
-
 // public modules
 pub mod attribute;
 pub mod callback;

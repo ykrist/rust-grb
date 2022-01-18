@@ -283,7 +283,7 @@ impl QuadExpr {
 
     /// Return a reference to the linear + constant part of the expression
     pub fn affine_part(&self) -> &LinExpr {
-      &self.linexpr
+        &self.linexpr
     }
 
     /// number of **linear** terms in the expression (excluding the constant)

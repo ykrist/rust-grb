@@ -15,7 +15,6 @@ mod param_enums {
     // generated code - see build/main.rs
 }
 
-
 #[doc(inline)]
 pub use param_enums::enum_exports::*;
 pub use param_enums::variant_exports as param;
@@ -204,40 +203,41 @@ impl ParamSet<String> for &Undocumented {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+    use super::*;
 
-  #[test]
-  fn parameter_names() -> crate::Result<()> {
-    let params : Vec<_> = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/build/params.csv")).unwrap()
-      .lines()
-      .skip(1)
-      .map(|line| {
-        let mut line = line.split(",");
-        let param = line.next().unwrap();
-        let ty = line.next().unwrap();
-        assert_eq!(line.next(), None);
-        (param.to_string(), ty.to_string())
-      })
-      .collect();
+    #[test]
+    fn parameter_names() -> crate::Result<()> {
+        let params: Vec<_> =
+            std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/build/params.csv"))
+                .unwrap()
+                .lines()
+                .skip(1)
+                .map(|line| {
+                    let mut line = line.split(",");
+                    let param = line.next().unwrap();
+                    let ty = line.next().unwrap();
+                    assert_eq!(line.next(), None);
+                    (param.to_string(), ty.to_string())
+                })
+                .collect();
 
-    let model = crate::Model::new("test")?;
-    for (param, ty) in params {
-      let param = Undocumented::new(param).unwrap();
-      match ty.as_str() {
-        "dbl" => {
-          let _v : f64 = model.get_param(&param)?;
-        },
-        "int" => {
-          let _v : i32 = model.get_param(&param)?;
-        },
-        "str" => {
-          let _v : String = model.get_param(&param)?;
-        },
-        _ => unreachable!()
-      }
+        let model = crate::Model::new("test")?;
+        for (param, ty) in params {
+            let param = Undocumented::new(param).unwrap();
+            match ty.as_str() {
+                "dbl" => {
+                    let _v: f64 = model.get_param(&param)?;
+                }
+                "int" => {
+                    let _v: i32 = model.get_param(&param)?;
+                }
+                "str" => {
+                    let _v: String = model.get_param(&param)?;
+                }
+                _ => unreachable!(),
+            }
+        }
+
+        Ok(())
     }
-
-    Ok(())
-  }
-
 }

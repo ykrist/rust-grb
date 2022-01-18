@@ -1,5 +1,5 @@
-use grb::prelude::*;
 use grb::callback::*;
+use grb::prelude::*;
 
 fn callback(w: Where) -> CbResult {
     if let Where::MIP(ctx) = w {
@@ -16,7 +16,6 @@ fn main() -> anyhow::Result<()> {
     let y = add_binvar!(m)?;
 
     let c1 = m.add_constr("c1", c!(x + y <= 2))?;
-    
 
     m.set_attr(attr::NumScenarios, 3)?;
 
@@ -24,14 +23,12 @@ fn main() -> anyhow::Result<()> {
     m.set_obj_attr(attr::ScenNObj, &x, -1.0)?;
     m.set_obj_attr(attr::ScenNObj, &y, -1.0)?;
     m.set_obj_attr(attr::ScenNRHS, &c1, 1.0)?;
-    
 
     m.set_param(param::ScenarioNumber, 2)?;
     m.set_obj_attr(attr::ScenNObj, &y, 1.0)?;
     m.set_obj_attr(attr::ScenNLB, &y, 1.0)?;
-    
+
     m.optimize_with_callback(&mut callback)?;
-    
 
     for (idx, &correct_obj) in [0.0, -1.0, 1.0].iter().enumerate() {
         println!("--------------------------------------------------------------------");

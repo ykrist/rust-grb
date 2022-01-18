@@ -1,11 +1,11 @@
+use grb_sys2 as ffi;
+use grb_sys2::{c_int, GRBmodel};
 use std::borrow::Borrow;
 use std::ffi::CString;
 use std::mem::transmute;
+use std::path::Path;
 use std::ptr::{null, null_mut};
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::path::Path;
-use grb_sys2::{c_int, GRBmodel};
-use grb_sys2 as ffi;
 
 use crate::attribute::{ModelAttrGet, ModelAttrSet, ObjAttrGet, ObjAttrSet};
 use crate::callback::{callback_wrapper, UserCallbackData};
@@ -33,13 +33,16 @@ pub struct Model {
 
 macro_rules! impl_object_list_getter {
     ($name:ident, $t:ty, $attr:ident, $noun:literal) => {
-      #[doc="Retrieve the "]
-      #[doc=$noun]
-      #[doc=" in the model. \n\n # Errors\nReturns an error if a model update is needed"]
-      pub fn $name<'a>(&'a self) -> Result<&'a [$t]> {
-        if self.$attr.model_update_needed() {  Err(Error::ModelUpdateNeeded)  }
-        else  { Ok(self.$attr.objects()) }
-      }
+        #[doc = "Retrieve the "]
+        #[doc=$noun]
+        #[doc = " in the model. \n\n # Errors\nReturns an error if a model update is needed"]
+        pub fn $name<'a>(&'a self) -> Result<&'a [$t]> {
+            if self.$attr.model_update_needed() {
+                Err(Error::ModelUpdateNeeded)
+            } else {
+                Ok(self.$attr.objects())
+            }
+        }
     };
 }
 
@@ -258,7 +261,7 @@ impl Model {
         Model::from_raw(&self.env, copied)
     }
 
-    #[deprecated(note="use `Model::from_file_with_env` instead")]
+    #[deprecated(note = "use `Model::from_file_with_env` instead")]
     /// This function has been deprecated in favour of [`Model::from_file_with_env`] and [`Model::from_file`]
     pub fn read_from(filename: &str, env: &Env) -> Result<Model> {
         Model::from_file_with_env(filename, env)
@@ -332,11 +335,13 @@ impl Model {
         Ok(self.env.get(param::UpdateMode)? == 0)
     }
 
-    fn call_with_callback<F>(&mut self, 
+    fn call_with_callback<F>(
+        &mut self,
         gurobi_routine: unsafe extern "C" fn(*mut GRBmodel) -> c_int,
-        callback: &mut F) -> Result<()> 
-    where 
-        F: Callback    
+        callback: &mut F,
+    ) -> Result<()>
+    where
+        F: Callback,
     {
         self.update()?;
         let nvars = self.get_attr(attr::NumVars)? as usize;
@@ -347,16 +352,16 @@ impl Model {
         };
 
         unsafe {
-          let res =
-            self.check_apicall(
-              ffi::GRBsetcallbackfunc(self.ptr, Some(callback_wrapper), transmute(&mut usrdata), )
-            ).and_then(|()| self.check_apicall(
-              gurobi_routine(self.ptr))
-          );
-          self.check_apicall(
-            ffi::GRBsetcallbackfunc(self.ptr, None, null_mut())
-          ).expect("failed to clear callback function");
-          res
+            let res = self
+                .check_apicall(ffi::GRBsetcallbackfunc(
+                    self.ptr,
+                    Some(callback_wrapper),
+                    transmute(&mut usrdata),
+                ))
+                .and_then(|()| self.check_apicall(gurobi_routine(self.ptr)));
+            self.check_apicall(ffi::GRBsetcallbackfunc(self.ptr, None, null_mut()))
+                .expect("failed to clear callback function");
+            res
         }
     }
 
@@ -447,10 +452,10 @@ impl Model {
 
     // FIXME: this should accept AsRef<Path> types (breaking change)
     /// Import optimization data from a file. This routine is the general entry point for importing
-    /// data from a file into a model. It can be used to read start vectors for MIP models, 
-    /// basis files for LP models, or parameter settings. The type of data read is determined by the file suffix. 
+    /// data from a file into a model. It can be used to read start vectors for MIP models,
+    /// basis files for LP models, or parameter settings. The type of data read is determined by the file suffix.
     /// File formats are described in the [manual](https://www.gurobi.com/documentation/9.1/refman/model_file_formats.html#sec:FileFormats).
-    /// 
+    ///
     /// If you wish to construct a model from an format like `MPS` or `LP`, use [`Model::from_file`].
     pub fn read(&mut self, filename: &str) -> Result<()> {
         let filename = CString::new(filename)?;
@@ -1144,18 +1149,18 @@ impl Model {
         Ok((feasobj, new_vars, new_cons, new_qcons))
     }
 
-
-    /// Capture a single scenario from a multi-scenario model. Use the ScenarioNumber parameter to indicate which 
-    /// scenario to capture. See the 
+    /// Capture a single scenario from a multi-scenario model. Use the ScenarioNumber parameter to indicate which
+    /// scenario to capture. See the
     /// [manual](https://www.gurobi.com/documentation/9.5/refman/multiple_scenarios.html#sec:MultipleScenarios)
     /// for details on multi-scenario models.
     pub fn single_scenario_model(&mut self) -> Result<Model> {
         let mut model_ptr: *mut GRBmodel = std::ptr::null_mut();
-        self.check_apicall(unsafe { ffi::GRBsinglescenariomodel(self.as_mut_ptr(), &mut model_ptr) })?;
+        self.check_apicall(unsafe {
+            ffi::GRBsinglescenariomodel(self.as_mut_ptr(), &mut model_ptr)
+        })?;
         assert!(!model_ptr.is_null());
         Model::from_raw(self.get_env(), model_ptr)
     }
-
 
     /// Set a piecewise-linear objective function for the variable.
     ///
@@ -1340,9 +1345,7 @@ impl AsyncHandle {
     /// # Errors
     /// An [`Error::FromAPI`] may occur during optimisation, in which case it is stored in the `Result`.
     pub fn join(self) -> (AsyncModel, Result<()>) {
-        let errors = self
-            .0
-            .check_apicall(unsafe { ffi::GRBsync(self.0.ptr) });
+        let errors = self.0.check_apicall(unsafe { ffi::GRBsync(self.0.ptr) });
         (AsyncModel(self.0), errors)
     }
 

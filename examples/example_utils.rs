@@ -1,4 +1,4 @@
-use grb::{Model};
+use grb::Model;
 
 pub fn load_model_file_from_clarg() -> Model {
     let filepath = &std::env::args().nth(1).expect(

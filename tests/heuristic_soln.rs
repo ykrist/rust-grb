@@ -1,5 +1,5 @@
-use grb::prelude::*;
 use grb::callback::*;
+use grb::prelude::*;
 
 mod common;
 use common::*;
@@ -7,17 +7,21 @@ use common::*;
 struct Cb {
     feas_soln: Vec<(Var, f64)>,
     infeas_soln: Vec<(Var, f64)>,
-    tests: [bool; 4]
+    tests: [bool; 4],
 }
 
 impl Cb {
     fn new(feas_soln: Vec<(Var, f64)>, infeas_soln: Vec<(Var, f64)>) -> Self {
-        Cb { feas_soln, infeas_soln, tests: [false; 4] }
+        Cb {
+            feas_soln,
+            infeas_soln,
+            tests: [false; 4],
+        }
     }
 
     fn check_once(&mut self, idx: usize) -> bool {
         if self.tests[idx] {
-            return false
+            return false;
         }
         println!("running check {}", idx);
         self.tests[idx] = true;
@@ -43,7 +47,7 @@ impl Callback for Cb {
                         }
                     }
                 }
-            },
+            }
             Where::MIP(ctx) => {
                 println!("MIP");
                 if self.check_once(2) {
@@ -53,8 +57,8 @@ impl Callback for Cb {
                     let x = ctx.set_solution(self.infeas_soln.iter().copied())?;
                     assert_eq!(x, None);
                 }
-            },
-            _ => {},
+            }
+            _ => {}
         }
         Ok(())
     }
@@ -69,15 +73,16 @@ fn main() -> anyhow::Result<()> {
     m.set_param(param::Presolve, 0)?;
     m.set_param(param::Heuristics, 0.0)?;
 
-    let infeas_soln = m.get_vars()?
+    let infeas_soln = m
+        .get_vars()?
         .iter()
         .copied()
         .zip(std::iter::repeat(-1.0))
         .collect();
     let feas_soln = load_soln(&mut m, INSTANCE)?;
-    
+
     let mut cb = Cb::new(feas_soln, infeas_soln);
     m.optimize_with_callback(&mut cb)?;
-    
+
     Ok(())
 }

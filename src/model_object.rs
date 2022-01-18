@@ -35,37 +35,40 @@ pub trait ModelObject: ModelObjectPrivate + Debug {
 
 macro_rules! create_model_obj_ty {
     ($t:ident, $model_attr:ident, $delfunc:path, $doc:literal) => {
-      #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-      #[doc = $doc]
-      pub struct $t {
-        pub(crate) id : u32,
-        pub(crate) model_id: u32,
-      }
-
-      impl ModelObjectPrivate for $t {
-        fn from_raw(id: u32, model_id: u32) -> $t {
-          Self{ id, model_id }
+        #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+        #[doc = $doc]
+        pub struct $t {
+            pub(crate) id: u32,
+            pub(crate) model_id: u32,
         }
 
-        fn idx_manager_mut(model: &mut Model) -> &mut IdxManager<$t> {
-          &mut model.$model_attr
+        impl ModelObjectPrivate for $t {
+            fn from_raw(id: u32, model_id: u32) -> $t {
+                Self { id, model_id }
+            }
+
+            fn idx_manager_mut(model: &mut Model) -> &mut IdxManager<$t> {
+                &mut model.$model_attr
+            }
+
+            fn idx_manager(model: &Model) -> &IdxManager<$t> {
+                &model.$model_attr
+            }
+
+            unsafe fn gurobi_remove(m: *mut ffi::GRBmodel, inds: &[i32]) -> ffi::c_int {
+                $delfunc(m, inds.len() as i32, inds.as_ptr())
+            }
+
+            fn model_id(&self) -> u32 {
+                self.model_id
+            }
         }
 
-        fn idx_manager(model: &Model) -> &IdxManager<$t> {
-          &model.$model_attr
+        impl ModelObject for $t {
+            fn id(&self) -> u32 {
+                self.id
+            }
         }
-
-        unsafe fn gurobi_remove(m: *mut ffi::GRBmodel, inds: &[i32]) -> ffi::c_int {
-          $delfunc(m, inds.len() as i32, inds.as_ptr())
-        }
-
-        fn model_id(&self) -> u32 { self.model_id }
-      }
-
-      impl ModelObject for $t {
-        fn id(&self) -> u32 { self.id }
-      }
-
     };
 }
 

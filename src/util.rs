@@ -1,6 +1,9 @@
-use grb_sys2 as ffi;
-use std::{ffi::{CStr, CString}, path::Path};
 use crate::{Error, Result};
+use grb_sys2 as ffi;
+use std::{
+    ffi::{CStr, CString},
+    path::Path,
+};
 
 /// Copy a raw C-string into a String
 ///
@@ -10,12 +13,11 @@ use crate::{Error, Result};
 /// different data structure before the next call to a Gurobi library routine. The user should
 /// also be careful to never modify the data pointed to by the returned character pointer.
 pub(crate) unsafe fn copy_c_str(s: ffi::c_str) -> String {
-  debug_assert!(!s.is_null());
-  CStr::from_ptr(s).to_string_lossy().into_owned() // to_string_lossy().into_owned() ALWAYS clones
+    debug_assert!(!s.is_null());
+    CStr::from_ptr(s).to_string_lossy().into_owned() // to_string_lossy().into_owned() ALWAYS clones
 }
 
-
-// FIXME: this needs to be re-done, as_mut_ptr should take &mut self, 
+// FIXME: this needs to be re-done, as_mut_ptr should take &mut self,
 // but this will likely cause a bunch of breaking changes.
 pub(crate) trait AsPtr {
     type Ptr;
@@ -37,7 +39,6 @@ pub(crate) fn path_to_cstring<P: AsRef<Path>>(p: P) -> Result<CString> {
     let path = p.as_ref().to_string_lossy().into_owned().into_bytes();
     CString::new(path).map_err(Error::NulError)
 }
-
 
 #[test]
 fn conversion_must_succeed() {

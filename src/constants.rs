@@ -19,6 +19,9 @@ pub mod callback {
     pub const MIPNODE: i32 = 5;
     pub const MESSAGE: i32 = 6;
     pub const BARRIER: i32 = 7;
+    #[allow(dead_code)]
+    pub const MULTIOBJ: i32 = 8;
+    pub const IIS: i32 = 9;
 
     pub const PRE_COLDEL: i32 = 1000;
     pub const PRE_ROWDEL: i32 = 1001;
@@ -71,6 +74,20 @@ pub mod callback {
     pub const BARRIER_PRIMINF: i32 = 7004;
     pub const BARRIER_DUALINF: i32 = 7005;
     pub const BARRIER_COMPL: i32 = 7006;
+
+    #[allow(dead_code)]
+    pub const MULTIOBJ_OBJCNT: i32 = 8001;
+    #[allow(dead_code)]
+    pub const MULTIOBJ_SOLCNT: i32 = 8002;
+    #[allow(dead_code)]
+    pub const MULTIOBJ_SOL: i32 = 8003;
+
+    pub const IIS_CONSTRMIN: i32 = 9001;
+    pub const IIS_CONSTRMAX: i32 = 9002;
+    pub const IIS_CONSTRGUESS: i32 = 9003;
+    pub const IIS_BOUNDMIN: i32 = 9004;
+    pub const IIS_BOUNDMAX: i32 = 9005;
+    pub const IIS_BOUNDGUESS: i32 = 9006;
 }
 
 /// Gurobi variable types (see [manual](https://www.gurobi.com/documentation/9.1/refman/variables.html))

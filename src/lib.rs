@@ -67,7 +67,7 @@
 //! if a method or function returns a [`Result`], the error will be [`Error::FromAPI`].
 #![warn(missing_docs)]
 #![warn(missing_crate_level_docs)]
-
+// TODO: fix the doc links to reference the 9.5 manual
 use grb_sys2 as ffi;
 
 /// Returns the version number of Gurobi
@@ -77,7 +77,7 @@ pub fn version() -> (i32, i32, i32) {
     (major, minor, technical)
 }
 
-/// Convienence wrapper around [`Model::add_var`]; adds a new variable to a `Model` object.  The macro keyword arguments are
+/// Convenience wrapper around [`Model::add_var`]; adds a new variable to a `Model` object.  The macro keyword arguments are
 /// optional.
 ///
 /// # Syntax

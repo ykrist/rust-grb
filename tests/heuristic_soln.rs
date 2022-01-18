@@ -1,7 +1,8 @@
-use std::io::BufRead;
-
 use grb::prelude::*;
 use grb::callback::*;
+
+mod common;
+use common::*;
 
 struct Cb {
     feas_soln: Vec<(Var, f64)>,
@@ -59,31 +60,13 @@ impl Callback for Cb {
     }
 }
 
-const MODEL_FILE: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/traininstance2.mps.gz");
-const SOLN_FILE: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/traininstance2.sol");
-
-fn load_soln(m: &mut Model) -> anyhow::Result<Vec<(Var, f64)>> {
-    let solfile = std::io::BufReader::new(std::fs::File::open(SOLN_FILE)?).lines().skip(2);
-    let mut sol = Vec::new();
-
-    for line in solfile {
-        let l = line?;
-        // dbg!(&l);
-        let mut line = l.split_whitespace();
-        let varname = line.next().unwrap();
-        let val: f64 = line.next().unwrap().parse()?;
-        let var = m.get_var_by_name(varname)?.unwrap();
-        sol.push((var, val));
-    }
-    Ok(sol)
-}
+const INSTANCE: &'static str = "traininstance2";
 
 #[test]
 fn main() -> anyhow::Result<()> {
-    let mut m = Model::from_file(MODEL_FILE)?;
+    let mut m = test_instance(INSTANCE)?;
     m.set_param(param::Seed, 1337)?;
     m.set_param(param::Presolve, 0)?;
-    m.set_param(param::Threads, 1)?;
     m.set_param(param::Heuristics, 0.0)?;
 
     let infeas_soln = m.get_vars()?
@@ -91,7 +74,7 @@ fn main() -> anyhow::Result<()> {
         .copied()
         .zip(std::iter::repeat(-1.0))
         .collect();
-    let feas_soln = load_soln(&mut m)?;
+    let feas_soln = load_soln(&mut m, INSTANCE)?;
     
     let mut cb = Cb::new(feas_soln, infeas_soln);
     m.optimize_with_callback(&mut cb)?;

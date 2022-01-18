@@ -332,6 +332,34 @@ impl Model {
         Ok(self.env.get(param::UpdateMode)? == 0)
     }
 
+    fn call_with_callback<F>(&mut self, 
+        gurobi_routine: unsafe extern "C" fn(*mut GRBmodel) -> c_int,
+        callback: &mut F) -> Result<()> 
+    where 
+        F: Callback    
+    {
+        self.update()?;
+        let nvars = self.get_attr(attr::NumVars)? as usize;
+        let mut usrdata = UserCallbackData {
+            model: self,
+            cb_obj: callback,
+            nvars,
+        };
+
+        unsafe {
+          let res =
+            self.check_apicall(
+              ffi::GRBsetcallbackfunc(self.ptr, Some(callback_wrapper), transmute(&mut usrdata), )
+            ).and_then(|()| self.check_apicall(
+              gurobi_routine(self.ptr))
+          );
+          self.check_apicall(
+            ffi::GRBsetcallbackfunc(self.ptr, None, null_mut())
+          ).expect("failed to clear callback function");
+          res
+        }
+    }
+
     /// Optimize the model synchronously.  This method will always trigger a [`Model::update`].
     pub fn optimize(&mut self) -> Result<()> {
         self.update()?;
@@ -349,26 +377,7 @@ impl Model {
     where
         F: Callback,
     {
-        self.update()?;
-        let nvars = self.get_attr(attr::NumVars)? as usize;
-        let mut usrdata = UserCallbackData {
-            model: self,
-            cb_obj: callback,
-            nvars,
-        };
-
-        unsafe {
-          let res =
-            self.check_apicall(
-              ffi::GRBsetcallbackfunc(self.ptr, Some(callback_wrapper), transmute(&mut usrdata), )
-            ).and_then(|()| self.check_apicall(
-              ffi::GRBoptimize(self.ptr))
-          );
-          self.check_apicall(
-            ffi::GRBsetcallbackfunc(self.ptr, None, null_mut())
-          ).expect("failed to clear callback function");
-          res
-        }
+        self.call_with_callback(ffi::GRBoptimize, callback)
     }
 
     /// Compute an Irreducible Inconsistent Subsystem (IIS) of the model.  The constraints in the IIS can be identified
@@ -392,6 +401,14 @@ impl Model {
     /// ```
     pub fn compute_iis(&mut self) -> Result<()> {
         self.check_apicall(unsafe { ffi::GRBcomputeIIS(self.ptr) })
+    }
+
+    /// Compute an IIS of the model with a callback.  Only the only variant of [`Where`] will be [`Where::IIS`].
+    pub fn compute_iis_with_callback<F>(&mut self, callback: &mut F) -> Result<()>
+    where
+        F: Callback,
+    {
+        self.call_with_callback(ffi::GRBcomputeIIS, callback)
     }
 
     /// Send a request to the model to terminate the current optimization process.

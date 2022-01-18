@@ -346,12 +346,12 @@ impl<'a> SimplexCtx<'a> {
 }
 
 /// Callback context object during [`MIP`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
-// TODO: add MIPNODE_OPENSCENARIOS
 pub struct MIPCtx<'a>(CbCtx<'a>);
 impl<'a> MIPCtx<'a> {
     impl_common! {}
     impl_set_solution! {}
     impl_runtime! {}
+    impl_getter! { open_scenarios, i32, MIP, MIP_OPENSCENARIOS, "Number of scenarios that are still open in a multi-scenario model." }
     impl_getter! { obj_best, f64, MIP, MIP_OBJBST, "Current best objective." }
     impl_getter! { obj_bnd, f64, MIP, MIP_OBJBND, "Current best objective bound." }
     impl_getter! { node_cnt, f64, MIP, MIP_NODCNT, "Current explored node count." }
@@ -368,7 +368,6 @@ impl<'a> MIPCtx<'a> {
 
 /// Callback context object during [`MIPSOL`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
 pub struct MIPSolCtx<'a>(CbCtx<'a>);
-// TODO: add MIPNODE_OPENSCENARIOS
 impl<'a> MIPSolCtx<'a> {
     /// This method is a no-op. It was added to this type by mistake but is kept for backwards-compatibility.
     #[doc(hidden)]
@@ -392,6 +391,7 @@ impl<'a> MIPSolCtx<'a> {
     impl_set_solution! {}
     impl_runtime! {}
     impl_add_lazy! {}
+    impl_getter! { open_scenarios, i32, MIPSOL, MIPSOL_OPENSCENARIOS, "Number of scenarios that are still open in a multi-scenario model." }
     impl_getter! { obj, f64, MIPSOL, MIPSOL_OBJ, "Objective value for the new solution." }
     impl_getter! { obj_best, f64, MIPSOL, MIPSOL_OBJBST, "Current best objective." }
     impl_getter! { obj_bnd, f64, MIPSOL, MIPSOL_OBJBND, "Current best objective bound." }
@@ -405,7 +405,6 @@ impl<'a> MIPSolCtx<'a> {
 }
 
 /// Callback context object during [`MIPNODE`](https://www.gurobi.com/documentation/9.1/refman/cb_codes.html).
-// TODO: add MIPNODE_OPENSCENARIOS
 pub struct MIPNodeCtx<'a>(CbCtx<'a>);
 impl<'a> MIPNodeCtx<'a> {
     /// Add a new (linear) cutting plane to the MIP model.
@@ -439,6 +438,7 @@ impl<'a> MIPNodeCtx<'a> {
     impl_common! {}
     impl_runtime! {}
     impl_add_lazy! {}
+    impl_getter! { open_scenarios, i32, MIPNODE, MIPNODE_OPENSCENARIOS, "Number of scenarios that are still open in a multi-scenario model." }
     impl_getter! { obj_best, f64, MIPNODE, MIPNODE_OBJBST, "Current best objective." }
     impl_getter! { obj_bnd, f64, MIPNODE, MIPNODE_OBJBND, "Current best objective bound." }
     impl_getter! { node_cnt, f64, MIPNODE, MIPNODE_NODCNT, "Current explored node count." }

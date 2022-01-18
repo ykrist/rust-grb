@@ -1,4 +1,12 @@
 use grb::prelude::*;
+use grb::callback::*;
+
+fn callback(w: Where) -> CbResult {
+    if let Where::MIP(ctx) = w {
+        println!("open scenarios = {}", ctx.open_scenarios()?);
+    }
+    Ok(())
+}
 
 #[test]
 fn main() -> anyhow::Result<()> {
@@ -22,7 +30,7 @@ fn main() -> anyhow::Result<()> {
     m.set_obj_attr(attr::ScenNObj, &y, 1.0)?;
     m.set_obj_attr(attr::ScenNLB, &y, 1.0)?;
     
-    m.optimize()?;
+    m.optimize_with_callback(&mut callback)?;
     
 
     for (idx, &correct_obj) in [0.0, -1.0, 1.0].iter().enumerate() {

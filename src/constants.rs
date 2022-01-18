@@ -39,8 +39,7 @@ pub mod callback {
     pub const MIP_CUTCNT: i32 = 3004;
     pub const MIP_NODLFT: i32 = 3005;
     pub const MIP_ITRCNT: i32 = 3006;
-    #[allow(dead_code)]
-    pub const MIP_OBJBNDC: i32 = 3007;
+    pub const MIP_OPENSCENARIOS: i32 = 3007;
     pub const MIP_PHASE: i32 = 3008;
 
     pub const MIPSOL_SOL: i32 = 4001;
@@ -49,8 +48,7 @@ pub mod callback {
     pub const MIPSOL_OBJBND: i32 = 4004;
     pub const MIPSOL_NODCNT: i32 = 4005;
     pub const MIPSOL_SOLCNT: i32 = 4006;
-    #[allow(dead_code)]
-    pub const MIPSOL_OBJBNDC: i32 = 4007;
+    pub const MIPSOL_OPENSCENARIOS: i32 = 4007;
     pub const MIPSOL_PHASE: i32 = 4008;
 
     pub const MIPNODE_STATUS: i32 = 5001;
@@ -61,8 +59,7 @@ pub mod callback {
     pub const MIPNODE_SOLCNT: i32 = 5006;
     #[allow(dead_code)]
     pub const MIPNODE_BRVAR: i32 = 5007;
-    #[allow(dead_code)]
-    pub const MIPNODE_OBJBNDC: i32 = 5008;
+    pub const MIPNODE_OPENSCENARIOS: i32 = 5008;
     pub const MIPNODE_PHASE: i32 = 5009;
 
     pub const MSG_STRING: i32 = 6001;

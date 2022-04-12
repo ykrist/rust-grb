@@ -2,48 +2,41 @@
 
 This crate provides Rust bindings for Gurobi Optimizer.  It currently requires Gurobi 9.0 or higher.
 
-This library started as fork of the [`gurobi`](https://github.com/ubnt-intrepid/rust-gurobi) which appears to be no longer maintained.
-It has since undergone a number of fundamental API changes. 
+This library started as fork of the [`gurobi`](https://github.com/ubnt-intrepid/rust-gurobi) which appears to be no longer maintained.  It has since undergone a number of fundamental API changes.
+
+This crate supports Gurobi 9.5
 
 ## Installing and Linking
 
-* Before using this crate, you should install Gurobi and obtain a [license](http://www.gurobi.com/downloads/licenses/license-center).
+Before using this crate, you should install Gurobi and obtain a [license](http://www.gurobi.com/downloads/licenses/license-center).
 
 ### Building
-Make sure that the environment variable `GUROBI_HOME` is set to the installation path of Gurobi
-(like `C:\gurobi911\win64` or `/opt/gurobi911/linux64`).  If you are using the Conda package
-from the Gurobi channel, the build script will fall back to `GUROBI_HOME=${CONDA_PREFIX}`, so you
-should not set `GUROBI_HOME`.
+In this section, it is assumed Gurobi is install at `/opt/gurobi/linux64`.
+
+It is recommended you use the environment variables for you system's linker to ensure Gurobi can be found.
+For example, on Linux systems this can be done by appending the path to the `lib` subfolder of the gurobi installation to `LIBRARY_PATH`.   For example, put
+
+```base
+export LIBRARY_PATH="LIBRARY_PATH:/opt/gurobi/linux64/lib"
+```
+
+in your `~/.profile` file.  You can also set this in a `PROJECT/.cargo/config.toml` file on per project basis (see the `[env]` [section](https://doc.rust-lang.org/cargo/reference/config.html)).
+
+The other option is to set the environment variable `GUROBI_HOME` set to the installation path of Gurobi
+(like eg `/opt/gurobi911/linux64`).  If you are using the Conda package from the Gurobi channel, you can set `GUROBI_HOME=${CONDA_PREFIX}` from within your Conda environment.
 
 ### Running
-When running the compiled binaries or running tests, you may get 
+When running the compiled binaries or running tests, you may get
 ```bash
-error while loading shared libraries: libgurobi91.so: cannot open shared object file: No such file or directory
+error while loading shared libraries: libgurobi95.so: cannot open shared object file: No such file or directory
 ```
-In this case, you need to set the `LD_LIBRARY_PATH` environment variable or embed the path to `libgurobi.so` in the
-[rpath](https://en.wikipedia.org/wiki/Rpath) by supplying the appropriate linker flags in `RUSTFLAGS`.
+In this case, you need to set the `LD_LIBRARY_PATH` (on Windows I believe this is called `PATH`) environment variable or embed the path to `libgurobi95.so` in the [rpath](https://en.wikipedia.org/wiki/Rpath) by supplying the appropriate linker flags in `RUSTFLAGS`.
 
-For the examples below, suppose Gurobi is in the path `/opt/gurobi/linux64/libgurobi91.so`
+For the example below, suppose Gurobi is in the path `/opt/gurobi/linux64/lib/libgurobi95.so`.  You set `LD_LIBRARY_PATH` in the same manner as the `LIBRARY_PATH` variable, in your `~/.profile`:
 
-## Method #1: `LD_LIBRARY_PATH`
-```bash
-cargo build
-export LD_LIBRARY_PATH="/opt/gurobi/linux64/:${LD_LIBRARY_PATH}"
-target/debug/my_program # or: cargo test
+```base
+export LD_LIBRARY_PATH="LD_LIBRARY_PATH:/opt/gurobi/linux64/lib"
 ```
-`LD_LIBRARY_PATH` will need to be set every time the binary is run in a new shell session.  If you use conda environments, 
-this is the recommended approach (see [here](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#setting-environment-variables)).
-
-
-## Method #2: rpath
-```bash
-export RUSTFLAGS="-C link-args=-Wl,-rpath=/opt/gurobi/linux64/"
-cargo build
-target/debug/my_program  # or: cargo test
-```
-This has the advantage that you don't need to set anything when you want to run the binary in a new shell 
-session. On the other hand, the path to Gurobi is baked into `my_program`, so it is no longer portable.
-
 
 ## Documentation
 Docs can be found on [docs.rs](https://docs.rs/grb/)

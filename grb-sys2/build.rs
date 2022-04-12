@@ -1,75 +1,55 @@
 use std::env;
+use std::fmt::{self, Display};
 use std::path::PathBuf;
-use std::process::Command;
 
-fn try_gurobi_home() -> Result<PathBuf, String> {
-  let path = env::var("GUROBI_HOME")
-    .map_err(|_| "failed to retrieve the value of GUROBI_HOME".to_string())?;
-  Ok(PathBuf::from(path))
+const LIB_NAME: &'static str = "gurobi95";
+
+#[derive(Debug)]
+enum Error {
+  DoesNotExist(PathBuf),
+  GurobiHomeNotGiven,
 }
 
-fn try_conda_env() -> Result<PathBuf, String> {
-  let path = env::var("CONDA_PREFIX")
-    .map_err(|_| "failed to retrieve the value of CONDA_PREFIX".to_string())?;
-  Ok(PathBuf::from(path))
-}
-
-fn locate_gurobi() -> PathBuf {
-  for f in &[try_gurobi_home, try_conda_env] {
-    match f() {
-      Ok(path) => {
-        if !path.exists() {
-          eprintln!("path {:?} doesn't exist, ignoring", path.into_os_string());
-          continue;
-        }
-        let path = path.canonicalize().unwrap();
-        eprintln!("found Gurobi home: {:?}", &path);
-        return path;
-      }
-      Err(e) => {
-        eprintln!("{}", e);
-      }
+impl Display for Error {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    match self {
+      Error::DoesNotExist(p) => f.write_fmt(format_args!(
+        "GUROBI_HOME is set to {:?} but {:?} does not exist (or is not a directory)",
+        p.parent().unwrap(),
+        p
+      )),
+      Error::GurobiHomeNotGiven => f.write_str("GUROBI_HOME not set"),
     }
   }
-  panic!("Unable to find Gurobi installation, try setting GUROBI_HOME")
 }
 
-fn get_gurobi_cl(gurobi_home: &PathBuf) -> PathBuf {
-  let mut gurobi_cl = gurobi_home.clone();
-  gurobi_cl.push("bin");
-  gurobi_cl.push("gurobi_cl");
-  gurobi_cl
-}
+impl std::error::Error for Error {}
 
-fn get_version_triple(gurobi_home: &PathBuf) -> (i32, i32, i32) {
-  let gurobi_cl = get_gurobi_cl(gurobi_home);
+fn try_gurobi_home() -> Result<PathBuf, Error> {
+  let path = env::var("GUROBI_HOME")
+    .map_err(|_| Error::GurobiHomeNotGiven)?;
 
-  let output = Command::new(&gurobi_cl)
-    .arg("--version")
-    .output()
-    .unwrap_or_else(|_| panic!("failed to execute {:?}", &gurobi_cl));
-  let verno: Vec<_> = String::from_utf8_lossy(&output.stdout)
-    .into_owned()
-    .split_whitespace()
-    .nth(3)
-    .expect("failed to get version string")
-    .split('.')
-    .map(|s| s.parse().expect("failed to parse version tuple"))
-    .collect();
-  (verno[0], verno[1], verno[2])
+  // You cannot unset environment variables in the config.toml so this is the next best thing.
+  if path.is_empty() {
+    return Err(Error::GurobiHomeNotGiven)
+  }
+
+  let mut path : PathBuf = path.into();
+
+  if cfg!(target_os = "windows") {
+    path.push("bin");
+  } else {
+    path.push("lib");
+  }
+
+  path.canonicalize().map_err(|_| Error::DoesNotExist(path))
 }
 
 fn main() {
-  println!("cargo:rerun-if-env-changed=DOCS_RS");
-  if let Ok(_) = std::env::var("DOCS_RS") {
-    return;
+  match try_gurobi_home() {
+    Ok(path) => println!("cargo:rustc-link-search=native={}", path.display()),
+    Err(Error::GurobiHomeNotGiven) => eprintln!("GUROBI_HOME env var not set"),
+    Err(e) => println!("cargo:warning={}", e)
   }
-
-  let gurobi_home = locate_gurobi();
-  let libpath: PathBuf = gurobi_home.join("lib");
-  let (major, minor, _) = get_version_triple(&gurobi_home);
-  let libname = format!("gurobi{}{}", major, minor);
-
-  println!("cargo:rustc-link-search=native={}", libpath.display());
-  println!("cargo:rustc-link-lib={}", libname);
+  println!("cargo:rustc-link-lib=dylib={}", LIB_NAME);
 }

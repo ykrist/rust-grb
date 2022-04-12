@@ -19,6 +19,9 @@ pub mod callback {
     pub const MIPNODE: i32 = 5;
     pub const MESSAGE: i32 = 6;
     pub const BARRIER: i32 = 7;
+    #[allow(dead_code)]
+    pub const MULTIOBJ: i32 = 8;
+    pub const IIS: i32 = 9;
 
     pub const PRE_COLDEL: i32 = 1000;
     pub const PRE_ROWDEL: i32 = 1001;
@@ -39,8 +42,7 @@ pub mod callback {
     pub const MIP_CUTCNT: i32 = 3004;
     pub const MIP_NODLFT: i32 = 3005;
     pub const MIP_ITRCNT: i32 = 3006;
-    #[allow(dead_code)]
-    pub const MIP_OBJBNDC: i32 = 3007;
+    pub const MIP_OPENSCENARIOS: i32 = 3007;
     pub const MIP_PHASE: i32 = 3008;
 
     pub const MIPSOL_SOL: i32 = 4001;
@@ -49,8 +51,7 @@ pub mod callback {
     pub const MIPSOL_OBJBND: i32 = 4004;
     pub const MIPSOL_NODCNT: i32 = 4005;
     pub const MIPSOL_SOLCNT: i32 = 4006;
-    #[allow(dead_code)]
-    pub const MIPSOL_OBJBNDC: i32 = 4007;
+    pub const MIPSOL_OPENSCENARIOS: i32 = 4007;
     pub const MIPSOL_PHASE: i32 = 4008;
 
     pub const MIPNODE_STATUS: i32 = 5001;
@@ -61,8 +62,7 @@ pub mod callback {
     pub const MIPNODE_SOLCNT: i32 = 5006;
     #[allow(dead_code)]
     pub const MIPNODE_BRVAR: i32 = 5007;
-    #[allow(dead_code)]
-    pub const MIPNODE_OBJBNDC: i32 = 5008;
+    pub const MIPNODE_OPENSCENARIOS: i32 = 5008;
     pub const MIPNODE_PHASE: i32 = 5009;
 
     pub const MSG_STRING: i32 = 6001;
@@ -74,6 +74,20 @@ pub mod callback {
     pub const BARRIER_PRIMINF: i32 = 7004;
     pub const BARRIER_DUALINF: i32 = 7005;
     pub const BARRIER_COMPL: i32 = 7006;
+
+    #[allow(dead_code)]
+    pub const MULTIOBJ_OBJCNT: i32 = 8001;
+    #[allow(dead_code)]
+    pub const MULTIOBJ_SOLCNT: i32 = 8002;
+    #[allow(dead_code)]
+    pub const MULTIOBJ_SOL: i32 = 8003;
+
+    pub const IIS_CONSTRMIN: i32 = 9001;
+    pub const IIS_CONSTRMAX: i32 = 9002;
+    pub const IIS_CONSTRGUESS: i32 = 9003;
+    pub const IIS_BOUNDMIN: i32 = 9004;
+    pub const IIS_BOUNDMAX: i32 = 9005;
+    pub const IIS_BOUNDGUESS: i32 = 9006;
 }
 
 /// Gurobi variable types (see [manual](https://www.gurobi.com/documentation/9.1/refman/variables.html))

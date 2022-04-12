@@ -135,6 +135,8 @@ fn main() -> grb::Result<()> {
                     writer.write_all(ctx.message()?.as_bytes())?;
                     writer.write_all(&[b'\n'])?;
                 }
+
+                _ => {}
             }
 
             Ok(())

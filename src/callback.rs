@@ -235,24 +235,55 @@ pub(crate) struct UserCallbackData<'a> {
     pub(crate) cb_obj: &'a mut dyn Callback,
 }
 
-// TODO add MULTIOBJ
-
 macro_rules! impl_getter {
     ($name:ident, i32, $wher:path, $what:path, $help:literal) => {
-      #[doc = $help]
-      pub fn $name(&self) -> Result<i32> {
-        self.0.get_int($wher, $what)
-      }
+        #[doc = $help]
+        pub fn $name(&self) -> Result<i32> {
+            self.0.get_int($wher, $what)
+        }
+    };
+
+    ($name:ident, i32 => $t:path, $wher:path, $what:path, $help:literal, $map:expr) => {
+        #[doc = $help]
+        pub fn $name(&self) -> Result<$t> {
+            self.0.get_int($wher, $what).map($map)
+        }
     };
 
     ($name:ident, f64, $wher:path, $what:path, $help:literal) => {
-      #[doc = $help]
-      pub fn $name(&self) -> Result<f64> {
-        self.0.get_double($wher, $what)
-      }
+        #[doc = $help]
+        pub fn $name(&self) -> Result<f64> {
+            self.0.get_double($wher, $what)
+        }
     };
 }
 
+macro_rules! impl_set_solution {
+    () => {
+        /// Provide a new feasible solution for a MIP model.  Not all variables need to be given.
+        /// The return value on success has the following meaning, depending from on the callback context:
+        ///
+        /// | Context | Possible Values | Meaning |
+        /// | --- | --- | --- |
+        /// | [`MIPNodeCtx`] | `None` | Suggested solution was not feasible. |
+        /// |              | `Some(val)` | Suggested solution was feasible, has objective value of `val`. |
+        /// | [`MIPSolCtx`] | `None` | No information |
+        /// | [`MIPCtx`] | `None` | No information |
+        ///
+        /// On success, if the solution was feasible the method returns the computed objective value,
+        /// otherwise returns `None`.
+        pub fn set_solution<I, V, T>(&self, solution: I) -> Result<Option<f64>>
+        where
+            V: Borrow<Var>,
+            T: Borrow<f64>,
+            I: IntoIterator<Item = (V, T)>,
+        {
+            self.0.set_solution(solution)
+        }
+    };
+}
+
+// TODO: add WORK; rename
 macro_rules! impl_runtime {
     () => {
         /// Retrieve the elapsed solver runtime in seconds.
@@ -270,10 +301,10 @@ macro_rules! impl_common {
         }
 
         /// Generate a request to proceed to the next phase of the computation. Note that the request is only accepted in
-        ///  a few phases of the algorithm, and it won't be acted upon immediately. 
-        /// 
+        ///  a few phases of the algorithm, and it won't be acted upon immediately.
+        ///
         /// In the current Gurobi version, this callback allows you to proceed from the NoRel heuristic to the standard MIP
-        ///  search. You can determine the current algorithm phase `ctx.proceed()` (in [`MIPCtx`], [`MIPNodeCtx`] and [`MIPSolCtx`]). 
+        ///  search. You can determine the current algorithm phase `ctx.proceed()` (in [`MIPCtx`], [`MIPNodeCtx`] and [`MIPSolCtx`]).
         pub fn proceed(&mut self) {
             self.0.proceed()
         }
@@ -325,7 +356,9 @@ impl<'a> SimplexCtx<'a> {
 pub struct MIPCtx<'a>(CbCtx<'a>);
 impl<'a> MIPCtx<'a> {
     impl_common! {}
+    impl_set_solution! {}
     impl_runtime! {}
+    impl_getter! { open_scenarios, i32, MIP, MIP_OPENSCENARIOS, "Number of scenarios that are still open in a multi-scenario model." }
     impl_getter! { obj_best, f64, MIP, MIP_OBJBST, "Current best objective." }
     impl_getter! { obj_bnd, f64, MIP, MIP_OBJBND, "Current best objective bound." }
     impl_getter! { node_cnt, f64, MIP, MIP_NODCNT, "Current explored node count." }
@@ -333,7 +366,7 @@ impl<'a> MIPCtx<'a> {
     impl_getter! { cut_cnt, i32, MIP, MIP_CUTCNT, "Current count of cutting planes applied." }
     impl_getter! { node_left, f64, MIP, MIP_NODLFT, "Current unexplored node count." }
     impl_getter! { iter_cnt, f64, MIP, MIP_ITRCNT, "Current simplex iteration count." }
-    
+
     /// Current algorithmic phase in the MIP solution
     pub fn phase(&self) -> Result<MipPhase> {
         MipPhase::from_raw(self.0.get_int(MIP, MIP_PHASE)?)
@@ -345,10 +378,10 @@ pub struct MIPSolCtx<'a>(CbCtx<'a>);
 impl<'a> MIPSolCtx<'a> {
     /// This method is a no-op. It was added to this type by mistake but is kept for backwards-compatibility.
     #[doc(hidden)]
-    #[deprecated(note="This method does nothing, use `MIPNodeCtx::add_cut` instead.")]
+    #[deprecated(note = "This method does nothing, use `MIPNodeCtx::add_cut` instead.")]
     pub fn add_cut(&self, _constr: IneqExpr) -> Result<()> {
-      eprintln!("MIPSolCtx::add_cut is a no-op, use MIPNodeCtx::add_cut instead.");
-      Ok(())
+        eprintln!("MIPSolCtx::add_cut is a no-op, use MIPNodeCtx::add_cut instead.");
+        Ok(())
     }
 
     /// Retrieve the new (integer) solution values for the given variables.  This will query the solution for ALL
@@ -362,8 +395,10 @@ impl<'a> MIPSolCtx<'a> {
     }
 
     impl_common! {}
+    impl_set_solution! {}
     impl_runtime! {}
     impl_add_lazy! {}
+    impl_getter! { open_scenarios, i32, MIPSOL, MIPSOL_OPENSCENARIOS, "Number of scenarios that are still open in a multi-scenario model." }
     impl_getter! { obj, f64, MIPSOL, MIPSOL_OBJ, "Objective value for the new solution." }
     impl_getter! { obj_best, f64, MIPSOL, MIPSOL_OBJBST, "Current best objective." }
     impl_getter! { obj_bnd, f64, MIPSOL, MIPSOL_OBJBND, "Current best objective bound." }
@@ -381,7 +416,7 @@ pub struct MIPNodeCtx<'a>(CbCtx<'a>);
 impl<'a> MIPNodeCtx<'a> {
     /// Add a new (linear) cutting plane to the MIP model.
     pub fn add_cut(&self, constr: IneqExpr) -> Result<()> {
-      self.0.add_cut(constr)
+        self.0.add_cut(constr)
     }
 
     /// Optimization status of current MIP node.
@@ -401,27 +436,16 @@ impl<'a> MIPNodeCtx<'a> {
         self.0.get_node_rel(vars)
     }
 
-    /// Provide a new feasible solution for a MIP model.  Not all variables need to be given.
-    ///
-    /// On success, if the solution was feasible the method returns the computed objective value,
-    /// otherwise returns `None`.
-    pub fn set_solution<I, V, T>(&self, solution: I) -> Result<Option<f64>>
-    where
-        V: Borrow<Var>,
-        T: Borrow<f64>,
-        I: IntoIterator<Item = (V, T)>,
-    {
-        self.0.set_solution(solution)
-    }
-
     /// Current algorithmic phase in the MIP solution
     pub fn phase(&self) -> Result<MipPhase> {
         MipPhase::from_raw(self.0.get_int(MIPNODE, MIPNODE_PHASE)?)
     }
 
+    impl_set_solution! {}
     impl_common! {}
     impl_runtime! {}
     impl_add_lazy! {}
+    impl_getter! { open_scenarios, i32, MIPNODE, MIPNODE_OPENSCENARIOS, "Number of scenarios that are still open in a multi-scenario model." }
     impl_getter! { obj_best, f64, MIPNODE, MIPNODE_OBJBST, "Current best objective." }
     impl_getter! { obj_bnd, f64, MIPNODE, MIPNODE_OBJBND, "Current best objective bound." }
     impl_getter! { node_cnt, f64, MIPNODE, MIPNODE_NODCNT, "Current explored node count." }
@@ -454,8 +478,37 @@ impl<'a> BarrierCtx<'a> {
     impl_getter! { compl_viol, f64, BARRIER, BARRIER_COMPL, "Complementarity violation for current barrier iterate." }
 }
 
+fn negative_int_to_none(val: i32) -> Option<u32> {
+    if val < 0 {
+        None
+    } else {
+        Some(val as u32)
+    }
+}
+
+/// Callback context object during [`IIS`](https://www.gurobi.com/documentation/9.5/refman/cb_codes.html).
+pub struct IISCtx<'a>(CbCtx<'a>);
+impl<'a> IISCtx<'a> {
+    impl_common! {}
+    impl_runtime! {}
+    impl_getter! { constr_min, i32, IIS, IIS_CONSTRMIN, "Minimum number of constraints in the IIS."}
+    impl_getter! { constr_max, i32, IIS, IIS_CONSTRMAX, "Maximum number of constraints in the IIS."}
+    impl_getter! { constr_guess, i32 => Option<u32>, IIS, IIS_CONSTRGUESS,
+        "Estimated number of constraints in the IIS.",
+        negative_int_to_none
+    }
+    impl_getter! { bound_min, i32, IIS, IIS_BOUNDMIN, "Minimum number of variable bounds in the IIS."}
+    impl_getter! { bound_max, i32, IIS, IIS_BOUNDMAX, "Maximum number of variable bounds in the IIS."}
+    impl_getter! { bound_guess, i32 => Option<u32>, IIS, IIS_BOUNDGUESS,
+        "Estimated number of variable bounds in the IIS.",
+        negative_int_to_none
+    }
+}
+
+/// TODO: (medium) add MultiObj ctx
 /// The argument given to callbacks.
 #[allow(missing_docs)]
+#[non_exhaustive]
 pub enum Where<'a> {
     Polling(PollingCtx<'a>),
     PreSolve(PreSolveCtx<'a>),
@@ -465,8 +518,10 @@ pub enum Where<'a> {
     MIPNode(MIPNodeCtx<'a>),
     Message(MessageCtx<'a>),
     Barrier(BarrierCtx<'a>),
+    IIS(IISCtx<'a>),
 }
 
+//
 impl Where<'_> {
     fn new<'a>(ctx: CbCtx<'a>) -> Result<Where<'a>> {
         let w = match ctx.where_raw {
@@ -478,6 +533,7 @@ impl Where<'_> {
             MIPSOL => Where::MIPSol(MIPSolCtx(ctx)),
             MESSAGE => Where::Message(MessageCtx(ctx)),
             BARRIER => Where::Barrier(BarrierCtx(ctx)),
+            IIS => Where::IIS(IISCtx(ctx)),
             _ => {
                 return Err(Error::NotYetSupported(format!("WHERE = {}", ctx.where_raw)));
             }
@@ -541,7 +597,7 @@ impl<'a> CbCtx<'a> {
         }
     }
 
-    /// Retreive node relaxation solution values at the current node.
+    /// Retrieve node relaxation solution values at the current node.
     pub fn get_node_rel<I, V>(&self, vars: I) -> Result<Vec<f64>>
     where
         V: Borrow<Var>,
@@ -584,7 +640,13 @@ impl<'a> CbCtx<'a> {
             ffi::GRBcbsolution(self.cbdata, soln.as_ptr(), &mut obj as *mut raw::c_double)
         })?;
 
-        Ok(if obj == INFINITY { None } else { Some(obj) })
+        let obj = if obj == INFINITY || obj == GRB_UNDEFINED {
+            None
+        } else {
+            Some(obj)
+        };
+
+        Ok(obj)
     }
 
     /// Retrieve the elapsed solver runtime in seconds.

@@ -11,9 +11,9 @@ This crate supports Gurobi 9.5
 Before using this crate, you should install Gurobi and obtain a [license](http://www.gurobi.com/downloads/licenses/license-center).
 
 ### Building
-In this section, it is assumed Gurobi is install at `/opt/gurobi/linux64`.
+In this section, it is assumed Gurobi is installed at `/opt/gurobi/linux64`.
 
-It is recommended you use the environment variables for you system's linker to ensure Gurobi can be found.
+It is recommended you use the environment variables for your system's linker to ensure Gurobi can be found.
 For example, on Linux systems this can be done by appending the path to the `lib` subfolder of the gurobi installation to `LIBRARY_PATH`.   For example, put
 
 ```base

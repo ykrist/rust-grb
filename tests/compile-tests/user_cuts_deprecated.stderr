@@ -1,11 +1,11 @@
-error: use of deprecated associated function `grb::callback::MIPSolCtx::<'a>::add_cut`: This method does nothing, use `MIPNodeCtx::add_cut` instead.
-  --> $DIR/user_cuts_deprecated.rs:10:13
-   |
-10 |         ctx.add_cut(c!(0 == 0))?;
-   |             ^^^^^^^
-   |
+error: use of deprecated method `grb::callback::MIPSolCtx::<'a>::add_cut`: This method does nothing, use `MIPNodeCtx::add_cut` instead.
+ --> tests/compile-tests/user_cuts_deprecated.rs:9:17
+  |
+9 |             ctx.add_cut(c!(0 == 0))?;
+  |                 ^^^^^^^
+  |
 note: the lint level is defined here
-  --> $DIR/user_cuts_deprecated.rs:1:9
-   |
-1  | #![deny(deprecated)]
-   |         ^^^^^^^^^^
+ --> tests/compile-tests/user_cuts_deprecated.rs:1:9
+  |
+1 | #![deny(deprecated)]
+  |         ^^^^^^^^^^

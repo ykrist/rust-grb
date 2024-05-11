@@ -26,7 +26,7 @@ grb-macro = "0.1.0"
 
 [dev-dependencies]
 proptest = "^0.10"
-trybuild = "^1.0"
+trybuild = "^1.0.64"
 gag = "^0.1"
 
 [build-dependencies]

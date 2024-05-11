@@ -16,3 +16,4 @@ set_doc_window_id.sh
 src/attribute/attr_enums.rs
 src/parameter/param_enums.rs
 env/
+env.sh

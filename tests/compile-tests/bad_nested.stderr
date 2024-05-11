@@ -1,21 +1,21 @@
 error: expression should be a ==, >= or <= comparison
- --> $DIR/bad_nested.rs:7:6
+ --> tests/compile-tests/bad_nested.rs:7:8
   |
-7 |   c!(x + y - (4 >= 1 - z));
-  |      ^^^^^^^^^^^^^^^^^^^^
+7 |     c!(x + y - (4 >= 1 - z));
+  |        ^^^^^^^^^^^^^^^^^^^^
 
 error[E0369]: binary operation `==` cannot be applied to type `Expr`
- --> $DIR/bad_nested.rs:6:12
+ --> tests/compile-tests/bad_nested.rs:6:14
   |
-6 |   c!(x + y == 2 == 1 - z);
-  |      ----- ^^ - {integer}
-  |      |
-  |      Expr
+6 |     c!(x + y == 2 == 1 - z);
+  |        ----- ^^ - {integer}
+  |        |
+  |        Expr
 
 error[E0369]: binary operation `>=` cannot be applied to type `Expr`
- --> $DIR/bad_nested.rs:8:12
+ --> tests/compile-tests/bad_nested.rs:8:14
   |
-8 |   c!(x + y >= 1 - z >= 43);
-  |      ----- ^^ ----- _
-  |      |
-  |      Expr
+8 |     c!(x + y >= 1 - z >= 43);
+  |        ----- ^^ ----- _
+  |        |
+  |        Expr

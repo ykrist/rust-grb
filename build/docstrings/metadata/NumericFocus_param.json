@@ -1,6 +1,6 @@
 {
   "name": "NumericFocus",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/numericfocus.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/numericfocus.html",
   "dtype": "int",
   "default": "0",
   "min": "0",

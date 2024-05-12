@@ -1,6 +1,6 @@
 {
   "name": "ScenarioNumber",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/scenarionumber.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/scenarionumber.html",
   "dtype": "int",
   "default": "0",
   "min": "0",

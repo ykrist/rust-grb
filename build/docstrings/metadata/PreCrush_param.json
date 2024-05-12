@@ -1,6 +1,6 @@
 {
   "name": "PreCrush",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/precrush.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/precrush.html",
   "dtype": "int",
   "default": "0",
   "min": "0",

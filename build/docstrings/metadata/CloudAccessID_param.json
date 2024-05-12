@@ -1,6 +1,6 @@
 {
   "name": "CloudAccessID",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/cloudaccessid.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/cloudaccessid.html",
   "dtype": "str",
   "default": "\"\""
 }

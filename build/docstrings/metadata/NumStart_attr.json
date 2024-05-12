@@ -1,6 +1,6 @@
 {
   "name": "NumStart",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/numstart.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/numstart.html",
   "dtype": "int",
   "otype": "model",
   "modifiable": true

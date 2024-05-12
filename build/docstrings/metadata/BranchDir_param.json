@@ -1,6 +1,6 @@
 {
   "name": "BranchDir",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/branchdir.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/branchdir.html",
   "dtype": "int",
   "default": "0",
   "min": "-1",

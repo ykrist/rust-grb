@@ -1,6 +1,6 @@
 {
   "name": "UpdateMode",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/updatemode.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/updatemode.html",
   "dtype": "int",
   "default": "1",
   "min": "0",

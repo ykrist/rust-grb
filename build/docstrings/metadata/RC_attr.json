@@ -1,6 +1,6 @@
 {
   "name": "RC",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/rc.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/rc.html",
   "dtype": "dbl",
   "otype": "var",
   "modifiable": false

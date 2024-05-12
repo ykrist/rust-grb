@@ -1,6 +1,6 @@
 {
   "name": "AggFill",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/aggfill.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/aggfill.html",
   "dtype": "int",
   "default": "-1",
   "min": "-1",

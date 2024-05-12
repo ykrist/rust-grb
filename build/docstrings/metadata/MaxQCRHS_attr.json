@@ -1,6 +1,6 @@
 {
   "name": "MaxQCRHS",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/maxqcrhs.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/maxqcrhs.html",
   "dtype": "dbl",
   "otype": "model",
   "modifiable": false

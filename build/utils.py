@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 
 CACHE_DIR = Path("cache")
 
-GUROBI_REF_MAN_URL = urllib.parse.urlparse('https://www.gurobi.com/documentation/9.5/refman/')
+GUROBI_REF_MAN_URL = urllib.parse.urlparse('https://www.gurobi.com/documentation/11.0/refman/')
 DOC_REMOVE = [
     r"For examples of how to query or modify parameter values from our different APIs, refer to our Parameter Examples.",
     r"For examples of how to query or modify attributes, refer to our Attribute Examples.",
@@ -67,9 +67,8 @@ async def fetch_parameter_data(session: aiohttp.ClientSession, name: str, path: 
     soup = BeautifulSoup(doc, 'html.parser')
     replace_images_with_alt(soup)
 
-    table = soup.find("table")
+    table = soup.find("div", class_="documentation__content").find("table")
     data = {"name": name, "url": get_url(path) }
-
     ty = table.find(string="Type:", recursive=True).parent.parent.find_next_sibling('td').text
     data['ty'] = ty
     data['dtype'] = _DTYPES[ty]
@@ -103,9 +102,10 @@ async def fetch_attribute_data(session: aiohttp.ClientSession, name: str, path: 
     soup = BeautifulSoup(doc, 'html.parser')
     replace_images_with_alt(soup)
 
-    table = soup.find("table")
-    data = {"name": name, "url": get_url(path) }
+    table = soup.find("div", class_="documentation__content").find("table")
 
+    data = {"name": name, "url": get_url(path) }
+    
     ty = table.find(string="Type:", recursive=True).parent.parent.find_next_sibling('td').text
     mod = table.find(string="Modifiable:", recursive=True).parent.parent.find_next_sibling('td').text
     object_ty = table.parent\
@@ -138,7 +138,6 @@ async def fetch_attribute_list(session: aiohttp.ClientSession):
         if 'Attributes' in i.text or 'Examples' in i.text:
             continue
         attrlist[i.text] = i.attrs['href']
-
     return attrlist
 
 def http_session():

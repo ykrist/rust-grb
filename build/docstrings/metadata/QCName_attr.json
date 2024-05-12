@@ -1,6 +1,6 @@
 {
   "name": "QCName",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/qcname.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/qcname.html",
   "dtype": "str",
   "otype": "qconstr",
   "modifiable": true

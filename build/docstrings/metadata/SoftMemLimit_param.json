@@ -1,0 +1,8 @@
+{
+  "name": "SoftMemLimit",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/softmemlimit.html",
+  "dtype": "dbl",
+  "default": "Infinity",
+  "min": "0",
+  "max": "Infinity"
+}

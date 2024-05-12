@@ -1,6 +1,6 @@
 {
   "name": "UB",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/ub.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/ub.html",
   "dtype": "dbl",
   "otype": "var",
   "modifiable": true

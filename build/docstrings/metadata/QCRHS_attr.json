@@ -1,6 +1,6 @@
 {
   "name": "QCRHS",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/qcrhs.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/qcrhs.html",
   "dtype": "dbl",
   "otype": "qconstr",
   "modifiable": true

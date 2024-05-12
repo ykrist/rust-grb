@@ -1,6 +1,6 @@
 {
   "name": "ScenNX",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/scennx.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/scennx.html",
   "dtype": "dbl",
   "otype": "model",
   "modifiable": false

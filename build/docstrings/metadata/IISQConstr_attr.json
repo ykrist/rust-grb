@@ -1,6 +1,6 @@
 {
   "name": "IISQConstr",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/iisqconstr.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/iisqconstr.html",
   "dtype": "int",
   "otype": "qconstr",
   "modifiable": false

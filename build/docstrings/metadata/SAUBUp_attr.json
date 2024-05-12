@@ -1,6 +1,6 @@
 {
   "name": "SAUBUp",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/saubup.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/saubup.html",
   "dtype": "dbl",
   "otype": "var",
   "modifiable": false

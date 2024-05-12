@@ -1,6 +1,6 @@
 {
   "name": "LogFile",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/logfile.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/logfile.html",
   "dtype": "str",
   "default": "\"\""
 }

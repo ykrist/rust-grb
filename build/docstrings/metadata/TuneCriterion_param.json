@@ -1,6 +1,6 @@
 {
   "name": "TuneCriterion",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/tunecriterion.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/tunecriterion.html",
   "dtype": "int",
   "default": "-1",
   "min": "-1",

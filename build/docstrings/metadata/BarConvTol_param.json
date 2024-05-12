@@ -1,6 +1,6 @@
 {
   "name": "BarConvTol",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/barconvtol.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/barconvtol.html",
   "dtype": "dbl",
   "default": "1e-8",
   "min": "0.0",

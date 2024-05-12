@@ -1,3 +1,4 @@
 cache/
 debug.rs
 __pycache__
+venv

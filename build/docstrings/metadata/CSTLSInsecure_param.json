@@ -1,6 +1,6 @@
 {
   "name": "CSTLSInsecure",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/cstlsinsecure.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/cstlsinsecure.html",
   "dtype": "int",
   "default": "0",
   "min": "0",

@@ -1,6 +1,6 @@
 {
   "name": "CutAggPasses",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/cutaggpasses.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/cutaggpasses.html",
   "dtype": "int",
   "default": "-1",
   "min": "-1",

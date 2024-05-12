@@ -48,7 +48,7 @@ async def main():
 
     async with http_session() as session:
         parameters, attributes = await asyncio.gather(fetch_parameter_list(session), fetch_attribute_list(session))
-
+        
         await print_missing(session, "parameter", parameters, implemented_parameters)
         await print_missing(session, "attribute", attributes, implemented_attributes)
 

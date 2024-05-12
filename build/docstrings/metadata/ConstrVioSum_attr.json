@@ -1,6 +1,6 @@
 {
   "name": "ConstrVioSum",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/constrviosum.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/constrviosum.html",
   "dtype": "dbl",
   "otype": "model",
   "modifiable": false

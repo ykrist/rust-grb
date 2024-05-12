@@ -1,6 +1,6 @@
 {
   "name": "NumBinVars",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/numbinvars.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/numbinvars.html",
   "dtype": "int",
   "otype": "model",
   "modifiable": false

@@ -1,6 +1,6 @@
 {
   "name": "FuncPieceRatio",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/funcpieceratio2.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/funcpieceratio2.html",
   "dtype": "dbl",
   "default": "-1",
   "min": "-1",

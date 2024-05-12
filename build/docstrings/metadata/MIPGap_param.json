@@ -1,6 +1,6 @@
 {
   "name": "MIPGap",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/mipgap2.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/mipgap2.html",
   "dtype": "dbl",
   "default": "1e-4",
   "min": "0",

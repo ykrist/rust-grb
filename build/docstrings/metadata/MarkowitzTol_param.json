@@ -1,6 +1,6 @@
 {
   "name": "MarkowitzTol",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/markowitztol.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/markowitztol.html",
   "dtype": "dbl",
   "default": "0.0078125",
   "min": "1e-4",

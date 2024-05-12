@@ -1,6 +1,6 @@
 {
   "name": "SAObjUp",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/saobjup.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/saobjup.html",
   "dtype": "dbl",
   "otype": "var",
   "modifiable": false

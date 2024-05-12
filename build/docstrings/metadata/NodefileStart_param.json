@@ -1,6 +1,6 @@
 {
   "name": "NodefileStart",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/nodefilestart.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/nodefilestart.html",
   "dtype": "dbl",
   "default": "Infinity",
   "min": "0",

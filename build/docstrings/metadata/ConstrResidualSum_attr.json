@@ -1,6 +1,6 @@
 {
   "name": "ConstrResidualSum",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/constrresidualsum.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/constrresidualsum.html",
   "dtype": "dbl",
   "otype": "model",
   "modifiable": false

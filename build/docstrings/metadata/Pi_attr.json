@@ -1,6 +1,6 @@
 {
   "name": "Pi",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/pi.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/pi.html",
   "dtype": "dbl",
   "otype": "constr",
   "modifiable": false

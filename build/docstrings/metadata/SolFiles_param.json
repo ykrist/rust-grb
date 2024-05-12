@@ -1,6 +1,6 @@
 {
   "name": "SolFiles",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/solfiles.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/solfiles.html",
   "dtype": "str",
   "default": "\"\""
 }

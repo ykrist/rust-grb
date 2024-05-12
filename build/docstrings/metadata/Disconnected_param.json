@@ -1,6 +1,6 @@
 {
   "name": "Disconnected",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/disconnected.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/disconnected.html",
   "dtype": "int",
   "default": "-1",
   "min": "-1",

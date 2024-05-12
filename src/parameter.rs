@@ -1,5 +1,5 @@
 #![allow(clippy::missing_safety_doc)]
-//! Gurobi parameters for [`Env`](crate::Env)  and [`Model`](crate::Model) objects.  See the
+//! Gurobi parameters for [`Env`]  and [`Model`](crate::Model) objects.  See the
 //! [manual](https://www.gurobi.com/documentation/9.1/refman/parameters.html) for a list
 //! of parameters and their uses.
 use grb_sys2 as ffi;
@@ -22,14 +22,14 @@ pub use param_enums::variant_exports as param;
 use crate::constants::GRB_MAX_STRLEN;
 use cstr_enum::AsCStr;
 
-/// A queryable Gurobi parameter for a [`Model`](crate::Model) or [`Env`](crate::Env)
+/// A queryable Gurobi parameter for a [`Model`](crate::Model) or [`Env`]
 pub trait ParamGet<V> {
     /// This parameter's value type (string, double, int, char)
     /// Query a parameter from an environment
     fn get(&self, env: &Env) -> Result<V>;
 }
 
-/// A modifiable Gurobi parameter for a [`Model`](crate::Model) or [`Env`](crate::Env)
+/// A modifiable Gurobi parameter for a [`Model`](crate::Model) or [`Env`]
 pub trait ParamSet<V> {
     /// Set a parameter on an environment
     fn set(&self, env: &mut Env, value: V) -> Result<()>;

@@ -1,6 +1,6 @@
 {
   "name": "PoolIgnore",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/poolignore.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/poolignore.html",
   "dtype": "int",
   "otype": "var",
   "modifiable": true

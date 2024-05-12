@@ -1,6 +1,6 @@
 {
   "name": "PoolObjBound",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/poolobjbound.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/poolobjbound.html",
   "dtype": "dbl",
   "otype": "model",
   "modifiable": false

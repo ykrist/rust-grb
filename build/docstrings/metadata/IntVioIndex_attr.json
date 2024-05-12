@@ -1,6 +1,6 @@
 {
   "name": "IntVioIndex",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/intvioindex.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/intvioindex.html",
   "dtype": "int",
   "otype": "model",
   "modifiable": false

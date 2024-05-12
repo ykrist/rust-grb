@@ -1,6 +1,6 @@
 {
   "name": "IntegralityFocus",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/integralityfocus.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/integralityfocus.html",
   "dtype": "int",
   "default": "0",
   "min": "0",

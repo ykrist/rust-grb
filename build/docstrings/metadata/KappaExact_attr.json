@@ -1,6 +1,6 @@
 {
   "name": "KappaExact",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/kappaexact.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/kappaexact.html",
   "dtype": "dbl",
   "otype": "model",
   "modifiable": false

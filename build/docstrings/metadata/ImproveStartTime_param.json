@@ -1,6 +1,6 @@
 {
   "name": "ImproveStartTime",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/improvestarttime.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/improvestarttime.html",
   "dtype": "dbl",
   "default": "Infinity",
   "min": "0.0",

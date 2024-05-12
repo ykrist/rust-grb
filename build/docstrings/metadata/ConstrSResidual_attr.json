@@ -1,6 +1,6 @@
 {
   "name": "ConstrSResidual",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/constrsresidual.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/constrsresidual.html",
   "dtype": "dbl",
   "otype": "model",
   "modifiable": false

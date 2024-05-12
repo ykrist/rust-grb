@@ -1,6 +1,6 @@
 {
   "name": "NumVars",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/numvars.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/numvars.html",
   "dtype": "int",
   "otype": "model",
   "modifiable": false

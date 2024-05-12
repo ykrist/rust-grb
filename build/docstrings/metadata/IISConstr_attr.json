@@ -1,6 +1,6 @@
 {
   "name": "IISConstr",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/iisconstr.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/iisconstr.html",
   "dtype": "int",
   "otype": "constr",
   "modifiable": false

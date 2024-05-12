@@ -1,6 +1,6 @@
 {
   "name": "IISUB",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/iisub.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/iisub.html",
   "dtype": "int",
   "otype": "var",
   "modifiable": false

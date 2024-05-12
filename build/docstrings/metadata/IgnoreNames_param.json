@@ -1,6 +1,6 @@
 {
   "name": "IgnoreNames",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/ignorenames.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/ignorenames.html",
   "dtype": "int",
   "default": "0",
   "min": "0",

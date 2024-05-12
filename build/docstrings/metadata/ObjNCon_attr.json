@@ -1,6 +1,6 @@
 {
   "name": "ObjNCon",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/objncon.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/objncon.html",
   "dtype": "dbl",
   "otype": "model",
   "modifiable": true

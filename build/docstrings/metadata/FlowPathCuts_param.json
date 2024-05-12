@@ -1,6 +1,6 @@
 {
   "name": "FlowPathCuts",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/flowpathcuts.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/flowpathcuts.html",
   "dtype": "int",
   "default": "-1",
   "min": "-1",

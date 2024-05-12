@@ -1,6 +1,6 @@
 {
   "name": "DualSVioIndex",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/dualsvioindex.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/dualsvioindex.html",
   "dtype": "int",
   "otype": "model",
   "modifiable": false

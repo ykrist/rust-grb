@@ -1,6 +1,6 @@
 {
   "name": "IntVio",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/intvio.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/intvio.html",
   "dtype": "dbl",
   "otype": "model",
   "modifiable": false

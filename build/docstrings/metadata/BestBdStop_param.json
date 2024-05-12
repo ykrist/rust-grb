@@ -1,6 +1,6 @@
 {
   "name": "BestBdStop",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/bestbdstop.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/bestbdstop.html",
   "dtype": "dbl",
   "default": "Infinity",
   "min": "-Infinity",

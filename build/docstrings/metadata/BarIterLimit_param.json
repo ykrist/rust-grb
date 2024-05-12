@@ -1,6 +1,6 @@
 {
   "name": "BarIterLimit",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/bariterlimit.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/bariterlimit.html",
   "dtype": "int",
   "default": "1000",
   "min": "0",

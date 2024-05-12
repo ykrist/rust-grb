@@ -1,6 +1,6 @@
 {
   "name": "MaxQCLCoeff",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/maxqclcoeff.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/maxqclcoeff.html",
   "dtype": "dbl",
   "otype": "model",
   "modifiable": false

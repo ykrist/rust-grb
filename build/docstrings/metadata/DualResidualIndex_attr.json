@@ -1,6 +1,6 @@
 {
   "name": "DualResidualIndex",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/dualresidualindex.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/dualresidualindex.html",
   "dtype": "int",
   "otype": "model",
   "modifiable": false

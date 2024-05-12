@@ -1,6 +1,6 @@
 {
   "name": "BoundVioIndex",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/boundvioindex.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/boundvioindex.html",
   "dtype": "int",
   "otype": "model",
   "modifiable": false

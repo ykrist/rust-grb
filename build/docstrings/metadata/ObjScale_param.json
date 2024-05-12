@@ -1,6 +1,6 @@
 {
   "name": "ObjScale",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/objscale.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/objscale.html",
   "dtype": "dbl",
   "default": "0.0",
   "min": "-1",

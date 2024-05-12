@@ -1,6 +1,6 @@
 {
   "name": "FuncMaxVal",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/funcmaxval.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/funcmaxval.html",
   "dtype": "dbl",
   "default": "1e+6",
   "min": "0",

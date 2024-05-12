@@ -6,7 +6,7 @@ Benchmarks:
 
 - Batch add var/constr, set/get attribute methods: are they even worth supporting?
 
-For v2.0:
+For next major release:
 
 - Replace `c_char` in public interface with `char`
 - Rework attributes/parameters, one type per attribute/parameter instead of enums
@@ -14,15 +14,13 @@ For v2.0:
   - Will simplify the codegen and exports, and hopefully make lints/IDE hints better
   - Completely static checking
 
-- Rename `param::Undocumented` to `param::Parameter`
-- Add a `attr::Attribute` (analogous to `param::Undocumented`).
+- Add a `attr::Attribute` (analogous to `param::Parameter`).
 - Implement `From<param::ParamStruct>` for `param::Parameter`, same for attributes.
 - Basic Serde support for dynamic parameters and attributes (feature gated)
 
 Sys crate:
 
 - Opaque types like`Model` should be declared with a zero-variant enum, not struct.
-- Look into using pkg-config to locate `libgurobi`.
 
 Future Ideas:
 

@@ -1,6 +1,6 @@
 {
   "name": "PreSOS1BigM",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/presos1bigm.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/presos1bigm.html",
   "dtype": "dbl",
   "default": "-1",
   "min": "-1",

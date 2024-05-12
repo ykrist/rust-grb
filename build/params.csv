@@ -177,3 +177,12 @@ WLSSecret,str
 WLSToken,str
 WLSTokenDuration,int
 WorkLimit,dbl
+SoftMemLimit,dbl
+NetworkAlg,int
+OBBT,int
+SolutionTarget,int
+WLSTokenRefresh,dbl
+FuncNonlinear,int
+MixingCuts,int
+TuneDynamicJobs,int
+ConcurrentMethod,int

@@ -1,6 +1,6 @@
 {
   "name": "MIRCuts",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/mircuts.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/mircuts.html",
   "dtype": "int",
   "default": "-1",
   "min": "-1",

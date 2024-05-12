@@ -1,6 +1,6 @@
 {
   "name": "ScaleFlag",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/scaleflag.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/scaleflag.html",
   "dtype": "int",
   "default": "-1",
   "min": "-1",

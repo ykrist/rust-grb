@@ -1,6 +1,6 @@
 {
   "name": "PoolGapAbs",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/poolgapabs.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/poolgapabs.html",
   "dtype": "dbl",
   "default": "Infinity",
   "min": "0",

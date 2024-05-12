@@ -1,6 +1,6 @@
 {
   "name": "NormAdjust",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/normadjust.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/normadjust.html",
   "dtype": "int",
   "default": "-1",
   "min": "-1",

@@ -1,6 +1,6 @@
 {
   "name": "IISLBForce",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/iislbforce.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/iislbforce.html",
   "dtype": "int",
   "otype": "var",
   "modifiable": true

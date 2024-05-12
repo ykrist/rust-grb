@@ -1,6 +1,6 @@
 {
   "name": "IntFeasTol",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/intfeastol.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/intfeastol.html",
   "dtype": "dbl",
   "default": "1e-5",
   "min": "1e-9",

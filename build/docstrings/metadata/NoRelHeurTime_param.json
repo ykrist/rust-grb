@@ -1,6 +1,6 @@
 {
   "name": "NoRelHeurTime",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/norelheurtime.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/norelheurtime.html",
   "dtype": "dbl",
   "default": "0",
   "min": "0",

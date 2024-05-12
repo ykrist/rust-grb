@@ -1,8 +1,8 @@
 {
   "name": "Aggregate",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/aggregate.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/aggregate.html",
   "dtype": "int",
   "default": "1",
   "min": "0",
-  "max": "1"
+  "max": "2"
 }

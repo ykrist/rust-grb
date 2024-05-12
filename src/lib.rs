@@ -57,7 +57,7 @@
 //! Due to the nature of C APIs, almost every Gurobi routine can return an error.  Unless otherwise stated,
 //! if a method or function returns a [`Result`], the error will be [`Error::FromAPI`].
 #![warn(missing_docs)]
-#![warn(missing_crate_level_docs)]
+#![warn(rustdoc::missing_crate_level_docs)]
 // TODO: fix the doc links to reference the 9.5 manual
 use grb_sys2 as ffi;
 

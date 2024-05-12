@@ -1,6 +1,6 @@
 {
   "name": "QCPDual",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/qcpdual.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/qcpdual.html",
   "dtype": "int",
   "default": "0",
   "min": "0",

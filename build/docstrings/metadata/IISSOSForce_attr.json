@@ -1,6 +1,6 @@
 {
   "name": "IISSOSForce",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/iissosforce.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/iissosforce.html",
   "dtype": "int",
   "otype": "sos",
   "modifiable": true

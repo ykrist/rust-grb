@@ -1,6 +1,6 @@
 {
   "name": "TuneCleanup",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/tunecleanup.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/tunecleanup.html",
   "dtype": "dbl",
   "default": "0.0",
   "min": "0.0",

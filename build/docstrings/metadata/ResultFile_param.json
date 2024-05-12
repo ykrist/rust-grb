@@ -1,6 +1,6 @@
 {
   "name": "ResultFile",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/resultfile.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/resultfile.html",
   "dtype": "str",
   "default": "\"\""
 }

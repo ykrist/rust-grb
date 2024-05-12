@@ -1,0 +1,8 @@
+{
+  "name": "TuneDynamicJobs",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/tunedynamicjobs.html",
+  "dtype": "int",
+  "default": "0",
+  "min": "-1",
+  "max": "MAXINT"
+}

@@ -1,6 +1,6 @@
 {
   "name": "DualSVio",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/dualsvio.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/dualsvio.html",
   "dtype": "dbl",
   "otype": "model",
   "modifiable": false

@@ -1,6 +1,6 @@
 {
   "name": "BoundVio",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/boundvio.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/boundvio.html",
   "dtype": "dbl",
   "otype": "model",
   "modifiable": false

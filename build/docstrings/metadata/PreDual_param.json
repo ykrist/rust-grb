@@ -1,6 +1,6 @@
 {
   "name": "PreDual",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/predual.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/predual.html",
   "dtype": "int",
   "default": "-1",
   "min": "-1",

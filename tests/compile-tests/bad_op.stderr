@@ -1,17 +1,17 @@
 error: expression should be a ==, >= or <= comparison
- --> $DIR/bad_op.rs:6:6
+ --> tests/compile-tests/bad_op.rs:6:8
   |
-6 |   c!(x + y + 2*z + 1);
-  |      ^^^^^^^^^^^^^^^
+6 |     c!(x + y + 2 * z + 1);
+  |        ^^^^^^^^^^^^^^^^^
 
 error: expression should be a ==, >= or <= comparison
- --> $DIR/bad_op.rs:7:6
+ --> tests/compile-tests/bad_op.rs:7:8
   |
-7 |   c!(2*z);
-  |      ^^^
+7 |     c!(2 * z);
+  |        ^^^^^
 
 error: expression should be a ==, >= or <= comparison
- --> $DIR/bad_op.rs:8:6
+ --> tests/compile-tests/bad_op.rs:8:8
   |
-8 |   c!(2/z);
-  |      ^^^
+8 |     c!(2 / z);
+  |        ^^^^^

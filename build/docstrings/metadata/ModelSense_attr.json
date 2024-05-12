@@ -1,6 +1,6 @@
 {
   "name": "ModelSense",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/modelsense.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/modelsense.html",
   "dtype": "int",
   "otype": "model",
   "modifiable": true

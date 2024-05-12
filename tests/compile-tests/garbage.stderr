@@ -1,31 +1,34 @@
 error[E0277]: the trait bound `Expr: From<bool>` is not satisfied
- --> $DIR/garbage.rs:7:6
+ --> tests/compile-tests/garbage.rs:7:8
   |
-7 |   c!(x + y + 2*z + 1 <= 0 in 1..0);
-  |      ^ the trait `From<bool>` is not implemented for `Expr`
+7 |     c!(x + y + 2*z + 1 <= 0 in 1..0);
+  |        ^ the trait `From<bool>` is not implemented for `Expr`
   |
-  = help: the following implementations were found:
-            <Expr as From<&T>>
-            <Expr as From<LinExpr>>
-            <Expr as From<QuadExpr>>
-            <Expr as From<Var>>
-          and 12 others
-  = note: required by `from`
+  = help: the following other types implement trait `From<T>`:
+            <Expr as From<isize>>
+            <Expr as From<i8>>
+            <Expr as From<i16>>
+            <Expr as From<i32>>
+            <Expr as From<i64>>
+            <Expr as From<usize>>
+            <Expr as From<u8>>
+            <Expr as From<u16>>
+          and 8 others
 
 error[E0605]: non-primitive cast: `Var` as `f64`
- --> $DIR/garbage.rs:8:18
+ --> tests/compile-tests/garbage.rs:8:20
   |
-8 |   c!(z + y in 0..z);
-  |                  ^ an `as` expression can only be used to convert between primitive types or to coerce to a specific trait object
+8 |     c!(z + y in 0..z);
+  |                    ^ an `as` expression can only be used to convert between primitive types or to coerce to a specific trait object
 
 error[E0605]: non-primitive cast: `Var` as `f64`
-  --> $DIR/garbage.rs:10:14
+  --> tests/compile-tests/garbage.rs:10:16
    |
-10 |   c!(y in x..z);
-   |              ^ an `as` expression can only be used to convert between primitive types or to coerce to a specific trait object
+10 |     c!(y in x..z);
+   |                ^ an `as` expression can only be used to convert between primitive types or to coerce to a specific trait object
 
 error[E0605]: non-primitive cast: `Var` as `f64`
-  --> $DIR/garbage.rs:10:11
+  --> tests/compile-tests/garbage.rs:10:13
    |
-10 |   c!(y in x..z);
-   |           ^ an `as` expression can only be used to convert between primitive types or to coerce to a specific trait object
+10 |     c!(y in x..z);
+   |             ^ an `as` expression can only be used to convert between primitive types or to coerce to a specific trait object

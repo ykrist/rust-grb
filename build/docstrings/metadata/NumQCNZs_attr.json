@@ -1,6 +1,6 @@
 {
   "name": "NumQCNZs",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/numqcnzs.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/numqcnzs.html",
   "dtype": "int",
   "otype": "model",
   "modifiable": false

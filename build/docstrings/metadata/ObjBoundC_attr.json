@@ -1,6 +1,6 @@
 {
   "name": "ObjBoundC",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/objboundc.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/objboundc.html",
   "dtype": "dbl",
   "otype": "model",
   "modifiable": false

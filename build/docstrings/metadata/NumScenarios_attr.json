@@ -1,6 +1,6 @@
 {
   "name": "NumScenarios",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/numscenarios.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/numscenarios.html",
   "dtype": "int",
   "otype": "model",
   "modifiable": true

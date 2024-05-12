@@ -1,6 +1,6 @@
 {
   "name": "SAUBLow",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/saublow.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/saublow.html",
   "dtype": "dbl",
   "otype": "var",
   "modifiable": false

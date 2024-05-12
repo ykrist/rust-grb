@@ -1,8 +1,8 @@
 {
   "name": "TuneTimeLimit",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/tunetimelimit.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/tunetimelimit.html",
   "dtype": "dbl",
-  "default": "-1",
-  "min": "-1",
+  "default": "Infinity",
+  "min": "0",
   "max": "Infinity"
 }

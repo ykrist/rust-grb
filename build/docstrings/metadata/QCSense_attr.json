@@ -1,6 +1,6 @@
 {
   "name": "QCSense",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/qcsense.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/qcsense.html",
   "dtype": "chr",
   "otype": "qconstr",
   "modifiable": true

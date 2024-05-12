@@ -1,5 +1,5 @@
 #![allow(clippy::missing_safety_doc)]
-//! Gurobi parameters for [`Env`](crate::Env)  and [`Model`](crate::Model) objects.  See the
+//! Gurobi parameters for [`Env`]  and [`Model`](crate::Model) objects.  See the
 //! [manual](https://www.gurobi.com/documentation/9.1/refman/parameters.html) for a list
 //! of parameters and their uses.
 use grb_sys2 as ffi;
@@ -22,14 +22,14 @@ pub use param_enums::variant_exports as param;
 use crate::constants::GRB_MAX_STRLEN;
 use cstr_enum::AsCStr;
 
-/// A queryable Gurobi parameter for a [`Model`](crate::Model) or [`Env`](crate::Env)
+/// A queryable Gurobi parameter for a [`Model`](crate::Model) or [`Env`]
 pub trait ParamGet<V> {
     /// This parameter's value type (string, double, int, char)
     /// Query a parameter from an environment
     fn get(&self, env: &Env) -> Result<V>;
 }
 
-/// A modifiable Gurobi parameter for a [`Model`](crate::Model) or [`Env`](crate::Env)
+/// A modifiable Gurobi parameter for a [`Model`](crate::Model) or [`Env`]
 pub trait ParamSet<V> {
     /// Set a parameter on an environment
     fn set(&self, env: &mut Env, value: V) -> Result<()>;
@@ -103,7 +103,7 @@ impl ParamSet<String> for StrParam {
     }
 }
 
-/// Support for querying and seting undocumented Gurobi parameters.
+/// Support for querying and setting dynamic/undocumented Gurobi parameters.
 ///
 /// Use an instance of this type to set or query parameters using the [`Model::get_param`](crate::Model::get_param)
 /// or [`Model::set_param`](crate::Model::set_param) methods.
@@ -114,13 +114,15 @@ impl ParamSet<String> for StrParam {
 /// | --- | --- | --- | --- |
 /// | `GURO_PAR_MINBPFORBID` | `i32` | `2000000000` |Minimum `BranchPriority` a variable must have to stop it being removed during presolve |
 ///
+/// This is also useful for using new parameters which are not yet supported directly by this crate.
+///
 /// # Example
 /// ```
 /// use grb::prelude::*;
-/// use grb::parameter::Undocumented;
+/// use grb::parameter::Parameter;
 ///
 /// let mut m = Model::new("model")?;
-/// let undocumented_parameter = Undocumented::new("GURO_PAR_MINBPFORBID")?;
+/// let undocumented_parameter = Parameter::new("GURO_PAR_MINBPFORBID")?;
 ///
 /// // requires return type to be annotated
 /// let val : i32 = m.get_param(&undocumented_parameter)?;
@@ -134,47 +136,51 @@ impl ParamSet<String> for StrParam {
 /// # Ok::<(), grb::Error>(())
 /// ```
 #[derive(Clone, Eq, PartialEq)]
-pub struct Undocumented {
+pub struct Parameter {
     name: CString,
 }
 
-impl Undocumented {
-    /// Declare a new `Undocumented` parameter.
+#[doc(hidden)]
+#[deprecated = "Renamed to `Parameter` type"]
+pub type Undocumented = Parameter;
+
+impl Parameter {
+    /// Declare a new parameter.
     ///
     /// # Errors
     /// Will return an [`Error::NulError`](crate::Error) if the string given cannot be converted into a
     /// C-style string.
-    pub fn new(string: impl Into<Vec<u8>>) -> Result<Undocumented> {
-        Ok(Undocumented {
+    pub fn new(string: impl Into<Vec<u8>>) -> Result<Parameter> {
+        Ok(Parameter {
             name: CString::new(string)?,
         })
     }
 }
 
 // not strictly necessary, since we can use self.name directly
-impl AsCStr for Undocumented {
+impl AsCStr for Parameter {
     fn as_cstr(&self) -> &CStr {
         self.name.as_ref()
     }
 }
 
-impl ParamGet<i32> for &Undocumented {
+impl ParamGet<i32> for &Parameter {
     impl_param_get! { i32, i32::MIN, ffi::GRBgetintparam }
 }
 
-impl ParamSet<i32> for &Undocumented {
+impl ParamSet<i32> for &Parameter {
     impl_param_set! { i32, ffi::GRBsetintparam }
 }
 
-impl ParamGet<f64> for &Undocumented {
+impl ParamGet<f64> for &Parameter {
     impl_param_get! { f64, f64::NAN, ffi::GRBgetdblparam }
 }
 
-impl ParamSet<f64> for &Undocumented {
+impl ParamSet<f64> for &Parameter {
     impl_param_set! { f64, ffi::GRBsetdblparam }
 }
 
-impl ParamGet<String> for &Undocumented {
+impl ParamGet<String> for &Parameter {
     fn get(&self, env: &Env) -> Result<String> {
         let mut buf = [0i8; GRB_MAX_STRLEN];
         unsafe {
@@ -188,7 +194,7 @@ impl ParamGet<String> for &Undocumented {
     }
 }
 
-impl ParamSet<String> for &Undocumented {
+impl ParamSet<String> for &Parameter {
     fn set(&self, env: &mut Env, value: String) -> Result<()> {
         let value = CString::new(value)?;
         unsafe {
@@ -223,7 +229,7 @@ mod tests {
 
         let model = crate::Model::new("test")?;
         for (param, ty) in params {
-            let param = Undocumented::new(param).unwrap();
+            let param = Parameter::new(param).unwrap();
             match ty.as_str() {
                 "dbl" => {
                     let _v: f64 = model.get_param(&param)?;

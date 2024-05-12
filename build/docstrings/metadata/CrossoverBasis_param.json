@@ -1,8 +1,8 @@
 {
   "name": "CrossoverBasis",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/crossoverbasis.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/crossoverbasis.html",
   "dtype": "int",
-  "default": "0",
-  "min": "0",
+  "default": "-1",
+  "min": "-1",
   "max": "1"
 }

@@ -1,6 +1,6 @@
 {
   "name": "IsQP",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/isqp.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/isqp.html",
   "dtype": "int",
   "otype": "model",
   "modifiable": false

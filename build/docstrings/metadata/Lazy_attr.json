@@ -1,6 +1,6 @@
 {
   "name": "Lazy",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/lazy.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/lazy.html",
   "dtype": "int",
   "otype": "constr",
   "modifiable": true

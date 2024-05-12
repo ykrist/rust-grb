@@ -1,6 +1,6 @@
 {
   "name": "CutPasses",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/cutpasses.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/cutpasses.html",
   "dtype": "int",
   "default": "-1",
   "min": "-1",

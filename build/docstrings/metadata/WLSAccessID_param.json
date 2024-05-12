@@ -1,6 +1,6 @@
 {
   "name": "WLSAccessID",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/wlsaccessid.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/wlsaccessid.html",
   "dtype": "str",
   "default": "\"\""
 }

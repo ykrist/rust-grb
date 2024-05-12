@@ -1,6 +1,6 @@
 {
   "name": "PreSOS2Encoding",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/presos2encoding.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/presos2encoding.html",
   "dtype": "int",
   "default": "-1",
   "min": "-1",

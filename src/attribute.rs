@@ -29,7 +29,6 @@ pub use attr_enums::variant_exports as attr;
 
 mod private {
     use super::*;
-    pub trait Attr {}
 
     pub trait IntAttr {}
     pub trait CharAttr {}

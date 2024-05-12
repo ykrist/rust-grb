@@ -1,11 +1,14 @@
 [package]
 name = "grb-sys2"
-version = "9.5.0"
+version = "10.0.0"
 edition = "2018"
 build = "build.rs"
 license = "MIT"
-links="gurobi95"
+links="gurobi"
 authors = ["Yannik Rist <yannik.rist@uqconnect.edu.au>"]
 description = "Gurobi C API FFI declarations."
 homepage = "https://github.com/ykrist/rust-grb/"
 repository = "https://github.com/ykrist/rust-grb/"
+
+[build-dependencies]
+anyhow = "1.0.83"

@@ -1,6 +1,6 @@
 {
   "name": "NLPHeur",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/nlpheur.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/nlpheur.html",
   "dtype": "int",
   "default": "1",
   "min": "0",

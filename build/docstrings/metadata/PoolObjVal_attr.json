@@ -1,6 +1,6 @@
 {
   "name": "PoolObjVal",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/poolobjval.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/poolobjval.html",
   "dtype": "dbl",
   "otype": "model",
   "modifiable": false

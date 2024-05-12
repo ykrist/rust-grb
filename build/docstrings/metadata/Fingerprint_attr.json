@@ -1,6 +1,6 @@
 {
   "name": "Fingerprint",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/fingerprint.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/fingerprint.html",
   "dtype": "int",
   "otype": "model",
   "modifiable": false

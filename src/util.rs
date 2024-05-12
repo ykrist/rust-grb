@@ -29,6 +29,7 @@ pub(crate) trait AsPtr {
     /// - the resulting pointer is passed only to Gurobi C routines
     unsafe fn as_mut_ptr(&self) -> *mut Self::Ptr;
 
+    #[allow(unused)]
     /// Return the underling Gurobi pointer
     fn as_ptr(&self) -> *const Self::Ptr {
         (unsafe { self.as_mut_ptr() }) as *const Self::Ptr

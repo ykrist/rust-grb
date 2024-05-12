@@ -1,0 +1,8 @@
+{
+  "name": "NetworkAlg",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/networkalg.html",
+  "dtype": "int",
+  "default": "-1",
+  "min": "-1",
+  "max": "1"
+}

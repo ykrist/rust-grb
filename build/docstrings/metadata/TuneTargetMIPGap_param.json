@@ -1,6 +1,6 @@
 {
   "name": "TuneTargetMIPGap",
-  "url": "https://www.gurobi.com/documentation/9.5/refman/tunetargetmipgap.html",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/tunetargetmipgap.html",
   "dtype": "dbl",
   "default": "0",
   "min": "0",

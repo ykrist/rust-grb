@@ -117,7 +117,6 @@ TuneResultCount,int,model
 ModelName,str,model
 ObjNName,str,model
 ScenNName,str,model
-Server,str,model
 QCSense,chr,qconstr
 QCPi,dbl,qconstr
 QCRHS,dbl,qconstr

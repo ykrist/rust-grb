@@ -32,16 +32,19 @@ fn try_gurobi_home() -> anyhow::Result<PathBuf> {
 
 fn try_guess_libname(path: &PathBuf) -> anyhow::Result<String> {
     for f in std::fs::read_dir(path)? {
-        let f = f?.file_name();
-        if !f.is_ascii() {
+        let raw_f = f?.file_name();
+        let Some(f) = raw_f.to_str() else { continue };
+        let Some(f) = f.strip_prefix("libgurobi") else {
             continue;
-        }
-        let f = f.as_encoded_bytes();
-        if f.starts_with(b"lib") && f.ends_with(b".so") && !f.ends_with(b"_light.so") {
-            return Ok(String::from_utf8(f[3..f.len() - 3].to_vec()).unwrap());
+        };
+        let Some(version) = f.strip_suffix(".so") else {
+            continue;
+        };
+        if version.bytes().all(|b| (b'0'..=b'9').contains(&b)) {
+            return Ok(format!("gurobi{version}"));
         }
     }
-    anyhow::bail!("no lib*.so matches found in {}", path.display())
+    anyhow::bail!("no libgurobi*.so matches found in {}", path.display())
 }
 
 fn get_lib_name(gurobi_home: Option<&PathBuf>) -> String {

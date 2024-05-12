@@ -28,16 +28,6 @@ extern "C" {
 
     pub fn GRBloadenv(envP: *mut *mut GRBenv, logfilename: c_str) -> c_int;
 
-    pub fn GRBloadclientenv(
-        envP: *mut *mut GRBenv,
-        logfilename: c_str,
-        computeserver: c_str,
-        port: c_int,
-        password: c_str,
-        priority: c_int,
-        timeout: c_double,
-    ) -> c_int;
-
     pub fn GRBgetmultiobjenv(model: *mut GRBmodel, num: c_int) -> *mut GRBenv;
 
     pub fn GRBdiscardmultiobjenvs(model: *mut GRBmodel);

@@ -148,36 +148,6 @@ impl Env {
         Ok(unsafe { Env::new_user_allocated(env) })
     }
 
-    /// Create a client environment on a computer server with log file
-    pub fn new_client(
-        logfilename: &str,
-        computeserver: &str,
-        port: i32,
-        password: &str,
-        priority: i32,
-        timeout: f64,
-    ) -> Result<Env> {
-        let mut env = null_mut();
-        let logfilename = CString::new(logfilename)?;
-        let computeserver = CString::new(computeserver)?;
-        let password = CString::new(password)?;
-        let error = unsafe {
-            ffi::GRBloadclientenv(
-                &mut env,
-                logfilename.as_ptr(),
-                computeserver.as_ptr(),
-                port,
-                password.as_ptr(),
-                priority,
-                timeout,
-            )
-        };
-        if error != 0 {
-            return Err(Error::FromAPI(get_error_msg(env), error));
-        }
-        Ok(unsafe { Env::new_user_allocated(env) })
-    }
-
     /// Query the value of a parameter
     pub fn get<P: ParamGet<V>, V>(&self, param: P) -> Result<V> {
         param.get(self)

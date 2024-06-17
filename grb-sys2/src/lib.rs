@@ -638,3 +638,9 @@ extern "C" {
 
     pub fn GRBgetBasisHead(model: *mut GRBmodel, bhead: *mut c_int) -> c_int;
 }
+
+// cheeky hack to get unit tests for build scripts.
+#[cfg(feature = "build_script_tests")]
+#[path = "../build.rs"]
+#[allow(unused)]
+mod build;

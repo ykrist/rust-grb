@@ -860,7 +860,12 @@ impl Model {
 
         let (coeff_map, obj_cons) = expr.into_parts();
 
-        self.set_obj_attr_batch(attr::Obj, coeff_map)?;
+        self.set_obj_attr_batch(
+            attr::Obj,
+            self.get_vars()?
+                .iter()
+                .map(|v| (*v, coeff_map.get(v).copied().unwrap_or(0.))),
+        )?;
         self.set_attr(attr::ObjCon, obj_cons)?;
         self.set_attr(attr::ModelSense, sense)
     }

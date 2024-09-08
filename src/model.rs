@@ -649,6 +649,47 @@ impl Model {
         Ok(vec![self.constrs.add_new(lazy); cnames.len()])
     }
 
+    /// Add an indicator constraint to the model.
+    ///
+    /// The `con` argument is usually created with the [`c!`](crate::c) macro.
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let b = add_binvar!(m)?;
+    /// let x = add_ctsvar!(m)?;
+    /// let y = add_ctsvar!(m)?;
+    /// m.add_genconstr_indicator("c1", b, true, c!(x <= 1 - y))?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_indicator(
+        &mut self,
+        name: &str,
+        ind: Var,
+        ind_val: bool,
+        con: IneqExpr,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let (lhs, sense, rhs) = con.into_normalised_linear()?;
+        let (vinds, cval) = self.get_coeffs_indices_build(&lhs)?;
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrIndicator(
+                self.ptr,
+                constrname.as_ptr(),
+                self.get_index_build(&ind)?,
+                ind_val as ffi::c_int,
+                cval.len() as ffi::c_int,
+                vinds.as_ptr(),
+                cval.as_ptr(),
+                sense as ffi::c_char,
+                rhs,
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
     /// Add a range constraint to the model.
     ///
     /// This operation adds a decision variable with lower/upper bound, and a linear

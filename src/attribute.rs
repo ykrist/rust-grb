@@ -552,6 +552,9 @@ mod tests {
     impl ObjAttr for Attribute<Constr> {
         type Obj = Constr;
     }
+    impl ObjAttr for Attribute<GenConstr> {
+        type Obj = GenConstr;
+    }
     impl ObjAttr for Attribute<QConstr> {
         type Obj = QConstr;
     }
@@ -602,6 +605,7 @@ mod tests {
         let y = crate::add_binvar!(model)?;
         let constraint = model.add_constr("", crate::c!(var >= 1))?;
         let qconstraint = model.add_qconstr("", crate::c!(var * var >= 1))?;
+        // TODO: add a general constraint (when any type of those is impl'd)
 
         let sos = model.add_sos(vec![(x, 1.0), (y, 1.0)], SOSType::Ty1)?;
         model.optimize()?;
@@ -626,6 +630,7 @@ mod tests {
                 ("str", "qconstr") => Attribute::new(a).get::<String>(&model, &qconstraint),
                 ("chr", "qconstr") => Attribute::new(a).get::<c_char>(&model, &qconstraint),
 
+                // TODO: see previous todo
                 ("dbl", "sos") => Attribute::new(a).get::<f64>(&model, &sos),
                 ("int", "sos") => Attribute::new(a).get::<i32>(&model, &sos),
                 ("str", "sos") => Attribute::new(a).get::<String>(&model, &sos),

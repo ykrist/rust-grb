@@ -8,8 +8,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const DEFAULT_GUROBI_LIBNAME: &str = "gurobi100";
-
 #[derive(Clone, Copy, Debug)]
 struct GurobiLibAffixes {
     prefix: &'static str,
@@ -56,31 +54,20 @@ fn try_guess_libname(gurobi_libpath: &Path) -> anyhow::Result<String> {
             return Ok(libname);
         }
     }
-    anyhow::bail!("no Gurobi library found in {}.", gurobi_libpath.display())
+    anyhow::bail!(
+        "Unable to infer libname: no Gurobi library file found in {}.",
+        gurobi_libpath.display()
+    )
 }
 
-fn get_libname(gurobi_libpath: Option<&Path>) -> String {
+fn get_libname(gurobi_libpath: Option<&Path>) -> anyhow::Result<String> {
     if let Ok(libname) = env::var("GUROBI_LIBNAME") {
-        return libname;
+        return Ok(libname);
     }
-
     if let Some(path) = gurobi_libpath {
-        match try_guess_libname(path) {
-            Ok(libname) => {
-                println!("inferring libname {libname:?}, set GUROBI_LIBNAME to override.");
-                return libname;
-            }
-            Err(e) => {
-                println!("cargo:warning={e:#}")
-            }
-        }
+        return try_guess_libname(path);
     }
-
-    println!(
-        "cargo:warning=Using default libname {DEFAULT_GUROBI_LIBNAME:?}, \
-        set GUROBI_LIBNAME to override.",
-    );
-    String::from(DEFAULT_GUROBI_LIBNAME)
+    anyhow::bail!("Unable to infer Gurobi libname, set the environment variable GUROBI_LIBNAME=...")
 }
 
 fn try_guess_libpath() -> anyhow::Result<PathBuf> {
@@ -115,8 +102,13 @@ pub fn main() {
         }
         Err(e) => println!("cargo:warning={e:#}"),
     }
-    let libname = get_libname(libpath.as_deref().ok());
-    println!("cargo:rustc-link-lib=dylib={libname}");
+    match get_libname(libpath.as_deref().ok()) {
+        Ok(libname) => println!("cargo:rustc-link-lib=dylib={libname}"),
+        Err(err) => {
+            println!("cargo:warning=Error: {err:#}");
+            std::process::exit(1);
+        }
+    }
 }
 
 #[cfg(test)]

@@ -19,7 +19,7 @@ fn main() {
             // do relaxation.
             let constrs = model.get_constrs().unwrap().to_vec();
             let slacks = {
-                let (_, svars, _, _) = model
+                let (_, svars, _, _, _) = model
                     .feas_relax(
                         RelaxType::Linear,
                         false,

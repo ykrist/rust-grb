@@ -396,6 +396,153 @@ extern "C" {
 
     pub fn GRBgetenv(model: *mut GRBmodel) -> *mut GRBenv;
 
+    pub fn GRBgetgenconstrMax(
+        model: *mut GRBmodel,
+        id: c_int,
+        resvarP: *mut c_int,
+        nvarsP: *mut c_int,
+        vars: *mut c_int,
+        constantP: *mut c_double,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrMin(
+        model: *mut GRBmodel,
+        id: c_int,
+        resvarP: *mut c_int,
+        nvarsP: *mut c_int,
+        vars: *mut c_int,
+        constantP: *mut c_double,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrAbs(
+        model: *mut GRBmodel,
+        id: c_int,
+        resvarP: *mut c_int,
+        argvarP: *mut c_int,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrAnd(
+        model: *mut GRBmodel,
+        id: c_int,
+        resvarP: *mut c_int,
+        nvarsP: *mut c_int,
+        vars: *mut c_int,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrOr(
+        model: *mut GRBmodel,
+        id: c_int,
+        resvarP: *mut c_int,
+        nvarsP: *mut c_int,
+        vars: *mut c_int,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrNorm(
+        model: *mut GRBmodel,
+        id: c_int,
+        resvarP: *mut c_int,
+        nvarsP: *mut c_int,
+        vars: *mut c_int,
+        whichP: *mut c_double,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrIndicator(
+        model: *mut GRBmodel,
+        id: c_int,
+        binvarP: *mut c_int,
+        binvalP: *mut c_int,
+        nvarsP: *mut c_int,
+        ind: *mut c_int,
+        val: *mut c_double,
+        senseP: *mut c_char,
+        rhsP: *mut c_double,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrPWL(
+        model: *mut GRBmodel,
+        id: c_int,
+        xvarP: *mut c_int,
+        yvarP: *mut c_int,
+        nptsP: *mut c_int,
+        xpts: *mut c_double,
+        y_pts: *mut c_double,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrPoly(
+        model: *mut GRBmodel,
+        id: c_int,
+        xvarP: *mut c_int,
+        yvarP: *mut c_int,
+        plenP: *mut c_int,
+        p: *mut c_double,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrExp(
+        model: *mut GRBmodel,
+        id: c_int,
+        xvarP: *mut c_int,
+        yvarP: *mut c_int,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrExpA(
+        model: *mut GRBmodel,
+        id: c_int,
+        xvarP: *mut c_int,
+        yvarP: *mut c_int,
+        aP: *mut c_double,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrLog(
+        model: *mut GRBmodel,
+        id: c_int,
+        xvarP: *mut c_int,
+        yvarP: *mut c_int,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrLogA(
+        model: *mut GRBmodel,
+        id: c_int,
+        xvarP: *mut c_int,
+        yvarP: *mut c_int,
+        aP: *mut c_double,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrLogistic(
+        model: *mut GRBmodel,
+        id: c_int,
+        xvarP: *mut c_int,
+        yvarP: *mut c_int,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrPow(
+        model: *mut GRBmodel,
+        id: c_int,
+        xvarP: *mut c_int,
+        yvarP: *mut c_int,
+        aP: *mut c_double,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrSin(
+        model: *mut GRBmodel,
+        id: c_int,
+        xvarP: *mut c_int,
+        yvarP: *mut c_int,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrCos(
+        model: *mut GRBmodel,
+        id: c_int,
+        xvarP: *mut c_int,
+        yvarP: *mut c_int,
+    ) -> c_int;
+
+    pub fn GRBgetgenconstrTan(
+        model: *mut GRBmodel,
+        id: c_int,
+        xvarP: *mut c_int,
+        yvarP: *mut c_int,
+    ) -> c_int;
+
     pub fn GRBgetpwlobj(
         model: *mut GRBmodel,
         var: c_int,

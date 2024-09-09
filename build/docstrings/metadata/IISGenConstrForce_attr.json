@@ -1,0 +1,7 @@
+{
+  "name": "IISGenConstrForce",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/iisgenconstrforce.html",
+  "dtype": "int",
+  "otype": "gconstr",
+  "modifiable": true
+}

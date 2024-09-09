@@ -20,7 +20,7 @@ impl GurobiLibAffixes {
         let version = filename
             .strip_prefix(self.prefix)?
             .strip_suffix(self.suffix)?;
-        if version.bytes().all(|b| (b'0'..=b'9').contains(&b)) {
+        if version.bytes().all(|b| b.is_ascii_digit()) {
             Some(format!("gurobi{version}"))
         } else {
             None

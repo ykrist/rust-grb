@@ -9,7 +9,7 @@ license = "MIT"
 name = "grb"
 repository = "https://github.com/ykrist/rust-grb"
 homepage = "https://github.com/ykrist/rust-grb"
-version = "2.0.1"
+version = "2.0.2"
 build = "build/main.rs"
 readme = "README.md"
 exclude = [
@@ -23,7 +23,7 @@ rustdoc-args = [ "--html-in-header", "doc/katex-header.html" ]
 fnv = "^1.0"
 anyhow = "^1.0"
 cstr-enum = "^1.0"
-grb-sys2 = "^10.0.0"
+grb-sys2 = "^10.1.0"
 grb-macro = "0.1.0"
 
 [dev-dependencies]

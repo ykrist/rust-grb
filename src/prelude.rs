@@ -15,6 +15,7 @@ pub use crate::{
     ConstrSense,
     // ----------
     Env,
+    GenConstr,
     Model,
     ModelObject,
     ModelSense,

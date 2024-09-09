@@ -215,6 +215,6 @@ mod model;
 pub use model::{AsyncHandle, AsyncModel, Model};
 
 mod model_object;
-pub use model_object::{Constr, ModelObject, QConstr, Var, SOS};
+pub use model_object::{Constr, GenConstr, ModelObject, QConstr, Var, SOS};
 
 mod util;

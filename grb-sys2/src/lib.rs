@@ -77,6 +77,163 @@ extern "C" {
         constrname: *const c_str,
     ) -> c_int;
 
+    pub fn GRBaddgenconstrMax(
+        model: *mut GRBmodel,
+        name: c_str,
+        resvar: c_int,
+        nvars: c_int,
+        vars: *const c_int,
+        constant: c_double,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrMin(
+        model: *mut GRBmodel,
+        name: c_str,
+        resvar: c_int,
+        nvars: c_int,
+        vars: *const c_int,
+        constant: c_double,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrAbs(
+        model: *mut GRBmodel,
+        name: c_str,
+        resvar: c_int,
+        argvar: c_int,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrAnd(
+        model: *mut GRBmodel,
+        name: c_str,
+        resvar: c_int,
+        nvars: c_int,
+        vars: *const c_int,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrOr(
+        model: *mut GRBmodel,
+        name: c_str,
+        resvar: c_int,
+        nvars: c_int,
+        vars: *const c_int,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrNorm(
+        model: *mut GRBmodel,
+        name: c_str,
+        resvar: c_int,
+        nvars: c_int,
+        vars: *const c_int,
+        which: c_double,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrIndicator(
+        model: *mut GRBmodel,
+        name: c_str,
+        binvar: c_int,
+        binval: c_int,
+        nvars: c_int,
+        ind: *const c_int,
+        val: *const c_double,
+        sense: c_char,
+        rhs: c_double,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrPWL(
+        model: *mut GRBmodel,
+        name: c_str,
+        xvar: c_int,
+        yvar: c_int,
+        npts: c_int,
+        xpts: *const c_double,
+        ypts: *const c_double,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrPoly(
+        model: *mut GRBmodel,
+        name: c_str,
+        xvar: c_int,
+        yvar: c_int,
+        plen: c_int,
+        p: *mut c_double,
+        options: c_str,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrExp(
+        model: *mut GRBmodel,
+        name: c_str,
+        xvar: c_int,
+        yvar: c_int,
+        options: c_str,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrExpA(
+        model: *mut GRBmodel,
+        name: c_str,
+        xvar: c_int,
+        yvar: c_int,
+        a: c_double,
+        options: c_str,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrLog(
+        model: *mut GRBmodel,
+        name: c_str,
+        xvar: c_int,
+        yvar: c_int,
+        options: c_str,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrLogA(
+        model: *mut GRBmodel,
+        name: c_str,
+        xvar: c_int,
+        yvar: c_int,
+        a: c_double,
+        options: c_str,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrLogistic(
+        model: *mut GRBmodel,
+        name: c_str,
+        xvar: c_int,
+        yvar: c_int,
+        options: c_str,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrPow(
+        model: *mut GRBmodel,
+        name: c_str,
+        xvar: c_int,
+        yvar: c_int,
+        a: c_double,
+        options: c_str,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrSin(
+        model: *mut GRBmodel,
+        name: c_str,
+        xvar: c_int,
+        yvar: c_int,
+        options: c_str,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrCos(
+        model: *mut GRBmodel,
+        name: c_str,
+        xvar: c_int,
+        yvar: c_int,
+        options: c_str,
+    ) -> c_int;
+
+    pub fn GRBaddgenconstrTan(
+        model: *mut GRBmodel,
+        name: c_str,
+        xvar: c_int,
+        yvar: c_int,
+        options: c_str,
+    ) -> c_int;
+
     pub fn GRBaddqconstr(
         model: *mut GRBmodel,
         numlnz: c_int,

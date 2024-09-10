@@ -169,6 +169,8 @@ extern "C" {
 
     pub fn GRBdelconstrs(model: *mut GRBmodel, numdel: c_int, ind: *const c_int) -> c_int;
 
+    pub fn GRBdelgenconstrs(model: *mut GRBmodel, numdel: c_int, ind: *const c_int) -> c_int;
+
     pub fn GRBdelq(model: *mut GRBmodel) -> c_int;
 
     pub fn GRBdelqconstrs(model: *mut GRBmodel, len: c_int, ind: *const c_int) -> c_int;

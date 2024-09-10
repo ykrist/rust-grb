@@ -166,3 +166,12 @@ MaxVio,dbl,model
 OpenNodeCount,dbl,model
 PoolIgnore,int,var
 Work,dbl,model
+FuncPieceError,dbl,gconstr
+FuncPieceLength,dbl,gconstr
+FuncPieceRatio,dbl,gconstr
+FuncPieces,int,gconstr
+FuncNonlinear,int,gconstr
+GenConstrType,int,gconstr
+GenConstrName,str,gconstr
+IISGenConstr,int,gconstr
+IISGenConstrForce,int,gconstr

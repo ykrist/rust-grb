@@ -695,6 +695,52 @@ impl Model {
         Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
     }
 
+    /// Add a MAX constraint to the model.
+    ///
+    /// A MAX constraint $r = \max\{x_1,\ldots,x_n,c\}$ states that
+    /// the resultant variable $r$ should be equal to the maximum of
+    /// the operand variables $x_1,\ldots,x_n$ and the constant $c$.
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x1 = add_ctsvar!(m, bounds: ..2)?;
+    /// let x2 = add_ctsvar!(m, bounds: ..3)?;
+    /// let x3 = add_ctsvar!(m, bounds: ..1)?;
+    /// let y = add_ctsvar!(m)?;
+    /// m.add_genconstr_max("c1", y, [x1, x2, x3], None)?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_max(
+        &mut self,
+        name: &str,
+        resultant_var: Var,
+        operand_vars: impl IntoIterator<Item = Var>,
+        constant: Option<f64>,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let resvar_idx = self.get_index_build(&resultant_var)?;
+        let vars: Vec<_> = operand_vars
+            .into_iter()
+            .map(|v| self.get_index_build(&v))
+            .collect::<Result<_>>()?;
+        let constant = constant.unwrap_or_default();
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrMax(
+                self.ptr,
+                constrname.as_ptr(),
+                resvar_idx as ffi::c_int,
+                vars.len() as ffi::c_int,
+                vars.as_ptr(),
+                constant as ffi::c_double,
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
     /// Add an indicator constraint to the model.
     ///
     /// The `con` argument is usually created with the [`c!`](crate::c) macro.

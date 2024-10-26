@@ -1139,6 +1139,85 @@ impl Model {
         Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
     }
 
+    /// Add a natural logarithm function constraint to the model.
+    ///
+    /// $y = \log_e(x) or \ln(x)$
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x = add_ctsvar!(m)?;
+    /// let y = add_ctsvar!(m)?;
+    /// m.add_genconstr_natural_log("c1", x, y, "")?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_natural_log(
+        &mut self,
+        name: &str,
+        x: Var,
+        y: Var,
+        options: &str,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let x_idx = self.get_index_build(&x)?;
+        let y_idx = self.get_index_build(&y)?;
+        let options = CString::new(options)?;
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrLog(
+                self.ptr,
+                constrname.as_ptr(),
+                x_idx,
+                y_idx,
+                options.as_ptr(),
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
+    /// Add a logarithm function constraint to the model.
+    ///
+    /// $y = \log_a(x)$ where $a \gt 0$ is the base for the logarithm function
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x = add_ctsvar!(m)?;
+    /// let y = add_ctsvar!(m)?;
+    /// let a = 5;
+    /// m.add_genconstr_log("c1", x, y, a, "")?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_log(
+        &mut self,
+        name: &str,
+        x: Var,
+        y: Var,
+        a: f64,
+        options: &str,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let x_idx = self.get_index_build(&x)?;
+        let y_idx = self.get_index_build(&y)?;
+        let options = CString::new(options)?;
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrLogA(
+                self.ptr,
+                constrname.as_ptr(),
+                x_idx,
+                y_idx,
+                a,
+                options.as_ptr(),
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
     /// Add a range constraint to the model.
     ///
     /// This operation adds a decision variable with lower/upper bound, and a linear

@@ -976,6 +976,48 @@ impl Model {
         Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
     }
 
+    /// Add a piecewise-linear constraint to the model.
+    ///
+    /// A piecewise-linear constraint $y = f(x)$ states that
+    /// the point $(x, y)$ must lie on the piecewise-linear function $f()$ defined by
+    /// a set of points $(x_1, y_1), (x_2, y_2), ..., (x_n, y_n)$.
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x = add_ctsvar!(m)?;
+    /// let y = add_ctsvar!(m)?;
+    /// let points= [(1., 1.), (3., 2.), (5., 4.)];
+    /// m.add_genconstr_pwl("c1", x, y, points)?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_pwl(
+        &mut self,
+        name: &str,
+        x: Var,
+        y: Var,
+        points: impl IntoIterator<Item = (f64, f64)>,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let x_idx = self.get_index_build(&x)?;
+        let y_idx = self.get_index_build(&y)?;
+        let (x_points, y_points): (Vec<_>, Vec<_>) = points.into_iter().unzip();
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrPWL(
+                self.ptr,
+                constrname.as_ptr(),
+                x_idx,
+                y_idx,
+                x_points.len() as ffi::c_int,
+                x_points.as_ptr(),
+                y_points.as_ptr(),
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
     /// Add a range constraint to the model.
     ///
     /// This operation adds a decision variable with lower/upper bound, and a linear

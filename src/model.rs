@@ -66,6 +66,87 @@ pub enum Norm {
     LInfinity,
 }
 
+macro_rules! impl_func_constr {
+    ($name:literal, $formula:literal, $fn_name:ident, $ffi_fn_name:path) => {
+        #[doc = concat!("Add ", $name, " function constraint to the model.")]
+        ///
+        #[doc = $formula]
+        ///
+        /// # Examples
+        /// ```
+        /// # use grb::prelude::*;
+        /// let mut m = Model::new("model")?;
+        /// let x = add_ctsvar!(m)?;
+        /// let y = add_ctsvar!(m)?;
+        #[doc = concat!("m.", stringify!($fn_name), "(\"c1\", x, y, \"\")?;")]
+        /// # Ok::<(), grb::Error>(())
+        /// ```
+        pub fn $fn_name(&mut self, name: &str, x: Var, y: Var, options: &str) -> Result<GenConstr> {
+            let constrname = CString::new(name)?;
+            let x_idx = self.get_index_build(&x)?;
+            let y_idx = self.get_index_build(&y)?;
+            let options = CString::new(options)?;
+
+            self.check_apicall(unsafe {
+                $ffi_fn_name(
+                    self.ptr,
+                    constrname.as_ptr(),
+                    x_idx,
+                    y_idx,
+                    options.as_ptr(),
+                )
+            })?;
+
+            Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+        }
+    };
+}
+
+macro_rules! impl_funca_constr {
+    ($name:literal, $formula:literal, $fn_name:ident, $ffi_fn_name:path) => {
+        #[doc = concat!("Add ", $name, " function constraint to the model.")]
+        ///
+        #[doc = $formula]
+        ///
+        /// # Examples
+        /// ```
+        /// # use grb::prelude::*;
+        /// let mut m = Model::new("model")?;
+        /// let x = add_ctsvar!(m)?;
+        /// let y = add_ctsvar!(m)?;
+        /// let a = 5.0;
+        #[doc=concat!("m.", stringify!($fn_name), "(\"c1\", x, y, a, \"\")?;")]
+        /// # Ok::<(), grb::Error>(())
+        /// ```
+        pub fn $fn_name(
+            &mut self,
+            name: &str,
+            x: Var,
+            y: Var,
+            a: f64,
+            options: &str,
+        ) -> Result<GenConstr> {
+            let constrname = CString::new(name)?;
+            let x_idx = self.get_index_build(&x)?;
+            let y_idx = self.get_index_build(&y)?;
+            let options = CString::new(options)?;
+
+            self.check_apicall(unsafe {
+                $ffi_fn_name(
+                    self.ptr,
+                    constrname.as_ptr(),
+                    x_idx,
+                    y_idx,
+                    a,
+                    options.as_ptr(),
+                )
+            })?;
+
+            Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+        }
+    };
+}
+
 impl Model {
     fn next_id() -> u32 {
         static NEXT_ID: AtomicU32 = AtomicU32::new(0);
@@ -1060,163 +1141,34 @@ impl Model {
         Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
     }
 
-    /// Add a natural exponential function constraint to the model.
-    ///
-    /// $y = \exp(x) or e^x$
-    ///
-    /// # Examples
-    /// ```
-    /// # use grb::prelude::*;
-    /// let mut m = Model::new("model")?;
-    /// let x = add_ctsvar!(m)?;
-    /// let y = add_ctsvar!(m)?;
-    /// m.add_genconstr_natural_exp("c1", x, y, "")?;
-    /// # Ok::<(), grb::Error>(())
-    /// ```
-    pub fn add_genconstr_natural_exp(
-        &mut self,
-        name: &str,
-        x: Var,
-        y: Var,
-        options: &str,
-    ) -> Result<GenConstr> {
-        let constrname = CString::new(name)?;
-        let x_idx = self.get_index_build(&x)?;
-        let y_idx = self.get_index_build(&y)?;
-        let options = CString::new(options)?;
+    impl_func_constr!(
+        "a natural exponent",
+        r"$y = \exp(x) or e^x$",
+        add_genconstr_natural_exp,
+        ffi::GRBaddgenconstrExp
+    );
 
-        self.check_apicall(unsafe {
-            ffi::GRBaddgenconstrExp(
-                self.ptr,
-                constrname.as_ptr(),
-                x_idx,
-                y_idx,
-                options.as_ptr(),
-            )
-        })?;
+    impl_funca_constr!(
+        "an exponent",
+        r"$y = a^x$ where $a \gt 0$ is the base for the exponential function",
+        add_genconstr_exp,
+        ffi::GRBaddgenconstrExpA
+    );
 
-        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
-    }
+    impl_func_constr!(
+        "a natural logarithm",
+        r"$y = \log_e(x) or \ln(x)$",
+        add_genconstr_natural_log,
+        ffi::GRBaddgenconstrLog
+    );
 
-    /// Add an exponential function constraint to the model.
-    ///
-    /// $y = a^x$ where $a \gt 0$ is the base for the exponential function
-    ///
-    /// # Examples
-    /// ```
-    /// # use grb::prelude::*;
-    /// let mut m = Model::new("model")?;
-    /// let x = add_ctsvar!(m)?;
-    /// let y = add_ctsvar!(m)?;
-    /// let a = 5;
-    /// m.add_genconstr_exp("c1", x, y, a, "")?;
-    /// # Ok::<(), grb::Error>(())
-    /// ```
-    pub fn add_genconstr_exp(
-        &mut self,
-        name: &str,
-        x: Var,
-        y: Var,
-        a: f64,
-        options: &str,
-    ) -> Result<GenConstr> {
-        let constrname = CString::new(name)?;
-        let x_idx = self.get_index_build(&x)?;
-        let y_idx = self.get_index_build(&y)?;
-        let options = CString::new(options)?;
+    impl_funca_constr!(
+        "a logarithm",
+        r"$y = \log_a(x)$ where $a \gt 0$ is the base for the logarithm function",
+        add_genconstr_log,
+        ffi::GRBaddgenconstrLogA
+    );
 
-        self.check_apicall(unsafe {
-            ffi::GRBaddgenconstrExpA(
-                self.ptr,
-                constrname.as_ptr(),
-                x_idx,
-                y_idx,
-                a,
-                options.as_ptr(),
-            )
-        })?;
-
-        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
-    }
-
-    /// Add a natural logarithm function constraint to the model.
-    ///
-    /// $y = \log_e(x) or \ln(x)$
-    ///
-    /// # Examples
-    /// ```
-    /// # use grb::prelude::*;
-    /// let mut m = Model::new("model")?;
-    /// let x = add_ctsvar!(m)?;
-    /// let y = add_ctsvar!(m)?;
-    /// m.add_genconstr_natural_log("c1", x, y, "")?;
-    /// # Ok::<(), grb::Error>(())
-    /// ```
-    pub fn add_genconstr_natural_log(
-        &mut self,
-        name: &str,
-        x: Var,
-        y: Var,
-        options: &str,
-    ) -> Result<GenConstr> {
-        let constrname = CString::new(name)?;
-        let x_idx = self.get_index_build(&x)?;
-        let y_idx = self.get_index_build(&y)?;
-        let options = CString::new(options)?;
-
-        self.check_apicall(unsafe {
-            ffi::GRBaddgenconstrLog(
-                self.ptr,
-                constrname.as_ptr(),
-                x_idx,
-                y_idx,
-                options.as_ptr(),
-            )
-        })?;
-
-        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
-    }
-
-    /// Add a logarithm function constraint to the model.
-    ///
-    /// $y = \log_a(x)$ where $a \gt 0$ is the base for the logarithm function
-    ///
-    /// # Examples
-    /// ```
-    /// # use grb::prelude::*;
-    /// let mut m = Model::new("model")?;
-    /// let x = add_ctsvar!(m)?;
-    /// let y = add_ctsvar!(m)?;
-    /// let a = 5;
-    /// m.add_genconstr_log("c1", x, y, a, "")?;
-    /// # Ok::<(), grb::Error>(())
-    /// ```
-    pub fn add_genconstr_log(
-        &mut self,
-        name: &str,
-        x: Var,
-        y: Var,
-        a: f64,
-        options: &str,
-    ) -> Result<GenConstr> {
-        let constrname = CString::new(name)?;
-        let x_idx = self.get_index_build(&x)?;
-        let y_idx = self.get_index_build(&y)?;
-        let options = CString::new(options)?;
-
-        self.check_apicall(unsafe {
-            ffi::GRBaddgenconstrLogA(
-                self.ptr,
-                constrname.as_ptr(),
-                x_idx,
-                y_idx,
-                a,
-                options.as_ptr(),
-            )
-        })?;
-
-        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
-    }
 
     /// Add a range constraint to the model.
     ///

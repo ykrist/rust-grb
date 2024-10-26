@@ -1395,6 +1395,31 @@ impl Model {
         Ok(self.sos.add_new(self.update_mode_lazy()?))
     }
 
+    /// Delete a list of general constraints from an existing model.
+    ///
+    /// # Errors
+    /// TODO: is this actually the case?
+    /// - [`Error::ModelObjectPending`] if some variables haven't yet been added to the model.
+    /// - [`Error::ModelObjectRemoved`] if some variables have been removed from the model.
+    /// - [`Error::ModelObjectMismatch`] if some variables are from a different model.
+    /// - [`Error::FromAPI`] if a Gurobi API error occurs.
+    pub fn del_genconstrs(&mut self, constrs: impl IntoIterator<Item = GenConstr>) -> Result<()> {
+        let constr_indices: Vec<_> = constrs
+            .into_iter()
+            .map(|c| self.get_index_build(&c))
+            .collect::<Result<_>>()?;
+
+        self.check_apicall(unsafe {
+            ffi::GRBdelgenconstrs(
+                self.ptr,
+                constr_indices.len() as ffi::c_int,
+                constr_indices.as_ptr(),
+            )
+        })?;
+
+        Ok(())
+    }
+
     /// Set the objective function of the model and optimisation direction (min or max).
     /// Because this requires setting a [`Var`] attribute (the `Obj` attribute), this method
     /// always triggers a model update.

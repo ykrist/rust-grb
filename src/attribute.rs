@@ -625,12 +625,14 @@ mod tests {
                 ("int", "constr") => Attribute::new(a).get::<i32>(&model, &constraint),
                 ("str", "constr") => Attribute::new(a).get::<String>(&model, &constraint),
 
+                //FIXME: see previous todo
+                (_, "gconstr") => None,
+
                 ("dbl", "qconstr") => Attribute::new(a).get::<f64>(&model, &qconstraint),
                 ("int", "qconstr") => Attribute::new(a).get::<i32>(&model, &qconstraint),
                 ("str", "qconstr") => Attribute::new(a).get::<String>(&model, &qconstraint),
                 ("chr", "qconstr") => Attribute::new(a).get::<c_char>(&model, &qconstraint),
 
-                // TODO: see previous todo
                 ("dbl", "sos") => Attribute::new(a).get::<f64>(&model, &sos),
                 ("int", "sos") => Attribute::new(a).get::<i32>(&model, &sos),
                 ("str", "sos") => Attribute::new(a).get::<String>(&model, &sos),

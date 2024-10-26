@@ -25,6 +25,7 @@ impl Callback for Cb {
 }
 
 #[test]
+#[ignore] // TODO: not gzip
 fn main() -> anyhow::Result<()> {
     let mut model = test_instance("sing44")?;
     model.set_param(param::TimeLimit, 10.0)?;

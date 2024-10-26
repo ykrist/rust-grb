@@ -54,6 +54,18 @@ impl AsPtr for Model {
     }
 }
 
+/// Norm of the vector to use in [`Model::add_genconstr_norm`]
+pub enum Norm {
+    /// The number of non-zero values among the operands
+    L0,
+    /// The sum of the absolute value of the operand values
+    L1,
+    /// The square root of the sum of the operands
+    L2,
+    /// The maximum absolute value of any operand
+    LInfinity,
+}
+
 impl Model {
     fn next_id() -> u32 {
         static NEXT_ID: AtomicU32 = AtomicU32::new(0);
@@ -866,6 +878,57 @@ impl Model {
                 resvar_idx,
                 vars.len() as ffi::c_int,
                 vars.as_ptr(),
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
+    /// Add a NORM constraint to the model.
+    ///
+    /// A NORM constraint $r = \mbox{norm}\{x_1,\ldots,x_n,c\}$ states that
+    /// the resultant variable $r$ should be equal to
+    /// the vector norm of the argument vector $x_1,\ldots,x_n$.
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x1 = add_ctsvar!(m)?;
+    /// let x2 = add_ctsvar!(m)?;
+    /// let x3 = add_ctsvar!(m)?;
+    /// let y = add_ctsvar!(m)?;
+    /// m.add_genconstr_norm("c1", y, [x1, x2, x3], Norm::L1)?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_norm(
+        &mut self,
+        name: &str,
+        resultant_var: Var,
+        operand_vars: impl IntoIterator<Item = Var>,
+        norm: Norm,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let resvar_idx = self.get_index_build(&resultant_var)?;
+        let vars: Vec<_> = operand_vars
+            .into_iter()
+            .map(|v| self.get_index_build(&v))
+            .collect::<Result<_>>()?;
+        let norm = match norm {
+            Norm::L0 => 0.,
+            Norm::L1 => 1.,
+            Norm::L2 => 2.,
+            Norm::LInfinity => INFINITY,
+        };
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrNorm(
+                self.ptr,
+                constrname.as_ptr(),
+                resvar_idx,
+                vars.len() as ffi::c_int,
+                vars.as_ptr(),
+                norm as ffi::c_double,
             )
         })?;
 

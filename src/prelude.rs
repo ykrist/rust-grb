@@ -10,6 +10,7 @@ pub use crate::{
     c,
     callback::{Callback, Where},
     expr::{AttachModel, Expr, GurobiSum},
+    model::Norm,
     param,
     Constr,
     ConstrSense,

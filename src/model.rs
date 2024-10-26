@@ -778,6 +778,53 @@ impl Model {
         Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
     }
 
+    /// Add an AND constraint to the model.
+    ///
+    /// An AND constraint $r = \and\{x_1,\ldots,x_n,c\}$ states that
+    /// the binary variable $r$ should be 1 if and only if
+    /// all the operand variables $x_1,\ldots,x_n$ are equal to 1.
+    /// If any of the operand variables is $0$, then the resultant should be $0$ as well.
+    ///
+    /// Note that all variables participating in such a constraint will be forced to be binary,
+    /// independent of how they were created.
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x1 = add_binvar!(m)?;
+    /// let x2 = add_binvar!(m)?;
+    /// let x3 = add_binvar!(m)?;
+    /// let y = add_binvar!(m)?;
+    /// m.add_genconstr_and("c1", y, [x1, x2, x3])?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_and(
+        &mut self,
+        name: &str,
+        resultant_var: Var,
+        operand_vars: impl IntoIterator<Item = Var>,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let resvar_idx = self.get_index_build(&resultant_var)?;
+        let vars: Vec<_> = operand_vars
+            .into_iter()
+            .map(|v| self.get_index_build(&v))
+            .collect::<Result<_>>()?;
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrAnd(
+                self.ptr,
+                constrname.as_ptr(),
+                resvar_idx as ffi::c_int,
+                vars.len() as ffi::c_int,
+                vars.as_ptr(),
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
     /// Add an indicator constraint to the model.
     ///
     /// The `con` argument is usually created with the [`c!`](crate::c) macro.

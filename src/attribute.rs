@@ -604,8 +604,8 @@ mod tests {
         let x = crate::add_binvar!(model)?;
         let y = crate::add_binvar!(model)?;
         let constraint = model.add_constr("", crate::c!(var >= 1))?;
+        let gconstraint = model.add_genconstr_indicator("", x, true, crate::c!(var >= y))?;
         let qconstraint = model.add_qconstr("", crate::c!(var * var >= 1))?;
-        // TODO: add a general constraint (when any type of those is impl'd)
 
         let sos = model.add_sos(vec![(x, 1.0), (y, 1.0)], SOSType::Ty1)?;
         model.optimize()?;
@@ -625,8 +625,9 @@ mod tests {
                 ("int", "constr") => Attribute::new(a).get::<i32>(&model, &constraint),
                 ("str", "constr") => Attribute::new(a).get::<String>(&model, &constraint),
 
-                //FIXME: see previous todo
-                (_, "gconstr") => None,
+                ("dbl", "gconstr") => Attribute::new(a).get::<f64>(&model, &gconstraint),
+                ("int", "gconstr") => Attribute::new(a).get::<i32>(&model, &gconstraint),
+                ("str", "gconstr") => Attribute::new(a).get::<String>(&model, &gconstraint),
 
                 ("dbl", "qconstr") => Attribute::new(a).get::<f64>(&model, &qconstraint),
                 ("int", "qconstr") => Attribute::new(a).get::<i32>(&model, &qconstraint),

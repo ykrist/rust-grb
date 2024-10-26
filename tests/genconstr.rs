@@ -2,11 +2,11 @@ use grb::prelude::*;
 
 #[test]
 fn main() -> anyhow::Result<()> {
-    let mut model = Model::new("genconstr")?;
-
     const N_LITERALS: usize = 4;
     const N_CLAUSES: usize = 8;
     const N_OBJ: usize = 2;
+
+    let mut model = Model::new("genconstr")?;
 
     let pos: Vec<_> = (0..N_LITERALS)
         .map(|i| add_binvar!(model, name: &format!("X{i}")))

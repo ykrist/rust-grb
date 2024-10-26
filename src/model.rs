@@ -1098,6 +1098,47 @@ impl Model {
         Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
     }
 
+    /// Add an exponential function constraint to the model.
+    ///
+    /// $y = a^x$ where $a \gt 0$ is the base for the exponential function
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x = add_ctsvar!(m)?;
+    /// let y = add_ctsvar!(m)?;
+    /// let a = 5;
+    /// m.add_genconstr_exp("c1", x, y, a, "")?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_exp(
+        &mut self,
+        name: &str,
+        x: Var,
+        y: Var,
+        a: f64,
+        options: &str,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let x_idx = self.get_index_build(&x)?;
+        let y_idx = self.get_index_build(&y)?;
+        let options = CString::new(options)?;
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrExpA(
+                self.ptr,
+                constrname.as_ptr(),
+                x_idx,
+                y_idx,
+                a,
+                options.as_ptr(),
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
     /// Add a range constraint to the model.
     ///
     /// This operation adds a decision variable with lower/upper bound, and a linear

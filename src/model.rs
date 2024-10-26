@@ -1018,6 +1018,48 @@ impl Model {
         Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
     }
 
+    /// Add a polynomial function constraint to the model.
+    ///
+    /// $y = p_0 x^n + p_1 x^{n-1} + \ldots + p_n x + p_{n+1}$
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x = add_ctsvar!(m)?;
+    /// let y = add_ctsvar!(m)?;
+    /// let coeffs = [3., 0., 0., 7., 3.];
+    /// m.add_genconstr_poly("c1", x, y, coeffs.to_vec(), "")?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_poly(
+        &mut self,
+        name: &str,
+        x: Var,
+        y: Var,
+        mut coeffs: Vec<f64>,
+        options: &str,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let x_idx = self.get_index_build(&x)?;
+        let y_idx = self.get_index_build(&y)?;
+        let options = CString::new(options)?;
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrPoly(
+                self.ptr,
+                constrname.as_ptr(),
+                x_idx,
+                y_idx,
+                coeffs.len() as ffi::c_int,
+                coeffs.as_mut_ptr(),
+                options.as_ptr(),
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
     /// Add a range constraint to the model.
     ///
     /// This operation adds a decision variable with lower/upper bound, and a linear

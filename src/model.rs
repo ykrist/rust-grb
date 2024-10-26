@@ -741,6 +741,43 @@ impl Model {
         Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
     }
 
+    /// Add an ABS constraint to the model.
+    ///
+    /// An ABS constraint $r = \mbox{abs}\{x\}$ states that
+    /// the resultant variable $r$ should be equal to
+    /// the absolute value of the argument variable $x$.
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x = add_ctsvar!(m, bounds: -2..2)?;
+    /// let y = add_ctsvar!(m)?;
+    /// m.add_genconstr_abs("c1", y, x)?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_abs(
+        &mut self,
+        name: &str,
+        resultant_var: Var,
+        argument_var: Var,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let resvar_idx = self.get_index_build(&resultant_var)?;
+        let argvar_idx = self.get_index_build(&argument_var)?;
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrAbs(
+                self.ptr,
+                constrname.as_ptr(),
+                resvar_idx as ffi::c_int,
+                argvar_idx as ffi::c_int,
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
     /// Add an indicator constraint to the model.
     ///
     /// The `con` argument is usually created with the [`c!`](crate::c) macro.

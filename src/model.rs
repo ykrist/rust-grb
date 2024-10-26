@@ -1169,6 +1169,40 @@ impl Model {
         ffi::GRBaddgenconstrLogA
     );
 
+    impl_func_constr!(
+        "a logistic",
+        r"$y=\frac{1}{1+e^{-x}}$",
+        add_genconstr_logistic,
+        ffi::GRBaddgenconstrLogistic
+    );
+
+    impl_funca_constr!(
+        "a power",
+        r"$y=x^a$, where $a$ is the (constant) exponent",
+        add_genconstr_pow,
+        ffi::GRBaddgenconstrPow
+    );
+
+    impl_func_constr!(
+        "a sine",
+        r"$y=\sin(x)$",
+        add_genconstr_sin,
+        ffi::GRBaddgenconstrSin
+    );
+
+    impl_func_constr!(
+        "a cosine",
+        r"$y=\cos(x)$",
+        add_genconstr_cos,
+        ffi::GRBaddgenconstrCos
+    );
+
+    impl_func_constr!(
+        "a tangent",
+        r"$y=\tan(x)$",
+        add_genconstr_tan,
+        ffi::GRBaddgenconstrTan
+    );
 
     /// Add a range constraint to the model.
     ///

@@ -12,16 +12,13 @@ struct Cb {
 
 impl Callback for Cb {
     fn callback(&mut self, w: Where) -> CbResult {
-        match w {
-            Where::MIP(mut ctx) => {
-                let phase = ctx.phase()?;
-                println!("phase = {:?}", phase);
-                if phase == MipPhase::NoRel {
-                    ctx.proceed();
-                }
-                self.phases.insert(phase);
+        if let Where::MIP(mut ctx) = w {
+            let phase = ctx.phase()?;
+            println!("phase = {:?}", phase);
+            if phase == MipPhase::NoRel {
+                ctx.proceed();
             }
-            _ => {}
+            self.phases.insert(phase);
         };
         Ok(())
     }

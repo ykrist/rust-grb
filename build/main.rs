@@ -1,7 +1,6 @@
 //! See the readme.md in this directory for an overview of this build script.
 use anyhow::Context;
 
-use csv;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use serde::de::DeserializeOwned;
@@ -419,13 +418,13 @@ mod attrs {
         });
 
         if !matches!(d, DataType::Custom) {
-            add_dtype_marker_impl(ts, &ident, d);
+            add_dtype_marker_impl(ts, ident, d);
         } else {
             assert_eq!(members.len(), 1);
         }
 
         if o.needs_objattr_impl() {
-            add_otype_marker_impl(ts, &ident, o);
+            add_otype_marker_impl(ts, ident, o);
         }
 
         Ok(())

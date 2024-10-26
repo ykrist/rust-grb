@@ -36,7 +36,7 @@ macro_rules! impl_object_list_getter {
         #[doc = "Retrieve the "]
         #[doc=$noun]
         #[doc = " in the model. \n\n # Errors\nReturns an error if a model update is needed"]
-        pub fn $name<'a>(&'a self) -> Result<&'a [$t]> {
+        pub fn $name(&self) -> Result<&[$t]> {
             if self.$attr.model_update_needed() {
                 Err(Error::ModelUpdateNeeded)
             } else {
@@ -109,12 +109,12 @@ impl Model {
 
     #[inline]
     pub(crate) fn get_index<O: ModelObject>(&self, item: &O) -> Result<i32> {
-        O::idx_manager(&self).get_index(item)
+        O::idx_manager(self).get_index(item)
     }
 
     #[inline]
     pub(crate) fn get_index_build<O: ModelObject>(&self, item: &O) -> Result<i32> {
-        O::idx_manager(&self).get_index_build(item)
+        O::idx_manager(self).get_index_build(item)
     }
 
     #[inline]
@@ -898,7 +898,7 @@ impl Model {
             return Err(Error::ModelUpdateNeeded);
         }
         let n = CString::new(name)?;
-        let mut idx = i32::min_value();
+        let mut idx = i32::MIN;
         self.check_apicall(unsafe { ffi::GRBgetconstrbyname(self.ptr, n.as_ptr(), &mut idx) })?;
         if idx < 0 {
             Ok(None)
@@ -920,7 +920,7 @@ impl Model {
             return Err(Error::ModelUpdateNeeded);
         }
         let n = CString::new(name)?;
-        let mut idx = i32::min_value();
+        let mut idx = i32::MIN;
         self.check_apicall(unsafe { ffi::GRBgetvarbyname(self.ptr, n.as_ptr(), &mut idx) })?;
         if idx < 0 {
             Ok(None)

@@ -169,11 +169,7 @@ impl LinExpr {
     pub fn get_value(&self, model: &Model) -> Result<f64> {
         let coeff = self.coeff.values();
         let vals = model.get_obj_attr_batch(attr::X, self.coeff.keys().copied())?;
-        let total = coeff
-            .zip(vals.into_iter())
-            .map(|(&a, x)| a * x)
-            .sum::<f64>()
-            + self.offset;
+        let total = coeff.zip(vals).map(|(&a, x)| a * x).sum::<f64>() + self.offset;
         Ok(total)
     }
 
@@ -266,8 +262,8 @@ impl QuadExpr {
         let rowvals = model.get_obj_attr_batch(attr::X, self.qcoeffs.keys().map(|&(_, x)| x))?;
         let colvals = model.get_obj_attr_batch(attr::X, self.qcoeffs.keys().map(|&(x, _)| x))?;
         let total = coeff
-            .zip(rowvals.into_iter())
-            .zip(colvals.into_iter())
+            .zip(rowvals)
+            .zip(colvals)
             .map(|((&a, x), y)| a * x * y)
             .sum::<f64>()
             + self.linexpr.get_value(model)?;
@@ -949,7 +945,7 @@ mod tests {
 
         for (&var, &coeff) in e.iter_terms() {
             if var == x {
-                assert!((coeff - 2.0) < f64::EPSILON)
+                assert!((coeff - 2.0).abs() < f64::EPSILON)
             }
             if var == x {
                 assert!((coeff - 4.0) < f64::EPSILON)
@@ -968,14 +964,14 @@ mod tests {
         } else {
             panic!("{:?}", y);
         }
-        let q = -(x.clone() * x.clone());
+        let q = -(x * x);
         eprintln!("{:?}", q.attach(&model));
     }
 
     #[test]
     fn summation() {
         make_model_with_vars!(model, x, y, z);
-        let vars = [x.clone(), y.clone(), z.clone(), x.clone()];
+        let vars = [x, y, z, x];
         let e: Expr = vars.iter().cloned().sum();
         eprintln!("{:?}", &e);
         let e = e.into_linexpr().unwrap();

@@ -522,7 +522,7 @@ pub enum Where<'a> {
 
 //
 impl Where<'_> {
-    fn new<'a>(ctx: CbCtx<'a>) -> Result<Where<'a>> {
+    fn new(ctx: CbCtx<'_>) -> Result<Where<'_>> {
         let w = match ctx.where_raw {
             POLLING => Where::Polling(PollingCtx(ctx)),
             PRESOLVE => Where::PreSolve(PreSolveCtx(ctx)),

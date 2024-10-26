@@ -334,7 +334,7 @@ where
     }
 }
 
-impl<'a, A, T> ObjAttrSet<A::Obj, T> for A
+impl<A, T> ObjAttrSet<A::Obj, T> for A
 where
     A: StrAttr + AsCStr + ObjAttr,
     T: StringLike,

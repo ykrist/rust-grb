@@ -64,7 +64,7 @@ impl Callback for Cb {
     }
 }
 
-const INSTANCE: &'static str = "traininstance2";
+const INSTANCE: &str = "traininstance2";
 
 #[test]
 fn main() -> anyhow::Result<()> {

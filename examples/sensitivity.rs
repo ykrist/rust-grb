@@ -34,7 +34,7 @@ fn main() {
     // iterate through unfixed, binary variables in model
     let vars = model.get_vars().unwrap().to_vec();
     for (v, &orig_x) in vars.iter().zip(orig_sol.iter()) {
-        let vtype: VarType = model.get_obj_attr(attr::VType, v).unwrap().into();
+        let vtype = model.get_obj_attr(attr::VType, v).unwrap();
         if !(vtype == VarType::Binary || vtype == VarType::Integer) {
             continue;
         }

@@ -133,7 +133,7 @@ fn main() -> grb::Result<()> {
                 // Printing a log message
                 Message(ctx) => {
                     writer.write_all(ctx.message()?.as_bytes())?;
-                    writer.write_all(&[b'\n'])?;
+                    writer.write_all(b"\n")?;
                 }
 
                 _ => {}

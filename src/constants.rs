@@ -102,9 +102,9 @@ pub enum VarType {
     SemiInt = b'N',
 }
 
-impl Into<c_char> for VarType {
-    fn into(self) -> c_char {
-        self as u8 as c_char
+impl From<VarType> for c_char {
+    fn from(val: VarType) -> Self {
+        val as u8 as c_char
     }
 }
 
@@ -243,7 +243,7 @@ impl TryFrom<i32> for Status {
     type Error = String;
     fn try_from(val: i32) -> std::result::Result<Status, String> {
         match val {
-            1..=15 => Ok(unsafe { std::mem::transmute(val) }),
+            1..=15 => Ok(unsafe { std::mem::transmute::<i32, Status>(val) }),
             _ => Err("Invalid Status value, should be in [1,15]".to_string()),
         }
     }

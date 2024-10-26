@@ -2,20 +2,20 @@ use grb::prelude::*;
 
 fn main() -> grb::Result<()> {
     // warehouse demand in thousands of units.
-    let demand = vec![15f64, 18.0, 14.0, 20.0];
+    let demand = [15f64, 18.0, 14.0, 20.0];
 
     // plant capacity in thousands of units.
-    let capacity = vec![20f64, 22.0, 17.0, 19.0, 18.0];
+    let capacity = [20f64, 22.0, 17.0, 19.0, 18.0];
 
     // fixed costs for each plant.
-    let fixed_costs = vec![12000f64, 15000.0, 17000.0, 13000.0, 16000.0];
+    let fixed_costs = [12000f64, 15000.0, 17000.0, 13000.0, 16000.0];
 
     // transportation costs per thousands units.
-    let trans_costs = vec![
-        vec![4000f64, 2000.0, 3000.0, 2500.0, 4500.0],
-        vec![2500f64, 2600.0, 3400.0, 3000.0, 4000.0],
-        vec![1200f64, 1800.0, 2600.0, 4100.0, 3000.0],
-        vec![2200f64, 2600.0, 3100.0, 3700.0, 3200.0],
+    let trans_costs = [
+        [4000f64, 2000.0, 3000.0, 2500.0, 4500.0],
+        [2500f64, 2600.0, 3400.0, 3000.0, 4000.0],
+        [1200f64, 1800.0, 2600.0, 4100.0, 3000.0],
+        [2200f64, 2600.0, 3100.0, 3700.0, 3200.0],
     ];
 
     let env = Env::new("facility.log")?;

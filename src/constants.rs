@@ -263,3 +263,99 @@ pub enum RelaxType {
     /// ($penalty(s\_i) = w\_i \cdot [s\_i > 0]$)
     Cardinality = 2,
 }
+
+/// Type of general constraint
+#[non_exhaustive]
+#[repr(i32)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+pub enum GenConstrType {
+    /// The constraint $r = \max\{x_1,\ldots,x_k,c\}$ states that
+    /// the resultant variable $r$ should be equal to the maximum of
+    /// the operand variables $x_1,\ldots,x_k$ and the constant $c$.
+    ///
+    /// For example, a solution $(r=3, x_1=2, x_2=3, x_3=0)$ would be feasible for
+    /// the constraint $r = \max\{x_1,x_2,x_3,1.7\}$
+    /// because $3$ is indeed the maximum of $2$, $3$, $0$, and $1.7$.
+    Max,
+    /// The constraint $r = \min\{x_1,\ldots,x_k,c\}$ states that
+    /// the resultant variable $r$ should be equal to the minimum of
+    /// the operand variables $x_1,\ldots,x_k$ and the constant $c$.
+    Min,
+    /// The constraint $r = \mbox{abs}\{x\}$ states that the resultant variable $r$
+    /// should be equal to the absolute value of the operand variable $x$.
+    ///
+    /// For example, a solution $(r=3, x=-3)$ would be feasible for
+    /// the constraint $r = \mbox{abs}\{x\}$.
+    Abs,
+    /// The constraint $r = \mbox{and}\{x_1,\ldots,x_k\}$ states that
+    /// the binary resultant variable $r$ should be $1$ if and only if
+    /// all of the binary operand variables $x_1,\ldots,x_k$ are equal to $1$.
+    ///
+    /// For example, a solution $(r=1, x_1=1, x_2=1, x_3=1)$ would be feasible for
+    /// the constraint $r = \mbox{and}\{x_1,x_2,x_3\}$.
+    ///
+    /// TODO: remove?
+    /// Note that any involved variables that are not already binary are converted to binary.
+    And,
+    /// Similar to an AND constraint, the constraint $r = \mbox{or}\{x_1,\ldots,x_k\}$ states that
+    /// the binary resultant variable $r$ should be $1$ if and only if
+    /// at least one of the binary operand variables $x_1,\ldots,x_k$ is equal to $1$.
+    ///
+    /// TODO: remove?
+    /// Note that any involved variables that are not already binary are converted to binary.
+    Or,
+    /// The constraint $r = \mbox{norm}\{x_1,\ldots,x_k\}$ states that
+    /// the resultant variable $r$ should be equal to
+    /// the vector norm of the operand variables $x_1,\ldots,x_k$.
+    ///
+    /// TODO: remove?
+    /// A few options are available: the 0-norm, 1-norm, 2-norm, and infinity-norm.
+    Norm,
+    /// An indicator constraint $y = f \rightarrow a^Tx \leq b$ states that
+    /// if the binary indicator variable $y$ is equal to $f$ in a given solution, where $f \in \{0,1\}$,
+    /// then the linear constraint $a^Tx \leq b$ has to be satisfied.
+    /// On the other hand, if $y \neq f$ (i.e., $y = 1-f$) then the linear constraint may be violated.
+    ///
+    /// Note that the sense of the linear constraint can also be $=$ or $\geq$;
+    /// refer to this earlier section for a more detailed description of linear constraints.
+    ///
+    /// Note also that declaring an INDICATOR constraint implicitly declares the indicator variable to be of binary type.
+    Indicator,
+    /// A piecewise-linear constraint $y = f(x)$ states that
+    /// the point $(x, y)$ must lie on the piecewise-linear function $f()$ defined by
+    /// a set of points $(x_1, y_1), (x_2, y_2), ..., (x_n, y_n)$.
+    ///
+    /// TODO: remove?
+    /// Refer to the description of piecewise-linear objectives for details of how piecewise-linear functions are defined.
+    Pwl,
+    /// $y = p_0 x^n + p_1 x^{n-1} + ... + p_n x + p_{n+1}$
+    Polynomial,
+    /// $y = exp(x)$ or $y = e^x$
+    NaturalExp,
+    /// $y = a^x$, where $a > 0$ is the base for the exponential function
+    Exp,
+    /// : $y = \log_e(x)$ or $y = \ln(x)$
+    NaturalLog,
+    /// $y = \log_a(x)$, where $a > 0$ is the base for the logarithmic function
+    Log,
+    /// $y = \frac{1}{1 + exp(-x)}$ or $y = \frac{1}{1 + e^{-x}}$
+    Logistic,
+    /// $y = x^a$, where $x \geq 0$ for any $a$ and $x > 0$ for $a < 0$
+    Pow,
+    /// $y = \sin(x)$
+    Sin,
+    /// $y = \cos(x)$
+    Cos,
+    /// $y = \tan(x)$
+    Tan,
+}
+
+impl TryFrom<i32> for GenConstrType {
+    type Error = String;
+    fn try_from(val: i32) -> std::result::Result<Self, Self::Error> {
+        match val {
+            1..=18 => Ok(unsafe { std::mem::transmute(val) }),
+            _ => Err("Invalid GenConstrType value, should be in [1,18]".to_string()),
+        }
+    }
+}

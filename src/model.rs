@@ -1670,13 +1670,7 @@ impl Model {
         lb_pen: impl IntoIterator<Item = (Var, f64)>,
         ub_pen: impl IntoIterator<Item = (Var, f64)>,
         constr_pen: impl IntoIterator<Item = (Constr, f64)>,
-    ) -> Result<(
-        Option<f64>,
-        Vec<Var>,
-        Vec<Constr>,
-        Vec<GenConstr>,
-        Vec<QConstr>,
-    )> {
+    ) -> Result<(Option<f64>, Vec<Var>, Vec<Constr>, Vec<QConstr>)> {
         self.update()?;
         let n_old_vars = self.get_attr(attr::NumVars)? as usize;
         let n_old_constr = self.get_attr(attr::NumConstrs)? as usize;
@@ -1739,10 +1733,7 @@ impl Model {
             .collect();
 
         let n_gencons = self.get_attr(attr::NumGenConstrs)? as usize;
-        assert!(n_gencons >= n_old_genconstr);
-        let new_gencons = (0..n_gencons - n_old_genconstr)
-            .map(|_| self.genconstrs.add_new(lazy))
-            .collect();
+        assert_eq!(n_gencons, n_old_genconstr);
 
         let n_qcons = self.get_attr(attr::NumQConstrs)? as usize;
         assert!(n_qcons >= n_old_qconstr);
@@ -1750,7 +1741,7 @@ impl Model {
             .map(|_| self.qconstrs.add_new(lazy))
             .collect();
 
-        Ok((feasobj, new_vars, new_cons, new_gencons, new_qcons))
+        Ok((feasobj, new_vars, new_cons, new_qcons))
     }
 
     /// Capture a single scenario from a multi-scenario model. Use the `ScenarioNumber` parameter to indicate which

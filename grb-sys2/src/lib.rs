@@ -39,6 +39,54 @@ extern "C" {
     pub fn GRBdiscardconcurrentenvs(model: *mut GRBmodel);
 }
 
+macro_rules! add_func_constr {
+    ($($fn_name:ident),+) => {$(
+        pub fn $fn_name(
+            model: *mut GRBmodel,
+            name: c_str,
+            xvar: c_int,
+            yvar: c_int,
+            options: c_str,
+        ) -> c_int; )+
+    };
+}
+
+macro_rules! add_funca_constr {
+    ($($fn_name:ident),+) => {$(
+        pub fn $fn_name(
+            model: *mut GRBmodel,
+            name: c_str,
+            xvar: c_int,
+            yvar: c_int,
+            a: c_double,
+            options: c_str,
+        ) -> c_int; )+
+    };
+}
+
+macro_rules! get_func_constr {
+    ($($fn_name:ident),+) => {$(
+        pub fn $fn_name(
+            model: *mut GRBmodel,
+            id: c_int,
+            xvarP: *mut c_int,
+            yvarP: *mut c_int,
+        ) -> c_int; )+
+    };
+}
+
+macro_rules! get_funca_constr {
+    ($($fn_name:ident),+) => {$(
+        pub fn $fn_name(
+            model: *mut GRBmodel,
+            id: c_int,
+            xvarP: *mut c_int,
+            yvarP: *mut c_int,
+            aP: *mut c_double,
+    ) -> c_int; )+
+    };
+}
+
 // Model Creation and Modification
 extern "C" {
     pub fn GRBnewmodel(
@@ -159,80 +207,16 @@ extern "C" {
         options: c_str,
     ) -> c_int;
 
-    pub fn GRBaddgenconstrExp(
-        model: *mut GRBmodel,
-        name: c_str,
-        xvar: c_int,
-        yvar: c_int,
-        options: c_str,
-    ) -> c_int;
+    add_func_constr!(
+        GRBaddgenconstrExp,
+        GRBaddgenconstrLog,
+        GRBaddgenconstrLogistic,
+        GRBaddgenconstrSin,
+        GRBaddgenconstrCos,
+        GRBaddgenconstrTan
+    );
 
-    pub fn GRBaddgenconstrExpA(
-        model: *mut GRBmodel,
-        name: c_str,
-        xvar: c_int,
-        yvar: c_int,
-        a: c_double,
-        options: c_str,
-    ) -> c_int;
-
-    pub fn GRBaddgenconstrLog(
-        model: *mut GRBmodel,
-        name: c_str,
-        xvar: c_int,
-        yvar: c_int,
-        options: c_str,
-    ) -> c_int;
-
-    pub fn GRBaddgenconstrLogA(
-        model: *mut GRBmodel,
-        name: c_str,
-        xvar: c_int,
-        yvar: c_int,
-        a: c_double,
-        options: c_str,
-    ) -> c_int;
-
-    pub fn GRBaddgenconstrLogistic(
-        model: *mut GRBmodel,
-        name: c_str,
-        xvar: c_int,
-        yvar: c_int,
-        options: c_str,
-    ) -> c_int;
-
-    pub fn GRBaddgenconstrPow(
-        model: *mut GRBmodel,
-        name: c_str,
-        xvar: c_int,
-        yvar: c_int,
-        a: c_double,
-        options: c_str,
-    ) -> c_int;
-
-    pub fn GRBaddgenconstrSin(
-        model: *mut GRBmodel,
-        name: c_str,
-        xvar: c_int,
-        yvar: c_int,
-        options: c_str,
-    ) -> c_int;
-
-    pub fn GRBaddgenconstrCos(
-        model: *mut GRBmodel,
-        name: c_str,
-        xvar: c_int,
-        yvar: c_int,
-        options: c_str,
-    ) -> c_int;
-
-    pub fn GRBaddgenconstrTan(
-        model: *mut GRBmodel,
-        name: c_str,
-        xvar: c_int,
-        yvar: c_int,
-        options: c_str,
-    ) -> c_int;
+    add_funca_constr!(GRBaddgenconstrExpA, GRBaddgenconstrLogA, GRBaddgenconstrPow);
 
     pub fn GRBaddqconstr(
         model: *mut GRBmodel,
@@ -477,71 +461,20 @@ extern "C" {
         p: *mut c_double,
     ) -> c_int;
 
-    pub fn GRBgetgenconstrExp(
-        model: *mut GRBmodel,
-        id: c_int,
-        xvarP: *mut c_int,
-        yvarP: *mut c_int,
-    ) -> c_int;
+    get_func_constr!(
+        GRBgetgenconstrExp,
+        GRBgetgenconstrLog,
+        GRBgetgenconstrLogistic
+    );
 
-    pub fn GRBgetgenconstrExpA(
-        model: *mut GRBmodel,
-        id: c_int,
-        xvarP: *mut c_int,
-        yvarP: *mut c_int,
-        aP: *mut c_double,
-    ) -> c_int;
-
-    pub fn GRBgetgenconstrLog(
-        model: *mut GRBmodel,
-        id: c_int,
-        xvarP: *mut c_int,
-        yvarP: *mut c_int,
-    ) -> c_int;
-
-    pub fn GRBgetgenconstrLogA(
-        model: *mut GRBmodel,
-        id: c_int,
-        xvarP: *mut c_int,
-        yvarP: *mut c_int,
-        aP: *mut c_double,
-    ) -> c_int;
-
-    pub fn GRBgetgenconstrLogistic(
-        model: *mut GRBmodel,
-        id: c_int,
-        xvarP: *mut c_int,
-        yvarP: *mut c_int,
-    ) -> c_int;
-
-    pub fn GRBgetgenconstrPow(
-        model: *mut GRBmodel,
-        id: c_int,
-        xvarP: *mut c_int,
-        yvarP: *mut c_int,
-        aP: *mut c_double,
-    ) -> c_int;
-
-    pub fn GRBgetgenconstrSin(
-        model: *mut GRBmodel,
-        id: c_int,
-        xvarP: *mut c_int,
-        yvarP: *mut c_int,
-    ) -> c_int;
-
-    pub fn GRBgetgenconstrCos(
-        model: *mut GRBmodel,
-        id: c_int,
-        xvarP: *mut c_int,
-        yvarP: *mut c_int,
-    ) -> c_int;
-
-    pub fn GRBgetgenconstrTan(
-        model: *mut GRBmodel,
-        id: c_int,
-        xvarP: *mut c_int,
-        yvarP: *mut c_int,
-    ) -> c_int;
+    get_funca_constr!(
+        GRBgetgenconstrExpA,
+        GRBgetgenconstrLogA,
+        GRBgetgenconstrPow,
+        GRBgetgenconstrSin,
+        GRBgetgenconstrCos,
+        GRBgetgenconstrTan
+    );
 
     pub fn GRBgetpwlobj(
         model: *mut GRBmodel,

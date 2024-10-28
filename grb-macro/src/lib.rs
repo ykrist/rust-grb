@@ -291,7 +291,7 @@ impl Parse for OptArgs {
             {
                 return Err(Error::new_spanned(
                     &optname,
-                    format_args!("unknown argument '{}'", &optname),
+                    format_args!("unknown argument '{optname}'"),
                 ));
             };
         }

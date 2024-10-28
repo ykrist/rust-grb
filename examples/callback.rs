@@ -33,10 +33,7 @@ fn main() -> grb::Result<()> {
                     println!("@PreSolve");
                     let (coldel, rowdel) = (ctx.col_del()?, ctx.row_del()?);
                     if coldel > 0 || rowdel > 0 {
-                        println!(
-                            "**** {} columns and {} rows removed so far. ****",
-                            coldel, rowdel
-                        );
+                        println!("**** {coldel} columns and {rowdel} rows removed so far. ****");
                     }
                 }
 
@@ -112,7 +109,7 @@ fn main() -> grb::Result<()> {
                     println!("**** NEW NODE! ****");
                     let x = ctx.get_solution(&vars)?;
                     if ctx.status()? == Status::Optimal {
-                        println!("  relaxation solution = {:?}", x);
+                        println!("  relaxation solution = {x:?}");
                         let obj = ctx.set_solution(vars.iter().zip(x))?;
                         // Should not return None - we didn't modify the solution
                         assert!(obj.is_some());
@@ -160,7 +157,7 @@ fn main() -> grb::Result<()> {
             let vname = model.get_obj_attr(attr::VarName, v)?;
             let value = model.get_obj_attr(attr::X, v)?;
             if value > 1e-10 {
-                println!("  {}: {}", vname, value);
+                println!("  {vname}: {value}");
             }
         }
     }

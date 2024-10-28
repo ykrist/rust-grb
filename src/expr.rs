@@ -754,7 +754,7 @@ fn float_fmt_helper(x: f64, ignore_val: f64) -> (Option<f64>, bool) {
 
 impl From<Error> for fmt::Error {
     fn from(err: Error) -> fmt::Error {
-        eprintln!("fmt error cause by: {}", err);
+        eprintln!("fmt error cause by: {err}");
         fmt::Error {}
     }
 }
@@ -788,7 +788,7 @@ impl fmt::Debug for Attached<'_, LinExpr> {
                 }
             }
             if let Some(coeff) = coeff {
-                f.write_fmt(format_args!("{} {}", coeff, varname))?;
+                f.write_fmt(format_args!("{coeff} {varname}"))?;
             } else {
                 f.write_str(&varname)?;
             }
@@ -989,7 +989,7 @@ mod tests {
         let e = 2usize * y;
         let s = format!("{:?}", e.attach(&m));
         assert_eq!("2 y", s.to_string());
-        eprintln!("{}", s);
+        eprintln!("{s}");
         let e = x * y - 2.0f64 * (x * x);
         eprintln!("{:?}", e.attach(&m));
     }

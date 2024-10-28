@@ -75,13 +75,12 @@ fn main() {
                 Status::Optimal => {
                     let objval = model.get_attr(attr::ObjVal).unwrap();
                     println!(
-                        "Objective sensitivity for variable {} is {}",
-                        vname,
+                        "Objective sensitivity for variable {vname} is {}",
                         objval - orig_obj
                     );
                 }
                 _ => {
-                    println!("Objective sensitivity for variable {} is infinite", vname);
+                    println!("Objective sensitivity for variable {vname} is infinite");
                 }
             }
 

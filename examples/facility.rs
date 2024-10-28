@@ -26,7 +26,7 @@ fn main() -> grb::Result<()> {
     let open: Vec<Var> = fixed_costs
         .iter()
         .enumerate()
-        .map(|(p, &cost)| add_binvar!(model, name: &format!("Open{}", p), obj: cost).unwrap())
+        .map(|(p, &cost)| add_binvar!(model, name: &format!("Open{p}"), obj: cost).unwrap())
         .collect();
 
     // transportation decision variables.
@@ -39,7 +39,7 @@ fn main() -> grb::Result<()> {
                 .iter()
                 .enumerate()
                 .map(|(p, &cost)| {
-                    add_ctsvar!(model, name: &format!("Trans{}.{}", p, w), obj: cost).unwrap()
+                    add_ctsvar!(model, name: &format!("Trans{p}.{w}"), obj: cost).unwrap()
                 })
                 .collect()
         })
@@ -61,14 +61,11 @@ fn main() -> grb::Result<()> {
 
     for (p, (&capacity, &open)) in capacity.iter().zip(&open).enumerate() {
         let lhs = trans_vars.iter().map(|t| t[p]).grb_sum();
-        model.add_constr(&format!("Capacity{}", p), c!(lhs <= capacity * open))?;
+        model.add_constr(&format!("Capacity{p}"), c!(lhs <= capacity * open))?;
     }
 
     for (w, (&demand, tvars)) in demand.iter().zip(&trans_vars).enumerate() {
-        model.add_constr(
-            &format!("Demand{}", w),
-            c!(tvars.iter().grb_sum() == demand),
-        )?;
+        model.add_constr(&format!("Demand{w}"), c!(tvars.iter().grb_sum() == demand))?;
     }
 
     for o in open.iter() {
@@ -84,7 +81,7 @@ fn main() -> grb::Result<()> {
     for (p, (open, &cost)) in open.iter().zip(&fixed_costs).enumerate() {
         if (cost - max_fixed).abs() < 1e-4 {
             model.set_obj_attr(attr::Start, open, 0.0)?;
-            println!("Closing plant {}", p);
+            println!("Closing plant {p}");
             break;
         }
     }
@@ -102,15 +99,15 @@ fn main() -> grb::Result<()> {
     for (p, open) in open.iter().enumerate() {
         let x = model.get_obj_attr(attr::X, open)?;
         if x > 0.9 {
-            println!("Plant {} is open", p);
+            println!("Plant {p} is open");
             for (w, trans) in trans_vars.iter().enumerate() {
                 let t = model.get_obj_attr(attr::X, &trans[p])?;
                 if t > 0.0 {
-                    println!("  Transport {} units to warehouse {}", t, w);
+                    println!("  Transport {t} units to warehouse {w}");
                 }
             }
         } else {
-            println!("Plant {} is closed!", p);
+            println!("Plant {p} is closed!");
         }
     }
 

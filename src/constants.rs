@@ -120,8 +120,7 @@ impl TryFrom<c_char> for VarType {
             b'N' => VarType::SemiInt,
             _ => {
                 return Err(format!(
-                    "unexpected value {:?} when converting to VarType",
-                    ch
+                    "unexpected value {ch:?} when converting to VarType"
                 ))
             }
         };
@@ -151,8 +150,7 @@ impl TryFrom<c_char> for ConstrSense {
             b'<' => ConstrSense::Less,
             _ => {
                 return Err(format!(
-                    "unexpected value {:?} when converting to ConstrSense",
-                    ch
+                    "unexpected value {ch:?} when converting to ConstrSense"
                 ))
             }
         };

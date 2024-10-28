@@ -10,7 +10,7 @@ fn main() {
 
     let mut removed = Vec::new();
     for loop_count in 0..100 {
-        println!("[iteration {}]", loop_count);
+        println!("[iteration {loop_count}]");
 
         model.optimize().unwrap();
 
@@ -56,11 +56,11 @@ fn main() {
             }
 
             status => {
-                println!("Optimization is stopped with status {:?}", status);
+                println!("Optimization is stopped with status {status:?}");
                 return;
             }
         }
     }
 
-    println!("removed variables are: {:?}", removed);
+    println!("removed variables are: {removed:?}");
 }

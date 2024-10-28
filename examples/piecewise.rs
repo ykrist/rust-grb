@@ -49,7 +49,7 @@ fn optimize_and_print_status(model: &mut Model) -> grb::Result<()> {
     for v in vars {
         let vname = model.get_obj_attr(attr::VarName, v)?;
         let x = model.get_obj_attr(attr::X, v)?;
-        println!("{} = {}", vname, x);
+        println!("{vname} = {x}");
     }
     println!("Obj = {}\n", model.get_attr(attr::ObjVal)?);
     Ok(())

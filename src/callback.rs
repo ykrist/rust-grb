@@ -217,7 +217,7 @@ pub(crate) extern "C" fn callback_wrapper(
     match callback_result {
         Ok(Ok(())) => 0,
         Ok(Err(e)) => {
-            eprintln!("Callback returned error:\n{:#?}", e);
+            eprintln!("Callback returned error:\n{e:#?}");
             ERROR_CALLBACK
         }
         Err(_) => {

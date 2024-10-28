@@ -23,8 +23,8 @@ enum ParseError {
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ParseError::Dtype(s) => f.write_fmt(format_args!("error parsing data type: {}", s)),
-            ParseError::Otype(s) => f.write_fmt(format_args!("error parsing object type: {}", s)),
+            ParseError::Dtype(s) => f.write_fmt(format_args!("error parsing data type: {s}")),
+            ParseError::Otype(s) => f.write_fmt(format_args!("error parsing object type: {s}")),
             ParseError::CsvFile(Some(pos)) => f.write_fmt(format_args!(
                 "error parsing CSV record {} (line {}, byte {})",
                 pos.record(),
@@ -156,16 +156,16 @@ struct AttributeMeta {
 fn load_json<T: DeserializeOwned>(path: impl AsRef<Path>) -> anyhow::Result<T> {
     let path = path.as_ref();
     let reader = std::io::BufReader::new(
-        std::fs::File::open(path).with_context(|| format!("unable to read {:?}", path))?,
+        std::fs::File::open(path).with_context(|| format!("unable to read {path:?}"))?,
     );
     let val = serde_json::from_reader(reader)?;
     Ok(val)
 }
 
 fn get_docstring_body(name: &str, suffix: &str) -> anyhow::Result<String> {
-    let path = format!("build/docstrings/body/{}_{}.md", name, suffix);
+    let path = format!("build/docstrings/body/{name}_{suffix}.md");
     let body =
-        std::fs::read_to_string(&path).with_context(|| format!("unable to read {:?}", &path))?;
+        std::fs::read_to_string(&path).with_context(|| format!("unable to read {path:?}"))?;
     Ok(body)
 }
 
@@ -189,8 +189,8 @@ pub fn str_to_ident(s: &str) -> Ident {
 }
 
 pub fn docstring_filepath(name: &str) -> String {
-    let path = format!("build/docstrings/final/{}.md", name);
-    eprintln!("{}", path);
+    let path = format!("build/docstrings/final/{name}.md");
+    eprintln!("{path}");
     Path::new(&path)
         .canonicalize()
         .unwrap_or_else(|_| {
@@ -218,7 +218,7 @@ mod param {
     }
 
     fn get_metadata(name: &str) -> anyhow::Result<ParameterMeta> {
-        load_json(format!("build/docstrings/metadata/{}_param.json", name))
+        load_json(format!("build/docstrings/metadata/{name}_param.json"))
     }
 
     fn build_docstring(name: &str) -> anyhow::Result<String> {
@@ -228,14 +228,14 @@ mod param {
             let mut docstring = String::new();
 
             if let Some(val) = meta.dtype.doc_description() {
-                writeln!(docstring, "- __Type:__ {}", val)?;
+                writeln!(docstring, "- __Type:__ {val}")?;
             }
             writeln!(docstring, "- __Default:__ {}", &meta.default)?;
             if let Some(val) = &meta.min {
-                writeln!(docstring, "- __Minimum:__ {}", val)?;
+                writeln!(docstring, "- __Minimum:__ {val}")?;
             }
             if let Some(val) = &meta.max {
-                writeln!(docstring, "- __Maximum:__ {}", val)?;
+                writeln!(docstring, "- __Maximum:__ {val}")?;
             }
 
             docstring.push_str("\n\n");
@@ -345,7 +345,7 @@ mod attrs {
     }
 
     fn get_metadata(name: &str) -> anyhow::Result<AttributeMeta> {
-        load_json(format!("build/docstrings/metadata/{}_attr.json", name))
+        load_json(format!("build/docstrings/metadata/{name}_attr.json"))
     }
 
     fn build_docstring(name: &str) -> anyhow::Result<String> {
@@ -360,7 +360,7 @@ mod attrs {
                 if meta.modifiable { "Yes" } else { "No" }
             )?;
             if let Some(val) = meta.dtype.doc_description() {
-                writeln!(docstring, "- __Type:__ {}", val)?;
+                writeln!(docstring, "- __Type:__ {val}")?;
             }
 
             docstring.push_str("\n\n");

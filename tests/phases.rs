@@ -14,7 +14,7 @@ impl Callback for Cb {
     fn callback(&mut self, w: Where) -> CbResult {
         if let Where::MIP(mut ctx) = w {
             let phase = ctx.phase()?;
-            println!("phase = {:?}", phase);
+            println!("phase = {phase:?}");
             if phase == MipPhase::NoRel {
                 ctx.proceed();
             }

@@ -28,7 +28,7 @@ fn main() {
             .unwrap();
 
         for name in iis_names {
-            println!(" - {}", name);
+            println!(" - {name}");
         }
     }
 }

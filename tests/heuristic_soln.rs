@@ -23,7 +23,7 @@ impl Cb {
         if self.tests[idx] {
             return false;
         }
-        println!("running check {}", idx);
+        println!("running check {idx}");
         self.tests[idx] = true;
         true
     }

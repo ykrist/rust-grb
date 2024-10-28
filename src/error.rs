@@ -29,8 +29,8 @@ impl From<std::ffi::NulError> for Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Error::FromAPI(message, code) => write!(f, "Error from API: {} ({})", message, code),
-            Error::NulError(err) => f.write_fmt(format_args!("NulError: {}", err)),
+            Error::FromAPI(message, code) => write!(f, "Error from API: {message} ({code})"),
+            Error::NulError(err) => f.write_fmt(format_args!("NulError: {err}")),
             Error::ModelObjectRemoved => {
                 f.write_str("Variable or constraint has been removed from the model")
             }
@@ -43,8 +43,8 @@ impl std::fmt::Display for Error {
             Error::ModelUpdateNeeded => f.write_str(
                 "Variables or constraints have been added/removed.  Call model.update() first.",
             ),
-            Error::AlgebraicError(s) => f.write_fmt(format_args!("Algebraic error: {}", s)),
-            Error::NotYetSupported(s) => f.write_fmt(format_args!("Not yet supported: {}", s)),
+            Error::AlgebraicError(s) => f.write_fmt(format_args!("Algebraic error: {s}")),
+            Error::NotYetSupported(s) => f.write_fmt(format_args!("Not yet supported: {s}")),
         }
     }
 }

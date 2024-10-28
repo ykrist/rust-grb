@@ -788,10 +788,9 @@ impl fmt::Debug for Attached<'_, LinExpr> {
                 f.write_str(if positive { " + " } else { " - " })?;
             }
             if let Some(coeff) = coeff {
-                f.write_fmt(format_args!("{coeff} {varname}"))?;
-            } else {
-                f.write_str(&varname)?;
+                f.write_fmt(format_args!("{coeff} "))?;
             }
+            f.write_str(&varname)?;
         }
         Ok(())
     }
@@ -823,10 +822,9 @@ impl fmt::Debug for Attached<'_, QuadExpr> {
                 f.write_str(if positive { " + " } else { " - " })?;
             }
             if let Some(coeff) = coeff {
-                f.write_fmt(format_args!("{coeff} {xname}*{yname}"))?;
-            } else {
-                f.write_fmt(format_args!("{xname}*{yname}"))?;
+                f.write_fmt(format_args!("{coeff} "))?;
             }
+            write!(f, "{xname}*{yname}")?;
         }
         Ok(())
     }
@@ -839,20 +837,18 @@ impl fmt::Debug for Attached<'_, Expr> {
             Constant(a) => f.write_fmt(format_args!("{a}")),
             Term(a, x) => {
                 let varname = self.model.get_obj_attr(attr::VarName, x)?;
-                if (a - 1.0).abs() < f64::EPSILON {
-                    f.write_fmt(format_args!("{varname}"))
-                } else {
-                    f.write_fmt(format_args!("{a} {varname}"))
+                if (a - 1.0).abs() >= f64::EPSILON {
+                    f.write_fmt(format_args!("{a} "))?;
                 }
+                f.write_str(&varname)
             }
             QTerm(a, x, y) => {
                 let xname = self.model.get_obj_attr(attr::VarName, x)?;
                 let yname = self.model.get_obj_attr(attr::VarName, y)?;
-                if (a - 1.0).abs() < f64::EPSILON {
-                    f.write_fmt(format_args!("{xname}*{yname}"))
-                } else {
-                    f.write_fmt(format_args!("{a} {xname}*{yname}"))
+                if (a - 1.0).abs() >= f64::EPSILON {
+                    f.write_fmt(format_args!("{a} "))?;
                 }
+                write!(f, "{xname}*{yname}")
             }
             Linear(e) => e.attach(self.model).fmt(f),
             Quad(e) => e.attach(self.model).fmt(f),

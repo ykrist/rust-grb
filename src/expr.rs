@@ -834,7 +834,7 @@ impl fmt::Debug for Attached<'_, Expr> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::Expr::*;
         match &self.inner {
-            Constant(a) => f.write_fmt(format_args!("{a}")),
+            Constant(a) => f.write_str(&a.to_string()),
             Term(a, x) => {
                 let varname = self.model.get_obj_attr(attr::VarName, x)?;
                 if (a - 1.0).abs() >= f64::EPSILON {

@@ -603,7 +603,7 @@ impl<A: Into<Expr>> Sum<A> for Expr {
     where
         I: Iterator<Item = A>,
     {
-        let mut total = iter.next().map_or(Expr::Constant(0.0), |x| x.into());
+        let mut total = iter.next().map_or(Expr::Constant(0.0), Into::into);
         for x in iter {
             total = total + x.into();
         }
@@ -779,13 +779,13 @@ impl fmt::Debug for Attached<'_, LinExpr> {
             let (coeff, positive) = float_fmt_helper(coeff, 1.0);
 
             // write the operator with the previous term
-            if !is_first_term {
-                f.write_str(if positive { " + " } else { " - " })?;
-            } else {
+            if is_first_term {
                 is_first_term = false;
                 if !positive {
                     f.write_char('-')?;
                 }
+            } else {
+                f.write_str(if positive { " + " } else { " - " })?;
             }
             if let Some(coeff) = coeff {
                 f.write_fmt(format_args!("{coeff} {varname}"))?;
@@ -805,7 +805,7 @@ impl fmt::Debug for Attached<'_, QuadExpr> {
 
         let mut is_first_term = false;
         if self.inner.linexpr.is_empty() {
-            is_first_term = true
+            is_first_term = true;
         } else {
             self.inner.linexpr.attach(self.model).fmt(f)?;
         }
@@ -823,9 +823,9 @@ impl fmt::Debug for Attached<'_, QuadExpr> {
                 f.write_str(if positive { " + " } else { " - " })?;
             }
             if let Some(coeff) = coeff {
-                f.write_fmt(format_args!("{} {}*{}", coeff, xname, yname))?;
+                f.write_fmt(format_args!("{coeff} {xname}*{yname}"))?;
             } else {
-                f.write_fmt(format_args!("{}*{}", xname, yname))?;
+                f.write_fmt(format_args!("{xname}*{yname}"))?;
             }
         }
         Ok(())
@@ -836,22 +836,22 @@ impl fmt::Debug for Attached<'_, Expr> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::Expr::*;
         match &self.inner {
-            Constant(a) => f.write_fmt(format_args!("{}", a)),
+            Constant(a) => f.write_fmt(format_args!("{a}")),
             Term(a, x) => {
                 let varname = self.model.get_obj_attr(attr::VarName, x)?;
                 if (a - 1.0).abs() < f64::EPSILON {
-                    f.write_fmt(format_args!("{}", varname))
+                    f.write_fmt(format_args!("{varname}"))
                 } else {
-                    f.write_fmt(format_args!("{} {}", a, varname))
+                    f.write_fmt(format_args!("{a} {varname}"))
                 }
             }
             QTerm(a, x, y) => {
                 let xname = self.model.get_obj_attr(attr::VarName, x)?;
                 let yname = self.model.get_obj_attr(attr::VarName, y)?;
                 if (a - 1.0).abs() < f64::EPSILON {
-                    f.write_fmt(format_args!("{}*{}", xname, yname))
+                    f.write_fmt(format_args!("{xname}*{yname}"))
                 } else {
-                    f.write_fmt(format_args!("{} {}*{}", a, xname, yname))
+                    f.write_fmt(format_args!("{a} {xname}*{yname}"))
                 }
             }
             Linear(e) => e.attach(self.model).fmt(f),
@@ -945,10 +945,10 @@ mod tests {
 
         for (&var, &coeff) in e.iter_terms() {
             if var == x {
-                assert!((coeff - 2.0).abs() < f64::EPSILON)
+                assert!((coeff - 2.0).abs() < f64::EPSILON);
             }
             if var == x {
-                assert!((coeff - 4.0) < f64::EPSILON)
+                assert!((coeff - 4.0) < f64::EPSILON);
             }
         }
     }
@@ -972,7 +972,7 @@ mod tests {
     fn summation() {
         make_model_with_vars!(model, x, y, z);
         let vars = [x, y, z, x];
-        let e: Expr = vars.iter().cloned().sum();
+        let e: Expr = vars.iter().copied().sum();
         eprintln!("{:?}", &e);
         let e = e.into_linexpr().unwrap();
         assert_eq!(e.coeff.len(), 3);

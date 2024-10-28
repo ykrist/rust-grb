@@ -124,7 +124,7 @@ fn main() -> grb::Result<()> {
                    ctx.dual_obj()?,
                    ctx.prim_inf()?,
                    ctx.dual_inf()?,
-                   ctx.compl_viol()?)
+                   ctx.compl_viol()?);
                 }
 
                 // Printing a log message

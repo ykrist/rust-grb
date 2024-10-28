@@ -43,7 +43,7 @@ impl Callback for Cb {
                         assert_eq!(x, None);
                     } else {
                         if self.tests.iter().all(|x| *x) {
-                            ctx.terminate()
+                            ctx.terminate();
                         }
                     }
                 }

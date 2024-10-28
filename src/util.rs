@@ -32,7 +32,7 @@ pub(crate) trait AsPtr {
     #[allow(unused)]
     /// Return the underling Gurobi pointer
     fn as_ptr(&self) -> *const Self::Ptr {
-        (unsafe { self.as_mut_ptr() }) as *const Self::Ptr
+        (unsafe { self.as_mut_ptr() }).cast_const()
     }
 }
 

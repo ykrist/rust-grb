@@ -68,14 +68,14 @@ fn main() -> grb::Result<()> {
         model.add_constr(&format!("Demand{w}"), c!(tvars.iter().grb_sum() == demand))?;
     }
 
-    for o in open.iter() {
+    for o in &open {
         model.set_obj_attr(attr::Start, o, 1.0)?;
     }
 
     println!("Initial guesss:");
     let max_fixed = fixed_costs
         .iter()
-        .cloned()
+        .copied()
         .max_by(|a, b| a.partial_cmp(b).unwrap())
         .unwrap();
     for (p, (open, &cost)) in open.iter().zip(&fixed_costs).enumerate() {

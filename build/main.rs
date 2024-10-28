@@ -72,7 +72,7 @@ impl FromStr for DataType {
 }
 
 impl DataType {
-    fn ident_fragment(&self) -> Option<&'static str> {
+    fn ident_fragment(self) -> Option<&'static str> {
         use DataType::*;
         match self {
             Double => Some("Double"),
@@ -83,7 +83,7 @@ impl DataType {
         }
     }
 
-    fn doc_description(&self) -> Option<&'static str> {
+    fn doc_description(self) -> Option<&'static str> {
         use DataType::*;
         match self {
             Double => Some("double (`f64`)"),
@@ -125,11 +125,11 @@ impl FromStr for ObjType {
 }
 
 impl ObjType {
-    fn obj_ident(&self) -> Ident {
+    fn obj_ident(self) -> Ident {
         format_ident!("{}", format!("{:?}", self))
     }
 
-    fn needs_objattr_impl(&self) -> bool {
+    fn needs_objattr_impl(self) -> bool {
         !matches!(self, ObjType::Model)
     }
 }
@@ -388,7 +388,7 @@ mod attrs {
         let ident = format_ident!("{}Attr", d.ident_fragment().unwrap());
         ts.extend(quote! {
           impl #ident for #target {}
-        })
+        });
     }
 
     fn add_otype_marker_impl(ts: &mut TokenStream, target: &Ident, o: ObjType) {
@@ -397,7 +397,7 @@ mod attrs {
           impl ObjAttr for #target {
             type Obj = #ident;
           }
-        })
+        });
     }
 
     fn gen_type(
@@ -467,10 +467,10 @@ mod attrs {
     ) -> AttributeEnums {
         let mut map = AttributeEnums::new();
         for (ot, dt, name) in attrs {
-            let ident = dt
-                .ident_fragment()
-                .map(|dt| format_ident!("{}{}Attr", ot.obj_ident(), dt))
-                .unwrap_or_else(|| format_ident!("{}{}Attr", ot.obj_ident(), &name));
+            let ident = dt.ident_fragment().map_or_else(
+                || format_ident!("{}{}Attr", ot.obj_ident(), &name),
+                |dt| format_ident!("{}{}Attr", ot.obj_ident(), dt),
+            );
 
             match map.entry(ident) {
                 Entry::Occupied(mut e) => {

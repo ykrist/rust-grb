@@ -328,7 +328,7 @@ impl Model {
         Ok(())
     }
 
-    /// Query update mode. See [https://www.gurobi.com/documentation/9.1/refman/updatemode.html]
+    /// Query update mode. See [<https://www.gurobi.com/documentation/9.1/refman/updatemode.html>]
     fn update_mode_lazy(&self) -> Result<bool> {
         //  0 => pending until update() or optimize() called.
         //  1 => all changes are immediate
@@ -814,7 +814,7 @@ impl Model {
 
         for (var, w) in var_weight_pairs {
             ind.push(self.get_index_build(&var)?);
-            weight.push(w)
+            weight.push(w);
         }
 
         let beg = 0;
@@ -1154,7 +1154,7 @@ impl Model {
         Ok((feasobj, new_vars, new_cons, new_qcons))
     }
 
-    /// Capture a single scenario from a multi-scenario model. Use the ScenarioNumber parameter to indicate which
+    /// Capture a single scenario from a multi-scenario model. Use the `ScenarioNumber` parameter to indicate which
     /// scenario to capture. See the
     /// [manual](https://www.gurobi.com/documentation/9.5/refman/multiple_scenarios.html#sec:MultipleScenarios)
     /// for details on multi-scenario models.
@@ -1377,7 +1377,7 @@ impl AsyncHandle {
     /// # Ok::<(), grb::Error>(())
     /// ```
     pub fn terminate(&self) {
-        self.0.terminate()
+        self.0.terminate();
     }
 }
 
@@ -1439,9 +1439,10 @@ impl AsyncModel {
     /// ```
     ///
     pub fn new(model: Model) -> AsyncModel {
-        if model.env.is_shared() {
-            panic!("Cannot create async model - environment is used in other models");
-        }
+        assert!(
+            !model.env.is_shared(),
+            "Cannot create async model - environment is used in other models"
+        );
         AsyncModel(model)
     }
 
@@ -1477,7 +1478,7 @@ impl AsyncModel {
     /// # Ok::<(), grb::Error>(())
     /// ```
     pub fn optimize(mut self) -> std::result::Result<AsyncHandle, (Self, Error)> {
-        match self.0.update().and_then(|_| {
+        match self.0.update().and_then(|()| {
             self.0
                 .check_apicall(unsafe { ffi::GRBoptimizeasync(self.0.ptr) })
         }) {

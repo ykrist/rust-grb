@@ -44,12 +44,13 @@ impl fmt::Debug for Attached<'_, IneqExpr> {
             ConstrSense::Greater => "≥",
             ConstrSense::Equal => "=",
         };
-        f.write_fmt(format_args!(
+        write!(
+            f,
             "{:?} {} {:?}",
             self.inner.lhs.attach(self.model),
             cmp,
             self.inner.rhs.attach(self.model)
-        ))
+        )
     }
 }
 
@@ -87,12 +88,13 @@ impl AttachModel for RangeExpr {}
 
 impl fmt::Debug for Attached<'_, RangeExpr> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!(
+        write!(
+            f,
             "{:?} ∈ [{}, {}]",
             self.inner.expr.attach(self.model),
             self.inner.lb,
             self.inner.ub
-        ))
+        )
     }
 }
 

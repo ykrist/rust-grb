@@ -769,7 +769,7 @@ impl fmt::Debug for Attached<'_, LinExpr> {
 
         let mut is_first_term = false;
         if let Some(offset) = offset {
-            f.write_fmt(format_args!("{}", if positive { offset } else { -offset }))?;
+            write!(f, "{}", if positive { offset } else { -offset })?;
         } else {
             is_first_term = true;
         }
@@ -788,7 +788,7 @@ impl fmt::Debug for Attached<'_, LinExpr> {
                 f.write_str(if positive { " + " } else { " - " })?;
             }
             if let Some(coeff) = coeff {
-                f.write_fmt(format_args!("{coeff} "))?;
+                write!(f, "{coeff} ")?;
             }
             f.write_str(&varname)?;
         }
@@ -822,7 +822,7 @@ impl fmt::Debug for Attached<'_, QuadExpr> {
                 f.write_str(if positive { " + " } else { " - " })?;
             }
             if let Some(coeff) = coeff {
-                f.write_fmt(format_args!("{coeff} "))?;
+                write!(f, "{coeff} ")?;
             }
             write!(f, "{xname}*{yname}")?;
         }
@@ -838,7 +838,7 @@ impl fmt::Debug for Attached<'_, Expr> {
             Term(a, x) => {
                 let varname = self.model.get_obj_attr(attr::VarName, x)?;
                 if (a - 1.0).abs() >= f64::EPSILON {
-                    f.write_fmt(format_args!("{a} "))?;
+                    write!(f, "{a} ")?;
                 }
                 f.write_str(&varname)
             }
@@ -846,7 +846,7 @@ impl fmt::Debug for Attached<'_, Expr> {
                 let xname = self.model.get_obj_attr(attr::VarName, x)?;
                 let yname = self.model.get_obj_attr(attr::VarName, y)?;
                 if (a - 1.0).abs() >= f64::EPSILON {
-                    f.write_fmt(format_args!("{a} "))?;
+                    write!(f, "{a} ")?;
                 }
                 write!(f, "{xname}*{yname}")
             }

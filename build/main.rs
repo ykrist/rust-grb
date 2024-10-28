@@ -22,17 +22,18 @@ enum ParseError {
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseError::Dtype(s) => f.write_fmt(format_args!("error parsing data type: {s}")),
-            ParseError::Otype(s) => f.write_fmt(format_args!("error parsing object type: {s}")),
-            ParseError::CsvFile(Some(pos)) => f.write_fmt(format_args!(
+        let msg = match self {
+            ParseError::Dtype(s) => &format!("error parsing data type: {s}"),
+            ParseError::Otype(s) => &format!("error parsing object type: {s}"),
+            ParseError::CsvFile(Some(pos)) => &format!(
                 "error parsing CSV record {} (line {}, byte {})",
                 pos.record(),
                 pos.line(),
                 pos.byte()
-            )),
-            ParseError::CsvFile(None) => f.write_fmt(format_args!("error parsing CSV")),
-        }
+            ),
+            ParseError::CsvFile(None) => "error parsing CSV",
+        };
+        f.write_str(msg)
     }
 }
 

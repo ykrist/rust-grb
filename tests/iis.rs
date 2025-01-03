@@ -16,7 +16,6 @@ fn callback(w: Where) -> CbResult {
 }
 
 #[test]
-#[ignore] // TODO: not in gzip format
 fn main() -> anyhow::Result<()> {
     let mut model = test_instance("neos859080")?;
 

@@ -109,7 +109,7 @@ use crate::constants::{callback::*, ERROR_CALLBACK, GRB_UNDEFINED};
 use crate::constr::IneqExpr;
 use crate::ffi;
 use crate::util::{self, AsPtr};
-use crate::{model::Model, Error, Result, Status, Var, INFINITY}; // used for setting a partial solution in a callback
+use crate::{Error, Model, Result, Status, Var, INFINITY}; // used for setting a partial solution in a callback
 
 /// The return type for callbacks, an alias of [`anyhow::Result`].
 ///

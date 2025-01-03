@@ -15,7 +15,7 @@ cfg_if::cfg_if! {
                 return GRBloadenvinternal(env, logfilename, major, minor, technical)
             }
         }
-    } else {
+    } else if #[cfg(any(feature = "gurobi11", feature = "gurobi10", feature = "gurobi9"))] {
         pub use grb_sys_10::*;
 
         pub mod shims {
@@ -30,5 +30,7 @@ cfg_if::cfg_if! {
                 return GRBloadenv(env, logfilename)
             }
         }
+    } else {
+        compile_error!("bug: one of the above feature flags should have been hit.");
     }
 }

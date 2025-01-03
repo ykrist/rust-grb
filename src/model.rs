@@ -2029,7 +2029,7 @@ impl AsyncModel {
     /// Optimize the model on another thread.  This method will always trigger a [`Model::update`] on the underlying `Model`.
     ///
     /// On success, returns an [`AsyncHandle`] that provides a limited API for model queries.
-    /// The `AsyncModel` can be retrieved by calling [`AsyncHandle::join`](crate::model::AsyncHandle::join).
+    /// The `AsyncModel` can be retrieved by calling [`AsyncHandle::join`](crate::AsyncHandle::join).
     ///
     /// # Errors
     /// An `grb::Error::FromAPI` may occur.  In this case, the `Err` variant contains this error

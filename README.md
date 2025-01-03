@@ -4,13 +4,33 @@ This crate provides Rust bindings for Gurobi Optimizer.  It currently requires G
 
 This library started as fork of the [`gurobi`](https://github.com/ubnt-intrepid/rust-gurobi) which appears to be no longer maintained.  It has since undergone a number of fundamental API changes.
 
-This crate supports Gurobi 9.5, 10 and 11.
+This crate supports Gurobi 9.5, 10, 11 and 12.
 
 ## Installing and Linking
 
 Before using this crate, you should install Gurobi and obtain a [license](http://www.gurobi.com/downloads/licenses/license-center).
 
+### Feature flags
+
+The `grb` crate requires one of the following feature flags to be set:
+
+- `gurobi12`
+- `gurobi11`
+- `gurobi10`
+- `gurobi9`
+
+The flag should match the major version of Gurobi, for example (in Cargo.toml):
+
+```toml
+grb = {..., features = ['gurobi12']}
+```
+
+for Gurobi 12.X.
+
+If multiple feature flags are set, the highest version one is used, i.e. setting `gurobi12` and `gurobi10` is equivalent to only setting `gurobi12`.
+
 ### Building
+
 In this section, it is assumed Gurobi is installed at `/opt/gurobi/linux64`.
 
 It is recommended you use the environment variables for your system's linker to ensure Gurobi can be found.
@@ -25,7 +45,8 @@ in your `~/.profile` file.  You can also set this in a `PROJECT/.cargo/config.to
 The other option is to set the environment variable `GUROBI_HOME` set to the installation path of Gurobi
 (like eg `/opt/gurobi95/linux64`).  
 
-The Gurobi shared library will have the major and minor version of Gurobi in the library name.  For example, Gurobi 11.0.* will have a shared library file `libgurobi110.so`.  The `grb-sys2` crate, which this crate depends on, will link against with `-lgurobi110`.  On Linux, we make an guess for the library name based on `GUROBI_HOME`.  If this guess is incorrect (or `GUROBI_HOME` is not set, or you are on Windows), you will need to set the `GUROBI_LIBNAME` environment variable.  For example, suppose you have the `LIBRARY_PATH` set to `/opt/gurobi1003/linux64/lib` (which contains `libgurobi100.so`), and `GUROBI_HOME` is **not set**.  Then, you would set `GUROBI_LIBNAME=gurobi100`, so that the correct `-lgurobi100` flag is emitted during compilation. 
+The Gurobi shared library will have the major and minor version of Gurobi in the library name.  For example, Gurobi 11.0.* will have a shared library file `libgurobi110.so`.  The `grb-sys2` crate, which this crate depends on, will link against with `-lgurobi110`.  On Linux, we make an guess for the library name based on `GUROBI_HOME`.  If this guess is incorrect (or `GUROBI_HOME` is not set, or you are on Windows), you will need to set the `GUROBI_LIBNAME` environment variable.  For example, suppose you have the `LIBRARY_PATH` set to `/opt/gurobi1003/linux64/lib` (which contains `libgurobi100.so`), and `GUROBI_HOME` is **not set**.  Then, you would set `GUROBI_LIBNAME=gurobi100`, so that the correct `-lgurobi100` flag is emitted during compilation.
+
 
 
 ### Running

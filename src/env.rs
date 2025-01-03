@@ -2,10 +2,10 @@ use std::ffi::CString;
 use std::ptr::null_mut;
 use std::rc::Rc;
 
-use crate::error::{Error, Result};
 use crate::ffi;
 use crate::parameter::{ParamGet, ParamSet};
 use crate::util;
+use crate::{Error, Result};
 use util::AsPtr;
 
 /// Represents a User-Allocated Gurobi Env

@@ -4,9 +4,9 @@
 //! of parameters and their uses.
 use std::ffi::{CStr, CString};
 
-use crate::env::Env;
 use crate::ffi;
 use crate::util::{copy_c_str, AsPtr};
+use crate::Env;
 use crate::Result;
 
 #[allow(missing_docs)]
@@ -232,15 +232,9 @@ mod tests {
         for (param_name, ty) in params {
             let param = Parameter::new(param_name.clone()).unwrap();
             let err = match ty.as_str() {
-                "dbl" => {
-                    model.get_param::<_, f64>(&param).err()
-                }
-                "int" => {
-                    model.get_param::<_, i32>(&param).err()
-                }
-                "str" => {
-                    model.get_param::<_, String>(&param).err()
-                }
+                "dbl" => model.get_param::<_, f64>(&param).err(),
+                "int" => model.get_param::<_, i32>(&param).err(),
+                "str" => model.get_param::<_, String>(&param).err(),
                 _ => unreachable!(),
             };
             if let Some(err) = err {

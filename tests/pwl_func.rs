@@ -51,18 +51,16 @@ fn pwl_genconstr() -> anyhow::Result<()> {
     let x_max = 9.0f64.log10();
     let len = (x_max / INTERVAL).ceil() as usize + 1;
 
-    let x_points = (0..len).map(|i| i as f64 * INTERVAL);
-    let u_points = (0..len).map(|i| f(i as f64 * INTERVAL));
+    let x_and_u_points = (0..len).map(|i| i as f64 * INTERVAL).map(|x| (x, g(x)));
 
-    model.add_genconstr_pwl("gc1", x, u, x_points.zip(u_points))?;
+    model.add_genconstr_pwl("gc1", x, u, x_and_u_points)?;
 
     let y_max = (9.0f64 / 4.).powi(2);
     let len = (y_max / INTERVAL).ceil() as usize + 1;
 
-    let y_points = (0..len).map(|i| i as f64 * INTERVAL);
-    let v_points = (0..len).map(|i| g(i as f64 * INTERVAL));
+    let y_and_v_points = (0..len).map(|y| y as f64 * INTERVAL).map(|y| (y, g(y)));
 
-    model.add_genconstr_pwl("gc2", y, v, y_points.zip(v_points))?;
+    model.add_genconstr_pwl("gc2", y, v, y_and_v_points)?;
 
     model.optimize()?;
     print_sol(&model)?;

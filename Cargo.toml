@@ -88,3 +88,8 @@ path = "examples/workforce3.rs"
 [[example]]
 name = "tsp_lazy_constraints"
 path = "examples/tsp_lazy_constraints.rs"
+
+[lints.clippy]
+# it pops up all over the place because of `c!`
+# TODO: investigate
+useless_conversion = "allow"

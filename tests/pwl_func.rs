@@ -74,8 +74,8 @@ fn pwl_genconstr() -> anyhow::Result<()> {
 fn function_genconstr() -> anyhow::Result<()> {
     let (mut model, [x, y, u, v]) = setup()?;
 
-    model.add_genconstr_natural_exp("gcf1", x, u, None)?;
-    model.add_genconstr_pow("gcf2", y, v, 0.5, None)?;
+    model.add_genconstr_natural_exp("gcf1", x, u, "")?;
+    model.add_genconstr_pow("gcf2", y, v, 0.5, "")?;
 
     // Use the equal piece length approach with the length = INTERVAL
     model.set_param(param::FuncPieces, 1)?;

@@ -54,52 +54,6 @@ impl AsPtr for Model {
     }
 }
 
-/// Set the strategy used for performing a piecewise-linear approximation of a function constraint
-///
-/// # Examples
-/// ```
-/// # use grb::prelude::*;
-/// let mut m = Model::new("model")?;
-/// let x = add_ctsvar!(m)?;
-/// let y = add_ctsvar!(m)?;
-/// m.add_genconstr_sin(\"c1\", x, y, Some(FuncConstrOptions::PieceWidth(2.5))?;");
-/// # Ok::<(), grb::Error>(())
-#[non_exhaustive]
-pub enum FuncConstrOptions {
-    /// Ignore the attribute settings for this function constraint and use the parameter settings ([`FuncPieces`](`crate::param::FuncPieces`), etc.) instead
-    Ignore,
-    /// Set the number of pieces; pieces are equal width
-    /// The value must be greater or equal to 2.
-    NumPieces(usize),
-    /// Use a fixed width for each piece
-    PieceWidth(f64),
-    /// Bound the absolute error of the approximation
-    MaxAbsoluteError(f64),
-    /// Bound the relative error of the approximation
-    MaxRelativeError(f64),
-}
-
-impl From<FuncConstrOptions> for CString {
-    fn from(value: FuncConstrOptions) -> Self {
-        use FuncConstrOptions as O;
-        let res = match value {
-            O::Ignore => "FuncPieces=0".to_owned(),
-
-            // HACK: I know this is not the perfect place to validate `FunConstrOptions`, but I couldn't
-            // find any earlier opportunities to do so.
-            O::NumPieces(0 | 1) => {
-                panic!("Invalid number of pieces. The value must be above or equal 2.")
-            }
-            O::NumPieces(n) => format!("FuncPieces={n}"),
-
-            O::PieceWidth(w) => format!("FuncPieces=1 FuncPieceLength={w}"),
-            O::MaxAbsoluteError(e) => format!("FuncPieces=-1 FuncPieceError={e}"),
-            O::MaxRelativeError(e) => format!("FuncPieces=-2 FuncPieceError={e}"),
-        };
-        CString::new(res).expect("the strings above don't contain NULs")
-    }
-}
-
 macro_rules! impl_func_constr {
     ($name:literal, $formula:literal, $fn_name:ident, $ffi_fn_name:path) => {
         #[doc = concat!("Add ", $name, " function constraint to the model.")]
@@ -112,20 +66,14 @@ macro_rules! impl_func_constr {
         /// let mut m = Model::new("model")?;
         /// let x = add_ctsvar!(m)?;
         /// let y = add_ctsvar!(m)?;
-        #[doc = concat!("m.", stringify!($fn_name), "(\"c1\", x, y, None)?;")]
+        #[doc = concat!("m.", stringify!($fn_name), "(\"c1\", x, y, \"\")?;")]
         /// # Ok::<(), grb::Error>(())
         /// ```
-        pub fn $fn_name(
-            &mut self,
-            name: &str,
-            x: Var,
-            y: Var,
-            options: Option<FuncConstrOptions>,
-        ) -> Result<GenConstr> {
+        pub fn $fn_name(&mut self, name: &str, x: Var, y: Var, options: &str) -> Result<GenConstr> {
             let constrname = CString::new(name)?;
             let x_idx = self.get_index_build(&x)?;
             let y_idx = self.get_index_build(&y)?;
-            let options = options.map(CString::from).unwrap_or_default();
+            let options = CString::new(options)?;
 
             self.check_apicall(unsafe {
                 $ffi_fn_name(
@@ -155,7 +103,7 @@ macro_rules! impl_funca_constr {
         /// let x = add_ctsvar!(m)?;
         /// let y = add_ctsvar!(m)?;
         /// let a = 5.0;
-        #[doc=concat!("m.", stringify!($fn_name), "(\"c1\", x, y, a, None)?;")]
+        #[doc=concat!("m.", stringify!($fn_name), "(\"c1\", x, y, a, \"\")?;")]
         /// # Ok::<(), grb::Error>(())
         /// ```
         pub fn $fn_name(
@@ -164,12 +112,12 @@ macro_rules! impl_funca_constr {
             x: Var,
             y: Var,
             a: f64,
-            options: Option<FuncConstrOptions>,
+            options: &str,
         ) -> Result<GenConstr> {
             let constrname = CString::new(name)?;
             let x_idx = self.get_index_build(&x)?;
             let y_idx = self.get_index_build(&y)?;
-            let options = options.map(CString::from).unwrap_or_default();
+            let options = CString::new(options)?;
 
             self.check_apicall(unsafe {
                 $ffi_fn_name(
@@ -1159,12 +1107,12 @@ impl Model {
         x: Var,
         y: Var,
         mut coeffs: Vec<f64>,
-        options: Option<FuncConstrOptions>,
+        options: &str,
     ) -> Result<GenConstr> {
         let constrname = CString::new(name)?;
         let x_idx = self.get_index_build(&x)?;
         let y_idx = self.get_index_build(&y)?;
-        let options = options.map(CString::from).unwrap_or_default();
+        let options = CString::new(options)?;
 
         self.check_apicall(unsafe {
             ffi::GRBaddgenconstrPoly(

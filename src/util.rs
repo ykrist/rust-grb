@@ -21,7 +21,7 @@ pub(crate) unsafe fn copy_c_str(s: ffi::c_str) -> String {
 // but this will likely cause a bunch of breaking changes.
 pub(crate) trait AsPtr {
     type Ptr;
-    /// Return the underlying Gurobi pointer for [`Model`] and [`Env`] objects
+    /// Return the underlying Gurobi pointer for [`Model`](crate::Model) and [`Env`](crate::Env) objects
     ///
     /// # Safety
     /// One of the following conditions must hold

@@ -328,7 +328,7 @@ impl Model {
         Ok(())
     }
 
-    /// Query update mode. See [<https://www.gurobi.com/documentation/9.1/refman/updatemode.html>]
+    /// Query update mode. See <https://docs.gurobi.com/projects/optimizer/en/current/reference/parameters.html#parameterupdatemode>
     fn update_mode_lazy(&self) -> Result<bool> {
         //  0 => pending until update() or optimize() called.
         //  1 => all changes are immediate
@@ -1311,7 +1311,7 @@ impl Drop for Model {
     }
 }
 
-/// A handle to an [`AsyncModel`](crate::model::AsyncModel) which is currently solving.
+/// A handle to an [`AsyncModel`] which is currently solving.
 pub struct AsyncHandle(Model);
 
 impl AsyncHandle {
@@ -1448,7 +1448,7 @@ impl AsyncModel {
 
     /// Optimize the model on another thread.  This method will always trigger a [`Model::update`] on the underlying `Model`.
     ///
-    /// On success, returns an [`AsyncHandle`](crate::model::AsyncHandle) that provides a limited API for model queries.
+    /// On success, returns an [`AsyncHandle`] that provides a limited API for model queries.
     /// The `AsyncModel` can be retrieved by calling [`AsyncHandle::join`](crate::model::AsyncHandle::join).
     ///
     /// # Errors

@@ -4,9 +4,9 @@
 //! of parameters and their uses.
 use std::ffi::{CStr, CString};
 
-use crate::env::Env;
 use crate::ffi;
 use crate::util::{copy_c_str, AsPtr};
+use crate::Env;
 use crate::Result;
 
 #[allow(missing_docs)]

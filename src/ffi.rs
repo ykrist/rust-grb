@@ -1,6 +1,6 @@
 cfg_if::cfg_if! {
     if #[cfg(feature = "gurobi12")] {
-        pub use grb_sys2_12::*;
+        pub use grb_sys_12::*;
 
         pub mod shims {
             use super::*;
@@ -16,7 +16,7 @@ cfg_if::cfg_if! {
             }
         }
     } else {
-        pub use grb_sys2_10::*;
+        pub use grb_sys_10::*;
 
         pub mod shims {
             use super::*;

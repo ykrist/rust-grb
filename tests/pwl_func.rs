@@ -56,7 +56,7 @@ fn pwl_genconstr() -> anyhow::Result<()> {
 
     model.add_genconstr_pwl("gc1", x, u, x_points.zip(u_points))?;
 
-    let y_max = (9. / 4.) * (9. / 4.);
+    let y_max = (9.0f64 / 4.).powi(2);
     let len = (y_max / INTERVAL).ceil() as usize + 1;
 
     let y_points = (0..len).map(|i| i as f64 * INTERVAL);

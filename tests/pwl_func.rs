@@ -1,33 +1,34 @@
 use grb::prelude::*;
 
-#[test]
-fn main() -> anyhow::Result<()> {
-    fn f(u: f64) -> f64 {
-        u.exp()
-    }
-    fn g(u: f64) -> f64 {
-        u.sqrt()
-    }
+fn f(u: f64) -> f64 {
+    u.exp()
+}
+fn g(u: f64) -> f64 {
+    u.sqrt()
+}
 
-    fn print_sol(m: &Model) -> anyhow::Result<()> {
-        // XXX: use GRBgetdblarray
-        let xs: Vec<_> = m
-            .get_vars()?
-            .iter()
-            .map(|v| m.get_obj_attr(attr::X, v))
-            .collect::<Result<_, _>>()?;
+fn print_sol(m: &Model) -> anyhow::Result<()> {
+    // XXX: use GRBgetdblarray
+    let xs: Vec<_> = m
+        .get_vars()?
+        .iter()
+        .map(|v| m.get_obj_attr(attr::X, v))
+        .collect::<Result<_, _>>()?;
 
-        println!("x = {}, u = {}", xs[0], xs[2]);
-        println!("y = {}, v = {}", xs[1], xs[3]);
+    println!("x = {}, u = {}", xs[0], xs[2]);
+    println!("y = {}, v = {}", xs[1], xs[3]);
 
-        // Calculate violation of exp(x) + 4 sqrt(y) <= 9
-        let vio = f(xs[0]) + 4. * g(xs[1]) - 9.;
-        let vio = if vio < 0. { 0. } else { vio };
-        println!("Vio = {vio}");
+    // Calculate violation of exp(x) + 4 sqrt(y) <= 9
+    let vio = f(xs[0]) + 4. * g(xs[1]) - 9.;
+    let vio = if vio < 0. { 0. } else { vio };
+    println!("Vio = {vio}");
 
-        Ok(())
-    }
+    Ok(())
+}
 
+const INTERVAL: f64 = 1e-3;
+
+fn setup() -> anyhow::Result<(Model, [Var; 4])> {
     let mut model = Model::new("")?;
 
     let x = add_ctsvar!(model, obj: 2.0, name: "x")?;
@@ -39,10 +40,14 @@ fn main() -> anyhow::Result<()> {
 
     model.add_constr("c1", c!(u + 4 * v <= 9))?;
 
-    const INTERVAL: f64 = 1e-3;
+    Ok((model, [x, y, u, v]))
+}
 
-    // Approach 1) PWL constraint approach
-    //
+#[test]
+/// Approach 1) PWL constraint approach
+fn pwl_genconstr() -> anyhow::Result<()> {
+    let (mut model, [x, y, u, v]) = setup()?;
+
     let x_max = 9.0f64.log10();
     let len = (x_max / INTERVAL).ceil() as usize + 1;
 
@@ -62,14 +67,14 @@ fn main() -> anyhow::Result<()> {
     model.optimize()?;
     print_sol(&model)?;
 
-    // Approach 2) General function constraint approach
-    // with auto PWL translation by Gurobi
-    //
+    Ok(())
+}
 
-    // Restore unsolved state and get rid of PWL constraints
-    model.reset()?;
-    model.del_genconstrs([gc1, gc2])?;
-    model.update()?;
+#[test]
+/// Approach 2) General function constraint approach
+/// with auto PWL translation by Gurobi
+fn function_genconstr() -> anyhow::Result<()> {
+    let (mut model, [x, y, u, v]) = setup()?;
 
     model.add_genconstr_natural_exp("gcf1", x, u, "")?;
     model.add_genconstr_pow("gcf2", y, v, 0.5, "")?;

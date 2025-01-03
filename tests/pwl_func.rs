@@ -86,7 +86,9 @@ fn function_genconstr() -> anyhow::Result<()> {
     print_sol(&model)?;
 
     // Zoom in, use optimal solution to reduce the ranges and use a smaller
-    // pclen=1e-5 to solve it
+    // pclen=1e-4 to solve it
+    // NOTE: the source uses pclen 1e-5, but that takes too long (60+ seconds),
+    // so we go with a bigger value of 1e-4 which nevertheless returns an almost perfect result
     let xs = model.get_obj_attr_batch(attr::X, [x, y])?;
 
     let t = xs[0] - 0.01;
@@ -100,7 +102,8 @@ fn function_genconstr() -> anyhow::Result<()> {
 
     model.reset()?;
 
-    model.set_param(param::FuncPieceLength, 1e-5)?;
+    // NOTE: here we differ from the source, see above
+    model.set_param(param::FuncPieceLength, 1e-4)?;
 
     // Optimize the model and print solution
     model.optimize()?;

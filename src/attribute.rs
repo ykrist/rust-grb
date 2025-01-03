@@ -656,7 +656,7 @@ mod tests {
                     err => {
                         eprintln!("failed to get {a_name}: {err}");
                         err_count += 1;
-                    },
+                    }
                 }
             }
         }

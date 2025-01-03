@@ -360,7 +360,7 @@ impl TryFrom<i32> for GenConstrType {
     }
 }
 
-/// Norm of the vector to use in [`Model::add_genconstr_norm`]
+/// Norm of the vector to use in [`Model::add_genconstr_norm`](`crate::Model::add_genconstr_norm`)
 pub enum Norm {
     /// The number of non-zero values among the operands
     L0,

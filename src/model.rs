@@ -1,5 +1,3 @@
-use grb_sys2 as ffi;
-use grb_sys2::{c_int, GRBmodel};
 use std::borrow::Borrow;
 use std::ffi::CString;
 use std::mem::transmute;
@@ -11,6 +9,8 @@ use crate::attribute::{ModelAttrGet, ModelAttrSet, ObjAttrGet, ObjAttrSet};
 use crate::callback::{callback_wrapper, UserCallbackData};
 use crate::constr::{IneqExpr, RangeExpr};
 use crate::expr::{LinExpr, QuadExpr};
+use crate::ffi;
+use crate::ffi::c_int;
 use crate::model_object::IdxManager;
 use crate::parameter::{ParamGet, ParamSet};
 use crate::prelude::*;
@@ -21,7 +21,7 @@ use crate::{Error, Result};
 ///
 /// This will be where the bulk of interactions with Gurobi occur.
 pub struct Model {
-    ptr: *mut GRBmodel,
+    ptr: *mut ffi::GRBmodel,
     #[allow(dead_code)]
     id: u32,
     env: Env,
@@ -48,8 +48,8 @@ macro_rules! impl_object_list_getter {
 }
 
 impl AsPtr for Model {
-    type Ptr = GRBmodel;
-    unsafe fn as_mut_ptr(&self) -> *mut GRBmodel {
+    type Ptr = ffi::GRBmodel;
+    unsafe fn as_mut_ptr(&self) -> *mut Self::Ptr {
         self.ptr
     }
 }
@@ -244,7 +244,7 @@ impl Model {
     /// This assumption is necessary to prevent a double free when a `Model` object is dropped,
     /// which frees the `GRBModel` and triggers the drop of a `Env`, which in turn
     /// frees the `GRBEnv`.  The `*copies_env` tests in this module validate this assumption.
-    fn from_raw(env: &Env, model: *mut GRBmodel) -> Result<Model> {
+    fn from_raw(env: &Env, model: *mut ffi::GRBmodel) -> Result<Model> {
         assert!(!model.is_null());
         let env_ptr = unsafe { ffi::GRBgetenv(model) };
         if env_ptr.is_null() {
@@ -373,7 +373,7 @@ impl Model {
     /// The model must be MIP and have a solution loaded. In the fixed model,
     /// each integer variable is fixed to the value that it takes in the current MIP solution.
     pub fn fixed(&mut self) -> Result<Model> {
-        let mut fixed: *mut GRBmodel = null_mut();
+        let mut fixed: *mut ffi::GRBmodel = null_mut();
         self.check_apicall(unsafe { ffi::GRBfixmodel(self.ptr, &mut fixed) })?;
         Model::from_raw(&self.env, fixed)
     }
@@ -424,7 +424,7 @@ impl Model {
 
     fn call_with_callback<F>(
         &mut self,
-        gurobi_routine: unsafe extern "C" fn(*mut GRBmodel) -> c_int,
+        gurobi_routine: unsafe extern "C" fn(*mut ffi::GRBmodel) -> c_int,
         callback: &mut F,
     ) -> Result<()>
     where
@@ -1737,7 +1737,7 @@ impl Model {
     /// [manual](https://www.gurobi.com/documentation/9.5/refman/multiple_scenarios.html#sec:MultipleScenarios)
     /// for details on multi-scenario models.
     pub fn single_scenario_model(&mut self) -> Result<Model> {
-        let mut model_ptr: *mut GRBmodel = std::ptr::null_mut();
+        let mut model_ptr: *mut ffi::GRBmodel = std::ptr::null_mut();
         self.check_apicall(unsafe {
             ffi::GRBsinglescenariomodel(self.as_mut_ptr(), &mut model_ptr)
         })?;

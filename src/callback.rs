@@ -99,7 +99,6 @@
 //! # Ok::<(), grb::Error>(())
 //! ```
 
-use grb_sys2 as ffi;
 use std::borrow::Borrow;
 use std::convert::TryInto;
 use std::iter::{IntoIterator, Iterator};
@@ -108,6 +107,7 @@ use std::ptr::null;
 
 use crate::constants::{callback::*, ERROR_CALLBACK, GRB_UNDEFINED};
 use crate::constr::IneqExpr;
+use crate::ffi;
 use crate::util::{self, AsPtr};
 use crate::{model::Model, Error, Result, Status, Var, INFINITY}; // used for setting a partial solution in a callback
 

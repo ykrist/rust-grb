@@ -5,15 +5,15 @@ error[E0277]: the trait bound `Expr: From<bool>` is not satisfied
   |        ^ the trait `From<bool>` is not implemented for `Expr`
   |
   = help: the following other types implement trait `From<T>`:
-            <Expr as From<&T>>
-            <Expr as From<LinExpr>>
-            <Expr as From<QuadExpr>>
-            <Expr as From<Var>>
-            <Expr as From<f32>>
-            <Expr as From<f64>>
-            <Expr as From<i16>>
-            <Expr as From<i32>>
-          and 8 others
+            `Expr` implements `From<&T>`
+            `Expr` implements `From<LinExpr>`
+            `Expr` implements `From<QuadExpr>`
+            `Expr` implements `From<Var>`
+            `Expr` implements `From<f32>`
+            `Expr` implements `From<f64>`
+            `Expr` implements `From<i16>`
+            `Expr` implements `From<i32>`
+          and $N others
 
 error[E0605]: non-primitive cast: `Var` as `f64`
  --> tests/compile-tests/garbage.rs:8:20

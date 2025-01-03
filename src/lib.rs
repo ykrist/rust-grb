@@ -59,7 +59,8 @@
 #![warn(missing_docs)]
 #![warn(rustdoc::missing_crate_level_docs)]
 // TODO: fix the doc links to reference the 9.5 manual
-use grb_sys2 as ffi;
+
+pub(crate) mod ffi;
 
 /// Returns the version number of Gurobi
 pub fn version() -> (i32, i32, i32) {

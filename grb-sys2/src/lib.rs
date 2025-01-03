@@ -22,11 +22,11 @@ pub struct GRBsvec {
 
 // Environment Creation and Destruction
 extern "C" {
-    pub fn GRBemptyenv(envP: *mut *mut GRBenv) -> c_int;
-
+    pub fn GRBemptyenvinternal(envP: *mut *mut GRBenv, major: c_int, minor: c_int, tech: c_int) -> c_int;
+    
     pub fn GRBstartenv(envP: *mut GRBenv) -> c_int;
 
-    pub fn GRBloadenv(envP: *mut *mut GRBenv, logfilename: c_str) -> c_int;
+    pub fn GRBloadenvinternal(envP: *mut *mut GRBenv, logfilename: c_str, major: c_int, minor: c_int, tech: c_int) -> c_int;
 
     pub fn GRBgetmultiobjenv(model: *mut GRBmodel, num: c_int) -> *mut GRBenv;
 

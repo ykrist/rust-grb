@@ -30,7 +30,7 @@ fnv = "^1.0"
 anyhow = "^1.0"
 cstr-enum = "^1.0"
 grb-sys2_10 = {package = "grb-sys2", version = "10.2.0", optional = true}
-grb-sys2_12 = {package = "grb-sys2", path="./grb-sys2", optional = true}
+grb-sys2_12 = {package = "grb-sys2", path="../grb-sys2", optional = true}
 grb-macro = "0.1.0"
 cfg-if = "1.0.0"
 

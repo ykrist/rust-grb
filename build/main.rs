@@ -102,6 +102,8 @@ enum ObjType {
     Model,
     Var,
     Constr,
+    #[serde(rename = "gconstr")]
+    GenConstr,
     QConstr,
     SOS,
 }
@@ -113,11 +115,12 @@ impl FromStr for ObjType {
             "model" => ObjType::Model,
             "var" => ObjType::Var,
             "constr" => ObjType::Constr,
+            "gconstr" => ObjType::GenConstr,
             "qconstr" => ObjType::QConstr,
             "sos" => ObjType::SOS,
             _ => {
                 return Err(ParseError::Otype(
-                    "expected `model`, `var`, `constr`, `qconstr` or `sos`".to_string(),
+                    "expected `model`, `var`, `constr`, `gconstr`, `qconstr` or `sos`".to_string(),
                 ));
             }
         };
@@ -437,7 +440,7 @@ mod attrs {
     ) -> anyhow::Result<()> {
         let mut ts = quote! {
           use cstr_enum::*;
-          use super::{IntAttr, CharAttr, StrAttr, DoubleAttr, ObjAttr, Var, Constr, QConstr, SOS};
+          use super::{IntAttr, CharAttr, StrAttr, DoubleAttr, ObjAttr, Var, Constr, GenConstr, QConstr, SOS};
         };
 
         for (ident, (o, d, members)) in enums {

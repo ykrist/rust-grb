@@ -26,6 +26,7 @@ The allowed values for `otype` are listed below.
 | `model`   | no marker trait                      |
 | `var`     | marker trait `ObjAttr<Obj=Var>`      |
 | `constr`  | marker trait `ObjAttr<Obj=Constr>`   |
+| `gconstr` | marker trait `ObjAttr<Obj=GenConstr>` |
 | `qconstr` | marker trait `ObjAttr<Obj=QConstr>`  |
 | `sos`     | marker trait `ObjAttr<Obj=SOS>`      |
 

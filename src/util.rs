@@ -1,5 +1,5 @@
+use crate::ffi;
 use crate::{Error, Result};
-use grb_sys2 as ffi;
 use std::{
     ffi::{CStr, CString},
     path::Path,

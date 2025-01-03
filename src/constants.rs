@@ -1,4 +1,4 @@
-use grb_sys2::{c_char, c_int};
+use crate::ffi::{c_char, c_int};
 use std::convert::TryFrom;
 
 // Constants defined by Gurobi API

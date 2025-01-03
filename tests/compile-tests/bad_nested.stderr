@@ -11,6 +11,12 @@ error[E0369]: binary operation `==` cannot be applied to type `Expr`
   |        ----- ^^ - {integer}
   |        |
   |        Expr
+  |
+note: the foreign item type `Expr` doesn't implement `PartialEq<{integer}>`
+ --> src/expr.rs
+  |
+  | pub enum Expr {
+  | ^^^^^^^^^^^^^ not implement `PartialEq<{integer}>`
 
 error[E0369]: binary operation `>=` cannot be applied to type `Expr`
  --> tests/compile-tests/bad_nested.rs:8:14
@@ -19,3 +25,9 @@ error[E0369]: binary operation `>=` cannot be applied to type `Expr`
   |        ----- ^^ ----- _
   |        |
   |        Expr
+  |
+note: the foreign item type `Expr` doesn't implement `PartialOrd<_>`
+ --> src/expr.rs
+  |
+  | pub enum Expr {
+  | ^^^^^^^^^^^^^ not implement `PartialOrd<_>`

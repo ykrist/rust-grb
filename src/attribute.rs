@@ -10,9 +10,9 @@ use std::iter::IntoIterator;
 use std::ptr::{null, null_mut};
 
 use cstr_enum::AsCStr;
-use grb_sys2 as ffi;
-use grb_sys2::{c_char, c_int};
 
+use crate::ffi;
+use crate::ffi::{c_char, c_int};
 use crate::model_object::*;
 use crate::util::{copy_c_str, AsPtr};
 use crate::{ConstrSense, Model, ModelSense, Result, Status, VarType};

@@ -2,9 +2,9 @@ use fnv::FnvHashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 
+use crate::ffi;
 use crate::Model;
 use crate::{Error, Result};
-use grb_sys2 as ffi;
 
 mod private_traits {
     use super::*;

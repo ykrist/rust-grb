@@ -2,10 +2,10 @@
 //! Gurobi parameters for [`Env`]  and [`Model`](crate::Model) objects.  See the
 //! [manual](https://www.gurobi.com/documentation/9.1/refman/parameters.html) for a list
 //! of parameters and their uses.
-use grb_sys2 as ffi;
 use std::ffi::{CStr, CString};
 
 use crate::env::Env;
+use crate::ffi;
 use crate::util::{copy_c_str, AsPtr};
 use crate::Result;
 

@@ -14,6 +14,14 @@ build = "build/main.rs"
 readme = "README.md"
 exclude = ["/tests"]
 
+[features]
+default=["gurobi11"]
+gurobi12 = ["grb-sys2_12"]
+gurobi11 = ["grb-sys2_10"]
+gurobi10 = ["grb-sys2_10"]
+gurobi9 = ["grb-sys2_10"]
+
+
 [package.metadata.docs.rs]
 rustdoc-args = ["--html-in-header", "doc/katex-header.html"]
 
@@ -21,8 +29,10 @@ rustdoc-args = ["--html-in-header", "doc/katex-header.html"]
 fnv = "^1.0"
 anyhow = "^1.0"
 cstr-enum = "^1.0"
-grb-sys2 = "10.2.0"
+grb-sys2_10 = {package = "grb-sys2", version = "10.2.0", optional = true}
+grb-sys2_12 = {package = "grb-sys2", path="./grb-sys2", optional = true}
 grb-macro = "0.1.0"
+cfg-if = "1.0.0"
 
 [dev-dependencies]
 proptest = "^0.10"

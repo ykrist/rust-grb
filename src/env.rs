@@ -3,21 +3,20 @@ use std::ptr::null_mut;
 use std::rc::Rc;
 
 use crate::error::{Error, Result};
+use crate::ffi;
 use crate::parameter::{ParamGet, ParamSet};
 use crate::util;
-use grb_sys2 as ffi;
-use grb_sys2::GRBenv;
 use util::AsPtr;
 
 /// Represents a User-Allocated Gurobi Env
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) struct UserAllocEnv {
-    ptr: *mut GRBenv,
+    ptr: *mut ffi::GRBenv,
 }
 
 impl AsPtr for UserAllocEnv {
-    type Ptr = GRBenv;
-    unsafe fn as_mut_ptr(&self) -> *mut GRBenv {
+    type Ptr = ffi::GRBenv;
+    unsafe fn as_mut_ptr(&self) -> *mut ffi::GRBenv {
         self.ptr
     }
 }
@@ -40,12 +39,12 @@ pub struct Env {
     user_allocated: Rc<UserAllocEnv>,
     /// Is None if Env is user-allocated, otherwise is `Some(ptr)` where `ptr `
     /// is a Gurobi-allocated *GRBEnv
-    gurobi_allocated: Option<*mut GRBenv>,
+    gurobi_allocated: Option<*mut ffi::GRBenv>,
 }
 
 impl AsPtr for Env {
-    type Ptr = GRBenv;
-    unsafe fn as_mut_ptr(&self) -> *mut GRBenv {
+    type Ptr = ffi::GRBenv;
+    unsafe fn as_mut_ptr(&self) -> *mut Self::Ptr {
         self.gurobi_allocated
             .unwrap_or_else(|| self.user_allocated.as_mut_ptr())
     }
@@ -104,7 +103,7 @@ impl Env {
     /// - `ptr` must be non-null
     /// - `ptr` must have been obtained using `GRBEmptyEnv` or `GRBloadenv`
     /// - `ptr` must not have previously been used (elsewhere wrapped)
-    unsafe fn new_user_allocated(ptr: *mut GRBenv) -> Env {
+    unsafe fn new_user_allocated(ptr: *mut ffi::GRBenv) -> Env {
         debug_assert!(!ptr.is_null());
         Env {
             user_allocated: Rc::new(UserAllocEnv { ptr }),
@@ -127,7 +126,7 @@ impl Env {
     /// Create a new empty and un-started environment.
     pub fn empty() -> Result<EmptyEnv> {
         let mut env = null_mut();
-        let err_code = unsafe { ffi::GRBemptyenv(&mut env) };
+        let err_code = unsafe { ffi::shims::empty_env(&mut env) };
         if err_code != 0 {
             return Err(Error::FromAPI(get_error_msg(env), err_code));
         }
@@ -141,7 +140,7 @@ impl Env {
     pub fn new(logfilename: &str) -> Result<Env> {
         let mut env = null_mut();
         let logfilename = CString::new(logfilename)?;
-        let error = unsafe { ffi::GRBloadenv(&mut env, logfilename.as_ptr()) };
+        let error = unsafe { ffi::shims::load_env(&mut env, logfilename.as_ptr()) };
         if error != 0 {
             return Err(Error::FromAPI(get_error_msg(env), error));
         }

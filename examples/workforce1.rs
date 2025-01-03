@@ -20,7 +20,7 @@ fn main() {
             .unwrap();
         let iis_constr: Vec<_> = constr
             .iter()
-            .zip(iis_vals.into_iter())
+            .zip(iis_vals)
             .filter_map(|(&c, i)| if i == 1 { Some(c) } else { None })
             .collect();
         let iis_names = model
@@ -28,7 +28,7 @@ fn main() {
             .unwrap();
 
         for name in iis_names {
-            println!(" - {}", name);
+            println!(" - {name}");
         }
     }
 }

@@ -154,7 +154,7 @@ impl<T: ModelObject> IdxManager<T> {
 
     fn mark_update_action(&mut self, a: UpdateAction) {
         if a > self.update_action {
-            self.update_action = a
+            self.update_action = a;
         }
     }
 

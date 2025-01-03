@@ -169,11 +169,7 @@ impl LinExpr {
     pub fn get_value(&self, model: &Model) -> Result<f64> {
         let coeff = self.coeff.values();
         let vals = model.get_obj_attr_batch(attr::X, self.coeff.keys().copied())?;
-        let total = coeff
-            .zip(vals.into_iter())
-            .map(|(&a, x)| a * x)
-            .sum::<f64>()
-            + self.offset;
+        let total = coeff.zip(vals).map(|(&a, x)| a * x).sum::<f64>() + self.offset;
         Ok(total)
     }
 
@@ -266,8 +262,8 @@ impl QuadExpr {
         let rowvals = model.get_obj_attr_batch(attr::X, self.qcoeffs.keys().map(|&(_, x)| x))?;
         let colvals = model.get_obj_attr_batch(attr::X, self.qcoeffs.keys().map(|&(x, _)| x))?;
         let total = coeff
-            .zip(rowvals.into_iter())
-            .zip(colvals.into_iter())
+            .zip(rowvals)
+            .zip(colvals)
             .map(|((&a, x), y)| a * x * y)
             .sum::<f64>()
             + self.linexpr.get_value(model)?;
@@ -607,7 +603,7 @@ impl<A: Into<Expr>> Sum<A> for Expr {
     where
         I: Iterator<Item = A>,
     {
-        let mut total = iter.next().map_or(Expr::Constant(0.0), |x| x.into());
+        let mut total = iter.next().map_or(Expr::Constant(0.0), Into::into);
         for x in iter {
             total = total + x.into();
         }
@@ -758,7 +754,7 @@ fn float_fmt_helper(x: f64, ignore_val: f64) -> (Option<f64>, bool) {
 
 impl From<Error> for fmt::Error {
     fn from(err: Error) -> fmt::Error {
-        eprintln!("fmt error cause by: {}", err);
+        eprintln!("fmt error cause by: {err}");
         fmt::Error {}
     }
 }
@@ -773,7 +769,7 @@ impl fmt::Debug for Attached<'_, LinExpr> {
 
         let mut is_first_term = false;
         if let Some(offset) = offset {
-            f.write_fmt(format_args!("{}", if positive { offset } else { -offset }))?;
+            write!(f, "{}", if positive { offset } else { -offset })?;
         } else {
             is_first_term = true;
         }
@@ -783,19 +779,18 @@ impl fmt::Debug for Attached<'_, LinExpr> {
             let (coeff, positive) = float_fmt_helper(coeff, 1.0);
 
             // write the operator with the previous term
-            if !is_first_term {
-                f.write_str(if positive { " + " } else { " - " })?;
-            } else {
+            if is_first_term {
                 is_first_term = false;
                 if !positive {
                     f.write_char('-')?;
                 }
+            } else {
+                f.write_str(if positive { " + " } else { " - " })?;
             }
             if let Some(coeff) = coeff {
-                f.write_fmt(format_args!("{} {}", coeff, varname))?;
-            } else {
-                f.write_str(&varname)?;
+                write!(f, "{coeff} ")?;
             }
+            f.write_str(&varname)?;
         }
         Ok(())
     }
@@ -809,7 +804,7 @@ impl fmt::Debug for Attached<'_, QuadExpr> {
 
         let mut is_first_term = false;
         if self.inner.linexpr.is_empty() {
-            is_first_term = true
+            is_first_term = true;
         } else {
             self.inner.linexpr.attach(self.model).fmt(f)?;
         }
@@ -827,10 +822,9 @@ impl fmt::Debug for Attached<'_, QuadExpr> {
                 f.write_str(if positive { " + " } else { " - " })?;
             }
             if let Some(coeff) = coeff {
-                f.write_fmt(format_args!("{} {}*{}", coeff, xname, yname))?;
-            } else {
-                f.write_fmt(format_args!("{}*{}", xname, yname))?;
+                write!(f, "{coeff} ")?;
             }
+            write!(f, "{xname}*{yname}")?;
         }
         Ok(())
     }
@@ -840,23 +834,21 @@ impl fmt::Debug for Attached<'_, Expr> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::Expr::*;
         match &self.inner {
-            Constant(a) => f.write_fmt(format_args!("{}", a)),
+            Constant(a) => f.write_str(&a.to_string()),
             Term(a, x) => {
                 let varname = self.model.get_obj_attr(attr::VarName, x)?;
-                if (a - 1.0).abs() < f64::EPSILON {
-                    f.write_fmt(format_args!("{}", varname))
-                } else {
-                    f.write_fmt(format_args!("{} {}", a, varname))
+                if (a - 1.0).abs() >= f64::EPSILON {
+                    write!(f, "{a} ")?;
                 }
+                f.write_str(&varname)
             }
             QTerm(a, x, y) => {
                 let xname = self.model.get_obj_attr(attr::VarName, x)?;
                 let yname = self.model.get_obj_attr(attr::VarName, y)?;
-                if (a - 1.0).abs() < f64::EPSILON {
-                    f.write_fmt(format_args!("{}*{}", xname, yname))
-                } else {
-                    f.write_fmt(format_args!("{} {}*{}", a, xname, yname))
+                if (a - 1.0).abs() >= f64::EPSILON {
+                    write!(f, "{a} ")?;
                 }
+                write!(f, "{xname}*{yname}")
             }
             Linear(e) => e.attach(self.model).fmt(f),
             Quad(e) => e.attach(self.model).fmt(f),
@@ -949,10 +941,10 @@ mod tests {
 
         for (&var, &coeff) in e.iter_terms() {
             if var == x {
-                assert!((coeff - 2.0) < f64::EPSILON)
+                assert!((coeff - 2.0).abs() < f64::EPSILON);
             }
             if var == x {
-                assert!((coeff - 4.0) < f64::EPSILON)
+                assert!((coeff - 4.0) < f64::EPSILON);
             }
         }
     }
@@ -968,15 +960,15 @@ mod tests {
         } else {
             panic!("{:?}", y);
         }
-        let q = -(x.clone() * x.clone());
+        let q = -(x * x);
         eprintln!("{:?}", q.attach(&model));
     }
 
     #[test]
     fn summation() {
         make_model_with_vars!(model, x, y, z);
-        let vars = [x.clone(), y.clone(), z.clone(), x.clone()];
-        let e: Expr = vars.iter().cloned().sum();
+        let vars = [x, y, z, x];
+        let e: Expr = vars.iter().copied().sum();
         eprintln!("{:?}", &e);
         let e = e.into_linexpr().unwrap();
         assert_eq!(e.coeff.len(), 3);
@@ -993,7 +985,7 @@ mod tests {
         let e = 2usize * y;
         let s = format!("{:?}", e.attach(&m));
         assert_eq!("2 y", s.to_string());
-        eprintln!("{}", s);
+        eprintln!("{s}");
         let e = x * y - 2.0f64 * (x * x);
         eprintln!("{:?}", e.attach(&m));
     }

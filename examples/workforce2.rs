@@ -10,7 +10,7 @@ fn main() {
 
     let mut removed = Vec::new();
     for loop_count in 0..100 {
-        println!("[iteration {}]", loop_count);
+        println!("[iteration {loop_count}]");
 
         model.optimize().unwrap();
 
@@ -33,21 +33,18 @@ fn main() {
                         .filter_map(|(&c, &val)| if val == 1 { Some(c) } else { None })
                         .collect();
                     println!("number of IIS constrs = {}", iis_constrs.len());
-                    iis_constrs.first().cloned()
+                    iis_constrs.first().copied()
                 };
 
-                match c {
-                    Some(c) => {
-                        let cname = model.get_obj_attr(attr::ConstrName, &c).unwrap();
-                        model.remove(c).unwrap();
-                        model.update().unwrap();
-                        removed.push(cname);
-                    }
-                    None => {
-                        println!("There aren't any IIS constraints in the model.");
-                        break;
-                    }
-                }
+                let Some(c) = c else {
+                    println!("There aren't any IIS constraints in the model.");
+                    break;
+                };
+
+                let cname = model.get_obj_attr(attr::ConstrName, &c).unwrap();
+                model.remove(c).unwrap();
+                model.update().unwrap();
+                removed.push(cname);
             }
 
             Status::InfOrUnbd | Status::Unbounded => {
@@ -56,11 +53,11 @@ fn main() {
             }
 
             status => {
-                println!("Optimization is stopped with status {:?}", status);
+                println!("Optimization is stopped with status {status:?}");
                 return;
             }
         }
     }
 
-    println!("removed variables are: {:?}", removed);
+    println!("removed variables are: {removed:?}");
 }

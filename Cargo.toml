@@ -12,12 +12,10 @@ homepage = "https://github.com/ykrist/rust-grb"
 version = "2.0.2"
 build = "build/main.rs"
 readme = "README.md"
-exclude = [
-    "/tests"
-]
+exclude = ["/tests"]
 
 [package.metadata.docs.rs]
-rustdoc-args = [ "--html-in-header", "doc/katex-header.html" ]
+rustdoc-args = ["--html-in-header", "doc/katex-header.html"]
 
 [dependencies]
 fnv = "^1.0"

@@ -23,7 +23,7 @@ impl Cb {
         if self.tests[idx] {
             return false;
         }
-        println!("running check {}", idx);
+        println!("running check {idx}");
         self.tests[idx] = true;
         true
     }
@@ -43,7 +43,7 @@ impl Callback for Cb {
                         assert_eq!(x, None);
                     } else {
                         if self.tests.iter().all(|x| *x) {
-                            ctx.terminate()
+                            ctx.terminate();
                         }
                     }
                 }
@@ -64,7 +64,7 @@ impl Callback for Cb {
     }
 }
 
-const INSTANCE: &'static str = "traininstance2";
+const INSTANCE: &str = "traininstance2";
 
 #[test]
 fn main() -> anyhow::Result<()> {

@@ -197,7 +197,7 @@ pub(crate) extern "C" fn callback_wrapper(
     usrdata: *mut ffi::c_void,
 ) -> ffi::c_int {
     use std::panic::{catch_unwind, AssertUnwindSafe};
-    let u = unsafe { &mut *(usrdata as *mut UserCallbackData) };
+    let u = unsafe { &mut *usrdata.cast::<UserCallbackData>() };
     let (cb_obj, model, nvars) = (&mut u.cb_obj, u.model, u.nvars);
     let where_ = Where::new(CbCtx::new(cbdata, where_, model, nvars));
 
@@ -217,7 +217,7 @@ pub(crate) extern "C" fn callback_wrapper(
     match callback_result {
         Ok(Ok(())) => 0,
         Ok(Err(e)) => {
-            eprintln!("Callback returned error:\n{:#?}", e);
+            eprintln!("Callback returned error:\n{e:#?}");
             ERROR_CALLBACK
         }
         Err(_) => {
@@ -504,7 +504,7 @@ impl<'a> IISCtx<'a> {
     }
 }
 
-/// TODO: (medium) add MultiObj ctx
+/// TODO: (medium) add `MultiObj` ctx
 /// The argument given to callbacks.
 #[allow(missing_docs)]
 #[non_exhaustive]
@@ -522,7 +522,7 @@ pub enum Where<'a> {
 
 //
 impl Where<'_> {
-    fn new<'a>(ctx: CbCtx<'a>) -> Result<Where<'a>> {
+    fn new(ctx: CbCtx<'_>) -> Result<Where<'_>> {
         let w = match ctx.where_raw {
             POLLING => Where::Polling(PollingCtx(ctx)),
             PRESOLVE => Where::PreSolve(PreSolveCtx(ctx)),
@@ -580,8 +580,8 @@ impl<'a> CbCtx<'a> {
         nvars: usize,
     ) -> Self {
         CbCtx {
-            cbdata,
             where_raw,
+            cbdata,
             model,
             nvars,
         }
@@ -633,7 +633,11 @@ impl<'a> CbCtx<'a> {
         }
         let mut obj = INFINITY as raw::c_double;
         self.check_apicall(unsafe {
-            ffi::GRBcbsolution(self.cbdata, soln.as_ptr(), &mut obj as *mut raw::c_double)
+            ffi::GRBcbsolution(
+                self.cbdata,
+                soln.as_ptr(),
+                std::ptr::from_mut::<raw::c_double>(&mut obj),
+            )
         })?;
 
         let obj = if obj == INFINITY || obj == GRB_UNDEFINED {

@@ -2,20 +2,20 @@ use grb::prelude::*;
 
 fn main() -> grb::Result<()> {
     // warehouse demand in thousands of units.
-    let demand = vec![15f64, 18.0, 14.0, 20.0];
+    let demand = [15f64, 18.0, 14.0, 20.0];
 
     // plant capacity in thousands of units.
-    let capacity = vec![20f64, 22.0, 17.0, 19.0, 18.0];
+    let capacity = [20f64, 22.0, 17.0, 19.0, 18.0];
 
     // fixed costs for each plant.
-    let fixed_costs = vec![12000f64, 15000.0, 17000.0, 13000.0, 16000.0];
+    let fixed_costs = [12000f64, 15000.0, 17000.0, 13000.0, 16000.0];
 
     // transportation costs per thousands units.
-    let trans_costs = vec![
-        vec![4000f64, 2000.0, 3000.0, 2500.0, 4500.0],
-        vec![2500f64, 2600.0, 3400.0, 3000.0, 4000.0],
-        vec![1200f64, 1800.0, 2600.0, 4100.0, 3000.0],
-        vec![2200f64, 2600.0, 3100.0, 3700.0, 3200.0],
+    let trans_costs = [
+        [4000f64, 2000.0, 3000.0, 2500.0, 4500.0],
+        [2500f64, 2600.0, 3400.0, 3000.0, 4000.0],
+        [1200f64, 1800.0, 2600.0, 4100.0, 3000.0],
+        [2200f64, 2600.0, 3100.0, 3700.0, 3200.0],
     ];
 
     let env = Env::new("facility.log")?;
@@ -26,7 +26,7 @@ fn main() -> grb::Result<()> {
     let open: Vec<Var> = fixed_costs
         .iter()
         .enumerate()
-        .map(|(p, &cost)| add_binvar!(model, name: &format!("Open{}", p), obj: cost).unwrap())
+        .map(|(p, &cost)| add_binvar!(model, name: &format!("Open{p}"), obj: cost).unwrap())
         .collect();
 
     // transportation decision variables.
@@ -39,7 +39,7 @@ fn main() -> grb::Result<()> {
                 .iter()
                 .enumerate()
                 .map(|(p, &cost)| {
-                    add_ctsvar!(model, name: &format!("Trans{}.{}", p, w), obj: cost).unwrap()
+                    add_ctsvar!(model, name: &format!("Trans{p}.{w}"), obj: cost).unwrap()
                 })
                 .collect()
         })
@@ -61,30 +61,27 @@ fn main() -> grb::Result<()> {
 
     for (p, (&capacity, &open)) in capacity.iter().zip(&open).enumerate() {
         let lhs = trans_vars.iter().map(|t| t[p]).grb_sum();
-        model.add_constr(&format!("Capacity{}", p), c!(lhs <= capacity * open))?;
+        model.add_constr(&format!("Capacity{p}"), c!(lhs <= capacity * open))?;
     }
 
     for (w, (&demand, tvars)) in demand.iter().zip(&trans_vars).enumerate() {
-        model.add_constr(
-            &format!("Demand{}", w),
-            c!(tvars.iter().grb_sum() == demand),
-        )?;
+        model.add_constr(&format!("Demand{w}"), c!(tvars.iter().grb_sum() == demand))?;
     }
 
-    for o in open.iter() {
+    for o in &open {
         model.set_obj_attr(attr::Start, o, 1.0)?;
     }
 
     println!("Initial guesss:");
     let max_fixed = fixed_costs
         .iter()
-        .cloned()
+        .copied()
         .max_by(|a, b| a.partial_cmp(b).unwrap())
         .unwrap();
     for (p, (open, &cost)) in open.iter().zip(&fixed_costs).enumerate() {
         if (cost - max_fixed).abs() < 1e-4 {
             model.set_obj_attr(attr::Start, open, 0.0)?;
-            println!("Closing plant {}", p);
+            println!("Closing plant {p}");
             break;
         }
     }
@@ -102,15 +99,15 @@ fn main() -> grb::Result<()> {
     for (p, open) in open.iter().enumerate() {
         let x = model.get_obj_attr(attr::X, open)?;
         if x > 0.9 {
-            println!("Plant {} is open", p);
+            println!("Plant {p} is open");
             for (w, trans) in trans_vars.iter().enumerate() {
                 let t = model.get_obj_attr(attr::X, &trans[p])?;
                 if t > 0.0 {
-                    println!("  Transport {} units to warehouse {}", t, w);
+                    println!("  Transport {t} units to warehouse {w}");
                 }
             }
         } else {
-            println!("Plant {} is closed!", p);
+            println!("Plant {p} is closed!");
         }
     }
 

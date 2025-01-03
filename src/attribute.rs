@@ -148,8 +148,8 @@ macro_rules! impl_obj_set {
     };
 }
 
-/// Generate getter methods for a custom-type attribute (eg Sense or VType which have the
-/// ConstrSense and VarType enum types respectively)
+/// Generate getter methods for a custom-type attribute (eg `Sense` or `VType` which have the
+/// `ConstrSense` and `VarType` enum types respectively)
 macro_rules! impl_obj_get_custom {
     ($t:path, $default:expr, $get:path, $getbatch:path) => {
         fn get(&self, model: &Model, idx: i32) -> Result<$t> {
@@ -334,7 +334,7 @@ where
     }
 }
 
-impl<'a, A, T> ObjAttrSet<A::Obj, T> for A
+impl<A, T> ObjAttrSet<A::Obj, T> for A
 where
     A: StrAttr + AsCStr + ObjAttr,
     T: StringLike,
@@ -347,7 +347,7 @@ where
                 self.as_cstr().as_ptr(),
                 idx,
                 val.as_ptr(),
-            ))?
+            ))?;
         }
         Ok(())
     }

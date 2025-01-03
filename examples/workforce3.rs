@@ -37,7 +37,7 @@ fn main() {
                 let value = model.get_obj_attr(attr::X, &slack).unwrap();
                 let vname = model.get_obj_attr(attr::VarName, &slack).unwrap();
                 if value > 1e-6 {
-                    println!("  * {} = {}", vname, value);
+                    println!("  * {vname} = {value}");
                 }
             }
         }
@@ -51,7 +51,7 @@ fn main() {
         }
 
         status => {
-            println!("Optimization is stopped with status {:?}", status);
+            println!("Optimization is stopped with status {status:?}");
         }
     }
 }

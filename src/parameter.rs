@@ -219,7 +219,7 @@ mod tests {
                 .lines()
                 .skip(1)
                 .map(|line| {
-                    let mut line = line.split(",");
+                    let mut line = line.split(',');
                     let param = line.next().unwrap();
                     let ty = line.next().unwrap();
                     assert_eq!(line.next(), None);

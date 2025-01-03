@@ -103,7 +103,7 @@ fn build_cycles(edges_used: impl IntoIterator<Item = (usize, usize)>) -> Vec<Vec
             current = next;
         }
 
-        cycles.push(cycle)
+        cycles.push(cycle);
     }
     cycles
 }
@@ -166,7 +166,7 @@ impl callback::Callback for SubtourElimination<'_> {
 }
 
 /// Given `[ (a,b), (b,c), (c,d), (e,d),...,(a,z)]` returns `[a,b,c,d,e,...,z,a]`
-fn cycle_to_node_order(cycle: &Vec<(usize, usize)>) -> Vec<usize> {
+fn cycle_to_node_order(cycle: &[(usize, usize)]) -> Vec<usize> {
     let mut order = Vec::with_capacity(cycle.len() + 1);
 
     let mut iter = cycle.iter();
@@ -175,7 +175,7 @@ fn cycle_to_node_order(cycle: &Vec<(usize, usize)>) -> Vec<usize> {
     order.push(a);
     order.push(b);
 
-    while let Some(&(i, j)) = iter.next() {
+    for &(i, j) in iter {
         order.push(if i != a && i != b { i } else { j });
         a = i;
         b = j;
@@ -189,12 +189,12 @@ fn cycle_to_node_order(cycle: &Vec<(usize, usize)>) -> Vec<usize> {
 }
 
 /// Pretty-format a cycle of edges
-fn fmt_cycle(cycle: &Vec<(usize, usize)>) -> String {
+fn fmt_cycle(cycle: &[(usize, usize)]) -> String {
     let order: Vec<_> = cycle_to_node_order(cycle)
-        .into_iter()
-        .map(|i| format!("{}", i))
+        .iter()
+        .map(ToString::to_string)
         .collect();
-    return order.join(" -> ");
+    order.join(" -> ")
 }
 
 fn main() -> grb::Result<()> {
@@ -209,7 +209,7 @@ fn main() -> grb::Result<()> {
             edges_by_node[j].push((i, j));
             x.insert(
                 (i, j),
-                add_binvar!(model, obj: TRAVEL_TIMES[i * N + j], name: &format!("X[{},{}]", i, j))?,
+                add_binvar!(model, obj: TRAVEL_TIMES[i * N + j], name: &format!("X[{i},{j}]"))?,
             );
         }
     }
@@ -220,7 +220,7 @@ fn main() -> grb::Result<()> {
     let cover_const: grb::Result<Vec<_>> = (0..N)
         .map(|i| {
             model.add_constr(
-                &format!("cover[{}]", i),
+                &format!("cover[{i}]"),
                 c!(edge_by_node[i].iter().map(|edge| x[edge]).grb_sum() == 2),
             )
         })

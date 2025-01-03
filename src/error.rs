@@ -28,24 +28,19 @@ impl From<std::ffi::NulError> for Error {
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Error::FromAPI(message, code) => write!(f, "Error from API: {} ({})", message, code),
-            Error::NulError(err) => f.write_fmt(format_args!("NulError: {}", err)),
-            Error::ModelObjectRemoved => {
-                f.write_str("Variable or constraint has been removed from the model")
+        let msg = match self {
+            Error::FromAPI(message, code) => &format!("Error from API: {message} ({code})"),
+            Error::NulError(err) => &format!("NulError: {err}"),
+            Error::ModelObjectRemoved => "Variable or constraint has been removed from the model",
+            Error::ModelObjectPending => "Variable or constraint is awaiting model update",
+            Error::ModelObjectMismatch => "Variable or constraint is part of a different model",
+            Error::ModelUpdateNeeded => {
+                "Variables or constraints have been added/removed. Call model.update() first."
             }
-            Error::ModelObjectPending => {
-                f.write_str("Variable or constraint is awaiting model update")
-            }
-            Error::ModelObjectMismatch => {
-                f.write_str("Variable or constraint is part of a different model")
-            }
-            Error::ModelUpdateNeeded => f.write_str(
-                "Variables or constraints have been added/removed.  Call model.update() first.",
-            ),
-            Error::AlgebraicError(s) => f.write_fmt(format_args!("Algebraic error: {}", s)),
-            Error::NotYetSupported(s) => f.write_fmt(format_args!("Not yet supported: {}", s)),
-        }
+            Error::AlgebraicError(s) => &format!("Algebraic error: {s}"),
+            Error::NotYetSupported(s) => &format!("Not yet supported: {s}"),
+        };
+        f.write_str(msg)
     }
 }
 

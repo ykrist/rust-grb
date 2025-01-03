@@ -1,7 +1,6 @@
 //! See the readme.md in this directory for an overview of this build script.
 use anyhow::Context;
 
-use csv;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use serde::de::DeserializeOwned;
@@ -23,17 +22,18 @@ enum ParseError {
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseError::Dtype(s) => f.write_fmt(format_args!("error parsing data type: {}", s)),
-            ParseError::Otype(s) => f.write_fmt(format_args!("error parsing object type: {}", s)),
-            ParseError::CsvFile(Some(pos)) => f.write_fmt(format_args!(
+        let msg = match self {
+            ParseError::Dtype(s) => &format!("error parsing data type: {s}"),
+            ParseError::Otype(s) => &format!("error parsing object type: {s}"),
+            ParseError::CsvFile(Some(pos)) => &format!(
                 "error parsing CSV record {} (line {}, byte {})",
                 pos.record(),
                 pos.line(),
                 pos.byte()
-            )),
-            ParseError::CsvFile(None) => f.write_fmt(format_args!("error parsing CSV")),
-        }
+            ),
+            ParseError::CsvFile(None) => "error parsing CSV",
+        };
+        f.write_str(msg)
     }
 }
 
@@ -73,7 +73,7 @@ impl FromStr for DataType {
 }
 
 impl DataType {
-    fn ident_fragment(&self) -> Option<&'static str> {
+    fn ident_fragment(self) -> Option<&'static str> {
         use DataType::*;
         match self {
             Double => Some("Double"),
@@ -84,7 +84,7 @@ impl DataType {
         }
     }
 
-    fn doc_description(&self) -> Option<&'static str> {
+    fn doc_description(self) -> Option<&'static str> {
         use DataType::*;
         match self {
             Double => Some("double (`f64`)"),
@@ -126,11 +126,11 @@ impl FromStr for ObjType {
 }
 
 impl ObjType {
-    fn obj_ident(&self) -> Ident {
+    fn obj_ident(self) -> Ident {
         format_ident!("{}", format!("{:?}", self))
     }
 
-    fn needs_objattr_impl(&self) -> bool {
+    fn needs_objattr_impl(self) -> bool {
         !matches!(self, ObjType::Model)
     }
 }
@@ -157,16 +157,16 @@ struct AttributeMeta {
 fn load_json<T: DeserializeOwned>(path: impl AsRef<Path>) -> anyhow::Result<T> {
     let path = path.as_ref();
     let reader = std::io::BufReader::new(
-        std::fs::File::open(path).with_context(|| format!("unable to read {:?}", path))?,
+        std::fs::File::open(path).with_context(|| format!("unable to read {path:?}"))?,
     );
     let val = serde_json::from_reader(reader)?;
     Ok(val)
 }
 
 fn get_docstring_body(name: &str, suffix: &str) -> anyhow::Result<String> {
-    let path = format!("build/docstrings/body/{}_{}.md", name, suffix);
+    let path = format!("build/docstrings/body/{name}_{suffix}.md");
     let body =
-        std::fs::read_to_string(&path).with_context(|| format!("unable to read {:?}", &path))?;
+        std::fs::read_to_string(&path).with_context(|| format!("unable to read {path:?}"))?;
     Ok(body)
 }
 
@@ -190,8 +190,8 @@ pub fn str_to_ident(s: &str) -> Ident {
 }
 
 pub fn docstring_filepath(name: &str) -> String {
-    let path = format!("build/docstrings/final/{}.md", name);
-    eprintln!("{}", path);
+    let path = format!("build/docstrings/final/{name}.md");
+    eprintln!("{path}");
     Path::new(&path)
         .canonicalize()
         .unwrap_or_else(|_| {
@@ -219,7 +219,7 @@ mod param {
     }
 
     fn get_metadata(name: &str) -> anyhow::Result<ParameterMeta> {
-        load_json(format!("build/docstrings/metadata/{}_param.json", name))
+        load_json(format!("build/docstrings/metadata/{name}_param.json"))
     }
 
     fn build_docstring(name: &str) -> anyhow::Result<String> {
@@ -229,14 +229,14 @@ mod param {
             let mut docstring = String::new();
 
             if let Some(val) = meta.dtype.doc_description() {
-                writeln!(docstring, "- __Type:__ {}", val)?;
+                writeln!(docstring, "- __Type:__ {val}")?;
             }
             writeln!(docstring, "- __Default:__ {}", &meta.default)?;
             if let Some(val) = &meta.min {
-                writeln!(docstring, "- __Minimum:__ {}", val)?;
+                writeln!(docstring, "- __Minimum:__ {val}")?;
             }
             if let Some(val) = &meta.max {
-                writeln!(docstring, "- __Maximum:__ {}", val)?;
+                writeln!(docstring, "- __Maximum:__ {val}")?;
             }
 
             docstring.push_str("\n\n");
@@ -346,7 +346,7 @@ mod attrs {
     }
 
     fn get_metadata(name: &str) -> anyhow::Result<AttributeMeta> {
-        load_json(format!("build/docstrings/metadata/{}_attr.json", name))
+        load_json(format!("build/docstrings/metadata/{name}_attr.json"))
     }
 
     fn build_docstring(name: &str) -> anyhow::Result<String> {
@@ -361,7 +361,7 @@ mod attrs {
                 if meta.modifiable { "Yes" } else { "No" }
             )?;
             if let Some(val) = meta.dtype.doc_description() {
-                writeln!(docstring, "- __Type:__ {}", val)?;
+                writeln!(docstring, "- __Type:__ {val}")?;
             }
 
             docstring.push_str("\n\n");
@@ -389,7 +389,7 @@ mod attrs {
         let ident = format_ident!("{}Attr", d.ident_fragment().unwrap());
         ts.extend(quote! {
           impl #ident for #target {}
-        })
+        });
     }
 
     fn add_otype_marker_impl(ts: &mut TokenStream, target: &Ident, o: ObjType) {
@@ -398,7 +398,7 @@ mod attrs {
           impl ObjAttr for #target {
             type Obj = #ident;
           }
-        })
+        });
     }
 
     fn gen_type(
@@ -419,13 +419,13 @@ mod attrs {
         });
 
         if !matches!(d, DataType::Custom) {
-            add_dtype_marker_impl(ts, &ident, d);
+            add_dtype_marker_impl(ts, ident, d);
         } else {
             assert_eq!(members.len(), 1);
         }
 
         if o.needs_objattr_impl() {
-            add_otype_marker_impl(ts, &ident, o);
+            add_otype_marker_impl(ts, ident, o);
         }
 
         Ok(())
@@ -468,10 +468,10 @@ mod attrs {
     ) -> AttributeEnums {
         let mut map = AttributeEnums::new();
         for (ot, dt, name) in attrs {
-            let ident = dt
-                .ident_fragment()
-                .map(|dt| format_ident!("{}{}Attr", ot.obj_ident(), dt))
-                .unwrap_or_else(|| format_ident!("{}{}Attr", ot.obj_ident(), &name));
+            let ident = dt.ident_fragment().map_or_else(
+                || format_ident!("{}{}Attr", ot.obj_ident(), &name),
+                |dt| format_ident!("{}{}Attr", ot.obj_ident(), dt),
+            );
 
             match map.entry(ident) {
                 Entry::Occupied(mut e) => {

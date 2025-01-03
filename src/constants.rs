@@ -102,9 +102,9 @@ pub enum VarType {
     SemiInt = b'N',
 }
 
-impl Into<c_char> for VarType {
-    fn into(self) -> c_char {
-        self as u8 as c_char
+impl From<VarType> for c_char {
+    fn from(val: VarType) -> Self {
+        val as u8 as c_char
     }
 }
 
@@ -120,8 +120,7 @@ impl TryFrom<c_char> for VarType {
             b'N' => VarType::SemiInt,
             _ => {
                 return Err(format!(
-                    "unexpected value {:?} when converting to VarType",
-                    ch
+                    "unexpected value {ch:?} when converting to VarType"
                 ))
             }
         };
@@ -151,8 +150,7 @@ impl TryFrom<c_char> for ConstrSense {
             b'<' => ConstrSense::Less,
             _ => {
                 return Err(format!(
-                    "unexpected value {:?} when converting to ConstrSense",
-                    ch
+                    "unexpected value {ch:?} when converting to ConstrSense"
                 ))
             }
         };
@@ -243,7 +241,7 @@ impl TryFrom<i32> for Status {
     type Error = String;
     fn try_from(val: i32) -> std::result::Result<Status, String> {
         match val {
-            1..=15 => Ok(unsafe { std::mem::transmute(val) }),
+            1..=15 => Ok(unsafe { std::mem::transmute::<i32, Status>(val) }),
             _ => Err("Invalid Status value, should be in [1,15]".to_string()),
         }
     }

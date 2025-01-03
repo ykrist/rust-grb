@@ -54,18 +54,6 @@ impl AsPtr for Model {
     }
 }
 
-/// Norm of the vector to use in [`Model::add_genconstr_norm`]
-pub enum Norm {
-    /// The number of non-zero values among the operands
-    L0,
-    /// The sum of the absolute value of the operand values
-    L1,
-    /// The square root of the sum of the operands
-    L2,
-    /// The maximum absolute value of any operand
-    LInfinity,
-}
-
 macro_rules! impl_func_constr {
     ($name:literal, $formula:literal, $fn_name:ident, $ffi_fn_name:path) => {
         #[doc = concat!("Add ", $name, " function constraint to the model.")]

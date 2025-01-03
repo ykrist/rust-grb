@@ -354,7 +354,7 @@ impl TryFrom<i32> for GenConstrType {
     type Error = String;
     fn try_from(val: i32) -> std::result::Result<Self, Self::Error> {
         match val {
-            1..=18 => Ok(unsafe { std::mem::transmute(val) }),
+            1..=18 => Ok(unsafe { std::mem::transmute::<i32, GenConstrType>(val) }),
             _ => Err("Invalid GenConstrType value, should be in [1,18]".to_string()),
         }
     }

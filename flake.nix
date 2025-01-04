@@ -44,8 +44,18 @@
           };
       in
       {
+        # This flake provides devshells for multiple versions of Gurobi.
+        # The setup is pretty automated -- the only manual adjustment needed is to copy the license file to the right location.
+        # E.g. the license for Gurobi 9.5 should go in `./lib/gurobi95.lic` (the file name is important!)
+
         devShells = rec {
+          # this is the devshell loaded by default (also e.g. by nix-direnv)
           default = v110;
+
+          # to switch to a particular version, use `nix devshell`. For example, to switch to Gurobi 9.5 devshell:
+          # ```sh
+          # nix develop .#v95
+          # ```
           v95 = mkGurobiDevShell nixpkgsGurobi95 "95";
           v110 = mkGurobiDevShell nixpkgsGurobi110 "110";
           v120 = mkGurobiDevShell nixpkgsGurobi120 "120";

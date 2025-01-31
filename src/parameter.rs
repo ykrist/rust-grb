@@ -212,7 +212,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parameter_names() -> crate::Result<()> {
+    fn parameter_names() -> anyhow::Result<()> {
         let params: Vec<_> =
             std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/build/params.csv"))
                 .unwrap()
@@ -228,22 +228,29 @@ mod tests {
                 .collect();
 
         let model = crate::Model::new("test")?;
-        for (param, ty) in params {
-            let param = Parameter::new(param).unwrap();
-            match ty.as_str() {
+        let mut err_count = 0;
+        for (param_name, ty) in params {
+            let param = Parameter::new(param_name.clone()).unwrap();
+            let err = match ty.as_str() {
                 "dbl" => {
-                    let _v: f64 = model.get_param(&param)?;
+                    model.get_param::<_, f64>(&param).err()
                 }
                 "int" => {
-                    let _v: i32 = model.get_param(&param)?;
+                    model.get_param::<_, i32>(&param).err()
                 }
                 "str" => {
-                    let _v: String = model.get_param(&param)?;
+                    model.get_param::<_, String>(&param).err()
                 }
                 _ => unreachable!(),
+            };
+            if let Some(err) = err {
+                err_count += 1;
+                eprintln!("failed to get {param_name}: {err}");
             }
         }
-
+        if err_count > 0 {
+            anyhow::bail!("{err_count} failures")
+        }
         Ok(())
     }
 }

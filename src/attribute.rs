@@ -583,7 +583,7 @@ mod tests {
     }
 
     #[test]
-    fn attribute_names() -> crate::Result<()> {
+    fn attribute_names() -> anyhow::Result<()> {
         let params: Vec<_> =
             std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/build/attrs.csv"))
                 .unwrap()
@@ -610,12 +610,12 @@ mod tests {
         let sos = model.add_sos(vec![(x, 1.0), (y, 1.0)], SOSType::Ty1)?;
         model.optimize()?;
 
+        let mut err_count = 0;
         for (a, ty, obj) in params {
             let ty = ty.as_str();
             let obj = obj.as_str();
-
+            let a_name = a.clone();
             // Oh boy, this is ugly
-            eprintln!("{}", &a);
             let err = match (ty, obj) {
                 ("dbl", "var") => Attribute::new(a).get::<f64>(&model, &var),
                 ("int", "var") => Attribute::new(a).get::<i32>(&model, &var),
@@ -653,9 +653,15 @@ mod tests {
                     crate::Error::FromAPI(_, 10005) => {}
                     // It isn't a multi-objective model
                     crate::Error::FromAPI(_, 10008) => {}
-                    err => return Err(err),
+                    err => {
+                        eprintln!("failed to get {a_name}: {err}");
+                        err_count += 1;
+                    },
                 }
             }
+        }
+        if err_count > 0 {
+            anyhow::bail!("{err_count} failures")
         }
 
         Ok(())

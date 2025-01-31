@@ -54,10 +54,6 @@ fn main() -> anyhow::Result<()> {
 
     model.set_attr(attr::ModelSense, Maximize)?;
 
-    model.write("genconstr.mps")?;
-
-    model.write("genconstr.lp")?;
-
     model.optimize()?;
 
     match model.status()? {

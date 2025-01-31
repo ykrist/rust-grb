@@ -202,7 +202,8 @@ pub use parameter::param;
 // private modules and their re-exports
 mod constants;
 pub use constants::{
-    ConstrSense, ModelSense, RelaxType, SOSType, Status, VarType, GRB_INFINITY as INFINITY,
+    ConstrSense, GenConstrType, ModelSense, RelaxType, SOSType, Status, VarType,
+    GRB_INFINITY as INFINITY,
 };
 
 mod env;

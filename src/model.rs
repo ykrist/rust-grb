@@ -27,6 +27,7 @@ pub struct Model {
     env: Env,
     pub(crate) vars: IdxManager<Var>,
     pub(crate) constrs: IdxManager<Constr>,
+    pub(crate) genconstrs: IdxManager<GenConstr>,
     pub(crate) qconstrs: IdxManager<QConstr>,
     pub(crate) sos: IdxManager<SOS>,
 }
@@ -53,6 +54,87 @@ impl AsPtr for Model {
     }
 }
 
+macro_rules! impl_func_constr {
+    ($name:literal, $formula:literal, $fn_name:ident, $ffi_fn_name:path) => {
+        #[doc = concat!("Add ", $name, " function constraint to the model.")]
+        ///
+        #[doc = $formula]
+        ///
+        /// # Examples
+        /// ```
+        /// # use grb::prelude::*;
+        /// let mut m = Model::new("model")?;
+        /// let x = add_ctsvar!(m)?;
+        /// let y = add_ctsvar!(m)?;
+        #[doc = concat!("m.", stringify!($fn_name), "(\"c1\", x, y, \"\")?;")]
+        /// # Ok::<(), grb::Error>(())
+        /// ```
+        pub fn $fn_name(&mut self, name: &str, x: Var, y: Var, options: &str) -> Result<GenConstr> {
+            let constrname = CString::new(name)?;
+            let x_idx = self.get_index_build(&x)?;
+            let y_idx = self.get_index_build(&y)?;
+            let options = CString::new(options)?;
+
+            self.check_apicall(unsafe {
+                $ffi_fn_name(
+                    self.ptr,
+                    constrname.as_ptr(),
+                    x_idx,
+                    y_idx,
+                    options.as_ptr(),
+                )
+            })?;
+
+            Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+        }
+    };
+}
+
+macro_rules! impl_funca_constr {
+    ($name:literal, $formula:literal, $fn_name:ident, $ffi_fn_name:path) => {
+        #[doc = concat!("Add ", $name, " function constraint to the model.")]
+        ///
+        #[doc = $formula]
+        ///
+        /// # Examples
+        /// ```
+        /// # use grb::prelude::*;
+        /// let mut m = Model::new("model")?;
+        /// let x = add_ctsvar!(m)?;
+        /// let y = add_ctsvar!(m)?;
+        /// let a = 5.0;
+        #[doc=concat!("m.", stringify!($fn_name), "(\"c1\", x, y, a, \"\")?;")]
+        /// # Ok::<(), grb::Error>(())
+        /// ```
+        pub fn $fn_name(
+            &mut self,
+            name: &str,
+            x: Var,
+            y: Var,
+            a: f64,
+            options: &str,
+        ) -> Result<GenConstr> {
+            let constrname = CString::new(name)?;
+            let x_idx = self.get_index_build(&x)?;
+            let y_idx = self.get_index_build(&y)?;
+            let options = CString::new(options)?;
+
+            self.check_apicall(unsafe {
+                $ffi_fn_name(
+                    self.ptr,
+                    constrname.as_ptr(),
+                    x_idx,
+                    y_idx,
+                    a,
+                    options.as_ptr(),
+                )
+            })?;
+
+            Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+        }
+    };
+}
+
 impl Model {
     fn next_id() -> u32 {
         static NEXT_ID: AtomicU32 = AtomicU32::new(0);
@@ -62,6 +144,7 @@ impl Model {
     fn model_update_needed(&self) -> bool {
         self.vars.model_update_needed()
             || self.constrs.model_update_needed()
+            || self.genconstrs.model_update_needed()
             || self.qconstrs.model_update_needed()
             || self.sos.model_update_needed()
     }
@@ -179,17 +262,20 @@ impl Model {
             env,
             vars: IdxManager::new(id),
             constrs: IdxManager::new(id),
+            genconstrs: IdxManager::new(id),
             qconstrs: IdxManager::new(id),
             sos: IdxManager::new(id),
         };
 
         let nvars = model.get_attr(attr::NumVars)?;
         let nconstr = model.get_attr(attr::NumConstrs)?;
+        let ngenconstr = model.get_attr(attr::NumGenConstrs)?;
         let nqconstr = model.get_attr(attr::NumQConstrs)?;
         let sos = model.get_attr(attr::NumSOS)?;
 
         model.vars = IdxManager::new_with_existing_obj(id, nvars as usize);
         model.constrs = IdxManager::new_with_existing_obj(id, nconstr as usize);
+        model.genconstrs = IdxManager::new_with_existing_obj(id, ngenconstr as usize);
         model.qconstrs = IdxManager::new_with_existing_obj(id, nqconstr as usize);
         model.sos = IdxManager::new_with_existing_obj(id, sos as usize);
 
@@ -322,6 +408,7 @@ impl Model {
     pub fn update(&mut self) -> Result<()> {
         self.vars.update();
         self.constrs.update();
+        self.genconstrs.update();
         self.qconstrs.update();
         self.sos.update();
         self.check_apicall(unsafe { ffi::GRBupdatemodel(self.ptr) })?;
@@ -643,6 +730,468 @@ impl Model {
         Ok(vec![self.constrs.add_new(lazy); cnames.len()])
     }
 
+    /// Add a MIN constraint to the model.
+    ///
+    /// A MIN constraint $r = \min\{x_1,\ldots,x_n,c\}$ states that
+    /// the resultant variable $r$ should be equal to the minimum of
+    /// the operand variables $x_1,\ldots,x_n$ and the constant $c$.
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x1 = add_ctsvar!(m, bounds: 2..)?;
+    /// let x2 = add_ctsvar!(m, bounds: 3..)?;
+    /// let x3 = add_ctsvar!(m, bounds: 1..)?;
+    /// let y = add_ctsvar!(m)?;
+    /// m.add_genconstr_min("c1", y, [x1, x2, x3], None)?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_min(
+        &mut self,
+        name: &str,
+        resultant_var: Var,
+        operand_vars: impl IntoIterator<Item = Var>,
+        constant: Option<f64>,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let resvar_idx = self.get_index_build(&resultant_var)?;
+        let vars: Vec<_> = operand_vars
+            .into_iter()
+            .map(|v| self.get_index_build(&v))
+            .collect::<Result<_>>()?;
+        let constant = constant.unwrap_or(INFINITY);
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrMin(
+                self.ptr,
+                constrname.as_ptr(),
+                resvar_idx as ffi::c_int,
+                vars.len() as ffi::c_int,
+                vars.as_ptr(),
+                constant as ffi::c_double,
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
+    /// Add a MAX constraint to the model.
+    ///
+    /// A MAX constraint $r = \max\{x_1,\ldots,x_n,c\}$ states that
+    /// the resultant variable $r$ should be equal to the maximum of
+    /// the operand variables $x_1,\ldots,x_n$ and the constant $c$.
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x1 = add_ctsvar!(m, bounds: ..2)?;
+    /// let x2 = add_ctsvar!(m, bounds: ..3)?;
+    /// let x3 = add_ctsvar!(m, bounds: ..1)?;
+    /// let y = add_ctsvar!(m)?;
+    /// m.add_genconstr_max("c1", y, [x1, x2, x3], None)?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_max(
+        &mut self,
+        name: &str,
+        resultant_var: Var,
+        operand_vars: impl IntoIterator<Item = Var>,
+        constant: Option<f64>,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let resvar_idx = self.get_index_build(&resultant_var)?;
+        let vars: Vec<_> = operand_vars
+            .into_iter()
+            .map(|v| self.get_index_build(&v))
+            .collect::<Result<_>>()?;
+        let constant = constant.unwrap_or_default();
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrMax(
+                self.ptr,
+                constrname.as_ptr(),
+                resvar_idx as ffi::c_int,
+                vars.len() as ffi::c_int,
+                vars.as_ptr(),
+                constant as ffi::c_double,
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
+    /// Add an ABS constraint to the model.
+    ///
+    /// An ABS constraint $r = \mbox{abs}\{x\}$ states that
+    /// the resultant variable $r$ should be equal to
+    /// the absolute value of the argument variable $x$.
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x = add_ctsvar!(m, bounds: -2..2)?;
+    /// let y = add_ctsvar!(m)?;
+    /// m.add_genconstr_abs("c1", y, x)?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_abs(
+        &mut self,
+        name: &str,
+        resultant_var: Var,
+        argument_var: Var,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let resvar_idx = self.get_index_build(&resultant_var)?;
+        let argvar_idx = self.get_index_build(&argument_var)?;
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrAbs(
+                self.ptr,
+                constrname.as_ptr(),
+                resvar_idx as ffi::c_int,
+                argvar_idx as ffi::c_int,
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
+    /// Add an AND constraint to the model.
+    ///
+    /// An AND constraint $r = \and\{x_1,\ldots,x_n,c\}$ states that
+    /// the binary variable $r$ should be 1 if and only if
+    /// all the operand variables $x_1,\ldots,x_n$ are equal to 1.
+    /// If any of the operand variables is $0$, then the resultant should be $0$ as well.
+    ///
+    /// Note that all variables participating in such a constraint will be forced to be binary,
+    /// independent of how they were created.
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x1 = add_binvar!(m)?;
+    /// let x2 = add_binvar!(m)?;
+    /// let x3 = add_binvar!(m)?;
+    /// let y = add_binvar!(m)?;
+    /// m.add_genconstr_and("c1", y, [x1, x2, x3])?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_and(
+        &mut self,
+        name: &str,
+        resultant_var: Var,
+        operand_vars: impl IntoIterator<Item = Var>,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let resvar_idx = self.get_index_build(&resultant_var)?;
+        let vars: Vec<_> = operand_vars
+            .into_iter()
+            .map(|v| self.get_index_build(&v))
+            .collect::<Result<_>>()?;
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrAnd(
+                self.ptr,
+                constrname.as_ptr(),
+                resvar_idx as ffi::c_int,
+                vars.len() as ffi::c_int,
+                vars.as_ptr(),
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
+    /// Add an OR constraint to the model.
+    ///
+    /// An OR constraint $r = \and\{x_1,\ldots,x_n,c\}$ states that
+    /// the binary variable $r$ should be 1 if and only if
+    /// any of the operand variables $x_1,\ldots,x_n$ is equal to 1.
+    /// If all of the operand variables is $0$, then the resultant should be $0$ as well.
+    ///
+    /// Note that all variables participating in such a constraint will be forced to be binary,
+    /// independent of how they were created.
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x1 = add_binvar!(m)?;
+    /// let x2 = add_binvar!(m)?;
+    /// let x3 = add_binvar!(m)?;
+    /// let y = add_binvar!(m)?;
+    /// m.add_genconstr_or("c1", y, [x1, x2, x3])?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_or(
+        &mut self,
+        name: &str,
+        resultant_var: Var,
+        operand_vars: impl IntoIterator<Item = Var>,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let resvar_idx = self.get_index_build(&resultant_var)?;
+        let vars: Vec<_> = operand_vars
+            .into_iter()
+            .map(|v| self.get_index_build(&v))
+            .collect::<Result<_>>()?;
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrOr(
+                self.ptr,
+                constrname.as_ptr(),
+                resvar_idx,
+                vars.len() as ffi::c_int,
+                vars.as_ptr(),
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
+    /// Add a NORM constraint to the model.
+    ///
+    /// A NORM constraint $r = \mbox{norm}\{x_1,\ldots,x_n,c\}$ states that
+    /// the resultant variable $r$ should be equal to
+    /// the vector norm of the argument vector $x_1,\ldots,x_n$.
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x1 = add_ctsvar!(m)?;
+    /// let x2 = add_ctsvar!(m)?;
+    /// let x3 = add_ctsvar!(m)?;
+    /// let y = add_ctsvar!(m)?;
+    /// m.add_genconstr_norm("c1", y, [x1, x2, x3], Norm::L1)?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_norm(
+        &mut self,
+        name: &str,
+        resultant_var: Var,
+        operand_vars: impl IntoIterator<Item = Var>,
+        norm: Norm,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let resvar_idx = self.get_index_build(&resultant_var)?;
+        let vars: Vec<_> = operand_vars
+            .into_iter()
+            .map(|v| self.get_index_build(&v))
+            .collect::<Result<_>>()?;
+        let norm = match norm {
+            Norm::L0 => 0.,
+            Norm::L1 => 1.,
+            Norm::L2 => 2.,
+            Norm::LInfinity => INFINITY,
+        };
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrNorm(
+                self.ptr,
+                constrname.as_ptr(),
+                resvar_idx,
+                vars.len() as ffi::c_int,
+                vars.as_ptr(),
+                norm as ffi::c_double,
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
+    /// Add an indicator constraint to the model.
+    ///
+    /// The `con` argument is usually created with the [`c!`](crate::c) macro.
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let b = add_binvar!(m)?;
+    /// let x = add_ctsvar!(m)?;
+    /// let y = add_ctsvar!(m)?;
+    /// m.add_genconstr_indicator("c1", b, true, c!(x <= 1 - y))?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_indicator(
+        &mut self,
+        name: &str,
+        ind: Var,
+        ind_val: bool,
+        con: IneqExpr,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let (lhs, sense, rhs) = con.into_normalised_linear()?;
+        let (vinds, cval) = self.get_coeffs_indices_build(&lhs)?;
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrIndicator(
+                self.ptr,
+                constrname.as_ptr(),
+                self.get_index_build(&ind)?,
+                ind_val as ffi::c_int,
+                cval.len() as ffi::c_int,
+                vinds.as_ptr(),
+                cval.as_ptr(),
+                sense as ffi::c_char,
+                rhs,
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
+    /// Add a piecewise-linear constraint to the model.
+    ///
+    /// A piecewise-linear constraint $y = f(x)$ states that
+    /// the point $(x, y)$ must lie on the piecewise-linear function $f()$ defined by
+    /// a set of points $(x_1, y_1), (x_2, y_2), ..., (x_n, y_n)$.
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x = add_ctsvar!(m)?;
+    /// let y = add_ctsvar!(m)?;
+    /// let points= [(1., 1.), (3., 2.), (5., 4.)];
+    /// m.add_genconstr_pwl("c1", x, y, points)?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_pwl(
+        &mut self,
+        name: &str,
+        x: Var,
+        y: Var,
+        points: impl IntoIterator<Item = (f64, f64)>,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let x_idx = self.get_index_build(&x)?;
+        let y_idx = self.get_index_build(&y)?;
+        let (x_points, y_points): (Vec<_>, Vec<_>) = points.into_iter().unzip();
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrPWL(
+                self.ptr,
+                constrname.as_ptr(),
+                x_idx,
+                y_idx,
+                x_points.len() as ffi::c_int,
+                x_points.as_ptr(),
+                y_points.as_ptr(),
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
+    /// Add a polynomial function constraint to the model.
+    ///
+    /// $y = p_0 x^n + p_1 x^{n-1} + \ldots + p_n x + p_{n+1}$
+    ///
+    /// # Examples
+    /// ```
+    /// # use grb::prelude::*;
+    /// let mut m = Model::new("model")?;
+    /// let x = add_ctsvar!(m)?;
+    /// let y = add_ctsvar!(m)?;
+    /// let coeffs = [3., 0., 0., 7., 3.];
+    /// m.add_genconstr_poly("c1", x, y, coeffs.to_vec(), "")?;
+    /// # Ok::<(), grb::Error>(())
+    /// ```
+    pub fn add_genconstr_poly(
+        &mut self,
+        name: &str,
+        x: Var,
+        y: Var,
+        mut coeffs: Vec<f64>,
+        options: &str,
+    ) -> Result<GenConstr> {
+        let constrname = CString::new(name)?;
+        let x_idx = self.get_index_build(&x)?;
+        let y_idx = self.get_index_build(&y)?;
+        let options = CString::new(options)?;
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddgenconstrPoly(
+                self.ptr,
+                constrname.as_ptr(),
+                x_idx,
+                y_idx,
+                coeffs.len() as ffi::c_int,
+                coeffs.as_mut_ptr(),
+                options.as_ptr(),
+            )
+        })?;
+
+        Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
+    }
+
+    impl_func_constr!(
+        "a natural exponent",
+        r"$y = \exp(x) or e^x$",
+        add_genconstr_natural_exp,
+        ffi::GRBaddgenconstrExp
+    );
+
+    impl_funca_constr!(
+        "an exponent",
+        r"$y = a^x$ where $a \gt 0$ is the base for the exponential function",
+        add_genconstr_exp,
+        ffi::GRBaddgenconstrExpA
+    );
+
+    impl_func_constr!(
+        "a natural logarithm",
+        r"$y = \log_e(x) or \ln(x)$",
+        add_genconstr_natural_log,
+        ffi::GRBaddgenconstrLog
+    );
+
+    impl_funca_constr!(
+        "a logarithm",
+        r"$y = \log_a(x)$ where $a \gt 0$ is the base for the logarithm function",
+        add_genconstr_log,
+        ffi::GRBaddgenconstrLogA
+    );
+
+    impl_func_constr!(
+        "a logistic",
+        r"$y=\frac{1}{1+e^{-x}}$",
+        add_genconstr_logistic,
+        ffi::GRBaddgenconstrLogistic
+    );
+
+    impl_funca_constr!(
+        "a power",
+        r"$y=x^a$, where $a$ is the (constant) exponent",
+        add_genconstr_pow,
+        ffi::GRBaddgenconstrPow
+    );
+
+    impl_func_constr!(
+        "a sine",
+        r"$y=\sin(x)$",
+        add_genconstr_sin,
+        ffi::GRBaddgenconstrSin
+    );
+
+    impl_func_constr!(
+        "a cosine",
+        r"$y=\cos(x)$",
+        add_genconstr_cos,
+        ffi::GRBaddgenconstrCos
+    );
+
+    impl_func_constr!(
+        "a tangent",
+        r"$y=\tan(x)$",
+        add_genconstr_tan,
+        ffi::GRBaddgenconstrTan
+    );
+
     /// Add a range constraint to the model.
     ///
     /// This operation adds a decision variable with lower/upper bound, and a linear
@@ -832,6 +1381,31 @@ impl Model {
         })?;
 
         Ok(self.sos.add_new(self.update_mode_lazy()?))
+    }
+
+    /// Delete a list of general constraints from an existing model.
+    ///
+    /// # Errors
+    /// TODO: is this actually the case?
+    /// - [`Error::ModelObjectPending`] if some variables haven't yet been added to the model.
+    /// - [`Error::ModelObjectRemoved`] if some variables have been removed from the model.
+    /// - [`Error::ModelObjectMismatch`] if some variables are from a different model.
+    /// - [`Error::FromAPI`] if a Gurobi API error occurs.
+    pub fn del_genconstrs(&mut self, constrs: impl IntoIterator<Item = GenConstr>) -> Result<()> {
+        let constr_indices: Vec<_> = constrs
+            .into_iter()
+            .map(|c| self.get_index_build(&c))
+            .collect::<Result<_>>()?;
+
+        self.check_apicall(unsafe {
+            ffi::GRBdelgenconstrs(
+                self.ptr,
+                constr_indices.len() as ffi::c_int,
+                constr_indices.as_ptr(),
+            )
+        })?;
+
+        Ok(())
     }
 
     /// Set the objective function of the model and optimisation direction (min or max).
@@ -1074,7 +1648,7 @@ impl Model {
     ///
     /// ## Returns
     /// * The objective value for the relaxation performed (if `minrelax` is `true`).
-    /// * Slack variables for relaxation and related linear/quadratic constraints.
+    /// * Slack variables for relaxation and related linear/general/quadratic constraints.
     #[allow(clippy::type_complexity)]
     #[allow(clippy::too_many_arguments)]
     pub fn feas_relax(
@@ -1088,6 +1662,7 @@ impl Model {
         self.update()?;
         let n_old_vars = self.get_attr(attr::NumVars)? as usize;
         let n_old_constr = self.get_attr(attr::NumConstrs)? as usize;
+        let n_old_genconstr = self.get_attr(attr::NumGenConstrs)? as usize;
         let n_old_qconstr = self.get_attr(attr::NumQConstrs)? as usize;
 
         fn build_array<T, O>(
@@ -1144,6 +1719,9 @@ impl Model {
         let new_cons = (0..n_cons - n_old_constr)
             .map(|_| self.constrs.add_new(lazy))
             .collect();
+
+        let n_gencons = self.get_attr(attr::NumGenConstrs)? as usize;
+        assert_eq!(n_gencons, n_old_genconstr);
 
         let n_qcons = self.get_attr(attr::NumQConstrs)? as usize;
         assert!(n_qcons >= n_old_qconstr);
@@ -1219,6 +1797,8 @@ impl Model {
     impl_object_list_getter!(get_vars, Var, vars, "variables");
 
     impl_object_list_getter!(get_constrs, Constr, constrs, "constraints");
+
+    impl_object_list_getter!(get_genconstrs, GenConstr, genconstrs, "general constraints");
 
     impl_object_list_getter!(get_qconstrs, QConstr, qconstrs, "quadratic constraints");
 
@@ -1656,6 +2236,7 @@ mod tests {
         assert_eq!(std::mem::size_of::<Var>(), 8);
         assert_eq!(std::mem::size_of::<QConstr>(), 8);
         assert_eq!(std::mem::size_of::<Constr>(), 8);
+        assert_eq!(std::mem::size_of::<GenConstr>(), 8);
         assert_eq!(std::mem::size_of::<SOS>(), 8);
     }
 

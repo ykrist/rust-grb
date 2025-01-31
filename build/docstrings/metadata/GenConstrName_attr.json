@@ -1,0 +1,7 @@
+{
+  "name": "GenConstrName",
+  "url": "https://www.gurobi.com/documentation/11.0/refman/genconstrname.html",
+  "dtype": "str",
+  "otype": "gconstr",
+  "modifiable": true
+}

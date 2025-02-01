@@ -15,23 +15,22 @@ readme = "README.md"
 exclude = ["/tests"]
 
 [features]
-default=[]
+default = []
 gurobi12 = ["grb-sys_12"]
 gurobi11 = ["grb-sys_10"]
 gurobi10 = ["grb-sys_10"]
-gurobi9 = ["grb-sys_10"]
 
 
 [package.metadata.docs.rs]
-features = [ "gurobi12" ]
+features = ["gurobi12"]
 rustdoc-args = ["--html-in-header", "doc/katex-header.html"]
 
 [dependencies]
 fnv = "^1.0"
 anyhow = "^1.0"
 cstr-enum = "^1.0"
-grb-sys_10 = {package = "grb-sys2", version = "10.2.1", optional = true}
-grb-sys_12 = {package = "grb-sys2", version = "12.1.1", optional = true}
+grb-sys_10 = { package = "grb-sys2", version = "10.2.1", optional = true }
+grb-sys_12 = { package = "grb-sys2", version = "12.1.1", optional = true }
 # grb-sys_10 = {package = "grb-sys2", path="../grb-sys2", optional = true}
 # grb-sys_12 = {package = "grb-sys2", path="../grb-sys2", optional = true}
 grb-macro = "0.1.0"

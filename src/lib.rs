@@ -63,14 +63,13 @@
 // The whole lib is wrapped in this cfg-if block, so in the likely scenario a user forgets to set a feature flag,
 // they only see a single, relevant error.
 cfg_if::cfg_if! {
-    if #[cfg(not(any(feature = "gurobi12", feature = "gurobi11", feature = "gurobi10", feature = "gurobi9")))] {
+    if #[cfg(not(any(feature = "gurobi12", feature = "gurobi11", feature = "gurobi10")))] {
         compile_error!(
             concat!(
                 "The grb crate requires one of the following feature flags to be set:\n",
                 "- gurobi12\n",
                 "- gurobi11\n",
                 "- gurobi10\n",
-                "- gurobi9\n",
                 "The flag should match the major version of Gurobi, for example (in Cargo.toml):\n\n",
                 "grb = {..., features = ['gurobi12']}\n\n",
                 "for Gurobi 12.X.\n\n",

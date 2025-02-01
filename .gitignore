@@ -18,3 +18,4 @@ src/parameter/param_enums.rs
 env/
 /*.sh
 gurobi
+test-all-result.txt

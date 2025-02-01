@@ -541,19 +541,17 @@ impl Model {
         self.env.message(message);
     }
 
-    // FIXME: this should accept AsRef<Path> types (breaking change)
     /// Import optimization data from a file. This routine is the general entry point for importing
     /// data from a file into a model. It can be used to read start vectors for MIP models,
     /// basis files for LP models, or parameter settings. The type of data read is determined by the file suffix.
     /// File formats are described in the [manual](https://www.gurobi.com/documentation/9.1/refman/model_file_formats.html#sec:FileFormats).
     ///
     /// If you wish to construct a model from an format like `MPS` or `LP`, use [`Model::from_file`].
-    pub fn read(&mut self, filename: &str) -> Result<()> {
-        let filename = CString::new(filename)?;
+    pub fn read(&mut self, filename: impl AsRef<Path>) -> Result<()> {
+        let filename = crate::util::path_to_cstring(filename)?;
         self.check_apicall(unsafe { ffi::GRBread(self.ptr, filename.as_ptr()) })
     }
 
-    // FIXME: this should accept AsRef<Path> types (breaking change)
     /// Export a model to a file.
     ///
     /// The file type is encoded in the file name suffix. Valid suffixes are `.mps`, `.rew`, `.lp`, or `.rlp` for
@@ -564,8 +562,8 @@ impl Model {
     /// JSON format. If your system has compression utilities installed (e.g., 7z or zip for Windows, and gzip,
     /// bzip2, or unzip for Linux or Mac OS), then the files can be compressed, so additional suffixes of `.gz`,
     /// `.bz2`, or `.7z` are accepted.
-    pub fn write(&self, filename: &str) -> Result<()> {
-        let filename = CString::new(filename)?;
+    pub fn write(&self, filename: impl AsRef<Path>) -> Result<()> {
+        let filename = crate::util::path_to_cstring(filename)?;
         self.check_apicall(unsafe { ffi::GRBwrite(self.ptr, filename.as_ptr()) })
     }
 

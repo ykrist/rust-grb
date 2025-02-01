@@ -294,21 +294,18 @@ pub enum GenConstrType {
     /// For example, a solution $(r=1, x_1=1, x_2=1, x_3=1)$ would be feasible for
     /// the constraint $r = \mbox{and}\{x_1,x_2,x_3\}$.
     ///
-    /// TODO: remove?
     /// Note that any involved variables that are not already binary are converted to binary.
     And,
     /// Similar to an AND constraint, the constraint $r = \mbox{or}\{x_1,\ldots,x_k\}$ states that
     /// the binary resultant variable $r$ should be $1$ if and only if
     /// at least one of the binary operand variables $x_1,\ldots,x_k$ is equal to $1$.
     ///
-    /// TODO: remove?
     /// Note that any involved variables that are not already binary are converted to binary.
     Or,
     /// The constraint $r = \mbox{norm}\{x_1,\ldots,x_k\}$ states that
     /// the resultant variable $r$ should be equal to
     /// the vector norm of the operand variables $x_1,\ldots,x_k$.
     ///
-    /// TODO: remove?
     /// A few options are available: the 0-norm, 1-norm, 2-norm, and infinity-norm.
     Norm,
     /// An indicator constraint $y = f \rightarrow a^Tx \leq b$ states that
@@ -325,7 +322,6 @@ pub enum GenConstrType {
     /// the point $(x, y)$ must lie on the piecewise-linear function $f()$ defined by
     /// a set of points $(x_1, y_1), (x_2, y_2), ..., (x_n, y_n)$.
     ///
-    /// TODO: remove?
     /// Refer to the description of piecewise-linear objectives for details of how piecewise-linear functions are defined.
     Pwl,
     /// $y = p_0 x^n + p_1 x^{n-1} + ... + p_n x + p_{n+1}$

@@ -508,11 +508,15 @@ impl Model {
         unsafe { ffi::GRBterminate(self.ptr) }
     }
 
-    /// Reset the model to an unsolved state.
+    /// Reset the model to an unsolved state, discarding any previously computed solution information.
+    ///
+    /// A `clearall` value of 1 discards additional information that affects the solution process but not the actual model
+    /// (currently MIP starts, variable hints, branching priorities, lazy flags, and partition information). A value of 0 just
+    /// discards the solution.
     ///
     /// All solution information previously computed are discarded.
-    pub fn reset(&self) -> Result<()> {
-        self.check_apicall(unsafe { ffi::GRBresetmodel(self.ptr) })
+    pub fn reset(&self, clearall: i16) -> Result<()> {
+        self.check_apicall(unsafe { ffi::GRBreset(self.ptr, clearall as ffi::c_int) })
     }
 
     /// Perform an automated search for parameter settings that improve performance on the model.

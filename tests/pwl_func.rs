@@ -100,7 +100,7 @@ fn function_genconstr() -> anyhow::Result<()> {
 
     model.update()?;
 
-    model.reset()?;
+    model.reset(0)?;
 
     // NOTE: here we differ from the source, see above
     model.set_param(param::FuncPieceLength, 1e-4)?;

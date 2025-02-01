@@ -1,0 +1,3523 @@
+---------------- Test: 9.5 --------------------
+     Removed 5610 files, 2.1GiB total
+
+running 28 tests
+Set parameter Username
+Set parameter Username
+Set parameter Username
+....Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter IISMethod to value 1
+Set parameter IISMethod to value 0
+Academic license - for non-commercial use only - expires 2125-01-01
+..Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+.Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+.Optimize a model with 1 rows, 3 columns and 1 nonzeros
+Model fingerprint: 0xa28d5873
+Model has 1 quadratic constraint
+Model has 1 SOS constraint
+Model has 1 general constraint
+Set parameter Username
+Variable types: 1 continuous, 2 integer (2 binary)
+Coefficient statistics:
+Set parameter Username
+...  Matrix range     [1e+00, 1e+00]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+  QRHS range       [1e+00, 1e+00]
+  GenCon coe range [1e+00, 1e+00]
+Set parameter Username
+Set parameter Username
+Set parameter Username
+Set parameter Username
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+..Set parameter Username
+Presolve removed 1 rows and 3 columns
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+.Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter OutputFlag to value 1
+..Presolve time: 0.00s
+Academic license - for non-commercial use only - expires 2125-01-01
+.Set parameter OutputFlag to value 1
+Set parameter OutputFlag to value 1
+Presolve: All rows and columns removed
+Set parameter Username
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 0 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 0.000000000000e+00, best bound 0.000000000000e+00, gap 0.0000%
+.....Academic license - for non-commercial use only - expires 2125-01-01
+ 22/28
+lib_impl::attribute::tests::attribute_names --- FAILED
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0x1c1c76b7
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter OutputFlag to value 1
+Presolve removed 0 rows and 1 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+Academic license - for non-commercial use only - expires 2125-01-01
+.Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    1.0000000e+00   0.000000e+00   0.000000e+00      0s
+
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  1.000000000e+00
+.Academic license - for non-commercial use only - expires 2125-01-01
+Read LP format model from file test_read_model_copies_env.lp
+Reading time = 0.00 seconds
+: 0 rows, 0 columns, 0 nonzeros
+. 26/28
+lib_impl::parameter::tests::parameter_names --- FAILED
+.
+failures:
+
+---- lib_impl::attribute::tests::attribute_names stdout ----
+failed to get FuncNonlinear: Error from API: Unknown attribute 'FuncNonlinear' (10004)
+Error: 1 failures
+
+---- lib_impl::parameter::tests::parameter_names stdout ----
+failed to get SoftMemLimit: Error from API: Unknown parameter: SoftMemLimit (10007)
+failed to get OBBT: Error from API: Unknown parameter: OBBT (10007)
+failed to get SolutionTarget: Error from API: Unknown parameter: SolutionTarget (10007)
+failed to get WLSTokenRefresh: Error from API: Unknown parameter: WLSTokenRefresh (10007)
+failed to get FuncNonlinear: Error from API: Unknown parameter: FuncNonlinear (10007)
+failed to get MixingCuts: Error from API: Unknown parameter: MixingCuts (10007)
+failed to get TuneDynamicJobs: Error from API: Unknown parameter: TuneDynamicJobs (10007)
+failed to get ConcurrentMethod: Error from API: Unknown parameter: ConcurrentMethod (10007)
+Error: 8 failures
+
+
+failures:
+    lib_impl::attribute::tests::attribute_names
+    lib_impl::parameter::tests::parameter_names
+
+test result: FAILED. 26 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+
+error: test failed, to rerun pass `--lib`
+
+running 2 tests
+Set parameter Username
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0xa187a6b9
+Model fingerprint: 0xa187a6b9
+Coefficient statistics:
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [0e+00, 0e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [0e+00, 0e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+
+User-callback calls 11, time in user-callback 0.00 sec
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0xa187a6b9
+Coefficient statistics:
+
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+User-callback calls 11, time in user-callback 0.00 sec
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0xa187a6b9
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+Presolve removed 0 rows and 1 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+Presolve removed 0 rows and 1 columns
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+Presolve time: 0.00s
+       0    0.0000000e+00   0.000000e+00   0.000000e+00      0s
+Presolve: All rows and columns removed
+
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  0.000000000e+00
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    0.0000000e+00   0.000000e+00   0.000000e+00      0s
+
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  0.000000000e+00
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 4 rows, 18 columns and 8 nonzeros
+Model fingerprint: 0xb20a5cb3
+Model has 10 general constraints
+Variable types: 0 continuous, 18 integer (18 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+  GenCon rhs range [4e+00, 4e+00]
+  GenCon coe range [1e+00, 1e+00]
+Presolve added 37 rows and 0 columns
+Presolve removed 0 rows and 4 columns
+Presolve time: 0.00s
+Presolved: 41 rows, 14 columns, 105 nonzeros
+Variable types: 0 continuous, 14 integer (14 binary)
+Found heuristic solution: objective 1.0000000
+Found heuristic solution: objective 2.0000000
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 2: 2 1 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 2.000000000000e+00, best bound 2.000000000000e+00, gap 0.0000%
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Read MPS format model from file /home/yannik/projects/rust-grb/tests/data/traininstance2.mps.gz
+Reading time = 0.02 seconds
+traininstance2: 15603 rows, 12890 columns, 41531 nonzeros
+Set parameter Threads to value 1
+Set parameter Seed to value 1337
+Set parameter Presolve to value 0
+Set parameter Heuristics to value 0
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 1 threads
+Optimize a model with 15603 rows, 12890 columns and 41531 nonzeros
+Model fingerprint: 0x5a7c5fb1
+Variable types: 5010 continuous, 7880 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 6e+05]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+06]
+  RHS range        [1e+00, 1e+03]
+Variable types: 0 continuous, 12890 integer (7771 binary)
+
+Root relaxation: objective 0.000000e+00, 2877 iterations, 0.02 seconds (0.01 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    0.00000    0   94          -    0.00000      -     -    0s
+Warning: Completing partial solution with 7868 unfixed non-continuous variables out of 7880
+H    0     0                    71820.000000    0.00000   100%     -    0s
+     0     0    0.00000    0   96 71820.0000    0.00000   100%     -    0s
+Warning: Completing partial solution with 7868 unfixed non-continuous variables out of 7880
+     0     0    0.00000    0   96 71820.0000    0.00000   100%     -    1s
+
+Cutting planes:
+  Gomory: 3
+  Lift-and-project: 4
+  Cover: 21
+  Implied bound: 2172
+  Clique: 156
+  MIR: 16
+  StrongCG: 7
+  Flow cover: 15
+  GUB cover: 5
+  Network: 1
+  RLT: 18
+  Relax-and-lift: 1009
+
+Explored 1 nodes (3834 simplex iterations) in 1.21 seconds (1.39 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 71820 
+
+Solve interrupted
+Best objective 7.182000000000e+04, best bound -0.000000000000e+00, gap 100.0000%
+
+User-callback calls 216, time in user-callback 0.30 sec
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.29s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Read MPS format model from file /home/yannik/projects/rust-grb/tests/data/neos859080.mps.gz
+Reading time = 0.00 seconds
+neos859080: 164 rows, 160 columns, 1280 nonzeros
+Set parameter Threads to value 1
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 1 threads
+Optimize a model with 164 rows, 160 columns and 1280 nonzeros
+Model fingerprint: 0xd90ce804
+Variable types: 0 continuous, 160 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+01]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+01]
+  RHS range        [1e+00, 1e+00]
+Presolve removed 44 rows and 40 columns
+Presolve time: 0.00s
+Presolved: 120 rows, 120 columns, 1148 nonzeros
+Variable types: 0 continuous, 120 integer (40 binary)
+
+Root relaxation: objective 1.000000e+00, 3 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    6          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     2    2.00000    0    3          -    2.00000      -     -    0s
+
+Cutting planes:
+  MIR: 5
+  Zero half: 5
+
+Explored 93 nodes (454 simplex iterations) in 0.04 seconds (0.04 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0       160         -         0       320         -           0s
+      127       158       140         0       320         -           5s
+      127       158         -         0       320         -           5s
+
+Non-minimal IIS computed: 158 constraints, 320 bounds
+IIS runtime: 5.10 seconds (4.89 work units)
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.15s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0xc63f939d
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 2e+00]
+
+Solving a multi-scenario model with 3 scenarios...
+
+Found heuristic solution: objective 0.0000000
+Presolve time: 0.00s
+Presolved: 6 rows, 8 columns, 17 nonzeros
+Variable types: 0 continuous, 8 integer (8 binary)
+Found heuristic solution: objective -1.0000000
+
+Root relaxation: objective -1.333333e+00, 4 iterations, 0.00 seconds (0.00 work units)
+Scenario 1 has been solved. 2/3 scenarios left.
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0   -1.33333    0    4   -1.00000   -1.33333  33.3%     -    0s
+
+Optimal solution found at node 0 - now completing multiple scenarios...
+
+Explored 1 nodes (4 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 6: -1 0 0 ... 1
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective -1.000000000000e+00, best bound -1.000000000000e+00, gap 0.0000%
+
+User-callback calls 14, time in user-callback 0.00 sec
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x928f94df
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [2e+00, 2e+00]
+Found heuristic solution: objective 0.0000000
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 0 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 0.000000000000e+00, best bound 0.000000000000e+00, gap 0.0000%
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x7ef595f6
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+Found heuristic solution: objective -1.0000000
+Presolve removed 1 rows and 2 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: -1 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective -1.000000000000e+00, best bound -1.000000000000e+00, gap 0.0000%
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x2f59c8a3
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [2e+00, 2e+00]
+Found heuristic solution: objective 1.0000000
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 1 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 1.000000000000e+00, best bound 1.000000000000e+00, gap 0.0000%
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Read MPS format model from file /home/yannik/projects/rust-grb/tests/data/sing44.mps.gz
+Reading time = 0.08 seconds
+sing44: 54745 rows, 59708 columns, 281260 nonzeros
+Set parameter Threads to value 1
+Set parameter TimeLimit to value 10
+Set parameter NoRelHeurTime to value 3
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 1 threads
+Optimize a model with 54745 rows, 59708 columns and 281260 nonzeros
+Model fingerprint: 0x205e3861
+Variable types: 16184 continuous, 43524 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [4e-01, 4e+02]
+  Objective range  [4e-01, 3e+04]
+  Bounds range     [1e+00, 8e+00]
+  RHS range        [1e+00, 2e+03]
+Presolve removed 5378 rows and 5379 columns
+Presolve time: 0.58s
+Presolved: 49367 rows, 54329 columns, 269312 nonzeros
+Variable types: 16184 continuous, 38145 integer (38145 binary)
+Found heuristic solution: objective 2.813376e+08
+Found heuristic solution: objective 3.296299e+07
+Starting NoRel heuristic
+Found heuristic solution: objective 3.153186e+07
+NoRel heuristic complete
+
+Root relaxation: objective 8.102513e+06, 20823 iterations, 1.40 seconds (1.42 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 8102513.22    0  640 3.1532e+07 8102513.22  74.3%     -    2s
+H    0     0                    9988012.2680 8102513.22  18.9%     -    2s
+H    0     0                    9949168.4249 8102513.22  18.6%     -    2s
+H    0     0                    8951778.2560 8102513.22  9.49%     -    3s
+     0     0 8104135.99    0  731 8951778.26 8104135.99  9.47%     -    3s
+H    0     0                    8175822.5670 8104135.99  0.88%     -    4s
+     0     0 8105057.93    0  854 8175822.57 8105057.93  0.87%     -    4s
+     0     0 8105145.46    0  857 8175822.57 8105145.46  0.86%     -    4s
+     0     0 8105146.88    0  858 8175822.57 8105146.88  0.86%     -    4s
+     0     0 8105977.59    0  927 8175822.57 8105977.59  0.85%     -    5s
+H    0     0                    8165086.6280 8105977.59  0.72%     -    5s
+     0     0 8107144.63    0 1132 8165086.63 8107144.63  0.71%     -    6s
+     0     0 8107326.02    0 1142 8165086.63 8107326.02  0.71%     -    6s
+     0     0 8107328.20    0 1145 8165086.63 8107328.20  0.71%     -    6s
+     0     0 8107328.54    0 1146 8165086.63 8107328.54  0.71%     -    6s
+     0     0 8108020.69    0 1143 8165086.63 8108020.69  0.70%     -    7s
+H    0     0                    8134434.3259 8108020.69  0.32%     -    8s
+     0     0 8108249.97    0 1174 8134434.33 8108249.97  0.32%     -    8s
+     0     0 8108503.33    0 1185 8134434.33 8108503.33  0.32%     -    8s
+     0     0 8108570.38    0 1187 8134434.33 8108570.38  0.32%     -    8s
+     0     0 8108574.29    0 1193 8134434.33 8108574.29  0.32%     -    8s
+     0     0          -    0      8134434.33 8108574.29  0.32%     -   10s
+
+Cutting planes:
+  Gomory: 3
+  Lift-and-project: 4
+  Cover: 4
+  MIR: 377
+  Flow cover: 167
+  GUB cover: 10
+  RLT: 6
+  Relax-and-lift: 6
+
+Explored 1 nodes (29928 simplex iterations) in 10.00 seconds (12.62 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 9: 8.13443e+06 8.16509e+06 8.17582e+06 ... 2.81338e+08
+
+Time limit reached
+Best objective 8.134434325939e+06, best bound 8.108574294603e+06, gap 0.3179%
+
+User-callback calls 1925, time in user-callback 0.00 sec
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.15s
+
+
+running 1 test
+   Compiling proc-macro2 v1.0.92
+   Compiling unicode-ident v1.0.14
+   Compiling libc v0.2.169
+   Compiling cfg-if v1.0.0
+   Compiling anyhow v1.0.95
+   Compiling serde v1.0.217
+   Compiling getrandom v0.1.16
+   Compiling rustix v0.38.42
+   Compiling memchr v2.7.4
+   Compiling syn v1.0.109
+   Compiling byteorder v1.5.0
+   Compiling linux-raw-sys v0.4.14
+   Compiling bitflags v2.6.0
+   Compiling ryu v1.0.18
+   Compiling itoa v1.0.14
+   Compiling serde_json v1.0.134
+   Compiling fastrand v2.3.0
+   Compiling once_cell v1.20.2
+   Compiling autocfg v1.4.0
+   Compiling fnv v1.0.7
+   Compiling quick-error v1.2.3
+   Compiling bit-vec v0.6.3
+   Compiling bitflags v1.3.2
+   Compiling lazy_static v1.5.0
+   Compiling regex-syntax v0.6.29
+   Compiling csv-core v0.1.11
+   Compiling bit-set v0.5.3
+   Compiling num-traits v0.2.19
+   Compiling grb-sys2 v10.2.1
+   Compiling quote v1.0.38
+   Compiling syn v2.0.94
+   Compiling getrandom v0.2.15
+   Compiling wait-timeout v0.2.0
+   Compiling rand_core v0.5.1
+   Compiling tempfile v3.15.0
+   Compiling rand_xorshift v0.2.0
+   Compiling rusty-fork v0.3.0
+   Compiling gag v0.1.10
+   Compiling serde_derive v1.0.217
+   Compiling zerocopy-derive v0.7.35
+   Compiling zerocopy v0.7.35
+   Compiling ppv-lite86 v0.2.20
+   Compiling cstr-enum-derive v0.1.0
+   Compiling grb-macro v0.1.0
+   Compiling rand_chacha v0.2.2
+   Compiling rand v0.7.3
+   Compiling cstr-enum v1.0.0
+   Compiling proptest v0.10.1
+   Compiling csv v1.3.1
+   Compiling grb v2.0.2 (/home/yannik/projects/rust-grb)
+   Compiling grb-tests v0.0.0 (/home/yannik/projects/rust-grb/target/tests/trybuild/grb)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.30s
+
+
+test [0m[1mtests/compile-tests/simple.rs[0m [should pass] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_cmp_op.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_cmp_expr.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_op.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_nested.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/eq_range.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/garbage.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_add_var_args.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/add_var.rs[0m [should pass] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/user_cuts_deprecated.rs[0m [should fail to compile] ... [0m[32mok
+[0m
+
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.88s
+
+
+running 2 tests
+Set parameter Username
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter FuncPieces to value 1
+Set parameter FuncPieceLength to value 0.001
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 1 rows, 4 columns and 2 nonzeros
+Model fingerprint: 0x741a3617
+Model has 2 general constraints
+Variable types: 4 continuous, 0 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 4e+00]
+  Objective range  [1e+00, 2e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [9e+00, 9e+00]
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 1 rows, 4 columns and 2 nonzeros
+Model fingerprint: 0x71c56d82
+Model has 2 general constraints
+Variable types: 4 continuous, 0 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 4e+00]
+  Objective range  [1e+00, 2e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [9e+00, 9e+00]
+  PWLCon x range   [1e-03, 5e+00]
+  PWLCon y range   [3e-02, 2e+00]
+Found heuristic solution: objective -0.0000000
+Presolve added 4 rows and 6018 columns
+Presolve time: 0.00s
+Presolved: 5 rows, 6022 columns, 12040 nonzeros
+Presolved model has 2 SOS constraint(s)
+Presolve added 6 rows and 7263 columns
+Presolve time: 0.01s
+Presolved: 7 rows, 7267 columns, 21791 nonzeros
+Presolved model has 2 SOS constraint(s)
+Variable types: 7267 continuous, 0 integer (0 binary)
+Variable types: 6022 continuous, 0 integer (0 binary)
+
+Root relaxation: objective 3.517146e+01, 4 iterations, 0.00 seconds (0.00 work units)
+
+Root relaxation: objective 5.599522e+00, 8 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+*    0     0               0      33.2624648   33.26246  0.00%     -    0s
+
+Explored 1 nodes (5 simplex iterations) in 0.02 seconds (0.01 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 2: 33.2625 -0 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 3.326246476398e+01, best bound 3.326246476398e+01, gap 0.0000%
+.
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    5.59665    0    1          -    5.59665      -     -    0s
+     0     0    5.59635    0    1          -    5.59635      -     -    0s
+     0     2    5.59635    0    1          -    5.59635      -     -    0s
+*    7    10               3       4.1766080    4.49497  7.62%  31.4    0s
+*    9    10               3       4.2732288    4.49497  5.19%  44.6    0s
+*   15    12               3       4.3944492    4.49497  2.29%  34.2    0s
+*   21    10               5       4.4695582    4.48124  0.26%  25.8    0s
+*   30     7               5       4.4698133    4.47592  0.14%  18.7    0s
+*   45    15               7       4.4727583    4.47386  0.02%  13.8    0s
+*   52    12               8       4.4732708    4.47368  0.01%  12.3    0s
+*   55    12               9       4.4735888    4.47368  0.00%  11.8    0s
+
+Explored 62 nodes (683 simplex iterations) in 0.09 seconds (0.18 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 8: 4.47359 4.47327 4.47276 ... 4.17661
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 4.473588765714e+00, best bound 4.473678054742e+00, gap 0.0020%
+Set parameter FuncPieceLength to value 0.0001
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 1 rows, 4 columns and 2 nonzeros
+Model fingerprint: 0x43b9ebdd
+Model has 2 general constraints
+Variable types: 4 continuous, 0 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 4e+00]
+  Objective range  [1e+00, 2e+00]
+  Bounds range     [9e-01, 3e+00]
+  RHS range        [9e+00, 9e+00]
+Presolve added 6 rows and 27143 columns
+Presolve time: 0.48s
+Presolved: 7 rows, 27147 columns, 81431 nonzeros
+Presolved model has 2 SOS constraint(s)
+Variable types: 27147 continuous, 0 integer (0 binary)
+
+Root relaxation: objective 4.479843e+00, 26 iterations, 0.01 seconds (0.02 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    4.47984    0    1          -    4.47984      -     -    0s
+     0     0    4.47984    0    1          -    4.47984      -     -    0s
+     0     2    4.47984    0    1          -    4.47984      -     -    0s
+*    2     2               1       3.5990831    4.47619  24.4%   2.5    0s
+*    4     2               2       4.0513831    4.47472  10.4%   2.0    0s
+*    6     2               3       4.2775831    4.47405  4.59%   1.8    0s
+*    8     2               4       4.3906831    4.47373  1.89%   3.9    0s
+*   10     2               5       4.4471831    4.47363  0.59%   4.4    0s
+*   22    12               8       4.4613831    4.47360  0.27%  14.8    0s
+*   30    22               9       4.4684831    4.47360  0.11%  11.9    1s
+*   37    32              10       4.4719831    4.47360  0.04%   252    1s
+*   66    49              12       4.4733944    4.47360  0.00%   142    1s
+*   82    49              18       4.4734976    4.47360  0.00%   115    1s
+*   94    49              17       4.4735427    4.47360  0.00%   101    1s
+
+Explored 96 nodes (9485 simplex iterations) in 1.38 seconds (2.40 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 10: 4.47354 4.4735 4.47339 ... 4.05138
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 4.473542732341e+00, best bound 4.473596376021e+00, gap 0.0012%
+.
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.48s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x93380a65
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [2e+00, 2e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [1e+01, 1e+01]
+Presolve removed 1 rows and 2 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    2.1000000e+01   0.000000e+00   0.000000e+00      0s
+
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  2.100000000e+01
+Gurobi Optimizer version 9.5.1 build v9.5.1rc2 (linux64)
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [1e+01, 1e+01]
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    1.0000000e+30   1.000000e+30   1.000000e+00      0s
+       1    1.0000000e+01   0.000000e+00   0.000000e+00      0s
+
+Solved in 1 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  1.000000000e+01
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 55 tests
+.............................. 30/55
+src/model.rs - lib_impl::model::Model::add_genconstr_logistic (line 64) --- FAILED
+........................
+failures:
+
+---- src/model.rs - lib_impl::model::Model::add_genconstr_logistic (line 64) stdout ----
+error: linking with `cc` failed: exit status: 1
+  |
+  = note: LC_ALL="C" PATH="/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin:/home/yannik/.nvm/versions/node/v16.16.0/bin:/home/yannik/.config/cargo/bin:/home/yannik/.config/cargo/bin:/home/yannik/bin:/home/yannik/.local/bin:/home/yannik/.nix-profile/bin:/nix/var/nix/profiles/default/bin:/home/yannik/.config/cargo/bin:/home/yannik/.config/cargo/bin:/home/yannik/bin:/home/yannik/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games" VSLANG="1033" "cc" "-m64" "/tmp/rustc8GGTiM/symbols.o" "/tmp/rustdoctest3NvdFn/rust_out.rust_out.cb03291d53e4e161-cgu.0.rcgu.o" "/tmp/rustdoctest3NvdFn/rust_out.1s7umcihpz0t7nkz1uc2ifee9.rcgu.o" "-Wl,--as-needed" "-Wl,-Bstatic" "/home/yannik/projects/rust-grb/target/debug/deps/libgrb-b488e05db0557b58.rlib" "/home/yannik/projects/rust-grb/target/debug/deps/libanyhow-23398793ba94ff14.rlib" "/home/yannik/projects/rust-grb/target/debug/deps/libgrb_sys2-6cdbe1fbc022200c.rlib" "/home/yannik/projects/rust-grb/target/debug/deps/libfnv-b4bd047f342dff07.rlib" "/home/yannik/projects/rust-grb/target/debug/deps/libcstr_enum-2543a4ed5c664f83.rlib" "/home/yannik/projects/rust-grb/target/debug/deps/libcfg_if-8217498f8667ada9.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-ca74a2d9c5166d9f.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libpanic_unwind-e31ab23316ed5080.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libobject-27dc4aa955912662.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libmemchr-bd0d6cccce077b99.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libaddr2line-8d001680935b5e3c.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libgimli-ba8ce71964f984f4.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_demangle-99a73526abcec14b.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd_detect-63ac0d22cff92579.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libhashbrown-9057355c92c922d5.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_alloc-358be9bc1f6bab04.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libminiz_oxide-aca15549d5bff974.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libadler-8251d2cef7072448.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libunwind-7d50b86011c66411.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libcfg_if-51ea098fce5006bf.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/liblibc-5a14e0d0b712e731.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/liballoc-8b83dbf3a7b8f999.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_core-c6fd227bdc7b39ff.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-959d3389fa3da8a5.rlib" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-abe05db089cc2c62.rlib" "-Wl,-Bdynamic" "-lgurobi95" "-lgcc_s" "-lutil" "-lrt" "-lpthread" "-lm" "-ldl" "-lc" "-Wl,--eh-frame-hdr" "-Wl,-z,noexecstack" "-L" "/home/yannik/.opt/gurobi951/linux64/lib" "-L" "/home/yannik/.config/rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib" "-o" "/tmp/rustdoctest3NvdFn/rust_out" "-Wl,--gc-sections" "-pie" "-Wl,-z,relro,-z,now" "-nodefaultlibs"
+  = note: /usr/bin/ld: /home/yannik/projects/rust-grb/target/debug/deps/libgrb-b488e05db0557b58.rlib(grb-b488e05db0557b58.9xaij5cue15zi9uj3e9f67ul5.rcgu.o): in function `grb::lib_impl::model::Model::add_genconstr_logistic':
+          /home/yannik/projects/rust-grb/src/model.rs:79: undefined reference to `GRBaddgenconstrLogistic'
+          collect2: error: ld returned 1 exit status
+          
+  = note: some `extern` functions couldn't be found; some native libraries may need to be installed or have their path specified
+  = note: use the `-l` flag to specify native libraries to link
+  = note: use the `cargo:rustc-link-lib` directive to specify the native libraries to link with Cargo (see https://doc.rust-lang.org/cargo/reference/build-scripts.html#rustc-link-lib)
+
+error: aborting due to 1 previous error
+
+Couldn't compile the test.
+
+failures:
+    src/model.rs - lib_impl::model::Model::add_genconstr_logistic (line 64)
+
+test result: FAILED. 54 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.48s
+
+error: doctest failed, to rerun pass `--doc`
+error: 2 targets failed:
+    `--lib`
+    `--doc`
+---------------- Done: 9.5 --------------------
+---------------- Test: 10.0 --------------------
+     Removed 2812 files, 1.1GiB total
+
+running 28 tests
+Set parameter Username
+Set parameter Username
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+.Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter IISMethod to value 1
+Set parameter IISMethod to value 0
+...Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter Username
+.Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+.
+Set parameter Username
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+.Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 3 columns and 1 nonzeros
+Model fingerprint: 0x9ece38f3
+Model has 1 quadratic constraint
+Model has 1 SOS constraint
+Model has 1 general constraint
+Variable types: 1 continuous, 2 integer (2 binary)
+.Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [1e+00, 1e+00]
+.Set parameter Username
+  RHS range        [1e+00, 1e+00]
+  QRHS range       [1e+00, 1e+00]
+  GenCon coe range [1e+00, 1e+00]
+..Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter Username
+.Set parameter Username
+Set parameter Username
+Presolve removed 1 rows and 3 columns
+Academic license - for non-commercial use only - expires 2125-01-01
+Presolve time: 0.00s
+Set parameter Username
+Presolve: All rows and columns removed
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 0 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 0.000000000000e+00, best bound 0.000000000000e+00, gap 0.0000%
+Set parameter OutputFlag to value 1
+.Set parameter Username
+.Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter Username
+. 15/28
+lib_impl::attribute::tests::attribute_names --- FAILED
+Set parameter Username
+Set parameter Username
+.Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+.Academic license - for non-commercial use only - expires 2125-01-01
+..Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+Set parameter OutputFlag to value 1
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+.Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0x1c1c76b7
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [1e+00, 1e+00]
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter Username
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter OutputFlag to value 1
+..Academic license - for non-commercial use only - expires 2125-01-01
+Presolve removed 0 rows and 1 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter OutputFlag to value 1
+.Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    1.0000000e+00   0.000000e+00   0.000000e+00      0s
+
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  1.000000000e+00
+.Read LP format model from file test_read_model_copies_env.lp
+Reading time = 0.00 seconds
+: 0 rows, 0 columns, 0 nonzeros
+.Academic license - for non-commercial use only - expires 2125-01-01
+ 26/28
+lib_impl::parameter::tests::parameter_names --- FAILED
+.
+failures:
+
+---- lib_impl::attribute::tests::attribute_names stdout ----
+failed to get FuncNonlinear: Error from API: Unknown attribute 'FuncNonlinear' (10004)
+Error: 1 failures
+
+---- lib_impl::parameter::tests::parameter_names stdout ----
+failed to get FuncNonlinear: Error from API: Unknown parameter: FuncNonlinear (10007)
+failed to get MixingCuts: Error from API: Unknown parameter: MixingCuts (10007)
+failed to get TuneDynamicJobs: Error from API: Unknown parameter: TuneDynamicJobs (10007)
+failed to get ConcurrentMethod: Error from API: Unknown parameter: ConcurrentMethod (10007)
+Error: 4 failures
+
+
+failures:
+    lib_impl::attribute::tests::attribute_names
+    lib_impl::parameter::tests::parameter_names
+
+test result: FAILED. 26 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s
+
+error: test failed, to rerun pass `--lib`
+
+running 2 tests
+Set parameter Username
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0xa187a6b9
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Coefficient statistics:
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [0e+00, 0e+00]
+
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0xa187a6b9
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+
+User-callback calls 14, time in user-callback 0.00 sec
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+
+User-callback calls 14, time in user-callback 0.00 sec
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0xa187a6b9
+Coefficient statistics:
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+  Matrix range     [0e+00, 0e+00]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+  Objective range  [0e+00, 0e+00]
+
+  Bounds range     [0e+00, 0e+00]
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+  RHS range        [0e+00, 0e+00]
+Model fingerprint: 0xa187a6b9
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+Presolve removed 0 rows and 1 columns
+Presolve removed 0 rows and 1 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    0.0000000e+00   0.000000e+00   0.000000e+00      0s
+       0    0.0000000e+00   0.000000e+00   0.000000e+00      0s
+
+
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  0.000000000e+00
+Optimal objective  0.000000000e+00
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 4 rows, 18 columns and 8 nonzeros
+Model fingerprint: 0xb20a5cb3
+Model has 10 general constraints
+Variable types: 0 continuous, 18 integer (18 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+  GenCon rhs range [4e+00, 4e+00]
+  GenCon coe range [1e+00, 1e+00]
+Presolve added 37 rows and 0 columns
+Presolve removed 0 rows and 4 columns
+Presolve time: 0.00s
+Presolved: 41 rows, 14 columns, 105 nonzeros
+Variable types: 0 continuous, 14 integer (14 binary)
+Found heuristic solution: objective 1.0000000
+Found heuristic solution: objective 2.0000000
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 2: 2 1 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 2.000000000000e+00, best bound 2.000000000000e+00, gap 0.0000%
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Read MPS format model from file /home/yannik/projects/rust-grb/tests/data/traininstance2.mps.gz
+Reading time = 0.02 seconds
+traininstance2: 15603 rows, 12890 columns, 41531 nonzeros
+Set parameter Threads to value 1
+Set parameter Seed to value 1337
+Set parameter Presolve to value 0
+Set parameter Heuristics to value 0
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 1 threads
+
+Optimize a model with 15603 rows, 12890 columns and 41531 nonzeros
+Model fingerprint: 0x5a7c5fb1
+Variable types: 5010 continuous, 7880 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 6e+05]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+06]
+  RHS range        [1e+00, 1e+03]
+Variable types: 0 continuous, 12890 integer (7771 binary)
+
+Root relaxation: objective 0.000000e+00, 2879 iterations, 0.02 seconds (0.01 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    0.00000    0  128          -    0.00000      -     -    0s
+Warning: Completing partial solution with 7868 unfixed non-continuous variables out of 7880
+     0     0    0.00000    0   95          -    0.00000      -     -    0s
+     0     0    0.00000    0   95          -    0.00000      -     -    0s
+     0     0    0.00000    0   95          -    0.00000      -     -    0s
+     0     0    0.00000    0   95          -    0.00000      -     -    0s
+     0     0    0.00000    0   95          -    0.00000      -     -    0s
+     0     0    0.00000    0   95          -    0.00000      -     -    0s
+     0     0    0.00000    0   95          -    0.00000      -     -    0s
+     0     0    0.00000    0   95          -    0.00000      -     -    0s
+     0     0    0.00000    0   95          -    0.00000      -     -    0s
+     0     0    0.00000    0   95          -    0.00000      -     -    0s
+H    0     0                    71820.000000    0.00000   100%     -    0s
+     0     0    0.00000    0   95 71820.0000    0.00000   100%     -    0s
+Warning: Completing partial solution with 7868 unfixed non-continuous variables out of 7880
+     0     0    0.00000    0 1099 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0 1099 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0 1099 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0 1099 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0 1099 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0 1099 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0 1099 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0 1099 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0 1099 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0 1099 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0 1099 71820.0000    0.00000   100%     -    1s
+
+Cutting planes:
+  Learned: 8
+  Gomory: 2
+  Cover: 16
+  Implied bound: 1773
+  Clique: 112
+  MIR: 6
+  StrongCG: 1
+  Flow cover: 11
+  GUB cover: 3
+  Zero half: 1
+  Network: 1
+  RLT: 18
+  Relax-and-lift: 16
+
+Explored 1 nodes (4803 simplex iterations) in 1.27 seconds (1.36 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 71820 
+
+Solve interrupted
+Best objective 7.182000000000e+04, best bound -0.000000000000e+00, gap 100.0000%
+
+User-callback calls 254, time in user-callback 0.30 sec
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.33s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Read MPS format model from file /home/yannik/projects/rust-grb/tests/data/neos859080.mps.gz
+Reading time = 0.00 seconds
+neos859080: 164 rows, 160 columns, 1280 nonzeros
+Set parameter Threads to value 1
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 1 threads
+
+Optimize a model with 164 rows, 160 columns and 1280 nonzeros
+Model fingerprint: 0xd90ce804
+Variable types: 0 continuous, 160 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+01]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+01]
+  RHS range        [1e+00, 1e+00]
+Presolve removed 44 rows and 40 columns
+Presolve time: 0.00s
+Presolved: 120 rows, 120 columns, 1148 nonzeros
+Variable types: 0 continuous, 120 integer (40 binary)
+
+Root relaxation: objective 1.000000e+00, 3 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    6          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     2    1.00000    0    3          -    1.00000      -     -    0s
+
+Cutting planes:
+  MIR: 5
+  Zero half: 5
+
+Explored 78 nodes (592 simplex iterations) in 0.05 seconds (0.05 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0       160         -         0       320         -           0s
+      127       158       158         0       320         -           5s
+      127       158         -         0       320         -           5s
+
+Non-minimal IIS computed: 158 constraints, 320 bounds
+IIS runtime: 5.03 seconds (5.07 work units)
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.08s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0xc63f939d
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 2e+00]
+
+Solving a multi-scenario model with 3 scenarios...
+
+Found heuristic solution: objective 0.0000000
+Presolve time: 0.00s
+Presolved: 6 rows, 8 columns, 17 nonzeros
+Variable types: 0 continuous, 8 integer (8 binary)
+Found heuristic solution: objective -1.0000000
+
+Root relaxation: objective -1.333333e+00, 4 iterations, 0.00 seconds (0.00 work units)
+Scenario 1 has been solved. 2/3 scenarios left.
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0   -1.33333    0    4   -1.00000   -1.33333  33.3%     -    0s
+
+Optimal solution found at node 0 - now completing multiple scenarios...
+
+Cutting planes:
+  Gomory: 1
+
+Explored 1 nodes (4 simplex iterations) in 0.01 seconds (0.00 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 6: -1 -1 0 ... 1
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective -1.000000000000e+00, best bound -1.000000000000e+00, gap 0.0000%
+
+User-callback calls 17, time in user-callback 0.00 sec
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x928f94df
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [2e+00, 2e+00]
+Found heuristic solution: objective 0.0000000
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 0 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 0.000000000000e+00, best bound 0.000000000000e+00, gap 0.0000%
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x7ef595f6
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+Found heuristic solution: objective -1.0000000
+Presolve removed 1 rows and 2 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: -1 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective -1.000000000000e+00, best bound -1.000000000000e+00, gap 0.0000%
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x2f59c8a3
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [2e+00, 2e+00]
+Found heuristic solution: objective 1.0000000
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 1 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 1.000000000000e+00, best bound 1.000000000000e+00, gap 0.0000%
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Read MPS format model from file /home/yannik/projects/rust-grb/tests/data/sing44.mps.gz
+Reading time = 0.07 seconds
+sing44: 54745 rows, 59708 columns, 281260 nonzeros
+Set parameter Threads to value 1
+Set parameter TimeLimit to value 10
+Set parameter NoRelHeurTime to value 3
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 1 threads
+
+Optimize a model with 54745 rows, 59708 columns and 281260 nonzeros
+Model fingerprint: 0x205e3861
+Variable types: 16184 continuous, 43524 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [4e-01, 4e+02]
+  Objective range  [4e-01, 3e+04]
+  Bounds range     [1e+00, 8e+00]
+  RHS range        [1e+00, 2e+03]
+Presolve removed 5379 rows and 5382 columns
+Presolve time: 0.63s
+Presolved: 49366 rows, 54326 columns, 269306 nonzeros
+Variable types: 16184 continuous, 38142 integer (38142 binary)
+Found heuristic solution: objective 2.780255e+08
+Found heuristic solution: objective 3.296299e+07
+Starting NoRel heuristic
+Found heuristic solution: objective 3.150879e+07
+Found heuristic solution: objective 2.820282e+07
+Found heuristic solution: objective 2.337186e+07
+Found heuristic solution: objective 2.285012e+07
+Found heuristic solution: objective 2.242181e+07
+Found heuristic solution: objective 2.068467e+07
+Found heuristic solution: objective 1.991398e+07
+Found heuristic solution: objective 1.991135e+07
+Found heuristic solution: objective 1.991130e+07
+Found heuristic solution: objective 1.991105e+07
+Found heuristic solution: objective 1.990798e+07
+Found heuristic solution: objective 1.984438e+07
+Found heuristic solution: objective 1.935653e+07
+Found heuristic solution: objective 1.935471e+07
+Found heuristic solution: objective 1.931750e+07
+Found heuristic solution: objective 1.923042e+07
+Found heuristic solution: objective 1.913647e+07
+Found heuristic solution: objective 1.911278e+07
+Found heuristic solution: objective 1.904546e+07
+Found heuristic solution: objective 1.903945e+07
+Found heuristic solution: objective 1.898535e+07
+Found heuristic solution: objective 1.897275e+07
+Found heuristic solution: objective 1.896287e+07
+Found heuristic solution: objective 1.894507e+07
+Found heuristic solution: objective 1.894094e+07
+Found heuristic solution: objective 1.893164e+07
+Found heuristic solution: objective 1.891872e+07
+Found heuristic solution: objective 1.890940e+07
+Found heuristic solution: objective 1.890734e+07
+Found heuristic solution: objective 1.890389e+07
+Found heuristic solution: objective 1.889610e+07
+Found heuristic solution: objective 1.886665e+07
+Found heuristic solution: objective 1.884782e+07
+Found heuristic solution: objective 1.884446e+07
+Found heuristic solution: objective 1.882992e+07
+Found heuristic solution: objective 1.882628e+07
+Found heuristic solution: objective 1.882337e+07
+Found heuristic solution: objective 1.880226e+07
+Found heuristic solution: objective 1.880006e+07
+Found heuristic solution: objective 1.879587e+07
+Found heuristic solution: objective 1.879240e+07
+Found heuristic solution: objective 1.879086e+07
+Found heuristic solution: objective 1.878878e+07
+Found heuristic solution: objective 1.877351e+07
+Found heuristic solution: objective 1.877289e+07
+Found heuristic solution: objective 1.877253e+07
+Found heuristic solution: objective 1.877149e+07
+Found heuristic solution: objective 1.877064e+07
+Found heuristic solution: objective 1.875685e+07
+Found heuristic solution: objective 1.874117e+07
+Found heuristic solution: objective 1.873213e+07
+Found heuristic solution: objective 1.872614e+07
+
+Root simplex log...
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+   19082    8.1013121e+06   1.876867e+03   0.000000e+00      5s
+   20515    8.1025132e+06   0.000000e+00   0.000000e+00      5s
+   20515    8.1025132e+06   0.000000e+00   0.000000e+00      5s
+
+Root relaxation: objective 8.102513e+06, 20515 iterations, 1.31 seconds (1.35 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 8102513.22    0  640 1.8726e+07 8102513.22  56.7%     -    5s
+H    0     0                    1.862147e+07 8102513.22  56.5%     -    5s
+     0     0 8104477.34    0  742 1.8621e+07 8104477.34  56.5%     -    6s
+H    0     0                    8339198.8572 8104477.34  2.81%     -    6s
+     0     0 8105721.49    0  853 8339198.86 8105721.49  2.80%     -    7s
+     0     0 8105726.34    0  862 8339198.86 8105726.34  2.80%     -    7s
+     0     0 8107039.93    0 1064 8339198.86 8107039.93  2.78%     -    8s
+H    0     0                    8264657.4647 8107039.93  1.91%     -    8s
+     0     0 8107575.08    0 1112 8264657.46 8107575.08  1.90%     -    9s
+     0     0 8107712.79    0 1117 8264657.46 8107712.79  1.90%     -    9s
+     0     0 8107713.28    0 1120 8264657.46 8107713.28  1.90%     -    9s
+
+Cutting planes:
+  Gomory: 6
+  Lift-and-project: 1
+  MIR: 300
+  Flow cover: 108
+  RLT: 1
+  Relax-and-lift: 4
+
+Explored 1 nodes (28582 simplex iterations) in 10.02 seconds (10.53 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 10: 8.26466e+06 8.3392e+06 1.86215e+07 ... 1.87725e+07
+
+Time limit reached
+Best objective 8.264657464702e+06, best bound 8.107713281818e+06, gap 1.8990%
+
+User-callback calls 2436, time in user-callback 0.00 sec
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.16s
+
+
+running 1 test
+   Compiling proc-macro2 v1.0.92
+   Compiling unicode-ident v1.0.14
+   Compiling libc v0.2.169
+   Compiling cfg-if v1.0.0
+   Compiling anyhow v1.0.95
+   Compiling serde v1.0.217
+   Compiling getrandom v0.1.16
+   Compiling memchr v2.7.4
+   Compiling rustix v0.38.42
+   Compiling syn v1.0.109
+   Compiling linux-raw-sys v0.4.14
+   Compiling bitflags v2.6.0
+   Compiling serde_json v1.0.134
+   Compiling byteorder v1.5.0
+   Compiling ryu v1.0.18
+   Compiling itoa v1.0.14
+   Compiling once_cell v1.20.2
+   Compiling fastrand v2.3.0
+   Compiling autocfg v1.4.0
+   Compiling fnv v1.0.7
+   Compiling bit-vec v0.6.3
+   Compiling quick-error v1.2.3
+   Compiling bitflags v1.3.2
+   Compiling lazy_static v1.5.0
+   Compiling regex-syntax v0.6.29
+   Compiling csv-core v0.1.11
+   Compiling bit-set v0.5.3
+   Compiling quote v1.0.38
+   Compiling grb-sys2 v10.2.1
+   Compiling num-traits v0.2.19
+   Compiling syn v2.0.94
+   Compiling getrandom v0.2.15
+   Compiling wait-timeout v0.2.0
+   Compiling tempfile v3.15.0
+   Compiling rand_core v0.5.1
+   Compiling rand_xorshift v0.2.0
+   Compiling rusty-fork v0.3.0
+   Compiling gag v0.1.10
+   Compiling serde_derive v1.0.217
+   Compiling zerocopy-derive v0.7.35
+   Compiling zerocopy v0.7.35
+   Compiling ppv-lite86 v0.2.20
+   Compiling cstr-enum-derive v0.1.0
+   Compiling grb-macro v0.1.0
+   Compiling rand_chacha v0.2.2
+   Compiling rand v0.7.3
+   Compiling cstr-enum v1.0.0
+   Compiling proptest v0.10.1
+   Compiling csv v1.3.1
+   Compiling grb v2.0.2 (/home/yannik/projects/rust-grb)
+   Compiling grb-tests v0.0.0 (/home/yannik/projects/rust-grb/target/tests/trybuild/grb)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.72s
+
+
+test [0m[1mtests/compile-tests/simple.rs[0m [should pass] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_cmp_op.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_cmp_expr.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_op.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_nested.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/eq_range.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/garbage.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_add_var_args.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/add_var.rs[0m [should pass] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/user_cuts_deprecated.rs[0m [should fail to compile] ... [0m[32mok
+[0m
+
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.35s
+
+
+running 2 tests
+Set parameter Username
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter FuncPieces to value 1
+Set parameter FuncPieceLength to value 0.001
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 4 columns and 2 nonzeros
+Model fingerprint: 0x741a3617
+Model has 2 general constraints
+Variable types: 4 continuous, 0 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 4e+00]
+  Objective range  [1e+00, 2e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [9e+00, 9e+00]
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 4 columns and 2 nonzeros
+Model fingerprint: 0x71c56d82
+Model has 2 general constraints
+Variable types: 4 continuous, 0 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 4e+00]
+  Objective range  [1e+00, 2e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [9e+00, 9e+00]
+  PWLCon x range   [1e-03, 5e+00]
+  PWLCon y range   [3e-02, 2e+00]
+Found heuristic solution: objective -0.0000000
+Presolve added 4 rows and 6018 columns
+Presolve time: 0.01s
+Presolved: 5 rows, 6022 columns, 12040 nonzeros
+Presolved model has 2 SOS constraint(s)
+Variable types: 6022 continuous, 0 integer (0 binary)
+
+Root relaxation: objective 3.517146e+01, 4 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0   35.17146    0    1   -0.00000   35.17146      -     -    0s
+*    0     0               0      33.2624648   33.26246  0.00%     -    0s
+
+Explored 1 nodes (5 simplex iterations) in 0.02 seconds (0.01 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 2: 33.2625 -0 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 3.326246476398e+01, best bound 3.326246476398e+01, gap 0.0000%
+.Presolve added 6 rows and 7263 columns
+Presolve time: 0.05s
+Presolved: 7 rows, 7267 columns, 21791 nonzeros
+Presolved model has 2 SOS constraint(s)
+Variable types: 7267 continuous, 0 integer (0 binary)
+
+Root relaxation: objective 5.599522e+00, 8 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    5.59952    0    1          -    5.59952      -     -    0s
+     0     0    5.59937    0    1          -    5.59937      -     -    0s
+     0     0    5.59907    0    1          -    5.59907      -     -    0s
+     0     0    5.59877    0    1          -    5.59877      -     -    0s
+     0     0    5.59846    0    1          -    5.59846      -     -    0s
+     0     0    5.59816    0    1          -    5.59816      -     -    0s
+     0     0    5.59786    0    1          -    5.59786      -     -    0s
+     0     0    5.59756    0    1          -    5.59756      -     -    0s
+     0     0    5.59725    0    1          -    5.59725      -     -    0s
+     0     0    5.59695    0    1          -    5.59695      -     -    0s
+     0     0    5.59665    0    1          -    5.59665      -     -    0s
+     0     0    5.59635    0    1          -    5.59635      -     -    0s
+     0     2    5.59635    0    1          -    5.59635      -     -    0s
+*    7    10               3       4.1766080    4.49497  7.62%  31.4    0s
+*    9    10               3       4.2732288    4.49497  5.19%  44.6    0s
+*   15    12               3       4.3944492    4.49497  2.29%  34.2    0s
+*   21    10               5       4.4695582    4.48124  0.26%  25.8    0s
+*   30     7               5       4.4698133    4.47592  0.14%  18.7    0s
+*   45    15               7       4.4727583    4.47386  0.02%  13.8    0s
+*   52    12               8       4.4732708    4.47368  0.01%  12.3    0s
+*   55    12               9       4.4735888    4.47368  0.00%  11.8    0s
+
+Explored 62 nodes (683 simplex iterations) in 0.13 seconds (0.16 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 8: 4.47359 4.47327 4.47276 ... 4.17661
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 4.473588765714e+00, best bound 4.473678054742e+00, gap 0.0020%
+Set parameter FuncPieceLength to value 0.0001
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 4 columns and 2 nonzeros
+Model fingerprint: 0x43b9ebdd
+Model has 2 general constraints
+Variable types: 4 continuous, 0 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 4e+00]
+  Objective range  [1e+00, 2e+00]
+  Bounds range     [9e-01, 3e+00]
+  RHS range        [9e+00, 9e+00]
+Presolve added 6 rows and 27143 columns
+Presolve time: 0.49s
+Presolved: 7 rows, 27147 columns, 81431 nonzeros
+Presolved model has 2 SOS constraint(s)
+Variable types: 27147 continuous, 0 integer (0 binary)
+
+Root relaxation: objective 4.479843e+00, 26 iterations, 0.01 seconds (0.02 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    4.47984    0    1          -    4.47984      -     -    0s
+     0     0    4.47984    0    1          -    4.47984      -     -    0s
+     0     2    4.47984    0    1          -    4.47984      -     -    0s
+*    2     2               1       3.5990831    4.47619  24.4%   2.5    0s
+*    4     2               2       4.0513831    4.47472  10.4%   2.0    0s
+*    6     2               3       4.2775831    4.47405  4.59%   1.8    0s
+*    8     2               4       4.3906831    4.47373  1.89%   3.9    0s
+*   10     2               5       4.4471831    4.47363  0.59%   4.4    0s
+*   22    12               8       4.4613831    4.47360  0.27%  14.8    0s
+*   30    22               9       4.4684831    4.47360  0.11%  11.9    1s
+*   37    32              10       4.4719831    4.47360  0.04%   252    1s
+*   65    50              12       4.4733944    4.47360  0.00%   145    1s
+*   81    50              18       4.4734976    4.47360  0.00%   116    1s
+*   93    50              17       4.4735427    4.47360  0.00%   102    1s
+
+Explored 95 nodes (9485 simplex iterations) in 1.72 seconds (2.41 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 10: 4.47354 4.4735 4.47339 ... 4.05138
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 4.473542732341e+00, best bound 4.473596376021e+00, gap 0.0012%
+.
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.87s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x93380a65
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [2e+00, 2e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [1e+01, 1e+01]
+Presolve removed 1 rows and 2 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    2.1000000e+01   0.000000e+00   0.000000e+00      0s
+
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  2.100000000e+01
+Gurobi Optimizer version 10.0.3 build v10.0.3rc0 (linux64)
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [1e+01, 1e+01]
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    1.0000000e+30   1.000000e+30   1.000000e+00      0s
+       1    1.0000000e+01   0.000000e+00   0.000000e+00      0s
+
+Solved in 1 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  1.000000000e+01
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 55 tests
+.......................................................
+test result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.59s
+
+error: 1 target failed:
+    `--lib`
+---------------- Done: 10.0 --------------------
+---------------- Test: 11.0 --------------------
+     Removed 2812 files, 1.1GiB total
+
+running 28 tests
+Set parameter Username
+Set parameter Username
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter IISMethod to value 1
+Set parameter IISMethod to value 0
+.Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 3 columns and 1 nonzeros
+.......Model fingerprint: 0xa28d5873
+Model has 1 quadratic constraint
+Model has 1 SOS constraint
+Model has 1 general constraint
+Variable types: 1 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  QMatrix range    [1e+00, 1e+00]
+.  Objective range  [0e+00, 0e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+  QRHS range       [1e+00, 1e+00]
+  GenCon coe range [1e+00, 1e+00]
+..Set parameter Username
+.Set parameter Username
+Set parameter Username
+Set parameter Username
+Set parameter Username
+Presolve removed 1 rows and 3 columns
+Presolve time: 0.00s
+Set parameter Username
+Set parameter Username
+Presolve: All rows and columns removed
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 0 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 0.000000000000e+00, best bound 0.000000000000e+00, gap 0.0000%
+Academic license - for non-commercial use only - expires 2125-01-01
+.Set parameter Username
+.Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter OutputFlag to value 1
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter OutputFlag to value 1
+..Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+....Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+.Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter Username
+Set parameter OutputFlag to value 1
+..Read LP format model from file test_read_model_copies_env.lp
+Set parameter Username
+Reading time = 0.00 seconds
+: 0 rows, 0 columns, 0 nonzeros
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter OutputFlag to value 1
+..Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0x1c1c76b7
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+Academic license - for non-commercial use only - expires 2125-01-01
+Presolve removed 0 rows and 1 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+.Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    1.0000000e+00   0.000000e+00   0.000000e+00      0s
+
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  1.000000000e+00
+..
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s
+
+
+running 2 tests
+Set parameter Username
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0xa187a6b9
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+  Objective range  [0e+00, 0e+00]
+
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0xa187a6b9
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+
+User-callback calls 14, time in user-callback 0.00 sec
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+User-callback calls 14, time in user-callback 0.00 sec
+Model fingerprint: 0xa187a6b9
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0xa187a6b9
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+Presolve removed 0 rows and 1 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    0.0000000e+00   0.000000e+00   0.000000e+00      0s
+
+Presolve removed 0 rows and 1 columns
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Presolve time: 0.00s
+Optimal objective  0.000000000e+00
+Presolve: All rows and columns removed
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    0.0000000e+00   0.000000e+00   0.000000e+00      0s
+
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  0.000000000e+00
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 4 rows, 18 columns and 8 nonzeros
+Model fingerprint: 0xb20a5cb3
+Model has 10 general constraints
+Variable types: 0 continuous, 18 integer (18 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+  GenCon rhs range [4e+00, 4e+00]
+  GenCon coe range [1e+00, 1e+00]
+Presolve added 37 rows and 0 columns
+Presolve removed 0 rows and 4 columns
+Presolve time: 0.00s
+Presolved: 41 rows, 14 columns, 105 nonzeros
+Variable types: 0 continuous, 14 integer (14 binary)
+Found heuristic solution: objective 1.0000000
+Found heuristic solution: objective 2.0000000
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 2: 2 1 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 2.000000000000e+00, best bound 2.000000000000e+00, gap 0.0000%
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Read MPS format model from file /home/yannik/projects/rust-grb/tests/data/traininstance2.mps.gz
+Reading time = 0.02 seconds
+traininstance2: 15603 rows, 12890 columns, 41531 nonzeros
+Set parameter Threads to value 1
+Set parameter Seed to value 1337
+Set parameter Presolve to value 0
+Set parameter Heuristics to value 0
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 1 threads
+
+Optimize a model with 15603 rows, 12890 columns and 41531 nonzeros
+Model fingerprint: 0x5a7c5fb1
+Variable types: 5010 continuous, 7880 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 6e+05]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+06]
+  RHS range        [1e+00, 1e+03]
+Variable types: 0 continuous, 12890 integer (7771 binary)
+
+Root relaxation: objective 0.000000e+00, 2879 iterations, 0.02 seconds (0.02 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+Warning: Completing partial solution with 7868 unfixed non-continuous variables out of 7880
+H    0     0                    71820.000000    0.00000   100%     -    0s
+     0     0    0.00000    0   86 71820.0000    0.00000   100%     -    0s
+Warning: Completing partial solution with 7868 unfixed non-continuous variables out of 7880
+     0     0    0.00000    0   79 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0   79 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0   79 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0   79 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0   79 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0   96 71820.0000    0.00000   100%     -    1s
+     0     0    0.00000    0   96 71820.0000    0.00000   100%     -    1s
+
+Cutting planes:
+  Learned: 8
+  Gomory: 9
+  Lift-and-project: 7
+  Cover: 15
+  Implied bound: 1030
+  Clique: 46
+  MIR: 21
+  StrongCG: 7
+  Flow cover: 17
+  GUB cover: 4
+  Zero half: 2
+  Network: 1
+  RLT: 11
+  Relax-and-lift: 28
+  PSD: 1
+
+Explored 1 nodes (3832 simplex iterations) in 1.11 seconds (1.20 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 71820 
+
+Solve interrupted
+Best objective 7.182000000000e+04, best bound -0.000000000000e+00, gap 100.0000%
+
+User-callback calls 216, time in user-callback 0.32 sec
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.17s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Read MPS format model from file /home/yannik/projects/rust-grb/tests/data/neos859080.mps.gz
+Reading time = 0.00 seconds
+neos859080: 164 rows, 160 columns, 1280 nonzeros
+Set parameter Threads to value 1
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 1 threads
+
+Optimize a model with 164 rows, 160 columns and 1280 nonzeros
+Model fingerprint: 0xd90ce804
+Variable types: 0 continuous, 160 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+01]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+01]
+  RHS range        [1e+00, 1e+00]
+Presolve removed 44 rows and 40 columns
+Presolve time: 0.00s
+Presolved: 120 rows, 120 columns, 1148 nonzeros
+Variable types: 0 continuous, 120 integer (40 binary)
+
+Root relaxation: objective 1.000000e+00, 3 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    6          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     2    2.00000    0    3          -    2.00000      -     -    0s
+
+Cutting planes:
+  MIR: 5
+  Zero half: 5
+
+Explored 78 nodes (573 simplex iterations) in 0.05 seconds (0.05 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 1 threads
+
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0       160         -         0       320         -           0s
+      128       158       158         0       320         -           5s
+      128       158         -         0       320         -           5s
+
+Non-minimal IIS computed: 158 constraints, 320 bounds
+IIS runtime: 5.01 seconds (5.19 work units)
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.06s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0xc63f939d
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 2e+00]
+
+Solving a multi-scenario model with 3 scenarios...
+
+Found heuristic solution: objective 0.0000000
+Presolve time: 0.00s
+Presolved: 6 rows, 8 columns, 17 nonzeros
+Presolved model has 3 scenario(s)
+Variable types: 0 continuous, 8 integer (8 binary)
+Found heuristic solution: objective -1.0000000
+
+Root relaxation: objective -1.333333e+00, 4 iterations, 0.00 seconds (0.00 work units)
+Scenario 1 has been solved. 2/3 scenarios left.
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0   -1.33333    0    4   -1.00000   -1.33333  33.3%     -    0s
+
+Optimal solution found at node 0 - now completing multiple scenarios...
+
+Cutting planes:
+  Gomory: 1
+
+Explored 1 nodes (4 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 6: -1 -1 0 ... 1
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective -1.000000000000e+00, best bound -1.000000000000e+00, gap 0.0000%
+
+User-callback calls 17, time in user-callback 0.00 sec
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x928f94df
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [2e+00, 2e+00]
+Found heuristic solution: objective 0.0000000
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 0 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 0.000000000000e+00, best bound 0.000000000000e+00, gap 0.0000%
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x7ef595f6
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+Found heuristic solution: objective -1.0000000
+Presolve removed 1 rows and 2 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: -1 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective -1.000000000000e+00, best bound -1.000000000000e+00, gap 0.0000%
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x2f59c8a3
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [2e+00, 2e+00]
+Found heuristic solution: objective 1.0000000
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 1 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 1.000000000000e+00, best bound 1.000000000000e+00, gap 0.0000%
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Read MPS format model from file /home/yannik/projects/rust-grb/tests/data/sing44.mps.gz
+Reading time = 0.07 seconds
+sing44: 54745 rows, 59708 columns, 281260 nonzeros
+Set parameter Threads to value 1
+Set parameter TimeLimit to value 10
+Set parameter NoRelHeurTime to value 3
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 1 threads
+
+Optimize a model with 54745 rows, 59708 columns and 281260 nonzeros
+Model fingerprint: 0x205e3861
+Variable types: 16184 continuous, 43524 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [4e-01, 4e+02]
+  Objective range  [4e-01, 3e+04]
+  Bounds range     [1e+00, 8e+00]
+  RHS range        [1e+00, 2e+03]
+Presolve removed 5379 rows and 5382 columns
+Presolve time: 0.64s
+Presolved: 49366 rows, 54326 columns, 269306 nonzeros
+Variable types: 16184 continuous, 38142 integer (38142 binary)
+Found heuristic solution: objective 2.780255e+08
+Found heuristic solution: objective 3.296299e+07
+Starting NoRel heuristic
+Found heuristic solution: objective 3.150879e+07
+Found heuristic solution: objective 2.820282e+07
+Found heuristic solution: objective 2.337078e+07
+Found heuristic solution: objective 2.284976e+07
+Found heuristic solution: objective 2.246434e+07
+Found heuristic solution: objective 2.068467e+07
+Found heuristic solution: objective 1.994598e+07
+Found heuristic solution: objective 1.993321e+07
+Found heuristic solution: objective 1.993318e+07
+Found heuristic solution: objective 1.993171e+07
+Found heuristic solution: objective 1.990642e+07
+Found heuristic solution: objective 1.985240e+07
+Found heuristic solution: objective 1.934376e+07
+Found heuristic solution: objective 1.934320e+07
+Found heuristic solution: objective 1.934213e+07
+Found heuristic solution: objective 1.924278e+07
+Found heuristic solution: objective 1.923919e+07
+Found heuristic solution: objective 1.918347e+07
+Found heuristic solution: objective 1.917869e+07
+Found heuristic solution: objective 1.916965e+07
+Found heuristic solution: objective 1.909855e+07
+Found heuristic solution: objective 1.903871e+07
+Found heuristic solution: objective 1.901033e+07
+Found heuristic solution: objective 1.900851e+07
+Found heuristic solution: objective 1.899528e+07
+Found heuristic solution: objective 1.897161e+07
+Found heuristic solution: objective 1.896885e+07
+Found heuristic solution: objective 1.894306e+07
+Found heuristic solution: objective 1.893897e+07
+Found heuristic solution: objective 1.890327e+07
+Found heuristic solution: objective 1.889885e+07
+Found heuristic solution: objective 1.889522e+07
+Found heuristic solution: objective 1.889355e+07
+Found heuristic solution: objective 1.887226e+07
+Found heuristic solution: objective 1.886747e+07
+Found heuristic solution: objective 1.884757e+07
+Found heuristic solution: objective 1.883836e+07
+Found heuristic solution: objective 1.882206e+07
+Found heuristic solution: objective 1.881767e+07
+Found heuristic solution: objective 1.881041e+07
+Found heuristic solution: objective 1.878765e+07
+Found heuristic solution: objective 1.878507e+07
+Found heuristic solution: objective 1.878353e+07
+Found heuristic solution: objective 1.878107e+07
+Found heuristic solution: objective 1.876289e+07
+
+Root simplex log...
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+   19134    8.1012632e+06   4.540617e+02   0.000000e+00      5s
+   20954    8.1025132e+06   0.000000e+00   0.000000e+00      5s
+   20954    8.1025132e+06   0.000000e+00   0.000000e+00      5s
+
+Root relaxation: objective 8.102513e+06, 20954 iterations, 1.35 seconds (1.66 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 8102513.22    0  640 1.8763e+07 8102513.22  56.8%     -    5s
+H    0     0                    1.866098e+07 8102513.22  56.6%     -    5s
+     0     0 8104468.48    0  740 1.8661e+07 8104468.48  56.6%     -    6s
+H    0     0                    8280918.0959 8104638.69  2.13%     -    6s
+     0     0 8104926.42    0  825 8280918.10 8104926.42  2.13%     -    7s
+     0     0 8104990.97    0  831 8280918.10 8104990.97  2.12%     -    7s
+     0     0 8105040.23    0  832 8280918.10 8105040.23  2.12%     -    7s
+     0     0 8105068.60    0  830 8280918.10 8105068.60  2.12%     -    7s
+     0     0 8105068.67    0  831 8280918.10 8105068.67  2.12%     -    7s
+     0     0 8106229.89    0  910 8280918.10 8106229.89  2.11%     -    8s
+H    0     0                    8272881.1378 8106274.74  2.01%     -    8s
+     0     0 8107924.96    0 1090 8272881.14 8107924.96  1.99%     -    9s
+     0     0 8107977.53    0 1091 8272881.14 8107977.53  1.99%     -    9s
+     0     0 8107991.13    0 1098 8272881.14 8107991.13  1.99%     -    9s
+     0     0 8107991.48    0 1098 8272881.14 8107991.48  1.99%     -    9s
+
+Cutting planes:
+  Gomory: 8
+  Lift-and-project: 4
+  MIR: 274
+  Flow cover: 151
+  RLT: 9
+  Relax-and-lift: 2
+
+Explored 1 nodes (28277 simplex iterations) in 10.02 seconds (10.43 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 10: 8.27288e+06 8.28092e+06 1.8661e+07 ... 1.88177e+07
+
+Time limit reached
+Best objective 8.272881137825e+06, best bound 8.107991484053e+06, gap 1.9931%
+
+User-callback calls 2471, time in user-callback 0.00 sec
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.17s
+
+
+running 1 test
+   Compiling proc-macro2 v1.0.92
+   Compiling unicode-ident v1.0.14
+   Compiling libc v0.2.169
+   Compiling cfg-if v1.0.0
+   Compiling anyhow v1.0.95
+   Compiling getrandom v0.1.16
+   Compiling serde v1.0.217
+   Compiling rustix v0.38.42
+   Compiling syn v1.0.109
+   Compiling memchr v2.7.4
+   Compiling ryu v1.0.18
+   Compiling itoa v1.0.14
+   Compiling bitflags v2.6.0
+   Compiling linux-raw-sys v0.4.14
+   Compiling serde_json v1.0.134
+   Compiling byteorder v1.5.0
+   Compiling fastrand v2.3.0
+   Compiling autocfg v1.4.0
+   Compiling once_cell v1.20.2
+   Compiling fnv v1.0.7
+   Compiling quick-error v1.2.3
+   Compiling bit-vec v0.6.3
+   Compiling regex-syntax v0.6.29
+   Compiling bitflags v1.3.2
+   Compiling lazy_static v1.5.0
+   Compiling csv-core v0.1.11
+   Compiling bit-set v0.5.3
+   Compiling grb-sys2 v10.2.1
+   Compiling num-traits v0.2.19
+   Compiling quote v1.0.38
+   Compiling syn v2.0.94
+   Compiling getrandom v0.2.15
+   Compiling wait-timeout v0.2.0
+   Compiling rand_core v0.5.1
+   Compiling tempfile v3.15.0
+   Compiling rand_xorshift v0.2.0
+   Compiling rusty-fork v0.3.0
+   Compiling gag v0.1.10
+   Compiling serde_derive v1.0.217
+   Compiling zerocopy-derive v0.7.35
+   Compiling zerocopy v0.7.35
+   Compiling ppv-lite86 v0.2.20
+   Compiling cstr-enum-derive v0.1.0
+   Compiling grb-macro v0.1.0
+   Compiling rand_chacha v0.2.2
+   Compiling rand v0.7.3
+   Compiling cstr-enum v1.0.0
+   Compiling proptest v0.10.1
+   Compiling csv v1.3.1
+   Compiling grb v2.0.2 (/home/yannik/projects/rust-grb)
+   Compiling grb-tests v0.0.0 (/home/yannik/projects/rust-grb/target/tests/trybuild/grb)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.57s
+
+
+test [0m[1mtests/compile-tests/simple.rs[0m [should pass] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_cmp_op.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_cmp_expr.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_op.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_nested.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/eq_range.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/garbage.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_add_var_args.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/add_var.rs[0m [should pass] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/user_cuts_deprecated.rs[0m [should fail to compile] ... [0m[32mok
+[0m
+
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.39s
+
+
+running 2 tests
+Set parameter Username
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter FuncPieces to value 1
+Set parameter FuncPieceLength to value 0.001
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 4 columns and 2 nonzeros
+Model fingerprint: 0x741a3617
+Model has 2 general constraints
+Variable types: 4 continuous, 0 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 4e+00]
+  Objective range  [1e+00, 2e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [9e+00, 9e+00]
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 4 columns and 2 nonzeros
+Model fingerprint: 0x71c56d82
+Model has 2 general constraints
+Variable types: 4 continuous, 0 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 4e+00]
+  Objective range  [1e+00, 2e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [9e+00, 9e+00]
+  PWLCon x range   [1e-03, 5e+00]
+  PWLCon y range   [3e-02, 2e+00]
+Found heuristic solution: objective -0.0000000
+Presolve added 4 rows and 6018 columns
+Presolve time: 0.01s
+Presolved: 5 rows, 6022 columns, 12040 nonzeros
+Presolved model has 2 SOS constraint(s)
+Variable types: 6022 continuous, 0 integer (0 binary)
+
+Root relaxation: objective 3.517146e+01, 4 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0   35.17146    0    1   -0.00000   35.17146      -     -    0s
+*    0     0               0      33.2624648   33.26246  0.00%     -    0s
+
+Explored 1 nodes (5 simplex iterations) in 0.02 seconds (0.01 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 2: 33.2625 -0 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 3.326246476418e+01, best bound 3.326246476418e+01, gap 0.0000%
+.Presolve added 6 rows and 7263 columns
+Presolve time: 0.05s
+Presolved: 7 rows, 7267 columns, 21791 nonzeros
+Presolved model has 2 SOS constraint(s)
+Variable types: 7267 continuous, 0 integer (0 binary)
+
+Root relaxation: objective 5.599522e+00, 8 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    5.59952    0    1          -    5.59952      -     -    0s
+     0     0    5.59937    0    1          -    5.59937      -     -    0s
+     0     0    5.59907    0    1          -    5.59907      -     -    0s
+     0     0    5.59877    0    1          -    5.59877      -     -    0s
+     0     0    5.59846    0    1          -    5.59846      -     -    0s
+     0     0    5.59816    0    1          -    5.59816      -     -    0s
+     0     0    5.59786    0    1          -    5.59786      -     -    0s
+     0     0    5.59756    0    1          -    5.59756      -     -    0s
+     0     0    5.59725    0    1          -    5.59725      -     -    0s
+     0     0    5.59695    0    1          -    5.59695      -     -    0s
+     0     0    5.59665    0    1          -    5.59665      -     -    0s
+     0     0    5.59635    0    1          -    5.59635      -     -    0s
+     0     2    5.59635    0    1          -    5.59635      -     -    0s
+*    7    10               3       4.1766080    4.49497  7.62%  31.4    0s
+*    9    10               3       4.2732288    4.49497  5.19%  44.6    0s
+*   15    12               3       4.3944492    4.49497  2.29%  34.2    0s
+*   21    10               5       4.4695582    4.48124  0.26%  25.8    0s
+*   30     7               5       4.4698133    4.47592  0.14%  18.7    0s
+*   45    15               7       4.4727583    4.47386  0.02%  13.8    0s
+*   52    14               8       4.4732708    4.47368  0.01%  12.3    0s
+*   55    14               9       4.4735888    4.47368  0.00%  11.8    0s
+
+Explored 62 nodes (679 simplex iterations) in 0.12 seconds (0.17 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 8: 4.47359 4.47327 4.47276 ... 4.17661
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 4.473588765714e+00, best bound 4.473623323875e+00, gap 0.0008%
+Set parameter FuncPieceLength to value 0.0001
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 4 columns and 2 nonzeros
+Model fingerprint: 0x43b9ebdd
+Model has 2 general constraints
+Variable types: 4 continuous, 0 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 4e+00]
+  Objective range  [1e+00, 2e+00]
+  Bounds range     [9e-01, 3e+00]
+  RHS range        [9e+00, 9e+00]
+Presolve added 6 rows and 27143 columns
+Presolve time: 0.53s
+Presolved: 7 rows, 27147 columns, 81431 nonzeros
+Presolved model has 2 SOS constraint(s)
+Variable types: 27147 continuous, 0 integer (0 binary)
+
+Root relaxation: objective 4.479843e+00, 26 iterations, 0.01 seconds (0.03 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    4.47984    0    1          -    4.47984      -     -    0s
+     0     0    4.47984    0    1          -    4.47984      -     -    0s
+     0     2    4.47984    0    1          -    4.47984      -     -    0s
+*    2     2               1       3.5990831    4.47619  24.4%   2.5    0s
+*    4     2               2       4.0513831    4.47472  10.4%   2.0    0s
+*    6     2               3       4.2775831    4.47405  4.59%   1.8    0s
+*    8     2               4       4.3906831    4.47373  1.89%   3.9    0s
+*   10     2               5       4.4471831    4.47363  0.59%   4.4    0s
+*   22    12               8       4.4613831    4.47360  0.27%  14.7    0s
+*   26    16               8       4.4730944    4.47360  0.01%  13.2    0s
+*   32    18               9       4.4734944    4.47360  0.00%  11.3    0s
+
+Explored 35 nodes (423 simplex iterations) in 0.75 seconds (1.36 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 8: 4.47349 4.47309 4.46138 ... 3.59908
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 4.473494382857e+00, best bound 4.473596392415e+00, gap 0.0023%
+.
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.88s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x93380a65
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [2e+00, 2e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [1e+01, 1e+01]
+Presolve removed 1 rows and 2 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    2.1000000e+01   0.000000e+00   0.000000e+00      0s
+
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  2.100000000e+01
+Gurobi Optimizer version 11.0.1 build v11.0.1rc0 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [1e+01, 1e+01]
+LP warm-start: use basis
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    1.0000000e+30   1.000000e+30   1.000000e+00      0s
+       1    1.0000000e+01   0.000000e+00   0.000000e+00      0s
+
+Solved in 1 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  1.000000000e+01
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 55 tests
+.......................................................
+test result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.59s
+
+---------------- Done: 11.0 --------------------
+---------------- Test: 12.0 --------------------
+     Removed 2812 files, 1.1GiB total
+
+running 28 tests
+Set parameter Username
+Set parameter Username
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter IISMethod to value 1
+Set parameter IISMethod to value 0
+...Academic license - for non-commercial use only - expires 2125-01-01
+..Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Academic license - for non-commercial use only - expires 2125-01-01
+..Optimize a model with 1 rows, 3 columns and 1 nonzeros
+Model fingerprint: 0x3312a8ba
+Model has 1 quadratic constraint
+Model has 1 SOS constraint
+Set parameter Username
+Model has 1 simple general constraint
+Set parameter Username
+Set parameter Username
+  1 INDICATOR
+Variable types: 1 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+Set parameter Username
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+  QRHS range       [1e+00, 1e+00]
+  GenCon coe range [1e+00, 1e+00]
+Set parameter Username
+.Set parameter Username
+..Presolve removed 1 rows and 3 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 0 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 0.000000000000e+00, best bound 0.000000000000e+00, gap 0.0000%
+Set parameter Username
+Set parameter Username
+..Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+.Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+.Set parameter OutputFlag to value 1
+....Set parameter OutputFlag to value 1
+...Set parameter Username
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter OutputFlag to value 1
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter OutputFlag to value 1
+.Academic license - for non-commercial use only - expires 2125-01-01
+.Set parameter Username
+.Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Academic license - for non-commercial use only - expires 2125-01-01
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0x1c1c76b7
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+.Presolve removed 0 rows and 1 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    1.0000000e+00   0.000000e+00   0.000000e+00      0s
+
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  1.000000000e+00
+Read LP format model from file test_read_model_copies_env.lp
+Reading time = 0.00 seconds
+: 0 rows, 0 columns, 0 nonzeros
+...
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+
+
+running 2 tests
+Set parameter Username
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+
+Model fingerprint: 0xa187a6b9
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0xa187a6b9
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+
+User-callback calls 14, time in user-callback 0.00 sec
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0xa187a6b9
+
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [0e+00, 0e+00]
+User-callback calls 14, time in user-callback 0.00 sec
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 0 rows, 1 columns and 0 nonzeros
+Model fingerprint: 0xa187a6b9
+Coefficient statistics:
+  Matrix range     [0e+00, 0e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+Presolve removed 0 rows and 1 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    0.0000000e+00   0.000000e+00   0.000000e+00      0s
+Presolve removed 0 rows and 1 columns
+
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  0.000000000e+00
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    0.0000000e+00   0.000000e+00   0.000000e+00      0s
+.
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  0.000000000e+00
+.
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 4 rows, 18 columns and 8 nonzeros
+Model fingerprint: 0xb2ba2d66
+Model has 10 simple general constraints
+  1 MIN, 8 OR, 1 INDICATOR
+Variable types: 0 continuous, 18 integer (18 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+  GenCon rhs range [4e+00, 4e+00]
+  GenCon coe range [1e+00, 1e+00]
+Presolve added 37 rows and 0 columns
+Presolve removed 0 rows and 4 columns
+Presolve time: 0.00s
+Presolved: 41 rows, 14 columns, 105 nonzeros
+Variable types: 0 continuous, 14 integer (14 binary)
+Found heuristic solution: objective 1.0000000
+Found heuristic solution: objective 2.0000000
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 2: 2 1 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 2.000000000000e+00, best bound 2.000000000000e+00, gap 0.0000%
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Read MPS format model from file /home/yannik/projects/rust-grb/tests/data/traininstance2.mps.gz
+Reading time = 0.02 seconds
+traininstance2: 15603 rows, 12890 columns, 41531 nonzeros
+Set parameter Threads to value 1
+Set parameter Seed to value 1337
+Set parameter Presolve to value 0
+Set parameter Heuristics to value 0
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 1 threads
+
+Non-default parameters:
+Heuristics  0
+Presolve  0
+Seed  1337
+Threads  1
+
+Optimize a model with 15603 rows, 12890 columns and 41531 nonzeros
+Model fingerprint: 0x5a7c5fb1
+Variable types: 5010 continuous, 7880 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 6e+05]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+06]
+  RHS range        [1e+00, 1e+03]
+Variable types: 0 continuous, 12890 integer (7771 binary)
+
+Root relaxation: objective 0.000000e+00, 2878 iterations, 0.02 seconds (0.02 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+     0     0    0.00000    0   63          -    0.00000      -     -    0s
+Warning: Completing partial solution with 7868 unfixed non-continuous variables out of 7880
+     0     0    0.00000    0  107          -    0.00000      -     -    0s
+     0     0    0.00000    0  107          -    0.00000      -     -    0s
+     0     0    0.00000    0  105          -    0.00000      -     -    0s
+     0     0    0.00000    0  105          -    0.00000      -     -    0s
+     0     0    0.00000    0  105          -    0.00000      -     -    0s
+     0     0    0.00000    0  105          -    0.00000      -     -    0s
+     0     0    0.00000    0  105          -    0.00000      -     -    0s
+     0     0    0.00000    0  105          -    0.00000      -     -    0s
+     0     0    0.00000    0  105          -    0.00000      -     -    0s
+     0     0    0.00000    0  105          -    0.00000      -     -    0s
+H    0     0                    71820.000000    0.00000   100%     -    0s
+     0     0    0.00000    0  105 71820.0000    0.00000   100%     -    0s
+Warning: Completing partial solution with 7868 unfixed non-continuous variables out of 7880
+     0     0    0.00000    0  114 71820.0000    0.00000   100%     -    1s
+
+Cutting planes:
+  Learned: 8
+  Gomory: 1
+  Lift-and-project: 1
+  Cover: 8
+  Implied bound: 1562
+  Clique: 35
+  MIR: 9
+  StrongCG: 1
+  Flow cover: 7
+  GUB cover: 4
+  RLT: 3
+  Relax-and-lift: 199
+
+Explored 1 nodes (3931 simplex iterations) in 1.25 seconds (1.44 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 71820 
+
+Solve interrupted
+Best objective 7.182000000000e+04, best bound -0.000000000000e+00, gap 100.0000%
+
+User-callback calls 252, time in user-callback 0.36 sec
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.31s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Read MPS format model from file /home/yannik/projects/rust-grb/tests/data/neos859080.mps.gz
+Reading time = 0.00 seconds
+neos859080: 164 rows, 160 columns, 1280 nonzeros
+Set parameter Threads to value 1
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 1 threads
+
+Non-default parameters:
+Threads  1
+
+Optimize a model with 164 rows, 160 columns and 1280 nonzeros
+Model fingerprint: 0xd90ce804
+Variable types: 0 continuous, 160 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+01]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+01]
+  RHS range        [1e+00, 1e+00]
+Presolve removed 44 rows and 40 columns
+Presolve time: 0.00s
+Presolved: 120 rows, 120 columns, 1148 nonzeros
+Variable types: 0 continuous, 120 integer (40 binary)
+
+Root relaxation: objective 1.000000e+00, 3 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    6          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     0    1.00000    0    3          -    1.00000      -     -    0s
+     0     2    2.00000    0    3          -    2.00000      -     -    0s
+
+Cutting planes:
+  MIR: 5
+  Zero half: 5
+
+Explored 86 nodes (587 simplex iterations) in 0.04 seconds (0.04 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 1 threads
+
+Non-default parameters:
+Threads  1
+
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0       160         -         0       320         -           0s
+      128       158       158         0       320         -           5s
+      128       158         -         0       320         -           5s
+
+Non-minimal IIS computed: 158 constraints, 320 bounds
+IIS runtime: 5.03 seconds (5.11 work units)
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.08s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0xc63f939d
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 2e+00]
+
+Solving a multi-scenario model with 3 scenarios...
+
+Found heuristic solution: objective 0.0000000
+Presolve time: 0.00s
+Presolved: 6 rows, 8 columns, 17 nonzeros
+Presolved model has 3 scenario(s)
+Variable types: 0 continuous, 8 integer (8 binary)
+Found heuristic solution: objective -1.0000000
+
+Root relaxation: objective -1.333333e+00, 4 iterations, 0.00 seconds (0.00 work units)
+Scenario 1 has been solved. 2/3 scenarios left.
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0   -1.33333    0    4   -1.00000   -1.33333  33.3%     -    0s
+
+Optimal solution found at node 0 - now completing multiple scenarios...
+Scenario 0 has been solved. 1/3 scenarios left.
+Scenario 2 has been solved. 0/3 scenarios left.
+
+    Nodes    |    Current Node    |    Scenario Obj. Bounds   |     Work
+             |                    |   Worst                   |
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0          -    0        -1.00000    0.00000  0.00%     -    0s
+
+Cutting planes:
+  Gomory: 1
+
+Explored 1 nodes (5 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 5: -1 -1 0 ... 1
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective -1.000000000000e+00, best bound -1.000000000000e+00, gap 0.0000%
+
+User-callback calls 17, time in user-callback 0.00 sec
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x928f94df
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [2e+00, 2e+00]
+Found heuristic solution: objective 0.0000000
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 0 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 0.000000000000e+00, best bound 0.000000000000e+00, gap 0.0000%
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x7ef595f6
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+Found heuristic solution: objective -1.0000000
+Presolve removed 1 rows and 2 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: -1 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective -1.000000000000e+00, best bound -1.000000000000e+00, gap 0.0000%
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x2f59c8a3
+Variable types: 0 continuous, 2 integer (2 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [2e+00, 2e+00]
+Found heuristic solution: objective 1.0000000
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 1: 1 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 1.000000000000e+00, best bound 1.000000000000e+00, gap 0.0000%
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Read MPS format model from file /home/yannik/projects/rust-grb/tests/data/sing44.mps.gz
+Reading time = 0.06 seconds
+sing44: 54745 rows, 59708 columns, 281260 nonzeros
+Set parameter Threads to value 1
+Set parameter TimeLimit to value 10
+Set parameter NoRelHeurTime to value 3
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 1 threads
+
+Non-default parameters:
+TimeLimit  10
+NoRelHeurTime  3
+Threads  1
+
+Optimize a model with 54745 rows, 59708 columns and 281260 nonzeros
+Model fingerprint: 0x205e3861
+Variable types: 16184 continuous, 43524 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [4e-01, 4e+02]
+  Objective range  [4e-01, 3e+04]
+  Bounds range     [1e+00, 8e+00]
+  RHS range        [1e+00, 2e+03]
+Presolve removed 19575 rows and 3588 columns
+Presolve time: 0.63s
+Presolved: 35170 rows, 56120 columns, 253622 nonzeros
+Variable types: 16184 continuous, 39936 integer (39936 binary)
+Found heuristic solution: objective 2.898751e+07
+Starting NoRel heuristic
+Found heuristic solution: objective 2.896166e+07
+Found heuristic solution: objective 2.884572e+07
+Found heuristic solution: objective 2.877394e+07
+Found heuristic solution: objective 2.793728e+07
+Found heuristic solution: objective 2.793541e+07
+Found heuristic solution: objective 2.752286e+07
+Found heuristic solution: objective 2.752098e+07
+Found heuristic solution: objective 2.749435e+07
+Found heuristic solution: objective 2.749248e+07
+Found heuristic solution: objective 2.748421e+07
+Found heuristic solution: objective 2.737939e+07
+Found heuristic solution: objective 2.736926e+07
+Found heuristic solution: objective 2.736105e+07
+Found heuristic solution: objective 2.735940e+07
+Found heuristic solution: objective 2.734116e+07
+Found heuristic solution: objective 2.733319e+07
+Found heuristic solution: objective 2.730338e+07
+Found heuristic solution: objective 2.729036e+07
+Found heuristic solution: objective 2.728428e+07
+Found heuristic solution: objective 2.727843e+07
+Found heuristic solution: objective 2.727138e+07
+Found heuristic solution: objective 2.726553e+07
+Found heuristic solution: objective 2.726247e+07
+Found heuristic solution: objective 2.723337e+07
+Found heuristic solution: objective 2.720668e+07
+Found heuristic solution: objective 2.716080e+07
+Found heuristic solution: objective 2.715749e+07
+Found heuristic solution: objective 2.712832e+07
+Found heuristic solution: objective 2.712501e+07
+Found heuristic solution: objective 2.707599e+07
+Found heuristic solution: objective 2.706912e+07
+Found heuristic solution: objective 2.706369e+07
+Found heuristic solution: objective 2.704972e+07
+Found heuristic solution: objective 2.704393e+07
+Found heuristic solution: objective 2.687533e+07
+Found heuristic solution: objective 2.687510e+07
+Found heuristic solution: objective 2.684425e+07
+Found heuristic solution: objective 2.684401e+07
+Found heuristic solution: objective 2.683694e+07
+Found heuristic solution: objective 2.683671e+07
+Found heuristic solution: objective 2.682461e+07
+Found heuristic solution: objective 2.680449e+07
+Found heuristic solution: objective 2.679924e+07
+Found heuristic solution: objective 2.676346e+07
+Found heuristic solution: objective 2.675724e+07
+Found heuristic solution: objective 2.674634e+07
+Found heuristic solution: objective 2.674291e+07
+Found heuristic solution: objective 2.674083e+07
+Found heuristic solution: objective 2.672602e+07
+Found heuristic solution: objective 2.672196e+07
+Found heuristic solution: objective 2.671600e+07
+Found heuristic solution: objective 2.671216e+07
+Found heuristic solution: objective 2.671184e+07
+Found heuristic solution: objective 2.670786e+07
+Found heuristic solution: objective 2.670041e+07
+Found heuristic solution: objective 2.670013e+07
+Found heuristic solution: objective 2.669838e+07
+Found heuristic solution: objective 2.669433e+07
+NoRel heuristic complete
+
+Root simplex log...
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+   14068    8.0904830e+06   2.394401e+03   0.000000e+00      5s
+   15725    8.1025132e+06   0.000000e+00   0.000000e+00      5s
+   15725    8.1025132e+06   0.000000e+00   0.000000e+00      5s
+
+Root relaxation: objective 8.102513e+06, 15725 iterations, 1.42 seconds (1.73 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 8102513.22    0  663 2.6694e+07 8102513.22  69.6%     -    5s
+H    0     0                    2.609005e+07 8102513.22  68.9%     -    5s
+H    0     0                    2.607048e+07 8102513.22  68.9%     -    5s
+     0     0 8105411.14    0  760 2.6070e+07 8105411.14  68.9%     -    6s
+H    0     0                    1.748513e+07 8105412.24  53.6%     -    6s
+     0     0 8108596.48    0 1189 1.7485e+07 8108596.48  53.6%     -    6s
+     0     0 8108906.97    0 1207 1.7485e+07 8108906.97  53.6%     -    6s
+     0     0 8109560.12    0 1251 1.7485e+07 8109560.12  53.6%     -    7s
+     0     0 8109589.82    0 1253 1.7485e+07 8109589.82  53.6%     -    7s
+     0     0 8110565.62    0 1234 1.7485e+07 8110565.62  53.6%     -    8s
+H    0     0                    1.223674e+07 8110575.73  33.7%     -    8s
+H    0     0                    1.218601e+07 8110575.73  33.4%     -    8s
+H    0     0                    1.214185e+07 8110575.73  33.2%     -    8s
+H    0     0                    1.214126e+07 8110575.73  33.2%     -    8s
+H    0     0                    1.213329e+07 8110575.73  33.2%     -    8s
+     0     0 8111105.93    0 1274 1.2133e+07 8111105.93  33.1%     -    8s
+     0     0 8111418.93    0 1346 1.2133e+07 8111418.93  33.1%     -    8s
+     0     0 8111443.29    0 1255 1.2133e+07 8111443.29  33.1%     -    8s
+     0     0 8111446.65    0 1255 1.2133e+07 8111446.65  33.1%     -    8s
+     0     0 8111446.72    0 1256 1.2133e+07 8111446.72  33.1%     -    8s
+     0     0          -    0      1.2133e+07 8111446.72  33.1%     -   10s
+
+Cutting planes:
+  Gomory: 7
+  Lift-and-project: 37
+  MIR: 423
+  Flow cover: 128
+  RLT: 41
+
+Explored 1 nodes (21197 simplex iterations) in 10.01 seconds (11.28 work units)
+Thread count was 1 (of 12 available processors)
+
+Solution count 10: 1.21333e+07 1.21413e+07 1.2186e+07 ... 2.67001e+07
+
+Time limit reached
+Warning: max bound violation (1.8477e-06) exceeds tolerance
+Best objective 1.213329056461e+07, best bound 8.111446716863e+06, gap 33.1472%
+
+User-callback calls 2315, time in user-callback 0.00 sec
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.16s
+
+
+running 1 test
+   Compiling proc-macro2 v1.0.92
+   Compiling unicode-ident v1.0.14
+   Compiling libc v0.2.169
+   Compiling cfg-if v1.0.0
+   Compiling anyhow v1.0.95
+   Compiling getrandom v0.1.16
+   Compiling serde v1.0.217
+   Compiling syn v1.0.109
+   Compiling memchr v2.7.4
+   Compiling rustix v0.38.42
+   Compiling ryu v1.0.18
+   Compiling bitflags v2.6.0
+   Compiling linux-raw-sys v0.4.14
+   Compiling byteorder v1.5.0
+   Compiling itoa v1.0.14
+   Compiling serde_json v1.0.134
+   Compiling autocfg v1.4.0
+   Compiling fastrand v2.3.0
+   Compiling once_cell v1.20.2
+   Compiling fnv v1.0.7
+   Compiling quick-error v1.2.3
+   Compiling bit-vec v0.6.3
+   Compiling regex-syntax v0.6.29
+   Compiling lazy_static v1.5.0
+   Compiling bitflags v1.3.2
+   Compiling csv-core v0.1.11
+   Compiling bit-set v0.5.3
+   Compiling num-traits v0.2.19
+   Compiling grb-sys2 v12.1.1
+   Compiling quote v1.0.38
+   Compiling syn v2.0.94
+   Compiling getrandom v0.2.15
+   Compiling wait-timeout v0.2.0
+   Compiling rand_core v0.5.1
+   Compiling tempfile v3.15.0
+   Compiling rand_xorshift v0.2.0
+   Compiling rusty-fork v0.3.0
+   Compiling gag v0.1.10
+   Compiling serde_derive v1.0.217
+   Compiling zerocopy-derive v0.7.35
+   Compiling zerocopy v0.7.35
+   Compiling ppv-lite86 v0.2.20
+   Compiling cstr-enum-derive v0.1.0
+   Compiling grb-macro v0.1.0
+   Compiling rand_chacha v0.2.2
+   Compiling rand v0.7.3
+   Compiling cstr-enum v1.0.0
+   Compiling proptest v0.10.1
+   Compiling csv v1.3.1
+   Compiling grb v2.0.2 (/home/yannik/projects/rust-grb)
+   Compiling grb-tests v0.0.0 (/home/yannik/projects/rust-grb/target/tests/trybuild/grb)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.28s
+
+
+test [0m[1mtests/compile-tests/simple.rs[0m [should pass] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_cmp_op.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_cmp_expr.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_op.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_nested.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/eq_range.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/garbage.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/bad_add_var_args.rs[0m [should fail to compile] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/add_var.rs[0m [should pass] ... [0m[32mok
+[0mtest [0m[1mtests/compile-tests/user_cuts_deprecated.rs[0m [should fail to compile] ... [0m[32mok
+[0m
+
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.87s
+
+
+running 2 tests
+Set parameter Username
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Academic license - for non-commercial use only - expires 2125-01-01
+Set parameter FuncPieces to value 1
+Set parameter FuncPieceLength to value 0.001
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Non-default parameters:
+FuncPieces  1
+FuncPieceLength  0.001
+
+Optimize a model with 1 rows, 4 columns and 2 nonzeros
+Optimize a model with 1 rows, 4 columns and 2 nonzeros
+Model fingerprint: 0x1d1d047b
+Model has 2 function constraints treated as nonlinear
+  1 EXP, 1 POW
+Variable types: 4 continuous, 0 integer (0 binary)
+Model fingerprint: 0x7c0e97de
+Model has 2 simple general constraints
+  2 PWL
+Coefficient statistics:
+Variable types: 4 continuous, 0 integer (0 binary)
+  Matrix range     [1e+00, 4e+00]
+  Objective range  [1e+00, 2e+00]
+Coefficient statistics:
+  Bounds range     [0e+00, 0e+00]
+  Matrix range     [1e+00, 4e+00]
+  RHS range        [9e+00, 9e+00]
+  Objective range  [1e+00, 2e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [9e+00, 9e+00]
+  PWLCon x range   [1e-03, 5e+00]
+  PWLCon y range   [3e-02, 2e+00]
+Found heuristic solution: objective -0.0000000
+Presolve time: 0.00s
+Presolved: 11 rows, 5 columns, 22 nonzeros
+Presolved model has 2 nonlinear constraint(s)
+
+Solving non-convex MINLP
+
+Variable types: 5 continuous, 0 integer (0 binary)
+Found heuristic solution: objective 4.4735963
+
+Root relaxation: objective 5.123248e+00, 5 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    5.12325    0    2    4.47360    5.12325  14.5%     -    0s
+     0     0    5.04737    0    2    4.47360    5.04737  12.8%     -    0s
+     0     0    5.01680    0    2    4.47360    5.01680  12.1%     -    0s
+     0     0    5.01005    0    2    4.47360    5.01005  12.0%     -    0s
+     0     0    5.00820    0    2    4.47360    5.00820  12.0%     -    0s
+     0     0    5.00779    0    2    4.47360    5.00779  11.9%     -    0s
+     0     0    4.73388    0    2    4.47360    4.73388  5.82%     -    0s
+     0     2    4.73388    0    2    4.47360    4.73388  5.82%     -    0s
+Presolve added 4 rows and 6018 columns
+Presolve time: 0.01s
+Presolved: 5 rows, 6022 columns, 12040 nonzeros
+Presolved model has 2 SOS constraint(s)
+H   17     2                       4.4735979    4.52496  1.15%   1.8    0s
+
+Explored 29 nodes (63 simplex iterations) in 0.01 seconds (0.00 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 2: 4.4736 4.4736 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 4.473597930109e+00, best bound 4.473618295907e+00, gap 0.0005%
+Set parameter FuncPieceLength to value 0.0001
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Non-default parameters:
+FuncPieces  1
+FuncPieceLength  0.0001
+
+Optimize a model with 1 rows, 4 columns and 2 nonzeros
+Model fingerprint: 0x153f2636
+Model has 2 function constraints treated as nonlinear
+  1 EXP, 1 POW
+Variable types: 4 continuous, 0 integer (0 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 4e+00]
+  Objective range  [1e+00, 2e+00]
+  Bounds range     [9e-01, 3e+00]
+  RHS range        [9e+00, 9e+00]
+Presolve time: 0.00s
+Presolved: 11 rows, 5 columns, 22 nonzeros
+Presolved model has 2 nonlinear constraint(s)
+
+Solving non-convex MINLP
+
+Variable types: 5 continuous, 0 integer (0 binary)
+Found heuristic solution: objective 4.4735963
+
+Root relaxation: interrupted, 0 iterations, 0.00 seconds (0.00 work units)
+
+Explored 1 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 1: 4.4736 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 4.473596332661e+00, best bound 4.473745134327e+00, gap 0.0033%
+.Variable types: 6022 continuous, 0 integer (0 binary)
+
+Root relaxation: objective 3.517146e+01, 4 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0   35.17146    0    1   -0.00000   35.17146      -     -    0s
+*    0     0               0      33.2624648   33.26246  0.00%     -    0s
+
+Explored 1 nodes (5 simplex iterations) in 0.02 seconds (0.01 work units)
+Thread count was 12 (of 12 available processors)
+
+Solution count 2: 33.2625 -0 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 3.326246476418e+01, best bound 3.326246476418e+01, gap 0.0000%
+.
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+
+running 1 test
+Set parameter Username
+Academic license - for non-commercial use only - expires 2125-01-01
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Model fingerprint: 0x93380a65
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [2e+00, 2e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [1e+01, 1e+01]
+Presolve removed 1 rows and 2 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    2.1000000e+01   0.000000e+00   0.000000e+00      0s
+
+Solved in 0 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  2.100000000e+01
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (linux64 - "Debian GNU/Linux 12 (bookworm)")
+
+CPU model: AMD Ryzen 5 3600 6-Core Processor, instruction set [SSE2|AVX|AVX2]
+Thread count: 6 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 1 rows, 2 columns and 2 nonzeros
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [1e+01, 1e+01]
+LP warm-start: use basis
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    1.0000000e+30   1.000000e+30   1.000000e+00      0s
+       1    1.0000000e+01   0.000000e+00   0.000000e+00      0s
+
+Solved in 1 iterations and 0.00 seconds (0.00 work units)
+Optimal objective  1.000000000e+01
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 55 tests
+.......................................................
+test result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.50s
+
+---------------- Done: 12.0 --------------------

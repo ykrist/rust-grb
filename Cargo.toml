@@ -9,7 +9,7 @@ license = "MIT"
 name = "grb"
 repository = "https://github.com/ykrist/rust-grb"
 homepage = "https://github.com/ykrist/rust-grb"
-version = "3.0.0"
+version = "3.0.1"
 build = "build/main.rs"
 readme = "README.md"
 exclude = ["/tests"]
@@ -29,8 +29,8 @@ rustdoc-args = ["--html-in-header", "doc/katex-header.html"]
 fnv = "^1.0"
 anyhow = "^1.0"
 cstr-enum = "^1.0"
-grb-sys_10 = { package = "grb-sys2", version = "10.2.1", optional = true }
-grb-sys_12 = { package = "grb-sys2", version = "12.1.1", optional = true }
+grb-sys_10 = { package = "grb-sys2", version = "10.2.2", optional = true }
+grb-sys_12 = { package = "grb-sys2", version = "12.1.2", optional = true }
 # grb-sys_10 = {package = "grb-sys2", path="../grb-sys2", optional = true}
 # grb-sys_12 = {package = "grb-sys2", path="../grb-sys2", optional = true}
 grb-macro = "0.1.0"
